@@ -13,7 +13,7 @@ Search, explore, track reading streaks, read your own files.
 ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
 
-<a href="https://github.com/tn3w/Shelf/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
+<a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522filterReleaseTitlesByRegEx%255C%2522%253A%2520%255C%2522%255EShelf%2520v%255C%2522%252C%2520%255C%2522apkFilterRegEx%255C%2522%253A%2520%255C%2522shelf-github-%255C%2522%252C%2520%255C%2522fallbackToOlderReleases%255C%2522%253A%2520true%252C%2520%255C%2522includePrereleases%255C%2522%253A%2520false%257D%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
 
 <p align="center">
@@ -68,7 +68,7 @@ by `builder/` and published as GitHub releases (`db-YYYY-MM`).
 ### Install
 
 - **GitHub:** [latest release](https://github.com/tn3w/Shelf/releases/latest) `v*` → `shelf-github-<versionCode>.apk` (built-in updater),
-  checksums in `SHA256SUMS`.
+  same file as `shelf.apk` for a stable download link, checksums in `SHA256SUMS`.
 - **F-Droid:** `fdroid` flavor, metadata in `android/fastlane/`, draft recipe in
   `android/fdroid/dev.tn3w.shelf.yml`.
 
