@@ -1,0 +1,65 @@
+name: database
+
+on:
+  schedule:
+    - cron: "0 6 5 * *"
+  workflow_dispatch:
+    inputs:
+      rebase:
+        description: Build full segments and reset the delta chain
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: database
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            builder/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('builder/Cargo.lock') }}
+
+      - name: Build builder
+        run: |
+          rustup update stable --no-self-update
+          cargo build --release --locked --manifest-path builder/Cargo.toml
+
+      - name: Download previous state
+        run: |
+          month=$(date -u +%Y-%m)
+          echo "MONTH=$month" >> "$GITHUB_ENV"
+          mkdir -p previous
+          previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | awk -v current="db-$month" '/^db-/ && $0 < current' | sort | tail -n 1)
+          if [ -n "$previous" ]; then
+            gh release download "$previous" --dir previous \
+              --pattern 'state-*.bin' --pattern manifest.json
+          fi
+
+      - name: Build database
+        run: |
+          flags=(--previous previous --month "$MONTH")
+          if [ "${{ inputs.rebase }}" = "true" ]; then flags+=(--rebase); fi
+          builder/target/release/builder https://openlibrary.org/data out "${flags[@]}"
+          du -sh out
+
+      - name: Publish release
+        run: |
+          gh release delete "db-$MONTH" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "db-$MONTH" out/* \
+            --title "Database $MONTH" \
+            --notes "Open Library catalogue segments, ranks and state for $MONTH."

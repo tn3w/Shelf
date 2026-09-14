@@ -1,0 +1,850 @@
+{
+  "rules": [
+    {
+      "slug": "fiction",
+      "category": "form",
+      "labels": {"en": "Fiction", "de": "Belletristik", "fr": "Fiction", "es": "Ficción"},
+      "include": ["fiction", "novel", "stories", "tales"],
+      "exclude": [
+        "history and criticism",
+        "criticism and interpretation",
+        "bibliography",
+        "study and teaching",
+        "dictionaries",
+        "encyclopedias",
+        "periodicals"
+      ]
+    },
+    {
+      "slug": "nonfiction",
+      "category": "form",
+      "labels": {
+        "en": "Nonfiction",
+        "de": "Sachbuch",
+        "fr": "Documents",
+        "es": "No ficción"
+      },
+      "include": ["nonfiction", "non-fiction"],
+      "exclude": []
+    },
+    {
+      "slug": "romance",
+      "category": "genre",
+      "labels": {
+        "en": "Romance",
+        "de": "Liebesroman",
+        "fr": "Romance",
+        "es": "Romántica"
+      },
+      "include": ["romance", "love stories", "man-woman relationship", "chick lit"],
+      "exclude": [
+        "history and criticism",
+        "criticism and interpretation",
+        "bibliography",
+        "study and teaching",
+        "dictionaries",
+        "encyclopedias",
+        "periodicals"
+      ]
+    },
+    {
+      "slug": "regency-romance",
+      "category": "genre",
+      "labels": {
+        "en": "Regency Romance",
+        "de": "Regency-Roman",
+        "fr": "Romance Régence",
+        "es": "Romántica de Regencia"
+      },
+      "include": ["regency"],
+      "exclude": []
+    },
+    {
+      "slug": "contemporary-romance",
+      "category": "genre",
+      "labels": {
+        "en": "Contemporary Romance",
+        "de": "Moderner Liebesroman",
+        "fr": "Romance contemporaine",
+        "es": "Romántica contemporánea"
+      },
+      "include": ["romance, contemporary", "contemporary romance"],
+      "exclude": []
+    },
+    {
+      "slug": "historical-romance",
+      "category": "genre",
+      "labels": {
+        "en": "Historical Romance",
+        "de": "Historischer Liebesroman",
+        "fr": "Romance historique",
+        "es": "Romántica histórica"
+      },
+      "include": ["romance, historical", "historical romance"],
+      "exclude": []
+    },
+    {
+      "slug": "fantasy",
+      "category": "genre",
+      "labels": {"en": "Fantasy", "de": "Fantasy", "fr": "Fantasy", "es": "Fantasía"},
+      "include": ["fantasy", "dragons", "wizards", "sword and sorcery", "magic fiction"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "epic-fantasy",
+      "category": "genre",
+      "labels": {
+        "en": "Epic Fantasy",
+        "de": "High Fantasy",
+        "fr": "Fantasy épique",
+        "es": "Fantasía épica"
+      },
+      "include": ["fantasy, epic", "epic fantasy", "heroic fantasy"],
+      "exclude": []
+    },
+    {
+      "slug": "urban-fantasy",
+      "category": "genre",
+      "labels": {
+        "en": "Urban Fantasy",
+        "de": "Urban Fantasy",
+        "fr": "Fantasy urbaine",
+        "es": "Fantasía urbana"
+      },
+      "include": ["fantasy, urban", "urban fantasy"],
+      "exclude": []
+    },
+    {
+      "slug": "paranormal",
+      "category": "genre",
+      "labels": {
+        "en": "Paranormal",
+        "de": "Übersinnliches",
+        "fr": "Paranormal",
+        "es": "Paranormal"
+      },
+      "include": ["paranormal", "vampires", "werewolves", "witches", "ghosts"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "science-fiction",
+      "category": "genre",
+      "labels": {
+        "en": "Science Fiction",
+        "de": "Science-Fiction",
+        "fr": "Science-fiction",
+        "es": "Ciencia ficción"
+      },
+      "include": ["science fiction", "sci-fi", "space flight", "interplanetary voyages"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "space-opera",
+      "category": "genre",
+      "labels": {
+        "en": "Space Opera",
+        "de": "Space Opera",
+        "fr": "Space opera",
+        "es": "Ópera espacial"
+      },
+      "include": ["space opera"],
+      "exclude": []
+    },
+    {
+      "slug": "dystopian",
+      "category": "genre",
+      "labels": {"en": "Dystopian", "de": "Dystopie", "fr": "Dystopie", "es": "Distopía"},
+      "include": ["dystopia", "dystopian", "post-apocalyptic", "apocalyptic"],
+      "exclude": []
+    },
+    {
+      "slug": "mystery",
+      "category": "genre",
+      "labels": {"en": "Mystery", "de": "Krimi", "fr": "Policier", "es": "Misterio"},
+      "include": ["mystery", "mysteries", "detective", "whodunit", "sleuth"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "cozy-mystery",
+      "category": "genre",
+      "labels": {
+        "en": "Cozy Mystery",
+        "de": "Cosy Crime",
+        "fr": "Cosy mystery",
+        "es": "Misterio cozy"
+      },
+      "include": ["cozy", "women sleuths"],
+      "exclude": []
+    },
+    {
+      "slug": "thriller",
+      "category": "genre",
+      "labels": {"en": "Thriller", "de": "Thriller", "fr": "Thriller", "es": "Thriller"},
+      "include": ["thriller", "suspense", "espionage", "spy stories"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "crime",
+      "category": "genre",
+      "labels": {
+        "en": "Crime",
+        "de": "Kriminalroman",
+        "fr": "Roman noir",
+        "es": "Novela negra"
+      },
+      "include": ["crime", "murder", "noir", "gangsters"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "true-crime",
+      "category": "topic",
+      "labels": {
+        "en": "True Crime",
+        "de": "True Crime",
+        "fr": "Faits divers",
+        "es": "Crímenes reales"
+      },
+      "include": ["true crime", "serial killers", "criminal investigation"],
+      "exclude": []
+    },
+    {
+      "slug": "horror",
+      "category": "genre",
+      "labels": {"en": "Horror", "de": "Horror", "fr": "Horreur", "es": "Terror"},
+      "include": ["horror", "ghost stories", "monsters"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "historical-fiction",
+      "category": "genre",
+      "labels": {
+        "en": "Historical Fiction",
+        "de": "Historischer Roman",
+        "fr": "Roman historique",
+        "es": "Novela histórica"
+      },
+      "include": ["fiction, historical", "historical fiction"],
+      "exclude": []
+    },
+    {
+      "slug": "literary-fiction",
+      "category": "genre",
+      "labels": {
+        "en": "Literary Fiction",
+        "de": "Gegenwartsliteratur",
+        "fr": "Littérature",
+        "es": "Ficción literaria"
+      },
+      "include": ["fiction, literary", "literary fiction", "domestic fiction"],
+      "exclude": []
+    },
+    {
+      "slug": "adventure",
+      "category": "genre",
+      "labels": {
+        "en": "Adventure",
+        "de": "Abenteuer",
+        "fr": "Aventure",
+        "es": "Aventura"
+      },
+      "include": ["adventure", "survival", "sea stories", "pirates"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "western",
+      "category": "genre",
+      "labels": {"en": "Western", "de": "Western", "fr": "Western", "es": "Western"},
+      "include": ["western stories", "fiction, westerns", "cowboys"],
+      "exclude": []
+    },
+    {
+      "slug": "war-fiction",
+      "category": "genre",
+      "labels": {
+        "en": "War Stories",
+        "de": "Kriegsroman",
+        "fr": "Roman de guerre",
+        "es": "Novela bélica"
+      },
+      "include": ["war stories", "fiction, war"],
+      "exclude": []
+    },
+    {
+      "slug": "humor",
+      "category": "genre",
+      "labels": {"en": "Humor", "de": "Humor", "fr": "Humour", "es": "Humor"},
+      "include": ["humor", "humour", "comedy", "satire", "wit and humor"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "graphic-novel",
+      "category": "form",
+      "labels": {
+        "en": "Graphic Novels",
+        "de": "Comics",
+        "fr": "Bandes dessinées",
+        "es": "Cómics"
+      },
+      "include": ["comic books", "graphic novel", "manga", "cartoons"],
+      "exclude": []
+    },
+    {
+      "slug": "poetry",
+      "category": "form",
+      "labels": {"en": "Poetry", "de": "Lyrik", "fr": "Poésie", "es": "Poesía"},
+      "include": ["poetry", "poems", "verse"],
+      "exclude": [
+        "history and criticism",
+        "criticism and interpretation",
+        "bibliography",
+        "study and teaching",
+        "dictionaries",
+        "encyclopedias",
+        "periodicals"
+      ]
+    },
+    {
+      "slug": "drama",
+      "category": "form",
+      "labels": {"en": "Drama & Plays", "de": "Dramen", "fr": "Théâtre", "es": "Teatro"},
+      "include": ["drama", "plays", "tragedies", "comedies"],
+      "exclude": ["film", "motion picture", "television", "video game"]
+    },
+    {
+      "slug": "short-stories",
+      "category": "form",
+      "labels": {
+        "en": "Short Stories",
+        "de": "Kurzgeschichten",
+        "fr": "Nouvelles",
+        "es": "Relatos"
+      },
+      "include": ["short stories", "fiction, short stories", "anthologies"],
+      "exclude": []
+    },
+    {
+      "slug": "picture-book",
+      "category": "audience",
+      "labels": {
+        "en": "Picture Books",
+        "de": "Bilderbücher",
+        "fr": "Albums illustrés",
+        "es": "Álbumes ilustrados"
+      },
+      "include": ["picture books", "board books", "toy and movable books"],
+      "exclude": []
+    },
+    {
+      "slug": "childrens",
+      "category": "audience",
+      "labels": {
+        "en": "Children's Books",
+        "de": "Kinderbücher",
+        "fr": "Jeunesse",
+        "es": "Infantil"
+      },
+      "include": ["juvenile", "children's", "childrens", "for children", "easy reader"],
+      "exclude": ["juvenile delinquency", "juvenile justice", "juvenile courts"]
+    },
+    {
+      "slug": "middle-grade",
+      "category": "audience",
+      "labels": {
+        "en": "Middle Grade",
+        "de": "Kinderbücher ab 10",
+        "fr": "Romans 9-12 ans",
+        "es": "Juvenil 9-12"
+      },
+      "include": ["children: grades 4-6", "children: grades 3-4", "middle grade"],
+      "exclude": []
+    },
+    {
+      "slug": "young-adult",
+      "category": "audience",
+      "labels": {
+        "en": "Young Adult",
+        "de": "Jugendbücher",
+        "fr": "Young adult",
+        "es": "Juvenil"
+      },
+      "include": [
+        "young adult",
+        "ya",
+        "teenagers",
+        "children: young adult",
+        "teen fiction",
+        "teenage girls",
+        "teenage boys",
+        "junge erwachsene",
+        "jugendbuch"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "biography",
+      "category": "topic",
+      "labels": {
+        "en": "Biography",
+        "de": "Biografien",
+        "fr": "Biographies",
+        "es": "Biografías"
+      },
+      "include": ["biography", "autobiography", "memoir", "personal narratives"],
+      "exclude": []
+    },
+    {
+      "slug": "history",
+      "category": "topic",
+      "labels": {"en": "History", "de": "Geschichte", "fr": "Histoire", "es": "Historia"},
+      "include": ["history", "historiography", "antiquities", "civilization", "histoire"],
+      "exclude": [
+        "history and criticism",
+        "criticism and interpretation",
+        "bibliography",
+        "study and teaching",
+        "dictionaries",
+        "encyclopedias",
+        "periodicals"
+      ]
+    },
+    {
+      "slug": "war-history",
+      "category": "topic",
+      "labels": {
+        "en": "Military History",
+        "de": "Militärgeschichte",
+        "fr": "Histoire militaire",
+        "es": "Historia militar"
+      },
+      "include": ["world war", "military history", "civil war", "battles"],
+      "exclude": []
+    },
+    {
+      "slug": "science",
+      "category": "topic",
+      "labels": {
+        "en": "Science",
+        "de": "Naturwissenschaften",
+        "fr": "Sciences",
+        "es": "Ciencia"
+      },
+      "include": ["science", "physics", "chemistry", "biology", "astronomy", "evolution"],
+      "exclude": ["science fiction", "history and criticism", "study and teaching"]
+    },
+    {
+      "slug": "nature",
+      "category": "topic",
+      "labels": {"en": "Nature", "de": "Natur", "fr": "Nature", "es": "Naturaleza"},
+      "include": ["natural history", "ecology", "environment", "animals", "birds"],
+      "exclude": []
+    },
+    {
+      "slug": "mathematics",
+      "category": "topic",
+      "labels": {
+        "en": "Mathematics",
+        "de": "Mathematik",
+        "fr": "Mathématiques",
+        "es": "Matemáticas"
+      },
+      "include": ["mathematics", "algebra", "geometry", "calculus", "statistics"],
+      "exclude": []
+    },
+    {
+      "slug": "technology",
+      "category": "topic",
+      "labels": {
+        "en": "Technology",
+        "de": "Technik",
+        "fr": "Technologie",
+        "es": "Tecnología"
+      },
+      "include": ["computer", "programming", "engineering", "internet", "software"],
+      "exclude": []
+    },
+    {
+      "slug": "psychology",
+      "category": "topic",
+      "labels": {
+        "en": "Psychology",
+        "de": "Psychologie",
+        "fr": "Psychologie",
+        "es": "Psicología"
+      },
+      "include": ["psychology", "psychoanalysis", "mental health", "emotions"],
+      "exclude": []
+    },
+    {
+      "slug": "philosophy",
+      "category": "topic",
+      "labels": {
+        "en": "Philosophy",
+        "de": "Philosophie",
+        "fr": "Philosophie",
+        "es": "Filosofía"
+      },
+      "include": ["philosophy", "ethics", "metaphysics", "philosophers"],
+      "exclude": []
+    },
+    {
+      "slug": "religion",
+      "category": "topic",
+      "labels": {"en": "Religion", "de": "Religion", "fr": "Religion", "es": "Religión"},
+      "include": [
+        "religion",
+        "christianity",
+        "bible",
+        "islam",
+        "judaism",
+        "buddhism",
+        "christian life",
+        "catholic",
+        "church",
+        "theology",
+        "prayer",
+        "saints",
+        "religious aspects",
+        "jesus christ",
+        "hinduism",
+        "sermons"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "spirituality",
+      "category": "topic",
+      "labels": {
+        "en": "Spirituality",
+        "de": "Spiritualität",
+        "fr": "Spiritualité",
+        "es": "Espiritualidad"
+      },
+      "include": ["spiritual", "meditation", "mysticism", "new age"],
+      "exclude": []
+    },
+    {
+      "slug": "self-help",
+      "category": "topic",
+      "labels": {
+        "en": "Self-Help",
+        "de": "Ratgeber",
+        "fr": "Développement personnel",
+        "es": "Autoayuda"
+      },
+      "include": [
+        "self-help",
+        "self-actualization",
+        "conduct of life",
+        "success",
+        "habit"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "health",
+      "category": "topic",
+      "labels": {
+        "en": "Health & Fitness",
+        "de": "Gesundheit & Fitness",
+        "fr": "Santé & forme",
+        "es": "Salud y bienestar"
+      },
+      "include": ["health", "fitness", "diet", "nutrition", "medicine", "exercise"],
+      "exclude": []
+    },
+    {
+      "slug": "cooking",
+      "category": "topic",
+      "labels": {"en": "Cooking", "de": "Kochen", "fr": "Cuisine", "es": "Cocina"},
+      "include": ["cooking", "cookery", "cookbook", "recipes", "baking"],
+      "exclude": []
+    },
+    {
+      "slug": "travel",
+      "category": "topic",
+      "labels": {"en": "Travel", "de": "Reisen", "fr": "Voyage", "es": "Viajes"},
+      "include": ["travel", "description and travel", "voyages", "guidebooks"],
+      "exclude": []
+    },
+    {
+      "slug": "art",
+      "category": "topic",
+      "labels": {"en": "Art", "de": "Kunst", "fr": "Art", "es": "Arte"},
+      "include": [
+        "art",
+        "painting",
+        "sculpture",
+        "photography",
+        "architecture",
+        "drawing",
+        "exhibitions",
+        "pictorial works"
+      ],
+      "exclude": [
+        "history and criticism",
+        "criticism and interpretation",
+        "bibliography",
+        "study and teaching",
+        "dictionaries",
+        "encyclopedias",
+        "periodicals"
+      ]
+    },
+    {
+      "slug": "music",
+      "category": "topic",
+      "labels": {"en": "Music", "de": "Musik", "fr": "Musique", "es": "Música"},
+      "include": ["music", "songs", "jazz", "rock music", "composers"],
+      "exclude": []
+    },
+    {
+      "slug": "business",
+      "category": "topic",
+      "labels": {
+        "en": "Business",
+        "de": "Wirtschaft",
+        "fr": "Entreprise",
+        "es": "Negocios"
+      },
+      "include": ["business", "management", "marketing", "entrepreneurship", "finance"],
+      "exclude": []
+    },
+    {
+      "slug": "economics",
+      "category": "topic",
+      "labels": {
+        "en": "Economics",
+        "de": "Volkswirtschaft",
+        "fr": "Économie",
+        "es": "Economía"
+      },
+      "include": ["economics", "economic conditions", "capitalism", "economic policy"],
+      "exclude": []
+    },
+    {
+      "slug": "politics",
+      "category": "topic",
+      "labels": {"en": "Politics", "de": "Politik", "fr": "Politique", "es": "Política"},
+      "include": ["politics and government", "political science", "democracy"],
+      "exclude": []
+    },
+    {
+      "slug": "society",
+      "category": "topic",
+      "labels": {
+        "en": "Society",
+        "de": "Gesellschaft",
+        "fr": "Société",
+        "es": "Sociedad"
+      },
+      "include": [
+        "social conditions",
+        "social life and customs",
+        "sociology",
+        "social aspects",
+        "african americans",
+        "race relations",
+        "interpersonal relations",
+        "manners and customs",
+        "feminism",
+        "human rights"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "folklore",
+      "category": "topic",
+      "labels": {
+        "en": "Folklore & Mythology",
+        "de": "Märchen & Mythen",
+        "fr": "Contes & mythes",
+        "es": "Mitología"
+      },
+      "include": ["folklore", "fairy tales", "mythology", "legends", "folk literature"],
+      "exclude": []
+    },
+    {
+      "slug": "classics",
+      "category": "genre",
+      "labels": {
+        "en": "Classics",
+        "de": "Klassiker",
+        "fr": "Classiques",
+        "es": "Clásicos"
+      },
+      "include": [
+        "american literature",
+        "english literature",
+        "classical literature",
+        "early works to 1800",
+        "french literature",
+        "russian literature",
+        "classics",
+        "classic literature",
+        "fiction classics"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "law",
+      "category": "topic",
+      "labels": {"en": "Law", "de": "Recht", "fr": "Droit", "es": "Derecho"},
+      "include": ["law and legislation", "constitutional law", "courts", "legal"],
+      "exclude": []
+    },
+    {
+      "slug": "reference",
+      "category": "topic",
+      "labels": {
+        "en": "Reference",
+        "de": "Nachschlagewerke",
+        "fr": "Référence",
+        "es": "Consulta"
+      },
+      "include": ["dictionaries", "handbooks, manuals", "encyclopedias", "atlases"],
+      "exclude": []
+    },
+    {
+      "slug": "education",
+      "category": "topic",
+      "labels": {
+        "en": "Education",
+        "de": "Bildung",
+        "fr": "Éducation",
+        "es": "Educación"
+      },
+      "include": ["education", "study and teaching", "textbooks"],
+      "exclude": []
+    },
+    {
+      "slug": "parenting",
+      "category": "topic",
+      "labels": {
+        "en": "Parenting",
+        "de": "Erziehung",
+        "fr": "Parentalité",
+        "es": "Crianza"
+      },
+      "include": ["parenting", "child rearing", "pregnancy", "motherhood"],
+      "exclude": []
+    },
+    {
+      "slug": "sports",
+      "category": "topic",
+      "labels": {"en": "Sports", "de": "Sport", "fr": "Sport", "es": "Deportes"},
+      "include": ["sports", "baseball", "football", "basketball", "olympics"],
+      "exclude": []
+    },
+    {
+      "slug": "language",
+      "category": "topic",
+      "labels": {"en": "Language", "de": "Sprache", "fr": "Langue", "es": "Lengua"},
+      "include": [
+        "linguistics",
+        "grammar",
+        "etymology",
+        "english language",
+        "vocabulary"
+      ],
+      "exclude": []
+    },
+    {
+      "slug": "literary-criticism",
+      "category": "topic",
+      "labels": {
+        "en": "Literary Criticism",
+        "de": "Literaturwissenschaft",
+        "fr": "Critique littéraire",
+        "es": "Crítica literaria"
+      },
+      "include": ["history and criticism", "criticism and interpretation"],
+      "exclude": []
+    },
+    {
+      "slug": "bestseller",
+      "category": "accolade",
+      "labels": {
+        "en": "Bestsellers",
+        "de": "Bestseller",
+        "fr": "Best-sellers",
+        "es": "Superventas"
+      },
+      "include": ["new york times bestseller", "bestseller"],
+      "exclude": []
+    },
+    {
+      "slug": "acclaimed",
+      "category": "accolade",
+      "labels": {
+        "en": "Critically Acclaimed",
+        "de": "Preisgekrönt",
+        "fr": "Primés",
+        "es": "Premiados"
+      },
+      "include": ["new york times reviewed", "award", "prize winner", "notable book"],
+      "exclude": []
+    }
+  ],
+  "bisac": {
+    "fiction": ["fiction"],
+    "fiction, romance": ["romance"],
+    "fiction, romance, contemporary": ["contemporary-romance"],
+    "fiction, romance, historical": ["historical-romance"],
+    "fiction, romance, regency": ["regency-romance"],
+    "fiction, romance, historical, regency": ["regency-romance"],
+    "fiction, romance, paranormal": ["paranormal"],
+    "fiction, fantasy": ["fantasy"],
+    "fiction, fantasy, epic": ["epic-fantasy"],
+    "fiction, fantasy, urban": ["urban-fantasy"],
+    "fiction, science fiction": ["science-fiction"],
+    "fiction, science fiction, space opera": ["space-opera"],
+    "fiction, dystopian": ["dystopian"],
+    "fiction, literary": ["literary-fiction"],
+    "fiction, historical": ["historical-fiction"],
+    "fiction, mystery & detective": ["mystery"],
+    "fiction, mystery & detective, cozy": ["cozy-mystery"],
+    "fiction, thrillers": ["thriller"],
+    "fiction, suspense": ["thriller"],
+    "fiction, espionage": ["thriller"],
+    "fiction, horror": ["horror"],
+    "fiction, ghost": ["horror"],
+    "fiction, westerns": ["western"],
+    "fiction, war & military": ["war-fiction"],
+    "fiction, humorous": ["humor"],
+    "fiction, satire": ["humor"],
+    "fiction, short stories": ["short-stories"],
+    "fiction, action & adventure": ["adventure"],
+    "fiction, crime": ["crime"],
+    "fiction, classics": ["classics"],
+    "juvenile fiction": ["childrens", "fiction"],
+    "juvenile fiction, fantasy & magic": ["fantasy"],
+    "juvenile fiction, science fiction": ["science-fiction"],
+    "juvenile nonfiction": ["childrens"],
+    "young adult fiction": ["young-adult", "fiction"],
+    "young adult fiction, dystopian": ["dystopian"],
+    "young adult fiction, science fiction": ["science-fiction"],
+    "young adult fiction, fantasy": ["fantasy"],
+    "young adult fiction, romance": ["romance"],
+    "young adult nonfiction": ["young-adult"],
+    "biography & autobiography": ["biography"],
+    "self-help": ["self-help"],
+    "true crime": ["true-crime"],
+    "comics & graphic novels": ["graphic-novel"],
+    "poetry": ["poetry"],
+    "drama": ["drama"],
+    "cooking": ["cooking"],
+    "history": ["history"],
+    "business & economics": ["business"],
+    "psychology": ["psychology"],
+    "philosophy": ["philosophy"],
+    "religion": ["religion"],
+    "science": ["science"],
+    "humor": ["humor"],
+    "travel": ["travel"],
+    "art": ["art"],
+    "music": ["music"],
+    "sports & recreation": ["sports"],
+    "health & fitness": ["health"],
+    "political science": ["politics"]
+  }
+}
