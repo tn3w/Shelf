@@ -1,0 +1,11 @@
+Shelf ist ein Offline-Buchkatalog auf Basis von Open Library.
+
+* Fehlertolerante Suche mit Vorschlägen
+* Genres, Reihen und Autoren entdecken
+* Bibliothek mit Merkliste, aktuellen und gelesenen Büchern
+* Tagesziel und Leseserien
+* Persönliche Empfehlungen, direkt auf dem Gerät berechnet
+* Reader für EPUB, PDF, TXT, HTML, FB2 und CBZ
+* Kataloge auf Englisch, Deutsch, Französisch und Spanisch mit optionalen Genre-Paketen
+
+Kein Tracking, keine Werbung, kein Konto.

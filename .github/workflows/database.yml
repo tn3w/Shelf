@@ -60,6 +60,6 @@ jobs:
       - name: Publish release
         run: |
           gh release delete "db-$MONTH" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "db-$MONTH" out/* \
+          gh release create "db-$MONTH" out/* --latest=false \
             --title "Database $MONTH" \
             --notes "Open Library catalogue segments, ranks and state for $MONTH."

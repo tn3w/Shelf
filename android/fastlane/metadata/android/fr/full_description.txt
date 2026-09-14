@@ -1,0 +1,11 @@
+Shelf est un catalogue de livres hors ligne issu d'Open Library.
+
+* Recherche tolérante aux fautes avec suggestions
+* Genres, séries et auteurs
+* Bibliothèque : à lire, en cours, lus
+* Objectif quotidien et séries de lecture
+* Recommandations calculées sur l'appareil
+* Lecteur EPUB, PDF, TXT, HTML, FB2 et CBZ
+* Catalogues en anglais, allemand, français et espagnol avec packs optionnels
+
+Aucun pistage, aucune publicité, aucun compte.

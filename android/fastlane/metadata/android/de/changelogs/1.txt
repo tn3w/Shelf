@@ -1,0 +1,1 @@
+Erste Version: neues Katalogformat, ladbare Pakete, vier Sprachen.

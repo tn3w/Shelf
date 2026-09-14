@@ -1,17 +1,174 @@
+<div align="center">
+
+<img src="android/design/shelf-icon.svg" width="96" alt="Shelf icon">
+
 # Shelf
 
-Offline reading app with Kotlin, Jetpack Compose: search, read, track streaks.
+**Offline book catalogue for Android.**
+Search, explore, track reading streaks, read your own files.
+
+[![Release](https://img.shields.io/github/v/release/tn3w/Shelf?filter=v*&label=release&color=4c8)](https://github.com/tn3w/Shelf/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/tn3w/Shelf/total?color=48c)](https://github.com/tn3w/Shelf/releases)
+![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
+
+<a href="https://github.com/tn3w/Shelf/releases/latest"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522filterReleaseTitlesByRegEx%255C%2522%253A%2520%255C%2522%255EShelf%2520v%255C%2522%252C%2520%255C%2522apkFilterRegEx%255C%2522%253A%2520%255C%2522shelf-github-%255C%2522%252C%2520%255C%2522fallbackToOlderReleases%255C%2522%253A%2520true%252C%2520%255C%2522includePrereleases%255C%2522%253A%2520false%257D%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
+
+<p align="center">
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/2_library.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/2_library.jpg" width="15%" alt="library"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/3_book.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/3_book.jpg" width="15%" alt="book"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/4_series.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/4_series.jpg" width="15%" alt="series"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_explore.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/5_explore.jpg" width="15%" alt="explore"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_reader.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/6_reader.jpg" width="15%" alt="reader"></picture>
+</p>
+
+</div>
 
 The catalogue is built monthly from the [Open Library dumps](https://openlibrary.org/developers/dumps)
 by `builder/` and published as GitHub releases (`db-YYYY-MM`).
+
+<details>
+<summary><b>Contents</b></summary>
+
+- [Android app](#android-app): [Features](#features) · [Install](#install) ·
+  [Privacy](#permissions-and-privacy) · [Build](#build) · [Release](#release)
+- [Layout](#layout) · [Catalogue](#catalogue) · [Update model](#update-model) ·
+  [Manifest](#manifest)
+- [Segment format v1](#segment-format-v1) · [Builder](#builder) ·
+  [Database workflow](#database-workflow)
+
+</details>
+
+## Android app
+
+### Features
+
+- **Home:** daily goal + streak, continue reading, want-to-read, recommendations, genres.
+- **Explore:** popular works, genres, audiences, formats, topics → tag and author pages.
+- **Search:** typo-tolerant (trigrams + edit distance), prefix completions, authors.
+- **Book:** facts from ranks (rating, readers, editions), tags, description, series in
+  reading order, more by author, similar books; shelves Want / Reading / Finished.
+- **Library:** shelves; entries store the Open Library work number plus title, author and
+  cover → survive pack, language and catalogue changes.
+- **Reader:** EPUB, PDF, TXT/Markdown, HTML, FB2, CBZ; pagination, chapters, text size,
+  progress → pages count toward the streak.
+- **Settings:** book language, packs (installed / update / download / remove), download
+  all, storage used, app language (Android 13+), theme, daily goal, covers, updates.
+- **About:** version + flavor, database month per language, privacy, Open Library data
+  license, source, license, update check (`github` flavor).
+- **First launch:** system language (`LocaleList`) → `en`/`de`/`fr`/`es` preselected
+  (fallback `en`), pack choice with sizes, *Download* or *Later*. Core works offline.
+- Edge-to-edge, predictive back, shared cover transition (lists → book; not between
+  rows on a book page), animated lists, skeletons,
+  animated download progress; animations off when the system animator scale is 0.
+
+### Install
+
+- **GitHub:** [latest release](https://github.com/tn3w/Shelf/releases/latest) `v*` → `shelf-github-<versionCode>.apk` (built-in updater),
+  checksums in `SHA256SUMS`.
+- **F-Droid:** `fdroid` flavor, metadata in `android/fastlane/`, draft recipe in
+  `android/fdroid/dev.tn3w.shelf.yml`.
+
+### Permissions and privacy
+
+| Flavor | Permissions |
+|---|---|
+| `fdroid` | `INTERNET` |
+| `github` | `INTERNET`, `REQUEST_INSTALL_PACKAGES` |
+
+No trackers, no Google Play Services, no Firebase. Network requests: GitHub (manifest,
+packs, app updates) and Open Library covers when enabled. Library-merged
+`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` removed. Backup limited to the library
+DataStore.
+
+### Languages
+
+UI: English, German, French, Spanish (`res/values*`, per-app language via
+`generateLocaleConfig` + `LocaleManager`). Tag labels come localized from segments.
+
+### Catalogue on device
+
+- APK bundles `core` + `ranks` of all four languages (~17 MB of 19 MB APK) → every
+  language offline, correct popularity and term statistics.
+- Downloads land in `filesDir/catalogue/`: manifest from the newest `db-*` release (GitHub
+  API), missing segments only, SHA-256 verified, `.part` → atomic rename; segments not in
+  the manifest for that pack (older than a new base) deleted.
+- Load per language: segments mmapped (`FileChannel.map`), per pack the newest base + its
+  deltas, merged per README *Client merge* (newest wins, tombstones hide records and
+  postings), newest ranks file for scoring.
+- Check on start ≤1×/30 days; installed-pack updates ≤5 MB download automatically, larger
+  ones (January rebase) show as *Update* in Settings. No background service.
+
+### Updates (`github` flavor)
+
+≤1×/day on start (toggle): newest `v*` release → `shelf-github-<versionCode>.apk` newer
+than `BuildConfig.VERSION_CODE` → dialog → streamed into a `PackageInstaller` session,
+checked against `SHA256SUMS`. Hidden when installed by F-Droid, F-Droid Basic, Droid-ify,
+Neo Store or Aurora.
+
+### Build
+
+```sh
+cd android
+./gradlew assembleGithubDebug assembleFdroidRelease lint testGithubDebugUnitTest
+```
+
+- `downloadCatalogue` fetches bundled segments from release `catalogueRelease`
+  (`app/build.gradle.kts`), SHA-256 checked against its manifest.
+- Unit tests (`CatalogueTest`) use `en-*`/`de-*` of that release (`downloadTestCatalogue`):
+  German core title, English Harry Potter series order, `lightnig thief` search, fake delta
+  tombstone.
+- Release builds are unsigned without `KEYSTORE_FILE`; reproducible settings: pinned
+  versions, `dependenciesInfo` off, literal `versionCode`.
+
+- Tabs: tap → saved tab state; tap active tab → back to its root screen.
+- Grids (tag, author, library): adaptive columns ≥96 dp, tiles fill cells → even padding.
+
+### Screenshots
+
+`tooling/screenshots.py [en de fr es]`: rooted emulator (`google_apis` image, AVD
+`shelf-screenshots`, Pixel 9, API 36), debug APK installed. Animations off, demo status
+bar; seeds DataStore (shelves, progress, 14-day streak, searches) + Gutenberg EPUB per
+language, downloads all packs, waits for covers + stable frame, saves 720 px JPEG (~100
+KB) to `fastlane/metadata/android/<locale>/images/phoneScreenshots/`. English also in dark
+theme → `android/design/screenshots/dark/` (README; fastlane has no dark variant).
+
+### Release
+
+`.github/workflows/android.yml` on tag `v*`: JDK 25, Gradle cache, unit tests, both
+release APKs, signing from `release` environment secrets `KEYSTORE_BASE64`,
+`KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `gh release create` with APKs +
+`SHA256SUMS`. Bump `versionCode` / `versionName` and add
+`fastlane/metadata/android/*/changelogs/<versionCode>.txt` first.
+
+### Sources
+
+| File | Role |
+|---|---|
+| `data/Segment.kt` | Tokenizer, segment + ranks parsing (sections, DEFLATE blocks, terms) |
+| `data/Catalogue.kt` | Merge, visibility bitsets, lookups, tags, series, authors |
+| `data/Search.kt` | Candidates, fuzzy terms, completions, rerank |
+| `data/Recommend.kt` | Tag profile, retrieval, diversity, series starts |
+| `data/Packs.kt` | Local files, manifest, downloads, pack states |
+| `data/Library.kt` | DataStore: shelves, progress, streaks, settings |
+| `data/Documents.kt` | Document parsing for the reader |
+| `ShelfApp.kt`, `MainActivity.kt` | State, downloads, navigation |
+| `ui/*` | Theme, components, screens |
+| `github/`, `fdroid/` `Updater.kt` | Updater / no-op |
 
 ## Layout
 
 | Path | Purpose |
 |---|---|
+| `android/` | Android app (flavors `github`, `fdroid`) |
 | `builder/` | Rust catalogue builder (6 source files) |
 | `builder/tags.json` | Tag rules, localized labels, BISAC mapping |
+| `tooling/screenshots.py` | Fastlane + README screenshots from emulator |
 | `.github/workflows/database.yml` | Monthly build and release |
+| `.github/workflows/android.yml` | App release on tag `v*` |
 
 ## Catalogue
 
@@ -188,7 +345,7 @@ Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes),
 `catalog.rs` (scoring, titles, series, packs), `tags.rs` (taxonomy), `segment.rs`
 (encoding), `release.rs` (state, manifest).
 
-## Workflow
+## Database workflow
 
 `.github/workflows/database.yml` runs on the 5th of every month (after the dump) and on
 manual dispatch with a `rebase` input:

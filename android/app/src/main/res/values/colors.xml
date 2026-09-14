@@ -1,0 +1,6 @@
+<resources>
+    <color name="launcher_background">#FFF6EFE6</color>
+    <color name="icon_accent">#FFE4572E</color>
+    <color name="icon_ink">#FF2B2420</color>
+    <color name="icon_ochre">#FFD9A441</color>
+</resources>
