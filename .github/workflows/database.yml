@@ -40,11 +40,12 @@ jobs:
 
       - name: Download previous state
         run: |
-          month=$(date -u +%Y-%m)
-          echo "MONTH=$month" >> "$GITHUB_ENV"
+          release=$(date -u +%F)
+          echo "RELEASE=$release" >> "$GITHUB_ENV"
           mkdir -p previous
           previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | awk -v current="db-$month" '/^db-/ && $0 < current' | sort | tail -n 1)
+            | awk -v current="catalogue-$release" '/^catalogue-/ && $0 < current' \
+            | sort | tail -n 1)
           if [ -n "$previous" ]; then
             gh release download "$previous" --dir previous \
               --pattern 'state-*.bin' --pattern manifest.json
@@ -52,14 +53,14 @@ jobs:
 
       - name: Build database
         run: |
-          flags=(--previous previous --month "$MONTH")
+          flags=(--previous previous --month "$RELEASE")
           if [ "${{ inputs.rebase }}" = "true" ]; then flags+=(--rebase); fi
           builder/target/release/builder https://openlibrary.org/data out "${flags[@]}"
           du -sh out
 
       - name: Publish release
         run: |
-          gh release delete "db-$MONTH" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "db-$MONTH" out/* --latest=false \
-            --title "Database $MONTH" \
-            --notes "Open Library catalogue segments, ranks and state for $MONTH."
+          gh release delete "catalogue-$RELEASE" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "catalogue-$RELEASE" out/* --latest=false \
+            --title "Catalogue $RELEASE" \
+            --notes "Open Library catalogue segments, ranks and state for $RELEASE."

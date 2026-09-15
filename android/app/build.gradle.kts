@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "db-2026-09"
+val catalogueRelease = "catalogue-2026-09-15"
 val bundledPacks = listOf("core", "ranks")
 
 android {
@@ -95,15 +95,17 @@ abstract class DownloadCatalogue : DefaultTask() {
     fun download() {
         val base = "https://github.com/tn3w/Shelf/releases/download/${release.get()}"
         val manifest = URI("$base/manifest.json").toURL().readText()
-        val entries = Regex("\"id\": \"([^\"]+)\"[^}]*?\"sha256\": \"([0-9a-f]+)\"")
+        val entryHead = "\"id\": \"([^\"]+)\"[^}]*?"
+        val entryTail = "\"sha256\": \"([0-9a-f]+)\"[^}]*?\"url\": \"([^\"]+)\""
+        val entries = Regex(entryHead + entryTail)
             .findAll(manifest)
-            .map { it.groupValues[1] to it.groupValues[2] }
-            .filter { (id, _) -> filter.get().any { Regex(it).matches(id) } }
+            .map { it.destructured }
+            .filter { (id) -> filter.get().any { Regex(it).matches(id) } }
         val directory = output.get().asFile
-        for ((id, sha256) in entries) {
+        for ((id, sha256, url) in entries) {
             val target = directory.resolve("$id.bin")
             if (target.exists() && digest(target.readBytes()) == sha256) continue
-            val bytes = URI("$base/$id.bin").toURL().readBytes()
+            val bytes = URI(url).toURL().readBytes()
             check(digest(bytes) == sha256) { "checksum mismatch for $id" }
             target.writeBytes(bytes)
         }

@@ -28,7 +28,7 @@ Search, explore, track reading streaks, read your own files.
 </div>
 
 The catalogue is built monthly from the [Open Library dumps](https://openlibrary.org/developers/dumps)
-by `builder/` and published as GitHub releases (`db-YYYY-MM`).
+by `builder/` and published as GitHub releases (`catalogue-YYYY-MM-DD`).
 
 <details>
 <summary><b>Contents</b></summary>
@@ -93,14 +93,14 @@ UI: English, German, French, Spanish (`res/values*`, per-app language via
 
 - APK bundles `core` + `ranks` of all four languages (~17 MB of 19 MB APK) → every
   language offline, correct popularity and term statistics.
-- Downloads land in `filesDir/catalogue/`: manifest from the newest `db-*` release (GitHub
-  API), missing segments only, SHA-256 verified, `.part` → atomic rename; segments not in
-  the manifest for that pack (older than a new base) deleted.
+- Downloads land in `filesDir/catalogue/`: manifest from the newest `catalogue-*` release
+  (GitHub API), missing segments only, SHA-256 verified, `.part` → atomic rename;
+  segments not in the manifest for that pack (older than a new base) deleted.
 - Load per language: segments mmapped (`FileChannel.map`), per pack the newest base + its
   deltas, merged per README *Client merge* (newest wins, tombstones hide records and
   postings), newest ranks file for scoring.
 - Check on start ≤1×/30 days; installed-pack updates ≤5 MB download automatically, larger
-  ones (January rebase) show as *Update* in Settings. No background service.
+  ones (rebase) show as *Update* in Settings. No background service.
 
 ### Updates (`github` flavor)
 
@@ -218,6 +218,11 @@ Per language, from the same dump passes:
   Jackson*), capitalized edition subtitles vote instead (*Diebe im Olymp*).
   Known limit: rare wrong picks when a series names volumes by edition (*Death Note* →
   *Black Edition, Volume 6*).
+- **Cover:** newest modern edition (year ≥2000, then cover id) in the language whose title
+  matches the chosen title → any edition in the language → newest English edition → work
+  cover. Rejected: audio, CD, braille, eBook formats; covers not upright (width/height
+  0.55–0.8, e.g. square crops), under 180 px wide; library scans (`ocaid` + `ia:`/`promise:`
+  source) under 700 px wide (stickers, page scans). Shapes from covers metadata dump.
 - **Core:** top-ranked works regardless of genre or audience; other packs get the rest.
   Filled to 3 MB with full descriptions, so English holds ~14.4k works, others 20k.
 - **Description:** kept when detected in the language and the score is ≥400.
@@ -234,12 +239,14 @@ Per language, from the same dump passes:
 ## Update model
 
 - **Sticky:** an included work stays in its pack until Open Library deletes it.
-- **Deltas:** every month each pack gets `<lang>-<pack>-<YYYY-MM>.bin` with only new or
+- **Release label:** `YYYY-MM-DD` (build day) → several releases per month. Files are
+  `<lang>-<pack>-<label>.bin`; labels sort as strings (old `YYYY-MM` names still parse).
+- **Deltas:** every release each pack gets `<lang>-<pack>-<label>.bin` with only new or
   changed records and tombstones. Empty deltas are not written. The content hash
   (FNV-1a 64) excludes popularity.
-- **Ranks:** `<lang>-ranks-<YYYY-MM>.bin` holds popularity and global term statistics and is
-  fully replaced every month.
-- **Rebase:** every January (or `--rebase`) all packs are rebuilt in full from a fresh
+- **Ranks:** `<lang>-ranks-<label>.bin` holds popularity and global term statistics and is
+  fully replaced every release.
+- **Rebase:** first release of a new year (or `--rebase`) all packs are rebuilt in full from a fresh
   selection; the delta chain resets.
 - **State:** `state-<lang>.bin` (work id → pack, hash) is published with each release;
   the next run needs only this, never an old database.
@@ -258,16 +265,16 @@ current ranks.
 ```json
 {
   "format": 1,
-  "month": "2026-10",
+  "month": "2026-10-05",
   "segments": [
     {
-      "id": "en-kids-2026-10",
+      "id": "en-kids-2026-10-05",
       "language": "en",
       "pack": "kids",
-      "month": "2026-10",
+      "month": "2026-10-05",
       "size": 7558,
       "sha256": "…",
-      "url": "https://github.com/tn3w/Shelf/releases/download/db-2026-10/en-kids-2026-10.bin"
+      "url": "https://github.com/tn3w/Shelf/releases/download/catalogue-2026-10-05/en-kids-2026-10-05.bin"
     }
   ]
 }
@@ -315,7 +322,7 @@ suffix, title document frequency, author document frequency across all packs).
 
 ### State file
 
-`SHST`, `u32 1`, 7-byte base month, `u32` count, then 13 bytes per work ascending:
+`SHST`, `u32 2`, 10-byte base label, `u32` count, then 13 bytes per work ascending:
 `u32` work number, `u8` pack index (order of the pack table above), `u64` content hash.
 
 ## Builder
@@ -323,7 +330,7 @@ suffix, title document frequency, author document frequency across all packs).
 ```sh
 cd builder
 cargo build --release
-target/release/builder <dumps-source> <out-dir> [--rebase] [--previous <dir>] [--month YYYY-MM]
+target/release/builder <dumps-source> <out-dir> [--rebase] [--previous <dir>] [--month YYYY-MM-DD]
 ```
 
 - `<dumps-source>`: `https://openlibrary.org/data` streams
@@ -331,14 +338,14 @@ target/release/builder <dumps-source> <out-dir> [--rebase] [--previous <dir>] [-
   range requests. A local directory with `ol_dump_<name>[_latest].txt.gz` works for dev runs.
 - `--previous`: directory with the last `state-*.bin` and `manifest.json`. Missing state →
   full build for that language.
-- `--month`: release month; default is the newest modification month in the works dump.
-- Output: segments, ranks, state and manifest for this month only.
+- `--month`: release label; default is the newest modification day in the works dump.
+- Output: segments, ranks, state and manifest for this release only.
 
-Pipeline: ratings, reading log, authors and editions are streamed concurrently into compact
-per-id arrays; the works dump is streamed last. One pass per dump, all languages from the
-same passes. Output is deterministic.
+Pipeline: ratings, reading log, authors and covers metadata → editions are streamed
+concurrently into compact per-id arrays; the works dump is streamed last. One pass per
+dump, all languages from the same passes. Output is deterministic.
 
-Local run on the 2026-09 dumps, pinned to 4 cores: 196 s, peak RSS 8.1 GB, output
+Local run on the 2026-09 dumps, pinned to 4 cores: 211 s, peak RSS 9.1 GB, output
 127 MB; the next-month delta was 115 KB of segments (621 new works, no changes).
 
 Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes),
@@ -347,10 +354,13 @@ Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes),
 
 ## Database workflow
 
-`.github/workflows/database.yml` runs on the 5th of every month (after the dump) and on
-manual dispatch with a `rebase` input:
+`.github/workflows/database.yml` runs on the 5th of every month (after the dump), on push
+to `master` touching `builder/` or the workflow, and on manual dispatch (`rebase` input):
 
 1. Cache Cargo, build the builder.
-2. Download `state-*.bin` and `manifest.json` from the latest earlier `db-*` release.
+2. Download `state-*.bin` and `manifest.json` from the latest earlier `catalogue-*`
+   release.
 3. Run the builder against `https://openlibrary.org/data`.
-4. Replace or create release `db-YYYY-MM` with all output files.
+4. Replace or create release `catalogue-YYYY-MM-DD` (UTC build day) with all output files.
+   Older releases stay: manifests link their delta chain.
+Old `db-YYYY-MM` releases are kept for APKs before this change (they only read `db-*`).

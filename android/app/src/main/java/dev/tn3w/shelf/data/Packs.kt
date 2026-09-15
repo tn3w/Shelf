@@ -64,10 +64,11 @@ private data class LocalFile(val id: String, val pack: String, val month: String
         get() = id.take(2)
 }
 
+private val segmentName = Regex("""([a-z]{2})-([a-z-]+)-(\d{4}-\d{2}(?:-\d{2})?)\.bin""")
+
 private fun parseName(name: String): LocalFile? {
-    if (!name.endsWith(".bin") || name.length < 15) return null
-    val id = name.removeSuffix(".bin")
-    return LocalFile(id, id.drop(3).dropLast(8), id.takeLast(7))
+    val (_, pack, release) = segmentName.matchEntire(name)?.destructured ?: return null
+    return LocalFile(name.removeSuffix(".bin"), pack, release)
 }
 
 fun copy(input: InputStream, output: OutputStream, onBytes: (Long) -> Unit) {
@@ -190,7 +191,7 @@ class Packs(private val context: Context) {
                 connect(RELEASES).inputStream.use { it.readBytes().decodeToString() }
             val release =
                 json.decodeFromString<List<Release>>(releases).first {
-                    it.tag_name.startsWith("db-")
+                    it.tag_name.startsWith("catalogue-")
                 }
             val url =
                 release.assets.first { it.name == "manifest.json" }.browser_download_url
