@@ -160,7 +160,9 @@ class Packs(private val context: Context) {
         val ids = localIds()
         val installed = (bundled + downloaded()).filter { it.language == language }
         val entries = manifest?.segments.orEmpty().filter { it.language == language }
-        return PACKS.map { pack ->
+        val offered = entries.map { it.pack }.toSet()
+        val listed = if (manifest == null) PACKS else PACKS.filter { it in offered }
+        return listed.map { pack ->
             val needed = entries.filter { it.pack == pack }
             val present = installed.filter { it.pack == pack }
             val missing = needed.filter { it.id !in ids }.sumOf { it.size }
@@ -198,8 +200,16 @@ class Packs(private val context: Context) {
             val text = connect(url).inputStream.use { it.readBytes().decodeToString() }
             val manifest = json.decodeFromString<Manifest>(text)
             writeAtomically(manifestFile, text.toByteArray())
+            removeObsolete(manifest)
             manifest
         }
+
+    private fun removeObsolete(manifest: Manifest) {
+        val offered = manifest.segments.map { it.language to it.pack }.toSet()
+        downloaded()
+            .filter { it.language to it.pack !in offered }
+            .forEach { directory.resolve("${it.id}.bin").delete() }
+    }
 
     fun pendingUpdates(language: String) =
         packs(language).filter { it.state == PackState.Update }

@@ -95,7 +95,9 @@ UI: English, German, French, Spanish (`res/values*`, per-app language via
   language offline, correct popularity and term statistics.
 - Downloads land in `filesDir/catalogue/`: manifest from the newest `catalogue-*` release
   (GitHub API), missing segments only, SHA-256 verified, `.part` → atomic rename;
-  segments not in the manifest for that pack (older than a new base) deleted.
+  segments not in the manifest for that pack (older than a new base) deleted. Packs absent
+  from a language's manifest (merged into `core`) → hidden in settings, local files deleted
+  on manifest refresh.
 - Load per language: segments mmapped (`FileChannel.map`), per pack the newest base + its
   deltas, merged per README *Client merge* (newest wins, tombstones hide records and
   postings), newest ranks file for scoring.
