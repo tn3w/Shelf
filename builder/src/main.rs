@@ -213,9 +213,7 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
             sizes[CORE as usize]
         );
         let unmerged = merged;
-        if job.previous.is_none() {
-            merge_small(&mut merged, &sizes);
-        }
+        merge_small(&mut merged, &sizes);
         let settled = merged == unmerged;
         if settled && fits && best.is_none_or(|(known, ..)| limit > known) {
             best = Some((limit, core_limit, merged));
@@ -292,12 +290,16 @@ fn ranks(job: &Job, placed: &[Placed]) -> Vec<u8> {
     segment::ranks(job.language, job.month, &works, &rows, job.authors)
 }
 
-fn build_language(job: &Job, titles: &Titles) -> Vec<Published> {
+fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let language = job.language;
     let entries =
         catalog::candidates(job.books, titles, job.authors, language, job.previous);
     eprintln!("{}: {} candidates", LANGUAGES[language], entries.len());
     let (limit, core_limit, merged) = fit(job, &entries);
+    if job.previous.is_some_and(|previous| previous_merged(previous) != merged) {
+        eprintln!("{}: pack merge changed, rebasing", LANGUAGES[language]);
+        return None;
+    }
     let selection = catalog::select(&entries, job.books, limit, core_limit, &merged);
     let placed = placed_works(&selection, language);
     let tracked: Vec<Tracked> = placed
@@ -329,7 +331,7 @@ fn build_language(job: &Job, titles: &Titles) -> Vec<Published> {
         &job.output
             .join(format!("state-{}.bin", LANGUAGES[language])),
     );
-    published
+    Some(published)
 }
 
 fn sticky_works(states: &[Option<State>]) -> Vec<bool> {
@@ -400,7 +402,16 @@ fn main() {
             authors: &authors,
             output: &options.output,
         };
-        published.extend(build_language(&job, &titles));
+        let built = build_language(&job, &titles).unwrap_or_else(|| {
+            rebased[language] = true;
+            let fresh = Job {
+                previous: None,
+                base: &month,
+                ..job
+            };
+            build_language(&fresh, &titles).expect("fresh build has no previous merge")
+        });
+        published.extend(built);
     }
     release::write_manifest(
         options.previous.as_deref(),

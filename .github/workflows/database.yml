@@ -80,6 +80,10 @@ jobs:
 
       - name: Publish release
         run: |
-          gh release create "catalogue-$RELEASE" out/* --latest=false \
+          gh release create "catalogue-$RELEASE" --draft --latest=false \
             --title "Catalogue $RELEASE" \
             --notes "Open Library catalogue segments, ranks and state for $RELEASE."
+          for file in out/*; do
+            gh release upload "catalogue-$RELEASE" "$file" --clobber
+          done
+          gh release edit "catalogue-$RELEASE" --draft=false --latest=false

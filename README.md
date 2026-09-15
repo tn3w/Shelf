@@ -190,8 +190,9 @@ work lives in exactly one pack.
 | `general` | Everything else |
 
 Primary pack: audience first (`kids`, `young-adult`), then the strongest genre tag, else
-`general`. Non-core packs under 1 MB for a language are merged into its `core` (on
-rebase; deltas keep the merge). 2026-09: `de`, `fr`, `es` ship `core`, `nonfiction`,
+`general`. Non-core packs under 1 MB (full size) for a language are merged into its
+`core`. Deltas keep the merge; a delta build finding a pack newly under 1 MB rebases that
+language instead. 2026-09: `de`, `fr`, `es` ship `core`, `nonfiction`,
 `general` only. All packs of a language together stay ≤75 MB.
 
 Sizes from the 2026-09 dumps:
@@ -373,7 +374,9 @@ to `master` touching `builder/` or the workflow, and on manual dispatch (`rebase
 3. Download all six dumps (~17 GB) to `/mnt/dumps` with `aria2c`: parallel files,
    16 range connections each. One archive.org stream is throttled → 30+ min; split → minutes.
 4. Run the builder against `/mnt/dumps` (local run: ~4 min on 4 cores).
-5. Create release `catalogue-<label>`: UTC build day, `-N` suffix when that day already has
-   a release. Previous = newest existing `catalogue-*` (`sort -V`).
+5. Create draft release `catalogue-<label>`, upload files one by one (`--clobber` →
+   retried uploads can't fail on duplicate names), then publish. Label: UTC build day,
+   `-N` suffix when that day already has a release. Previous = newest `catalogue-*`
+   (`sort -V`).
    Older releases stay: manifests link their delta chain.
 Old `db-YYYY-MM` releases are kept for APKs before this change (they only read `db-*`).
