@@ -20,6 +20,7 @@ pub const CORE: u8 = 0;
 const KIDS_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
 pub const DESCRIPTION_MIN_SCORE: f32 = 400.0;
 
+const MODERN_YEAR: u16 = 2000;
 const MIN_SCORE: f32 = 150.0;
 const FOREIGN_TITLE_WORDS: usize = 3;
 const DESCRIPTION_LIMIT: usize = 480;
@@ -589,12 +590,48 @@ fn choose_series(records: &[&TitleRecord], titles: &Titles) -> (String, u16) {
 pub struct Entry {
     pub book: usize,
     pub title: String,
+    pub cover: u32,
     pub alternate: String,
     pub series: String,
     pub series_position: u16,
     pub score: f32,
     pub sticky: Option<u8>,
     local_title: bool,
+}
+
+fn newest_cover(records: &[&TitleRecord], titles: &Titles, title: Option<&str>) -> u32 {
+    let key = title.map(|title| title_key(title, &[]));
+    records
+        .iter()
+        .filter(|record| record.cover > 0 && record.year >= MODERN_YEAR)
+        .filter(|record| {
+            key.as_ref()
+                .is_none_or(|key| title_key(titles.title(record), &[]) == *key)
+        })
+        .max_by_key(|record| (record.year, record.cover))
+        .map_or(0, |record| record.cover)
+}
+
+fn cover_of(
+    book: &Book,
+    in_language: &[&TitleRecord],
+    titles: &Titles,
+    title: &str,
+) -> u32 {
+    let records = titles.of(book.work);
+    let english: Vec<&TitleRecord> = records
+        .iter()
+        .filter(|record| record.language == 0)
+        .collect();
+    [
+        newest_cover(in_language, titles, Some(title)),
+        newest_cover(in_language, titles, None),
+        newest_cover(&english, titles, None),
+        book.cover,
+    ]
+    .into_iter()
+    .find(|&cover| cover > 0)
+    .unwrap_or(0)
 }
 
 fn resolve(index: usize, book: &Book, titles: &Titles, language: usize) -> Entry {
@@ -625,6 +662,7 @@ fn resolve(index: usize, book: &Book, titles: &Titles, language: usize) -> Entry
     }
     Entry {
         book: index,
+        cover: cover_of(book, &in_language, titles, &title),
         title,
         alternate,
         series,

@@ -4,8 +4,8 @@ use sha2::{Digest, Sha256};
 use std::path::Path;
 
 const STATE_MAGIC: &[u8; 4] = b"SHST";
-const STATE_VERSION: u32 = 1;
-const MONTH_BYTES: usize = 7;
+const STATE_VERSION: u32 = 2;
+const MONTH_BYTES: usize = 10;
 const RECORD_BYTES: usize = 13;
 const RELEASE_URL: &str = "https://github.com/tn3w/Shelf/releases/download";
 
@@ -102,7 +102,7 @@ fn manifest_entry(output: &Path, published: &Published) -> Value {
         "month": published.month,
         "size": bytes.len(),
         "sha256": sha256,
-        "url": format!("{RELEASE_URL}/db-{}/{}", published.month, published.file),
+        "url": format!("{RELEASE_URL}/catalogue-{}/{}", published.month, published.file),
     })
 }
 

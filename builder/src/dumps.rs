@@ -14,11 +14,25 @@ const MAX_RETRIES: u32 = 12;
 const MAX_TITLE_BYTES: usize = 160;
 const SUBTITLE_SEPARATOR: char = '\u{1f}';
 const MAX_AUTHORS: usize = 4;
+const NON_PRINT_FORMATS: [&str; 9] = [
+    "audio",
+    "cassette",
+    "cd",
+    "mp3",
+    "braille",
+    "player",
+    "sound",
+    "ebook",
+    "electronic",
+];
+const MIN_SCAN_WIDTH: f32 = 700.0;
 const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
 const LANGUAGE_CODES: [&str; 24] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe",
     "ara", "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
 ];
+
+type CoverShape = (u16, u16);
 
 pub const FLAG_ISBN: u8 = 1;
 pub const FLAG_COVER: u8 = 2;
@@ -387,7 +401,6 @@ pub struct Facts {
     pub editions: u16,
     pub language_editions: [u16; 4],
     pub languages: u32,
-    pub cover: u32,
     pub first_year: u16,
     pub flags: u8,
     pub classes: Classes,
@@ -404,7 +417,6 @@ impl Facts {
             *mine = mine.saturating_add(theirs);
         }
         self.languages |= other.languages;
-        self.cover = self.cover.max(other.cover);
         if other.first_year > 0
             && (self.first_year == 0 || other.first_year < self.first_year)
         {
@@ -428,6 +440,8 @@ pub struct TitleRecord {
     pub work: u32,
     pub language: u8,
     pub position: u16,
+    pub year: u16,
+    pub cover: u32,
     start: u32,
     title_length: u8,
     series_length: u8,
@@ -465,25 +479,22 @@ impl Titles {
         &self.text[start..start + record.series_length as usize]
     }
 
-    fn push(
-        &mut self,
-        work: u32,
-        language: u8,
-        title: &str,
-        series: &Option<(String, u16)>,
-    ) {
+    fn push(&mut self, edition: &Edition, language: u8) {
         let start = u32::try_from(self.text.len()).expect("edition titles under 4 GB");
-        let (series, position) = series
+        let (series, position) = edition
+            .series
             .as_ref()
             .map_or(("", 0), |(name, at)| (name.as_str(), *at));
-        self.text.push_str(title);
+        self.text.push_str(&edition.title);
         self.text.push_str(series);
         self.records.push(TitleRecord {
-            work,
+            work: edition.work,
             language,
             position,
+            year: edition.facts.first_year,
+            cover: edition.cover,
             start,
-            title_length: title.len() as u8,
+            title_length: edition.title.len() as u8,
             series_length: series.len() as u8,
         });
     }
@@ -492,6 +503,7 @@ impl Titles {
 struct Edition {
     work: u32,
     facts: Facts,
+    cover: u32,
     title: String,
     series: Option<(String, u16)>,
 }
@@ -502,6 +514,51 @@ fn language_bit(key: &str) -> u32 {
         .iter()
         .position(|&known| known == code)
         .map_or(1 << 31, |bit| 1 << bit)
+}
+
+fn is_scan(edition: &Value) -> bool {
+    !text(edition, "ocaid").is_empty()
+        && strings(edition, "source_records")
+            .any(|record| record.starts_with("ia:") || record.starts_with("promise:"))
+}
+
+fn is_front_cover(shape: CoverShape, scanned: bool) -> bool {
+    let (width, height) = (f32::from(shape.0), f32::from(shape.1));
+    let upright = height > 0.0 && (0.55..=0.8).contains(&(width / height));
+    upright && width >= 180.0 && (!scanned || width >= MIN_SCAN_WIDTH)
+}
+
+fn print_cover(edition: &Value, shapes: &[CoverShape]) -> u32 {
+    let format = text(edition, "physical_format").to_ascii_lowercase();
+    if NON_PRINT_FORMATS.iter().any(|word| format.contains(word)) {
+        return 0;
+    }
+    let cover = first_cover(edition);
+    let shape = shapes.get(cover as usize).copied().unwrap_or_default();
+    if is_front_cover(shape, is_scan(edition)) {
+        cover
+    } else {
+        0
+    }
+}
+
+fn cover_shape(line: &[u8]) -> Option<(usize, CoverShape)> {
+    let text = |index| std::str::from_utf8(field(line, index)).ok();
+    Some((
+        text(0)?.parse().ok()?,
+        (text(1)?.parse().ok()?, text(2)?.parse().ok()?),
+    ))
+}
+
+fn cover_shapes(source: &str) -> Vec<CoverShape> {
+    let mut shapes = Vec::new();
+    scan(source, "covers_metadata", cover_shape, |(id, shape)| {
+        if id >= shapes.len() {
+            shapes.resize(id + 1, (0, 0));
+        }
+        shapes[id] = shape;
+    });
+    shapes
 }
 
 fn is_unreadable(format: &str) -> bool {
@@ -529,7 +586,7 @@ fn edition_title(title: &str, subtitle: &str) -> String {
     if fits { labelled } else { title.to_string() }
 }
 
-fn edition_from(edition: &Value) -> Option<Edition> {
+fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
     let work = ol_id(keys(edition, "works").next()?.as_bytes())?;
     let mut facts = Facts {
         editions: 1,
@@ -545,7 +602,6 @@ fn edition_from(edition: &Value) -> Option<Edition> {
     if facts.languages == 0 {
         facts.language_editions[0] = 1;
     }
-    facts.cover = first_cover(edition);
     facts.first_year = year_of(text(edition, "publish_date"));
     facts.classes = tags::classes_of(edition);
     let flags = [
@@ -553,7 +609,7 @@ fn edition_from(edition: &Value) -> Option<Edition> {
             has_items(edition, "isbn_13") || has_items(edition, "isbn_10"),
             FLAG_ISBN,
         ),
-        (facts.cover > 0, FLAG_COVER),
+        (first_cover(edition) > 0, FLAG_COVER),
         (has_items(edition, "publishers"), FLAG_PUBLISHER),
         (
             !is_unreadable(text(edition, "physical_format")),
@@ -569,6 +625,7 @@ fn edition_from(edition: &Value) -> Option<Edition> {
     Some(Edition {
         work,
         facts,
+        cover: print_cover(edition, shapes),
         title,
         series,
     })
@@ -577,10 +634,11 @@ fn edition_from(edition: &Value) -> Option<Edition> {
 pub fn editions(source: &str) -> (Vec<Facts>, Titles) {
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
+    let shapes = cover_shapes(source);
     scan(
         source,
         "editions",
-        |line| edition_from(&json(line)?),
+        |line| edition_from(&json(line)?, &shapes),
         |edition| {
             slot(&mut facts, edition.work).absorb(&edition.facts);
             if edition.title.is_empty() {
@@ -588,12 +646,7 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles) {
             }
             for (language, &count) in edition.facts.language_editions.iter().enumerate() {
                 if count > 0 {
-                    titles.push(
-                        edition.work,
-                        language as u8,
-                        &edition.title,
-                        &edition.series,
-                    );
+                    titles.push(&edition, language as u8);
                 }
             }
         },
@@ -713,10 +766,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
             String::new()
         },
         authors,
-        cover: match first_cover(work) {
-            0 => facts.cover,
-            cover => cover,
-        },
+        cover: first_cover(work),
         year,
         editions: facts.editions,
         signal,
@@ -730,7 +780,7 @@ fn work_line(line: &[u8], context: &Context) -> Option<WorkLine> {
         return None;
     }
     let id = ol_id(field(line, 1))?;
-    let month = String::from_utf8_lossy(field(line, 3).get(..7)?).into_owned();
+    let month = String::from_utf8_lossy(field(line, 3).get(..10)?).into_owned();
     let has_editions = context
         .facts
         .get(id as usize)

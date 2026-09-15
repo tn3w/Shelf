@@ -31,7 +31,7 @@ struct Options {
 fn usage() -> ! {
     eprintln!(
         "usage: builder <dumps-source> <out-dir> \
-         [--rebase] [--previous <dir>] [--month YYYY-MM]"
+         [--rebase] [--previous <dir>] [--month YYYY-MM-DD]"
     );
     std::process::exit(2)
 }
@@ -96,7 +96,7 @@ fn placed_works<'a>(selection: &'a Selection, language: usize) -> Vec<Placed<'a>
                 alternate: &entry.alternate,
                 authors: &book.authors,
                 year: book.year,
-                cover: book.cover,
+                cover: entry.cover,
                 tags: &book.tags,
                 series: chosen
                     .series
@@ -350,11 +350,11 @@ fn main() {
     eprintln!("month {month}, {} books", books.len());
     catalog::fill_author_tags(&mut books);
 
-    let rebase_all = options.rebase || month.ends_with("-01");
     let mut rebased = [false; 4];
     let mut published = Vec::new();
     for (language, state) in states.iter().enumerate() {
-        let previous = state.as_ref().filter(|_| !rebase_all);
+        let same_year = |state: &&State| state.base[..4] == month[..4];
+        let previous = state.as_ref().filter(same_year).filter(|_| !options.rebase);
         rebased[language] = previous.is_none();
         let base = previous.map_or(month.as_str(), |state| state.base.as_str());
         let job = Job {
