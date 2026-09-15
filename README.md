@@ -360,7 +360,9 @@ to `master` touching `builder/` or the workflow, and on manual dispatch (`rebase
 1. Cache Cargo, build the builder.
 2. Download `state-*.bin` and `manifest.json` from the latest earlier `catalogue-*`
    release.
-3. Run the builder against `https://openlibrary.org/data`.
-4. Replace or create release `catalogue-YYYY-MM-DD` (UTC build day) with all output files.
+3. Download all six dumps (~17 GB) to `/mnt/dumps` with `aria2c`: parallel files,
+   16 range connections each. One archive.org stream is throttled → 30+ min; split → minutes.
+4. Run the builder against `/mnt/dumps` (local run: ~4 min on 4 cores).
+5. Replace or create release `catalogue-YYYY-MM-DD` (UTC build day) with all output files.
    Older releases stay: manifests link their delta chain.
 Old `db-YYYY-MM` releases are kept for APKs before this change (they only read `db-*`).

@@ -51,11 +51,25 @@ jobs:
               --pattern 'state-*.bin' --pattern manifest.json
           fi
 
+      - name: Download dumps
+        run: |
+          sudo apt-get install -y aria2
+          sudo mkdir -p /mnt/dumps && sudo chown "$USER" /mnt/dumps
+          for name in reading-log ratings authors covers_metadata editions works; do
+            file="ol_dump_${name}_latest.txt.gz"
+            printf '%s\n  out=%s\n' "https://openlibrary.org/data/$file" "$file"
+          done > /mnt/dumps/urls.txt
+          aria2c --input-file /mnt/dumps/urls.txt --dir /mnt/dumps \
+            --max-concurrent-downloads 6 --split 16 --max-connection-per-server 16 \
+            --min-split-size 64M --max-tries 20 --retry-wait 5 \
+            --file-allocation none --console-log-level warn --summary-interval 60
+          du -sh /mnt/dumps
+
       - name: Build database
         run: |
           flags=(--previous previous --month "$RELEASE")
           if [ "${{ inputs.rebase }}" = "true" ]; then flags+=(--rebase); fi
-          builder/target/release/builder https://openlibrary.org/data out "${flags[@]}"
+          builder/target/release/builder /mnt/dumps out "${flags[@]}"
           du -sh out
 
       - name: Publish release
