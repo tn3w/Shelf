@@ -196,10 +196,10 @@ Sizes from the 2026-09 dumps:
 
 | Language | Works | Packs | Ranks | State |
 |---|---|---|---|---|
-| `en` | 900k | 74.4 MB | 16.2 MB | 11.7 MB |
-| `de` | 62k | 6.3 MB | 1.7 MB | 0.8 MB |
-| `fr` | 82k | 7.4 MB | 1.9 MB | 1.1 MB |
-| `es` | 91k | 8.3 MB | 2.1 MB | 1.2 MB |
+| `en` | 901k | 74.5 MB | 5.2 MB | 11.7 MB |
+| `de` | 82k | 7.8 MB | 1.2 MB | 1.1 MB |
+| `fr` | 98k | 8.3 MB | 1.1 MB | 1.3 MB |
+| `es` | 135k | 11.3 MB | 1.3 MB | 1.7 MB |
 
 ### Selection
 
@@ -212,8 +212,11 @@ Per language, from the same dump passes:
   + 30·ln(1+language editions) + 45·ln(languages)` + mean rating bonus + metadata bonuses
   (cover, description, subjects, ISBN, publisher, year ≥1950). Attention = 3·read +
   2·reading + want.
-- **Title:** most common spelling among editions in the language (editions without a
-  language count as English; titles clearly in another language are ignored). Works without
+- **Edition language:** `languages` field; if missing → ISBN registration group (`978-0/1`,
+  `979-8` en; `978-3` de; `978-2`, `979-10` fr; `978-84` + Latin American groups es) →
+  title stop words → English.
+- **Title:** most common spelling among editions in the language (titles clearly in
+  another language are ignored). Works without
   such a title are skipped; sticky works fall back to the most common spelling overall.
   The original title becomes the alternate.
   If the winner only names the series (strict prefix of the series name, e.g. *Percy

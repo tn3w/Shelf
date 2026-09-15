@@ -31,6 +31,11 @@ const LANGUAGE_CODES: [&str; 24] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe",
     "ara", "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
 ];
+const ISBN_GROUPS: [(&str, usize); 14] = [
+    ("9780", 0), ("9781", 0), ("9798", 0), ("9783", 1), ("9782", 2), ("97910", 2),
+    ("97884", 3), ("978607", 3), ("978950", 3), ("978956", 3), ("978958", 3),
+    ("978968", 3), ("978970", 3), ("978987", 3),
+];
 
 type CoverShape = (u16, u16);
 
@@ -586,6 +591,23 @@ fn edition_title(title: &str, subtitle: &str) -> String {
     if fits { labelled } else { title.to_string() }
 }
 
+fn isbn_language(isbn: &str) -> Option<usize> {
+    let digits: String = isbn.chars().filter(char::is_ascii_digit).collect();
+    let normalized = if digits.len() == 10 { format!("978{digits}") } else { digits };
+    ISBN_GROUPS
+        .iter()
+        .find(|(prefix, _)| normalized.len() == 13 && normalized.starts_with(prefix))
+        .map(|&(_, language)| language)
+}
+
+fn implied_language(edition: &Value) -> Option<usize> {
+    let mut isbns = strings(edition, "isbn_13").chain(strings(edition, "isbn_10"));
+    isbns.find_map(isbn_language).or_else(|| {
+        let title = format!("{} {}", text(edition, "title"), text(edition, "subtitle"));
+        catalog::detect_language(&title)
+    })
+}
+
 fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
     let work = ol_id(keys(edition, "works").next()?.as_bytes())?;
     let mut facts = Facts {
@@ -600,7 +622,9 @@ fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
         }
     }
     if facts.languages == 0 {
-        facts.language_editions[0] = 1;
+        let target = implied_language(edition).unwrap_or(0);
+        facts.language_editions[target] = 1;
+        facts.languages = 1 << target;
     }
     facts.first_year = year_of(text(edition, "publish_date"));
     facts.classes = tags::classes_of(edition);
