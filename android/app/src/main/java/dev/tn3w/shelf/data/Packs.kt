@@ -29,6 +29,14 @@ val PACKS =
         "nonfiction",
         "general",
     )
+private fun labelParts(label: String) = label.split("-").map { it.toIntOrNull() ?: 0 }
+
+val releaseOrder = Comparator<String> { first, second ->
+    val (left, right) = labelParts(first) to labelParts(second)
+    left.zip(right).map { (a, b) -> a.compareTo(b) }.firstOrNull { it != 0 }
+        ?: left.size.compareTo(right.size)
+}
+
 private const val RELEASES =
     "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
 private val json = Json { ignoreUnknownKeys = true }
@@ -64,7 +72,8 @@ private data class LocalFile(val id: String, val pack: String, val month: String
         get() = id.take(2)
 }
 
-private val segmentName = Regex("""([a-z]{2})-([a-z-]+)-(\d{4}-\d{2}(?:-\d{2})?)\.bin""")
+private val segmentName =
+    Regex("""([a-z]{2})-([a-z-]+)-(\d{4}-\d{2}(?:-\d{2}(?:-\d+)?)?)\.bin""")
 
 private fun parseName(name: String): LocalFile? {
     val (_, pack, release) = segmentName.matchEntire(name)?.destructured ?: return null
@@ -123,12 +132,14 @@ class Packs(private val context: Context) {
                 .groupBy { it.pack }
                 .flatMap { (_, chain) -> currentChain(chain) }
                 .sortedWith(
-                    compareBy({ it.month }, { !it.isBase }, { PACKS.indexOf(it.pack) })
+                    compareBy<Segment, String>(releaseOrder) { it.month }
+                        .thenBy { !it.isBase }
+                        .thenBy { PACKS.indexOf(it.pack) }
                 )
         val ranks =
             files
                 .filter { it.pack == "ranks" }
-                .maxByOrNull { it.month }
+                .maxWithOrNull(compareBy(releaseOrder) { it.month })
                 ?.let {
                     Ranks(it.id, map(it))
                 }
@@ -137,8 +148,11 @@ class Packs(private val context: Context) {
 
     private fun currentChain(chain: List<Segment>): List<Segment> {
         val base =
-            chain.filter { it.isBase }.maxOfOrNull { it.month } ?: return emptyList()
-        return chain.filter { it.month >= base && it.base == base }
+            chain.filter { it.isBase }.map { it.month }.maxWithOrNull(releaseOrder)
+                ?: return emptyList()
+        return chain.filter {
+            it.base == base && releaseOrder.compare(it.month, base) >= 0
+        }
     }
 
     private fun open(file: LocalFile) = Segment(file.id, map(file))
@@ -184,7 +198,8 @@ class Packs(private val context: Context) {
     fun months() = LANGUAGES.associateWith { language ->
         (bundled + downloaded())
             .filter { it.language == language }
-            .maxOfOrNull { it.month }
+            .map { it.month }
+            .maxWithOrNull(releaseOrder)
     }
 
     suspend fun refreshManifest(): Manifest =

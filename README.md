@@ -248,8 +248,9 @@ Per language, from the same dump passes:
 ## Update model
 
 - **Sticky:** an included work stays in its pack until Open Library deletes it.
-- **Release label:** `YYYY-MM-DD` (build day) → several releases per month. Files are
-  `<lang>-<pack>-<label>.bin`; labels sort as strings (old `YYYY-MM` names still parse).
+- **Release label:** `YYYY-MM-DD` (build day), further builds that day `YYYY-MM-DD-1`,
+  `-2`, … Files are `<lang>-<pack>-<label>.bin`. Labels sort numerically per `-` part
+  (`2026-09-15` < `2026-09-15-2` < `2026-09-15-10`); old `YYYY-MM` names still parse.
 - **Deltas:** every release each pack gets `<lang>-<pack>-<label>.bin` with only new or
   changed records and tombstones. Empty deltas are not written. The content hash
   (FNV-1a 64) excludes popularity.
@@ -331,7 +332,8 @@ suffix, title document frequency, author document frequency across all packs).
 
 ### State file
 
-`SHST`, `u32 2`, 10-byte base label, `u32` count, then 13 bytes per work ascending:
+`SHST`, `u32 3`, `u8` base label length, base label, `u32` count (version 2 with a fixed
+10-byte label still loads), then 13 bytes per work ascending:
 `u32` work number, `u8` pack index (order of the pack table above), `u64` content hash.
 
 ## Builder
@@ -339,7 +341,7 @@ suffix, title document frequency, author document frequency across all packs).
 ```sh
 cd builder
 cargo build --release
-target/release/builder <dumps-source> <out-dir> [--rebase] [--previous <dir>] [--month YYYY-MM-DD]
+target/release/builder <dumps-source> <out-dir> [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]]
 ```
 
 - `<dumps-source>`: `https://openlibrary.org/data` streams
@@ -367,11 +369,11 @@ Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes),
 to `master` touching `builder/` or the workflow, and on manual dispatch (`rebase` input):
 
 1. Cache Cargo, build the builder.
-2. Download `state-*.bin` and `manifest.json` from the latest earlier `catalogue-*`
-   release.
+2. Download `state-*.bin` and `manifest.json` from the newest `catalogue-*` release.
 3. Download all six dumps (~17 GB) to `/mnt/dumps` with `aria2c`: parallel files,
    16 range connections each. One archive.org stream is throttled → 30+ min; split → minutes.
 4. Run the builder against `/mnt/dumps` (local run: ~4 min on 4 cores).
-5. Replace or create release `catalogue-YYYY-MM-DD` (UTC build day) with all output files.
+5. Create release `catalogue-<label>`: UTC build day, `-N` suffix when that day already has
+   a release. Previous = newest existing `catalogue-*` (`sort -V`).
    Older releases stay: manifests link their delta chain.
 Old `db-YYYY-MM` releases are kept for APKs before this change (they only read `db-*`).

@@ -31,7 +31,8 @@ data class Location(val segment: Segment, val local: Int)
 
 class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ranks?) {
     private val visible = visibility(segments)
-    val month = (segments.map { it.month } + listOfNotNull(ranks?.month)).maxOrNull()
+    val month = (segments.map { it.month } + listOfNotNull(ranks?.month))
+        .maxWithOrNull(releaseOrder)
     val workCount = visible.sumOf { it.cardinality() }
     val tags =
         segments.firstOrNull()?.tags.orEmpty().map {

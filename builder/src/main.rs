@@ -32,9 +32,21 @@ struct Options {
 fn usage() -> ! {
     eprintln!(
         "usage: builder <dumps-source> <out-dir> \
-         [--rebase] [--previous <dir>] [--month YYYY-MM-DD]"
+         [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]]"
     );
     std::process::exit(2)
+}
+
+fn release_label(argument: Option<String>) -> String {
+    let Some(label) = argument else { usage() };
+    let parts: Vec<&str> = label.split('-').collect();
+    let widths_valid = matches!(parts.as_slice(), [year, month, day, ..]
+        if year.len() == 4 && month.len() == 2 && day.len() == 2);
+    let numeric = parts.iter().all(|part| part.parse::<u32>().is_ok());
+    if !widths_valid || !numeric || parts.len() > 4 {
+        usage()
+    }
+    label
 }
 
 fn options() -> Options {
@@ -48,7 +60,7 @@ fn options() -> Options {
                 previous =
                     Some(PathBuf::from(arguments.next().unwrap_or_else(|| usage())))
             }
-            "--month" => month = Some(arguments.next().unwrap_or_else(|| usage())),
+            "--month" => month = Some(release_label(arguments.next())),
             _ => positional.push(argument),
         }
     }

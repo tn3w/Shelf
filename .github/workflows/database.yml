@@ -40,12 +40,18 @@ jobs:
 
       - name: Download previous state
         run: |
-          release=$(date -u +%F)
+          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^catalogue-' || true)
+          day=$(date -u +%F)
+          release=$day
+          build=0
+          while grep -qx "catalogue-$release" <<< "$tags"; do
+            build=$((build + 1))
+            release=$day-$build
+          done
           echo "RELEASE=$release" >> "$GITHUB_ENV"
           mkdir -p previous
-          previous=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | awk -v current="catalogue-$release" '/^catalogue-/ && $0 < current' \
-            | sort | tail -n 1)
+          previous=$(sort -V <<< "$tags" | tail -n 1)
           if [ -n "$previous" ]; then
             gh release download "$previous" --dir previous \
               --pattern 'state-*.bin' --pattern manifest.json
@@ -74,7 +80,6 @@ jobs:
 
       - name: Publish release
         run: |
-          gh release delete "catalogue-$RELEASE" --yes --cleanup-tag 2>/dev/null || true
           gh release create "catalogue-$RELEASE" out/* --latest=false \
             --title "Catalogue $RELEASE" \
             --notes "Open Library catalogue segments, ranks and state for $RELEASE."

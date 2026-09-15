@@ -5,6 +5,7 @@ import dev.tn3w.shelf.data.Ranks
 import dev.tn3w.shelf.data.Searcher
 import dev.tn3w.shelf.data.Segment
 import dev.tn3w.shelf.data.mapFile
+import dev.tn3w.shelf.data.releaseOrder
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -53,6 +54,13 @@ class CatalogueTest {
 
         val thief = searcher.search("lightnig thief").take(3).map { it.title }
         assertTrue(thief.toString(), thief.any { it.contains("Lightning Thief") })
+    }
+
+    @Test
+    fun releaseLabelsSortByBuild() {
+        val labels = listOf("2026-09-15-10", "2026-09-15-2", "2026-09-15", "2026-09")
+        val expected = listOf("2026-09", "2026-09-15", "2026-09-15-2", "2026-09-15-10")
+        assertEquals(expected, labels.sortedWith(releaseOrder))
     }
 
     @Test

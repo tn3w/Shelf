@@ -4,8 +4,8 @@ use sha2::{Digest, Sha256};
 use std::path::Path;
 
 const STATE_MAGIC: &[u8; 4] = b"SHST";
-const STATE_VERSION: u32 = 2;
-const MONTH_BYTES: usize = 10;
+const STATE_VERSION: u32 = 3;
+const LEGACY_LABEL_BYTES: usize = 10;
 const RECORD_BYTES: usize = 13;
 const RELEASE_URL: &str = "https://github.com/tn3w/Shelf/releases/download";
 
@@ -30,17 +30,19 @@ fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
 impl State {
     pub fn load(path: &Path) -> Option<State> {
         let bytes = std::fs::read(path).ok()?;
-        let header = 8 + MONTH_BYTES + 4;
-        let valid =
-            bytes.starts_with(STATE_MAGIC) && u32_at(&bytes, 4) == Some(STATE_VERSION);
-        if !valid {
-            panic!(
-                "{} is not a version {STATE_VERSION} state file",
-                path.display()
-            );
+        if !bytes.starts_with(STATE_MAGIC) {
+            panic!("{} is not a state file", path.display());
         }
-        let base = String::from_utf8_lossy(&bytes[8..8 + MONTH_BYTES]).into_owned();
-        let count = u32_at(&bytes, 8 + MONTH_BYTES)? as usize;
+        let (label_start, label_bytes) = match u32_at(&bytes, 4) {
+            Some(2) => (8, LEGACY_LABEL_BYTES),
+            Some(STATE_VERSION) => (9, *bytes.get(8)? as usize),
+            _ => panic!("{} has an unknown state version", path.display()),
+        };
+        let label_end = label_start + label_bytes;
+        let label = bytes.get(label_start..label_end)?;
+        let base = String::from_utf8_lossy(label).into_owned();
+        let count = u32_at(&bytes, label_end)? as usize;
+        let header = label_end + 4;
         let records = bytes.get(header..header + count * RECORD_BYTES)?;
         let works = records
             .as_chunks::<RECORD_BYTES>()
@@ -59,7 +61,8 @@ impl State {
         let mut bytes = Vec::with_capacity(32 + self.works.len() * RECORD_BYTES);
         bytes.extend_from_slice(STATE_MAGIC);
         bytes.extend_from_slice(&STATE_VERSION.to_le_bytes());
-        bytes.extend_from_slice(&self.base.as_bytes()[..MONTH_BYTES]);
+        bytes.push(self.base.len() as u8);
+        bytes.extend_from_slice(self.base.as_bytes());
         bytes.extend_from_slice(&(self.works.len() as u32).to_le_bytes());
         for tracked in &self.works {
             bytes.extend_from_slice(&tracked.work.to_le_bytes());
