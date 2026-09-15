@@ -138,10 +138,10 @@ theme → `android/design/screenshots/dark/` (README; fastlane has no dark varia
 
 ### Release
 
-`.github/workflows/android.yml` on tag `v*`: JDK 25, Gradle cache, unit tests, both
-release APKs, signing from `release` environment secrets `KEYSTORE_BASE64`,
-`KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, `gh release create` with APKs +
-`SHA256SUMS`. Bump `versionCode` / `versionName` and add
+`.github/workflows/android.yml` on tag `v*`: JDK 25, writable Gradle cache, no
+tests/lint, `--parallel --build-cache`, both release APKs, signing from `release`
+environment secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`,
+`gh release create` with APKs + `SHA256SUMS`. Bump `versionCode` / `versionName` and add
 `fastlane/metadata/android/*/changelogs/<versionCode>.txt` first.
 
 ### Sources

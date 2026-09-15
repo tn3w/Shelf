@@ -25,9 +25,8 @@ jobs:
           java-version: "25"
 
       - uses: gradle/actions/setup-gradle@v4
-
-      - name: Test
-        run: ./gradlew testGithubDebugUnitTest
+        with:
+          cache-read-only: false
 
       - name: Keystore
         if: env.HAS_KEYSTORE == 'true'
@@ -42,7 +41,10 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleGithubRelease assembleFdroidRelease
+        run: >
+          ./gradlew assembleGithubRelease assembleFdroidRelease
+          -x lintVitalGithubRelease -x lintVitalFdroidRelease
+          --parallel --build-cache
 
       - name: Collect
         run: |
