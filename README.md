@@ -188,7 +188,9 @@ work lives in exactly one pack.
 | `general` | Everything else |
 
 Primary pack: audience first (`kids`, `young-adult`), then the strongest genre tag, else
-`general`. All packs of a language together stay ≤75 MB.
+`general`. Non-core packs under 1 MB for a language are merged into its `core` (on
+rebase; deltas keep the merge). 2026-09: `de`, `fr`, `es` ship `core`, `nonfiction`,
+`general` only. All packs of a language together stay ≤75 MB.
 
 Sizes from the 2026-09 dumps:
 

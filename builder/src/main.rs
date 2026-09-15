@@ -4,7 +4,7 @@ mod release;
 mod segment;
 mod tags;
 
-use catalog::{CORE, DESCRIPTION_MIN_SCORE, Entry, PACKS, Selection};
+use catalog::{CORE, DESCRIPTION_MIN_SCORE, Entry, Merged, PACKS, Selection};
 use dumps::{Authors, Book, Context, Titles};
 use release::{Published, State, Tracked};
 use segment::{Meta, Popularity, Work};
@@ -15,8 +15,9 @@ pub const LANGUAGES: [&str; 4] = ["en", "de", "fr", "es"];
 const BUDGET_BYTES: usize = 75_000_000;
 const CORE_BYTES: usize = 3_000_000;
 const CORE_WORKS: usize = 20_000;
+const MERGE_BELOW_BYTES: usize = 1_000_000;
 const ESTIMATED_BYTES_PER_WORK: usize = 70;
-const FITTING_ROUNDS: usize = 6;
+const FITTING_ROUNDS: usize = 7;
 const FILL_TARGET: f64 = 0.985;
 const FILLED_ENOUGH: f64 = 0.97;
 
@@ -150,7 +151,22 @@ fn adjusted(limit: usize, size: usize, cap: usize, works: usize, target: f64) ->
     (limit as f64 + change).max(0.0) as usize
 }
 
-fn fit(job: &Job, entries: &[Entry]) -> (usize, usize) {
+fn previous_merged(previous: &State) -> Merged {
+    let mut merged = [true; PACKS.len()];
+    merged[CORE as usize] = false;
+    for tracked in &previous.works {
+        merged[tracked.pack as usize] = false;
+    }
+    merged
+}
+
+fn merge_small(merged: &mut Merged, sizes: &[usize]) {
+    for (pack, &size) in sizes.iter().enumerate().skip(1) {
+        merged[pack] |= size < MERGE_BELOW_BYTES;
+    }
+}
+
+fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
     let fresh = entries
         .iter()
         .filter(|entry| entry.sticky.is_none())
@@ -165,9 +181,10 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize) {
     } else {
         0
     };
-    let mut best: Option<(usize, usize)> = None;
+    let mut merged = job.previous.map_or([false; PACKS.len()], previous_merged);
+    let mut best: Option<(usize, usize, Merged)> = None;
     for round in 1..=FITTING_ROUNDS {
-        let selection = catalog::select(entries, job.books, limit, core_limit);
+        let selection = catalog::select(entries, job.books, limit, core_limit, &merged);
         let placed = placed_works(&selection, job.language);
         let sizes: Vec<usize> = build_packs(job, &placed, &no_tombstones)
             .iter()
@@ -183,12 +200,17 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize) {
             placed.len(),
             sizes[CORE as usize]
         );
-        if fits && best.is_none_or(|(known, _)| limit > known) {
-            best = Some((limit, core_limit));
+        let unmerged = merged;
+        if job.previous.is_none() {
+            merge_small(&mut merged, &sizes);
+        }
+        let settled = merged == unmerged;
+        if settled && fits && best.is_none_or(|(known, ..)| limit > known) {
+            best = Some((limit, core_limit, merged));
         }
         let filled =
             limit == fresh || total as f64 >= FILLED_ENOUGH * BUDGET_BYTES as f64;
-        if fits && filled {
+        if settled && fits && filled {
             break;
         }
         if sizes[CORE as usize] > CORE_BYTES {
@@ -199,7 +221,7 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize) {
         limit =
             adjusted(limit, total, BUDGET_BYTES, placed.len(), FILL_TARGET).min(fresh);
     }
-    best.unwrap_or((0, 0))
+    best.unwrap_or((0, 0, merged))
 }
 
 fn publish(job: &Job, pack: &str, bytes: &[u8]) -> Published {
@@ -263,8 +285,8 @@ fn build_language(job: &Job, titles: &Titles) -> Vec<Published> {
     let entries =
         catalog::candidates(job.books, titles, job.authors, language, job.previous);
     eprintln!("{}: {} candidates", LANGUAGES[language], entries.len());
-    let (limit, core_limit) = fit(job, &entries);
-    let selection = catalog::select(&entries, job.books, limit, core_limit);
+    let (limit, core_limit, merged) = fit(job, &entries);
+    let selection = catalog::select(&entries, job.books, limit, core_limit, &merged);
     let placed = placed_works(&selection, language);
     let tracked: Vec<Tracked> = placed
         .iter()

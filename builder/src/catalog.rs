@@ -17,6 +17,7 @@ pub const PACKS: [&str; 9] = [
     "general",
 ];
 pub const CORE: u8 = 0;
+pub type Merged = [bool; PACKS.len()];
 const KIDS_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
 pub const DESCRIPTION_MIN_SCORE: f32 = 400.0;
 
@@ -770,6 +771,7 @@ pub fn select<'a>(
     books: &'a [Book],
     limit: usize,
     core_limit: usize,
+    merged: &Merged,
 ) -> Selection<'a> {
     let mut fresh = 0;
     let mut chosen: Vec<Chosen> = Vec::new();
@@ -779,7 +781,10 @@ pub fn select<'a>(
             Some(pack) => pack,
             None if fresh >= limit => continue,
             None if fresh < core_limit => CORE,
-            None => primary_pack(&book.tags),
+            None => match primary_pack(&book.tags) {
+                pack if merged[pack as usize] => CORE,
+                pack => pack,
+            },
         };
         fresh += usize::from(entry.sticky.is_none());
         chosen.push(Chosen {
