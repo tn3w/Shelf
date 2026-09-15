@@ -28,13 +28,13 @@ class CatalogueTest {
                 .filter { it.name.startsWith("$language-") && "ranks" !in it.name }
                 .sortedBy { it.name }
         val ranks =
-            Ranks("ranks", mapFile(directory.resolve("$language-ranks-2026-09.bin")))
+            Ranks("ranks", mapFile(directory.resolve("$language-ranks-2026-09-15.bin")))
         return Catalogue(language, files.map { segment(it.nameWithoutExtension) }, ranks)
     }
 
     @Test
     fun germanCoreHasPhilosophersStone() {
-        val core = Catalogue("de", listOf(segment("de-core-2026-09")), null)
+        val core = Catalogue("de", listOf(segment("de-core-2026-09-15")), null)
         val titles =
             (0 until core.segments[0].workCount).map { core.segments[0].heads(it).title }
         assertTrue("Harry Potter und der Stein der Weisen" in titles)
@@ -57,9 +57,9 @@ class CatalogueTest {
 
     @Test
     fun deltaTombstoneHidesWork() {
-        val base = segment("de-core-2026-09")
+        val base = segment("de-core-2026-09-15")
         val hidden = base.work(0)
-        val delta = Segment("de-core-2026-10", tombstoneSegment(hidden))
+        val delta = Segment("de-core-2026-10-15", tombstoneSegment(hidden))
         val merged = Catalogue("de", listOf(base, delta), null)
         assertNull(merged.book(hidden))
         assertNotNull(merged.book(base.work(1)))
@@ -72,8 +72,8 @@ class CatalogueTest {
                     "format=1",
                     "language=de",
                     "pack=core",
-                    "month=2026-10",
-                    "base=2026-09",
+                    "month=2026-10-15",
+                    "base=2026-09-15",
                     "works=0",
                     "authors=0",
                     "terms=0",
