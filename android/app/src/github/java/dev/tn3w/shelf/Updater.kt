@@ -89,8 +89,10 @@ object Updater {
             val expected =
                 text(release.checksumsUrl)
                     .lines()
+                    .map { it.trim() }
                     .first { it.endsWith(name) }
                     .substringBefore(' ')
+                    .lowercase()
             val installer = context.packageManager.packageInstaller
             val sessionId =
                 installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
@@ -111,11 +113,17 @@ object Updater {
         url: String,
         onProgress: (Float) -> Unit,
     ) {
-        val connection = connect(url)
-        val total = connection.contentLengthLong.coerceAtLeast(1)
+        val connection =
+            connect(url).apply {
+                setRequestProperty("Accept", "application/octet-stream")
+                setRequestProperty("Accept-Encoding", "identity")
+            }
+        val status = connection.responseCode
+        if (status != 200) error("download failed: $status")
+        val total = connection.contentLengthLong
         DigestInputStream(connection.inputStream, digest).use { input ->
             session.openWrite("shelf.apk", 0, total).use { output ->
-                copy(input, output) { onProgress(it.toFloat() / total) }
+                copy(input, output) { if (total > 0) onProgress(it.toFloat() / total) }
                 session.fsync(output)
             }
         }
