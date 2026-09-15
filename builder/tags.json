@@ -87,7 +87,27 @@
       "slug": "fantasy",
       "category": "genre",
       "labels": {"en": "Fantasy", "de": "Fantasy", "fr": "Fantasy", "es": "Fantasía"},
-      "include": ["fantasy", "dragons", "wizards", "sword and sorcery", "magic fiction"],
+      "include": ["fantasy", "sword and sorcery", "magic fiction"],
+      "motifs": [
+        "magic",
+        "dragons",
+        "wizards",
+        "fairies",
+        "elves",
+        "unicorns",
+        "mythical animals",
+        "imaginary places",
+        "imaginary creatures",
+        "metamorphosis",
+        "shapeshifting",
+        "shape-shifting",
+        "psychic ability",
+        "parapsychology",
+        "telepathy",
+        "supernatural",
+        "talismans",
+        "quests"
+      ],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -123,7 +143,8 @@
         "fr": "Paranormal",
         "es": "Paranormal"
       },
-      "include": ["paranormal", "vampires", "werewolves", "witches", "ghosts"],
+      "include": ["paranormal"],
+      "motifs": ["vampires", "werewolves", "witches", "ghosts", "demonology", "angels"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -135,7 +156,20 @@
         "fr": "Science-fiction",
         "es": "Ciencia ficción"
       },
-      "include": ["science fiction", "sci-fi", "space flight", "interplanetary voyages"],
+      "include": ["science fiction", "sci-fi"],
+      "motifs": [
+        "space flight",
+        "interplanetary voyages",
+        "time travel",
+        "robots",
+        "androids",
+        "cryonics",
+        "extraterrestrial beings",
+        "artificial intelligence",
+        "genetic engineering",
+        "virtual reality",
+        "cloning"
+      ],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -180,7 +214,15 @@
       "slug": "thriller",
       "category": "genre",
       "labels": {"en": "Thriller", "de": "Thriller", "fr": "Thriller", "es": "Thriller"},
-      "include": ["thriller", "suspense", "espionage", "spy stories"],
+      "include": ["thriller", "suspense", "spy stories"],
+      "motifs": [
+        "espionage",
+        "spies",
+        "terrorism",
+        "kidnapping",
+        "assassins",
+        "hostages"
+      ],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -192,7 +234,8 @@
         "fr": "Roman noir",
         "es": "Novela negra"
       },
-      "include": ["crime", "murder", "noir", "gangsters"],
+      "include": ["crime", "noir"],
+      "motifs": ["murder", "gangsters", "criminals", "police"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -211,7 +254,8 @@
       "slug": "horror",
       "category": "genre",
       "labels": {"en": "Horror", "de": "Horror", "fr": "Horreur", "es": "Terror"},
-      "include": ["horror", "ghost stories", "monsters"],
+      "include": ["horror", "ghost stories"],
+      "motifs": ["monsters", "zombies", "haunted houses"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
@@ -247,14 +291,22 @@
         "fr": "Aventure",
         "es": "Aventura"
       },
-      "include": ["adventure", "survival", "sea stories", "pirates"],
+      "include": ["adventure", "sea stories"],
+      "motifs": [
+        "survival",
+        "pirates",
+        "buried treasure",
+        "shipwrecks",
+        "voyages and travels"
+      ],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
     {
       "slug": "western",
       "category": "genre",
       "labels": {"en": "Western", "de": "Western", "fr": "Western", "es": "Western"},
-      "include": ["western stories", "fiction, westerns", "cowboys"],
+      "include": ["western stories", "fiction, westerns"],
+      "motifs": ["cowboys", "frontier and pioneer life", "outlaws"],
       "exclude": []
     },
     {

@@ -34,6 +34,8 @@ pub struct Rule {
     pub labels: BTreeMap<String, String>,
     include: Vec<String>,
     exclude: Vec<String>,
+    #[serde(default)]
+    motifs: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -49,6 +51,7 @@ static TAXONOMY: LazyLock<Taxonomy> = LazyLock::new(|| {
 const MAX_TAGS: usize = 8;
 const WEAK_TAG_FILL: usize = 3;
 const BISAC_WEIGHT: u16 = 2;
+const MOTIF_WEIGHT: u16 = 2;
 const CLASS_WEIGHT: u16 = 2;
 const BAND_WEIGHT: u16 = 3;
 const TEEN_SUBJECT_WEIGHT: u16 = 2;
@@ -255,10 +258,27 @@ fn contains_word(haystack: &str, needle: &str) -> bool {
 }
 
 impl Rule {
+    fn is_excluded(&self, subject: &str) -> bool {
+        self.exclude.iter().any(|bad| contains_word(subject, bad))
+    }
+
     fn matches(&self, subject: &str) -> bool {
-        !self.exclude.iter().any(|bad| contains_word(subject, bad))
+        !self.is_excluded(subject)
             && self.include.iter().any(|good| contains_word(subject, good))
     }
+
+    fn matches_motif(&self, subject: &str) -> bool {
+        !self.is_excluded(subject)
+            && self.motifs.iter().any(|motif| contains_word(subject, motif))
+    }
+}
+
+fn motif_tags(subject: &str) -> impl Iterator<Item = u8> {
+    rules()
+        .iter()
+        .enumerate()
+        .filter(move |(_, rule)| rule.matches_motif(subject))
+        .map(|(id, _)| id as u8)
 }
 
 fn rule_tags(subject: &str) -> Vec<u8> {
@@ -509,6 +529,11 @@ pub fn confident_tags<'a>(
         }
         support.add_subject(&normalized);
         seen.push(normalized);
+    }
+    if support.of("fiction") > 0 {
+        for found in seen.iter().flat_map(|subject| motif_tags(subject)) {
+            support.add(found, MOTIF_WEIGHT);
+        }
     }
     class_tags(classes)
         .into_iter()

@@ -233,7 +233,9 @@ Per language, from the same dump passes:
 - **Description:** kept when detected in the language and the score is ≥400.
 - **Dedupe:** same title key and primary author → highest score wins.
 - **Tags:** subject rules + BISAC paths + edition class hints (Dewey, LCC, age bands),
-  support weighted. Audience from editions: juvenile share <10% → adult, ≥20% → young, kid
+  support weighted. Rule `motifs` in `tags.json` (magic, metamorphosis, time travel,
+  murder, space flight …) count only for fiction works → genre without mistagging
+  nonfiction. Audience from editions: juvenile share <10% → adult, ≥20% → young, kid
   vs. teen bands; unknown audience → `young-adult` replaces `childrens` when YA support is
   higher. Untagged works borrow genre tags shared by ≥70% of the author's tagged works.
 - **Series:** edition `series` field ("Harry Potter, #2" → name, position), grouped by
