@@ -4,7 +4,7 @@
     <string name="all">Alle</string>
     <string name="app_language">App-Sprache</string>
     <string name="appearance">Darstellung</string>
-    <string name="audience">Zielgruppe</string>
+    <string name="audience">Altersgruppe</string>
     <string name="back">Zurück</string>
     <string name="born">Geboren %d</string>
     <string name="catalogue">Katalog</string>
@@ -31,11 +31,11 @@
     <string name="finished">Gelesen</string>
     <string name="for_you">Für dich</string>
     <string name="for_you_subtitle">Basierend auf deiner Bibliothek.</string>
-    <string name="formats">Formen</string>
+    <string name="formats">Bucharten</string>
     <string name="genres">Genres</string>
     <string name="goal_pages">%d Seiten</string>
     <string name="goal_reached">Tagesziel erreicht. Bis morgen!</string>
-    <string name="home">Start</string>
+    <string name="home">Startseite</string>
     <string name="import_to_start">Datei importieren</string>
     <string name="install">Installieren</string>
     <string name="larger_text">Größerer Text</string>
@@ -73,7 +73,7 @@
     <string name="privacy">Datenschutz</string>
     <string name="privacy_note">Kein Tracking, keine Werbung, kein Konto. Shelf kontaktiert nur GitHub für Katalog- und App-Updates und Open Library für Cover, falls aktiviert. Deine Bibliothek bleibt auf dem Gerät.</string>
     <string name="reading">Lese ich</string>
-    <string name="recent">Zuletzt</string>
+    <string name="recent">Zuletzt gesucht</string>
     <string name="remove_pack">%s entfernen</string>
     <string name="resume">Weiterlesen</string>
     <string name="retry_pack">%s erneut versuchen</string>

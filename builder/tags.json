@@ -3,7 +3,7 @@
     {
       "slug": "fiction",
       "category": "form",
-      "labels": {"en": "Fiction", "de": "Belletristik", "fr": "Fiction", "es": "Ficción"},
+      "labels": {"en": "Fiction", "de": "Romane", "fr": "Fiction", "es": "Ficción"},
       "include": ["fiction", "novel", "stories", "tales"],
       "exclude": [
         "history and criticism",
@@ -21,7 +21,7 @@
       "labels": {
         "en": "Nonfiction",
         "de": "Sachbuch",
-        "fr": "Documents",
+        "fr": "Non-fiction",
         "es": "No ficción"
       },
       "include": ["nonfiction", "non-fiction"],
@@ -139,7 +139,7 @@
       "category": "genre",
       "labels": {
         "en": "Paranormal",
-        "de": "Übersinnliches",
+        "de": "Paranormal",
         "fr": "Paranormal",
         "es": "Paranormal"
       },
@@ -244,7 +244,7 @@
       "labels": {
         "en": "True Crime",
         "de": "True Crime",
-        "fr": "Faits divers",
+        "fr": "True crime",
         "es": "Crímenes reales"
       },
       "include": ["true crime", "serial killers", "criminal investigation"],
@@ -751,7 +751,7 @@
         "en": "Reference",
         "de": "Nachschlagewerke",
         "fr": "Référence",
-        "es": "Consulta"
+        "es": "Obras de consulta"
       },
       "include": ["dictionaries", "handbooks, manuals", "encyclopedias", "atlases"],
       "exclude": []
@@ -790,7 +790,7 @@
     {
       "slug": "language",
       "category": "topic",
-      "labels": {"en": "Language", "de": "Sprache", "fr": "Langue", "es": "Lengua"},
+      "labels": {"en": "Language", "de": "Sprache", "fr": "Langues", "es": "Idiomas"},
       "include": [
         "linguistics",
         "grammar",

@@ -119,6 +119,10 @@ DataStore.
 
 UI: English, German, French, Spanish (`res/values*`, per-app language via
 `generateLocaleConfig` + `LocaleManager`). Tag labels come localized from segments.
+Labels use everyday wording per locale, not trade jargon (de *Romane*, not
+*Belletristik*; fr *Non-fiction*, not *Documents*). Browse category headers are
+*Age group*, *Book types*, *Genres*, *Topics*; search history is *Recent searches*.
+Changing a label in `builder/tags.json` needs a catalogue rebuild to reach devices.
 
 ### Catalogue on device
 

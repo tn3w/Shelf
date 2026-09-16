@@ -5,7 +5,7 @@
     <string name="all">All</string>
     <string name="app_language">App language</string>
     <string name="appearance">Appearance</string>
-    <string name="audience">Audience</string>
+    <string name="audience">Age group</string>
     <string name="back">Back</string>
     <string name="born">Born %d</string>
     <string name="catalogue">Catalogue</string>
@@ -32,7 +32,7 @@
     <string name="finished">Finished</string>
     <string name="for_you">For you</string>
     <string name="for_you_subtitle">Based on your library.</string>
-    <string name="formats">Formats</string>
+    <string name="formats">Book types</string>
     <string name="genres">Genres</string>
     <string name="goal_pages">%d pages</string>
     <string name="goal_reached">Daily goal reached. See you tomorrow!</string>
@@ -74,7 +74,7 @@
     <string name="privacy">Privacy</string>
     <string name="privacy_note">No tracking, no ads, no accounts. Shelf only contacts GitHub for catalogue and app updates, and Open Library for covers if enabled. Your library stays on this device.</string>
     <string name="reading">Reading</string>
-    <string name="recent">Recent</string>
+    <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
     <string name="resume">Continue</string>
     <string name="retry_pack">Retry %s</string>
