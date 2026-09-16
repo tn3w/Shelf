@@ -240,7 +240,8 @@ Sizes from the 2026-09 dumps:
 
 Per language, from the same dump passes:
 
-- **Eligible:** known non-organization author, title without report/proceedings patterns,
+- **Eligible:** known non-organization author, title without report/proceedings or
+  collection patterns (box sets, omnibus, *Gesamtausgabe*, volume ranges like *1-7*),
   ≥1 readable edition in the language, ISBN or readers, subjects or readers, cover or
   readers or ≥2 editions, no junk subject unless ≥3 readers, score ≥150.
 - **Score:** `100·ln(1+attention) + 60·ln(1+ratings) + 20·ln(1+editions)
@@ -249,7 +250,9 @@ Per language, from the same dump passes:
   2·reading + want.
 - **Edition language:** `languages` field; if missing → ISBN registration group (`978-0/1`,
   `979-8` en; `978-3` de; `978-2`, `979-10` fr; `978-84` + Latin American groups es) →
-  title stop words → English.
+  title stop words → English. Editions with a foreign ISBN group (`978-5`, `978-7`,
+  `978-8x`, `978-9x` …) or a non-Latin title and no `languages` field count as another
+  language instead of English — they were the source of Russian and Indic covers.
 - **Title:** most common spelling among editions in the language (titles clearly in
   another language are ignored). Works without
   such a title are skipped; sticky works fall back to the most common spelling overall.
@@ -258,11 +261,17 @@ Per language, from the same dump passes:
   Jackson*), capitalized edition subtitles vote instead (*Diebe im Olymp*).
   Known limit: rare wrong picks when a series names volumes by edition (*Death Note* →
   *Black Edition, Volume 6*).
-- **Cover:** newest modern edition (year ≥2000, then cover id) in the language whose title
-  matches the chosen title → any edition in the language → newest English edition → work
-  cover. Rejected: audio, CD, braille, eBook formats; covers not upright (width/height
-  0.55–0.8, e.g. square crops), under 180 px wide; library scans (`ocaid` + `ia:`/`promise:`
-  source) under 700 px wide (stickers, page scans). Shapes from covers metadata dump.
+- **Cover:** the best edition cover in the language, else in English, else the work cover.
+  Editions are ranked by known language (labelled or ISBN group) → major publisher (≥2000
+  editions in the dump) → not a library scan → edition title matches the chosen title →
+  newest → highest cover id. Publisher scale and the scan flag are what keep canonical
+  jackets (Penguin, Scholastic, Everyman's) ahead of knockoff reprints and photographs of
+  blank boards. Rejected: print-on-demand and public-domain reprint publishers (Book on
+  Demand, CreateSpace, ValdeBooks, Kessinger, Echo Library …), non-Latin
+  and foreign-language edition titles, audio, CD, braille, eBook formats; covers not
+  upright (width/height 0.55–0.8, e.g. square crops), under 180 px wide; library scans
+  (`ocaid` + `ia:`/`promise:` source) under 700 px wide (stickers, page scans). Shapes
+  from covers metadata dump.
 - **Core:** top-ranked works regardless of genre or audience; other packs get the rest.
   Filled to 3 MB with full descriptions, so English holds ~14.4k works, others 20k.
 - **Description:** kept when detected in the language and the score is ≥400.

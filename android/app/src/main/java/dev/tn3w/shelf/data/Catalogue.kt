@@ -27,7 +27,10 @@ data class Book(
 private val COMPANION =
     Regex(
         "box(ed)? set|collection set|books? collection|\\d ?books? set|" +
-            "\\(series\\)|\\d\\s*-\\s*\\d set|omnibus|" +
+            "\\(series\\)|\\b\\d{1,2}\\s*[-–]\\s*\\d{1,2}\\b|omnibus|slipcase|" +
+            "complete (series|collection|novels|saga|works)|collected (works|novels)|" +
+            "trilogy|tetralogy|trilogie|gesamtausgabe|gesamtwerk|sammelband|" +
+            "coffret|int[ée]grale|estuche|obras completas|colecci[óo]n completa|" +
             "colou?ring book|activity book|sticker|annual \\d{4}|calendar|planner|" +
             "study guide|sparknotes|cliffs ?notes|summary of|analysis of|quiz|trivia|" +
             "unofficial|companion|movie storybook|the making of|selections from|" +

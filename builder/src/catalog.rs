@@ -21,7 +21,6 @@ pub type Merged = [bool; PACKS.len()];
 const KIDS_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
 pub const DESCRIPTION_MIN_SCORE: f32 = 400.0;
 
-const MODERN_YEAR: u16 = 2000;
 const MIN_SCORE: f32 = 150.0;
 const FOREIGN_TITLE_WORDS: usize = 3;
 const DESCRIPTION_LIMIT: usize = 480;
@@ -95,6 +94,45 @@ const BAD_SUBJECTS: &[&str] = &[
 const VOLUME_MARKERS: &[&str] = &[
     "no", "nos", "v", "vol", "volume", "bk", "book", "part", "pt", "band", "tome",
     "issue",
+];
+
+const COLLECTION_MARKERS: &[&str] = &[
+    "box set",
+    "boxed set",
+    "box-set",
+    "slipcase",
+    "omnibus",
+    "bind-up",
+    "complete series",
+    "complete collection",
+    "complete novels",
+    "complete saga",
+    "complete works",
+    "collected works",
+    "collected novels",
+    "books collection",
+    "book collection",
+    "book set",
+    "books set",
+    "volume set",
+    "volumes set",
+    "trilogy",
+    "tetralogy",
+    "quartet set",
+    "schuber",
+    "sammelband",
+    "gesamtausgabe",
+    "gesamtwerk",
+    "gesamtausgaben",
+    "trilogie",
+    "coffret",
+    "intégrale",
+    "integrale",
+    "estuche",
+    "colección completa",
+    "obras completas",
+    "œuvres complètes",
+    "oeuvres completes",
 ];
 
 const GENERIC_SERIES: &[&str] = &[
@@ -192,9 +230,34 @@ pub fn score(traits: &Traits, facts: &Facts, signal: &Signal, language: usize) -
 
 pub fn is_bad_title(title: &str) -> bool {
     let lowered = title.to_ascii_lowercase();
-    BAD_TITLE_PREFIXES
+    let listed = BAD_TITLE_PREFIXES
         .iter()
-        .any(|prefix| lowered.starts_with(prefix))
+        .any(|prefix| lowered.starts_with(prefix));
+    listed || is_collection_title(&lowered)
+}
+
+fn is_collection_title(lowered: &str) -> bool {
+    COLLECTION_MARKERS
+        .iter()
+        .any(|marker| lowered.contains(marker))
+        || has_volume_range(lowered)
+}
+
+fn is_volume_range(token: &str) -> bool {
+    let Some((first, last)) = token.split_once(['-', '–', '—']) else {
+        return false;
+    };
+    let bounds = first.parse::<u16>().ok().zip(last.parse::<u16>().ok());
+    bounds.is_some_and(|(first, last)| {
+        first >= 1 && last > first && last <= MAX_SERIES_MEMBERS as u16
+    })
+}
+
+fn has_volume_range(title: &str) -> bool {
+    let compact: String = title.chars().filter(|c| !c.is_whitespace()).collect();
+    compact
+        .split(|c: char| !c.is_ascii_digit() && !matches!(c, '-' | '–' | '—'))
+        .any(is_volume_range)
 }
 
 pub fn is_bad_subject(subject: &str) -> bool {
@@ -600,35 +663,56 @@ pub struct Entry {
     local_title: bool,
 }
 
-fn newest_cover(records: &[&TitleRecord], titles: &Titles, title: Option<&str>) -> u32 {
-    let key = title.map(|title| title_key(title, &[]));
+fn cover_records<'a>(
+    records: impl Iterator<Item = &'a TitleRecord>,
+    titles: &Titles,
+    language: usize,
+) -> Vec<&'a TitleRecord> {
+    records
+        .filter(|record| record.cover > 0)
+        .filter(|record| record.language as usize == language)
+        .filter(|record| !record.print_on_demand)
+        .filter(|record| is_mostly_latin(titles.title(record)))
+        .filter(|record| !is_foreign_title(titles.title(record), language))
+        .collect()
+}
+
+fn cover_rank(
+    record: &TitleRecord,
+    titles: &Titles,
+    title: &str,
+) -> (bool, bool, bool, bool, u16, u32) {
+    (
+        record.known_language,
+        titles.major_publisher(record),
+        !record.scanned,
+        title_key(titles.title(record), &[]) == title_key(title, &[]),
+        record.year,
+        record.cover,
+    )
+}
+
+fn best_cover(records: &[&TitleRecord], titles: &Titles, title: &str) -> u32 {
     records
         .iter()
-        .filter(|record| record.cover > 0 && record.year >= MODERN_YEAR)
-        .filter(|record| {
-            key.as_ref()
-                .is_none_or(|key| title_key(titles.title(record), &[]) == *key)
-        })
-        .max_by_key(|record| (record.year, record.cover))
+        .max_by_key(|record| cover_rank(record, titles, title))
         .map_or(0, |record| record.cover)
 }
 
 fn cover_of(
-    book: &Book,
+    fallback: u32,
     in_language: &[&TitleRecord],
+    records: &[&TitleRecord],
     titles: &Titles,
     title: &str,
+    language: usize,
 ) -> u32 {
-    let records = titles.of(book.work);
-    let english: Vec<&TitleRecord> = records
-        .iter()
-        .filter(|record| record.language == 0)
-        .collect();
+    let local = cover_records(in_language.iter().copied(), titles, language);
+    let english = cover_records(records.iter().copied(), titles, 0);
     [
-        newest_cover(in_language, titles, Some(title)),
-        newest_cover(in_language, titles, None),
-        newest_cover(&english, titles, None),
-        book.cover,
+        best_cover(&local, titles, title),
+        best_cover(&english, titles, title),
+        fallback,
     ]
     .into_iter()
     .find(|&cover| cover > 0)
@@ -636,13 +720,18 @@ fn cover_of(
 }
 
 fn resolve(index: usize, book: &Book, titles: &Titles, language: usize) -> Entry {
-    let records = titles.of(book.work);
+    let records: Vec<&TitleRecord> = titles
+        .of(book.work)
+        .iter()
+        .filter(|record| !is_bad_title(titles.title(record)))
+        .collect();
     let in_language: Vec<&TitleRecord> = records
         .iter()
+        .copied()
         .filter(|record| record.language as usize == language)
         .filter(|record| !is_foreign_title(titles.title(record), language))
         .collect();
-    let everywhere: Vec<&TitleRecord> = records.iter().collect();
+    let everywhere: Vec<&TitleRecord> = records.clone();
     let (series, series_position) = choose_series(&in_language, titles);
     let (franchise, _) = choose_series(&everywhere, titles);
     let voters = if in_language.is_empty() {
@@ -663,7 +752,14 @@ fn resolve(index: usize, book: &Book, titles: &Titles, language: usize) -> Entry
     }
     Entry {
         book: index,
-        cover: cover_of(book, &in_language, titles, &title),
+        cover: cover_of(
+            book.cover,
+            &in_language,
+            &records,
+            titles,
+            &title,
+            language,
+        ),
         title,
         alternate,
         series,
@@ -690,6 +786,9 @@ pub fn candidates(
                 return None;
             }
             let entry = resolve(index, book, titles, language);
+            if is_bad_title(&entry.title) {
+                return None;
+            }
             (entry.local_title || sticky.is_some()).then_some(Entry { sticky, ..entry })
         })
         .collect();
@@ -875,4 +974,33 @@ fn group_series(chosen: &mut [Chosen]) -> Vec<Series> {
         }
     }
     series
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn collections_rejected() {
+        for title in [
+            "Harry Potter 1-7",
+            "Harry Potter Boxed Set",
+            "Die Tribute von Panem. Gesamtausgabe",
+            "The Lord of the Rings Trilogy",
+            "Twilight Saga Complete Collection",
+            "Sherlock Holmes 1-4",
+        ] {
+            assert!(is_bad_title(title), "{title}");
+        }
+        for title in [
+            "Catch-22",
+            "Nineteen Eighty-Four",
+            "Europe 1914-1918",
+            "Brave New World",
+            "Harry Potter and the Goblet of Fire",
+            "Volume One",
+        ] {
+            assert!(!is_bad_title(title), "{title}");
+        }
+    }
 }
