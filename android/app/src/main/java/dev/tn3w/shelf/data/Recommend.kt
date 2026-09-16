@@ -1,31 +1,41 @@
 package dev.tn3w.shelf.data
 
+import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.sqrt
 
 private val SHELF_WEIGHT =
-    mapOf(Shelf.Read to 0.8, Shelf.Reading to 0.9, Shelf.Want to 0.5)
-private val KIDS_TAGS = setOf("childrens", "picture-book", "middle-grade")
+    mapOf(Shelf.Read to 0.8, Shelf.Reading to 1.0, Shelf.Want to 0.5)
 private val FORM_TAGS = setOf("fiction", "nonfiction")
+private val AUDIENCE_TAGS =
+    setOf("picture-book", "childrens", "middle-grade", "young-adult")
 private val ARTICLES = setOf("the", "a", "an", "der", "die", "das", "le", "la", "el")
-private const val POSTINGS_PER_TAG = 4000
-private const val PROFILE_TAGS = 8
+private const val SOURCES = 6
+private const val MIN_SHARED = 200
+private const val PER_TAG = 1500
+private const val AUTHOR_DEPTH = 40
 private const val MAX_PER_AUTHOR = 2
+private const val ADULT = 4
 
 private typealias Vector = Map<Int, Double>
 
 private data class TitleKey(val key: String, val author: String)
 
+private class Source(val book: Book, val vector: Vector, val weight: Double)
+
 private class Profile(
-    val tags: Map<Int, Double>,
-    val kidsShare: Double,
+    val tags: Vector,
+    val audience: Double,
     val fictionShare: Double,
     val seen: Set<TitleKey>,
     val library: Set<Int>,
-    val liked: List<Pair<Book, Vector>>,
+    val hidden: Set<Int>,
+    val sources: List<Source>,
 )
 
 private class Scored(val score: Double, val work: Int, val vector: Vector)
+
+class Suggestion(val book: Book, val because: Book?)
 
 private fun titleKey(book: Book): TitleKey {
     val tokens = tokenize(mainTitle(book.title))
@@ -51,146 +61,205 @@ class Recommender(private val catalogue: Catalogue) {
     }
 
     private fun tagVector(tags: List<Int>): Vector =
-        tags.withIndex().associate { (index, tag) ->
-            val confidence = 1.0 / (1.0 + 0.15 * index)
-            val weight = if (slug[tag] in FORM_TAGS) 0.25 else 1.0
-            tag to (idf[tag] ?: 0.0) * confidence * weight
+        tags
+            .filter { slug[it] !in AUDIENCE_TAGS }
+            .withIndex()
+            .associate { (index, tag) ->
+                val confidence = 1.0 / (1.0 + 0.15 * index)
+                val weight = if (slug[tag] in FORM_TAGS) 0.25 else 1.0
+                tag to (idf[tag] ?: 0.0) * confidence * weight
+            }
+
+    private fun audienceOf(slugs: Set<String>) =
+        when {
+            "picture-book" in slugs -> 0
+            "young-adult" in slugs -> 3
+            "middle-grade" in slugs -> 2
+            "childrens" in slugs -> 1
+            else -> ADULT
         }
 
-    private fun buildProfile(entries: List<Saved>): Profile {
+    private fun buildProfile(entries: List<Saved>, hidden: Set<Int>): Profile {
         val tags = mutableMapOf<Int, Double>()
-        var kids = 0.0
+        var audience = 0.0
         var fiction = 0.0
         var weights = 0.0
-        val liked = mutableListOf<Pair<Book, Vector>>()
+        val candidates = mutableListOf<Source>()
         for (entry in entries) {
             val book = catalogue.book(entry.work) ?: continue
             val weight = SHELF_WEIGHT.getValue(entry.shelf)
             val vector = tagVector(book.tags)
+            if (vector.isEmpty()) continue
             vector.forEach { (tag, value) ->
                 tags.merge(tag, weight * value, Double::plus)
             }
             val slugs = book.tags.mapNotNull(slug::get).toSet()
             weights += weight
-            if (slugs.any { it in KIDS_TAGS }) kids += weight
+            audience += weight * audienceOf(slugs)
             if ("fiction" in slugs) fiction += weight
-            liked += book to vector
+            candidates += Source(book, vector, weight)
         }
         val norm = tags.norm()
         return Profile(
             tags = tags.mapValues { it.value / norm },
-            kidsShare = if (weights > 0) kids / weights else 0.0,
+            audience = if (weights > 0) audience / weights else ADULT.toDouble(),
             fictionShare = if (weights > 0) fiction / weights else 0.5,
-            seen = liked.map { titleKey(it.first) }.toSet(),
+            seen = candidates.map { titleKey(it.book) }.toSet(),
             library = entries.map { it.work }.toSet(),
-            liked = liked,
+            hidden = hidden,
+            sources = pickSources(candidates),
         )
     }
 
-    private fun retrieve(profile: Profile): Set<Int> {
-        fun strength(tag: Int) =
-            profile.tags.getValue(tag) * if (slug[tag] in FORM_TAGS) 0.2 else 1.0
-        val candidates = mutableSetOf<Int>()
-        profile.tags.keys
-            .sortedByDescending(::strength)
-            .take(PROFILE_TAGS)
-            .forEachIndexed { rank, tag ->
-                val depth = POSTINGS_PER_TAG / (1 + rank / 3)
-                candidates +=
-                    catalogue
-                        .tagWorks(tag)
-                        .sortedByDescending(catalogue::score)
-                        .take(depth)
+    private fun pickSources(candidates: List<Source>): List<Source> {
+        val pool = candidates.sortedByDescending { it.weight }.toMutableList()
+        val chosen = mutableListOf<Source>()
+        while (pool.isNotEmpty() && chosen.size < SOURCES) {
+            val best = pool.maxBy { source ->
+                val redundancy =
+                    chosen.maxOfOrNull { overlap(source.vector, it.vector) } ?: 0.0
+                source.weight - 0.8 * redundancy
             }
-        profile.liked
-            .flatMap { it.first.authors }
-            .distinct()
-            .forEach {
-                candidates += catalogue.authorWorks(it).take(60)
-            }
-        return candidates - profile.library
+            pool.remove(best)
+            chosen += best
+        }
+        return chosen
     }
 
-    private fun audienceFit(profile: Profile, slugs: Set<String>): Double {
-        val isKids = slugs.any { it in KIDS_TAGS }
-        if (isKids && profile.kidsShare < 0.2) return 0.15
-        if (!isKids && profile.kidsShare > 0.7)
-            return if ("young-adult" in slugs) 0.7 else 0.35
-        return 1.0
+    private fun retrieve(source: Source): Set<Int> {
+        val tags =
+            source.vector.keys
+                .filter { slug[it] !in FORM_TAGS }
+                .sortedByDescending { source.vector.getValue(it) }
+        val works = mutableSetOf<Int>()
+        if (tags.isNotEmpty()) works += catalogue.topWorks(narrow(tags), PER_TAG)
+        source.book.authors.forEach {
+            works += catalogue.authorWorks(it).take(AUTHOR_DEPTH)
+        }
+        return works
     }
+
+    private fun narrow(tags: List<Int>): IntArray {
+        val pool = catalogue.tagWorks(tags[0])
+        val second = tags.getOrNull(1) ?: return pool
+        val members = catalogue.tagWorks(second).toHashSet()
+        val shared = pool.filter { it in members }
+        return if (shared.size < MIN_SHARED) pool else shared.toIntArray()
+    }
+
+    private fun audienceFit(profile: Profile, slugs: Set<String>) =
+        1.0 / (1.0 + 0.5 * abs(audienceOf(slugs) - profile.audience))
 
     private fun formFit(profile: Profile, slugs: Set<String>): Double {
-        if ("fiction" in slugs && profile.fictionShare < 0.15) return 0.5
-        if ("fiction" !in slugs && profile.fictionShare > 0.85) return 0.6
-        return 1.0
+        val fiction = if ("fiction" in slugs) 1.0 else 0.0
+        return 1.0 - 0.45 * abs(fiction - profile.fictionShare)
     }
 
     private fun quality(work: Int): Double {
         val popularity = catalogue.ranks?.popularity(work)
         val ratings = popularity?.ratings ?: 0
         val mean = (8 * 3.8 + (popularity?.rating ?: 0.0) * ratings) / (8 + ratings)
-        return 0.55 * catalogue.popularity(work) + 0.45 * (mean - 3.0) / 2.0
+        return 0.5 * catalogue.popularity(work) + 0.5 * (mean - 3.0) / 2.0
     }
 
-    private fun score(profile: Profile, work: Int): Scored? {
+    private fun score(profile: Profile, source: Source, work: Int): Scored? {
         val facts = catalogue.facts(work) ?: return null
         val tags = facts.tags.toList()
         val vector = tagVector(tags)
-        if (vector.isEmpty()) return null
-        val similarity =
+        if (vector.keys.none { slug[it] !in FORM_TAGS }) return null
+        val neighbour = overlap(vector, source.vector)
+        if (neighbour <= 0.2) return null
+        val general =
             vector.entries.sumOf { (profile.tags[it.key] ?: 0.0) * it.value } /
                 vector.norm()
-        if (similarity <= 0.05) return null
         val slugs = tags.mapNotNull(slug::get).toSet()
         val fit = audienceFit(profile, slugs) * formFit(profile, slugs)
-        return Scored((0.62 * similarity + 0.30 * quality(work)) * fit, work, vector)
+        val value = 0.55 * neighbour + 0.25 * general + 0.20 * quality(work)
+        return Scored(value * fit, work, vector)
     }
 
-    private fun diversify(
-        profile: Profile,
-        scored: List<Scored>,
-        limit: Int,
-    ): List<Book> {
-        val chosen = mutableListOf<Book>()
-        val perAuthor = mutableMapOf<String, Int>()
-        val vectors = mutableListOf<Vector>()
-        val pool = scored.take(limit * 12).toMutableList()
-        val titles = profile.seen.toMutableSet()
-        while (pool.isNotEmpty() && chosen.size < limit) {
-            val best = pool.maxBy { candidate ->
-                val redundancy =
-                    vectors.maxOfOrNull { overlap(candidate.vector, it) } ?: 0.0
-                candidate.score - 0.18 * redundancy
-            }
-            pool.remove(best)
-            val book = catalogue.book(seriesStart(best.work, profile.library)) ?: continue
+    private inner class Picker(
+        private val library: Set<Int> = emptySet(),
+        private val hidden: Set<Int> = emptySet(),
+        seen: Set<TitleKey> = emptySet(),
+    ) {
+        private val titles = seen.toMutableSet()
+        private val series = mutableSetOf<String>()
+        private val perAuthor = mutableMapOf<String, Int>()
+
+        fun accept(work: Int): Book? {
+            val book = catalogue.book(nextVolume(work, library)) ?: return null
+            if (book.isCompanion || book.work in library || book.work in hidden)
+                return null
+            val name = catalogue.series(book.work)?.name
+            if (name != null && name in series) return null
             val count = perAuthor[book.author] ?: 0
-            if (count >= MAX_PER_AUTHOR || !titles.add(titleKey(book))) continue
+            if (count >= MAX_PER_AUTHOR || !titles.add(titleKey(book))) return null
+            if (name != null) series += name
             perAuthor[book.author] = count + 1
-            vectors += best.vector
-            chosen += book
+            return book
+        }
+    }
+
+    private fun interleave(
+        profile: Profile,
+        ranked: List<List<Scored>>,
+        limit: Int,
+    ): List<Suggestion> {
+        val picker = Picker(profile.library, profile.hidden, profile.seen)
+        val cursors = IntArray(ranked.size)
+        val chosen = mutableListOf<Suggestion>()
+        while (chosen.size < limit) {
+            var added = false
+            for (index in ranked.indices) {
+                if (chosen.size >= limit) break
+                val book = advance(ranked[index], cursors, index, picker) ?: continue
+                chosen += Suggestion(book, profile.sources[index].book)
+                added = true
+            }
+            if (!added) break
         }
         return chosen
     }
 
-    private fun seriesStart(work: Int, library: Set<Int>): Int {
-        val members = catalogue.series(work)?.members ?: return work
-        if (members.any { it in library }) return work
-        return members.firstOrNull { catalogue.locate(it) != null } ?: work
+    private fun advance(
+        list: List<Scored>,
+        cursors: IntArray,
+        index: Int,
+        picker: Picker,
+    ): Book? {
+        while (cursors[index] < list.size) {
+            picker.accept(list[cursors[index]++].work)?.let {
+                return it
+            }
+        }
+        return null
     }
 
-    fun recommend(entries: List<Saved>, limit: Int = 20): List<Book> {
-        val profile = buildProfile(entries)
-        if (profile.liked.isEmpty()) return popular(limit)
-        val scored =
-            retrieve(profile)
-                .mapNotNull { score(profile, it) }
+    private fun nextVolume(work: Int, library: Set<Int>): Int {
+        val members = catalogue.series(work)?.members ?: return work
+        val unread = members.filter { it !in library && catalogue.locate(it) != null }
+        return unread.firstOrNull() ?: work
+    }
+
+    fun suggest(
+        entries: List<Saved>,
+        limit: Int = 20,
+        hidden: Set<Int> = emptySet(),
+    ): List<Suggestion> {
+        val profile = buildProfile(entries, hidden)
+        if (profile.sources.isEmpty()) return popular(limit).map { Suggestion(it, null) }
+        val ranked = profile.sources.map { source ->
+            retrieve(source)
+                .mapNotNull { score(profile, source, it) }
                 .sortedByDescending { it.score }
-        return diversify(profile, scored, limit)
+                .take(limit * 4)
+        }
+        return interleave(profile, ranked, limit)
     }
 
     fun similar(book: Book, limit: Int = 12) =
-        recommend(listOf(book.toSaved(Shelf.Read)), limit)
+        suggest(listOf(book.toSaved(Shelf.Read)), limit).map { it.book }
 
     fun series(book: Book): Pair<String, List<Book>>? {
         val series = catalogue.series(book.work) ?: return null
@@ -217,12 +286,21 @@ class Recommender(private val catalogue: Catalogue) {
         return distinct(catalogue.books(works.take(limit * 2)), limit)
     }
 
-    fun popular(limit: Int = 20, tag: Int? = null): List<Book> =
-        distinct(catalogue.books(catalogue.popularWorks(limit * 3, tag)), limit)
+    fun popular(limit: Int = 20, tag: Int? = null): List<Book> {
+        val picker = Picker()
+        return catalogue
+            .popularWorks(limit * 6, tag)
+            .mapNotNull(picker::accept)
+            .take(limit)
+    }
 
     private fun distinct(
         books: List<Book>,
         limit: Int,
         seen: Set<TitleKey> = emptySet(),
-    ) = books.filter { titleKey(it) !in seen }.distinctBy(::titleKey).take(limit)
+    ) =
+        books
+            .filter { titleKey(it) !in seen && !it.isCompanion }
+            .distinctBy(::titleKey)
+            .take(limit)
 }

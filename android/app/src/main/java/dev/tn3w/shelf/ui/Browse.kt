@@ -70,12 +70,14 @@ fun ExploreScreen(navigator: Navigator) {
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { LargeTitle(stringResource(R.string.explore)) }
         item {
-            SectionHeader(
+            BookSection(
                 stringResource(R.string.popular_now),
-                stringResource(R.string.popular_now_subtitle),
+                popular,
+                "popular",
+                navigator::book,
+                subtitle = stringResource(R.string.popular_now_subtitle),
             )
         }
-        item { BookRow(popular, "popular", navigator::book) }
         tags?.get("genre")?.let { genres ->
             item { SectionHeader(stringResource(R.string.genres)) }
             item { GenreGrid(genres, navigator) }

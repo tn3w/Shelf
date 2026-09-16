@@ -134,4 +134,6 @@
         <item quantity="one">Read %d page to start a streak.</item>
         <item quantity="other">Read %d pages to start a streak.</item>
     </plurals>
+    <string name="because_you_read">Because you read %1$s</string>
+    <string name="not_for_me">Not for me</string>
 </resources>

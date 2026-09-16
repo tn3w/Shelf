@@ -21,6 +21,7 @@ private val RECENT = stringPreferencesKey("recent")
 private val PROGRESS = stringPreferencesKey("progress")
 private val ACTIVITY = stringPreferencesKey("activity")
 private val SETTINGS = stringPreferencesKey("settings")
+private val DISMISSED = stringPreferencesKey("dismissed")
 private val json = Json { ignoreUnknownKeys = true }
 
 enum class Shelf {
@@ -111,6 +112,8 @@ class Library(private val context: Context) {
 
     val recentSearches = store.data.map { it.decode(RECENT, emptyList<String>()) }
 
+    val dismissed = store.data.map { it.decode(DISMISSED, emptySet<Int>()) }
+
     val progress = store.data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }
 
     val settings = store.data.map { it.decode(SETTINGS, Settings()) }
@@ -163,40 +166,37 @@ class Library(private val context: Context) {
         return true
     }
 
-    suspend fun place(book: Book, shelf: Shelf?) = store.edit { preferences ->
-        val current =
-            preferences.decode(ENTRIES, emptyList<Saved>()).filter {
-                it.work != book.work
-            }
-        val updated = shelf?.let { current + book.toSaved(it) } ?: current
-        preferences[ENTRIES] = json.encodeToString(updated)
-    }
+    private suspend inline fun <reified T> update(
+        key: Preferences.Key<String>,
+        fallback: T,
+        crossinline change: (T) -> T,
+    ) = store.edit { it[key] = json.encodeToString(change(it.decode(key, fallback))) }
 
-    suspend fun saveProgress(work: Int, progress: Progress) = store.edit { preferences ->
-        val current = preferences.decode(PROGRESS, emptyMap<Int, Progress>())
-        preferences[PROGRESS] = json.encodeToString(current + (work to progress))
-    }
-
-    suspend fun addPages(count: Int) = store.edit { preferences ->
-        val current = preferences.decode(ACTIVITY, emptyMap<String, Int>())
-        val today = LocalDate.now().toString()
-        val pages = (current[today] ?: 0) + count
-        preferences[ACTIVITY] = json.encodeToString(current + (today to pages))
-    }
-
-    suspend fun updateSettings(change: (Settings) -> Settings) =
-        store.edit { preferences ->
-            val updated = change(preferences.decode(SETTINGS, Settings()))
-            preferences[SETTINGS] = json.encodeToString(updated)
+    suspend fun place(book: Book, shelf: Shelf?) =
+        update(ENTRIES, emptyList<Saved>()) { entries ->
+            val others = entries.filter { it.work != book.work }
+            shelf?.let { others + book.toSaved(it) } ?: others
         }
 
-    suspend fun remember(query: String) = store.edit { preferences ->
-        val trimmed = query.trim()
-        val current = preferences.decode(RECENT, emptyList<String>())
-        val updated =
-            (listOf(trimmed) + current.filter { it != trimmed }).take(RECENT_LIMIT)
-        preferences[RECENT] = json.encodeToString(updated)
-    }
+    suspend fun saveProgress(work: Int, progress: Progress) =
+        update(PROGRESS, emptyMap<Int, Progress>()) { it + (work to progress) }
+
+    suspend fun addPages(count: Int) =
+        update(ACTIVITY, emptyMap<String, Int>()) { activity ->
+            val today = LocalDate.now().toString()
+            activity + (today to (activity[today] ?: 0) + count)
+        }
+
+    suspend fun updateSettings(change: (Settings) -> Settings) =
+        update(SETTINGS, Settings(), change)
+
+    suspend fun remember(query: String) =
+        update(RECENT, emptyList<String>()) { recent ->
+            val trimmed = query.trim()
+            (listOf(trimmed) + recent.filter { it != trimmed }).take(RECENT_LIMIT)
+        }
 
     suspend fun clearSearches() = store.edit { it.remove(RECENT) }
+
+    suspend fun dismiss(work: Int) = update(DISMISSED, emptySet<Int>()) { it + work }
 }

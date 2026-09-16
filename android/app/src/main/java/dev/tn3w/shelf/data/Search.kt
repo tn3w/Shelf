@@ -19,6 +19,10 @@ private const val COMBO = 0.5
 private const val AUTHOR = 1.0
 private const val POPULARITY = 0.6
 private const val ALTERNATE = 0.6
+private const val COMPANION_PENALTY = 0.7
+private const val SERIES_START = 0.9
+private const val RELEVANCE_FLOOR = 0.45
+private const val ANCHOR = 0.8
 private val ARTICLE = Regex("^(the|a|an|der|die|das|le|la|les|el|los|las) ")
 private val TITLE_BREAK = Regex("[:;(/]")
 
@@ -35,7 +39,7 @@ private fun withoutArticle(text: String) = text.replaceFirst(ARTICLE, "")
 
 fun mainTitle(title: String) = title.split(TITLE_BREAK).first()
 
-fun editDistance(left: String, right: String, limit: Int): Int {
+private fun editDistance(left: String, right: String, limit: Int): Int {
     if (abs(left.length - right.length) > limit) return limit + 1
     var beforePrevious: IntArray? = null
     var previous = IntArray(right.length + 1) { it }
@@ -175,15 +179,24 @@ class Searcher(private val catalogue: Catalogue) {
         val works = perToken.flatMapTo(HashSet()) { it.scores.keys }
         return works.associateWith { work ->
             var matched = 0
+            var anchors = 0
             var text = 0.0
             for (entry in perToken) {
                 val value = entry.scores[work] ?: continue
                 matched++
+                if (value >= ANCHOR) anchors++
                 text += value * entry.idf
             }
+            if (anchors == 0 && perToken.size > 1) return@associateWith 0.0
             val coverage = matched.toDouble() / perToken.size
             text / totalIdf * coverage * coverage
         }
+    }
+
+    private fun seriesBonus(book: Book, query: String): Double {
+        val series = catalogue.series(book.work) ?: return 0.0
+        if (tokenize(series.name).joinToString(" ") != query) return 0.0
+        return if (series.members.firstOrNull() == book.work) SERIES_START else 0.0
     }
 
     private fun bonus(book: Book, perToken: List<TokenScores>): Double {
@@ -251,14 +264,22 @@ class Searcher(private val catalogue: Catalogue) {
             scored.keys
                 .sortedByDescending { scored.getValue(it) + 0.35 * popularityOf(it) }
                 .take(RERANK_DEPTH)
-        return head
+        val joined = tokens.joinToString(" ")
+        val ranked = head
             .mapNotNull(catalogue::book)
             .map { book ->
-                val base = scored.getValue(book.work) + 0.35 * popularityOf(book.work)
-                book to
-                    base + bonus(book, perToken) + POPULARITY * popularityOf(book.work)
+                val matched =
+                    perToken.count { it.scores.containsKey(book.work) }.toDouble() /
+                        perToken.size
+                val boost = (0.35 + POPULARITY) * popularityOf(book.work) * matched
+                val penalty = if (book.isCompanion) COMPANION_PENALTY else 0.0
+                book to scored.getValue(book.work) + bonus(book, perToken) + boost +
+                    seriesBonus(book, joined) - penalty
             }
             .sortedByDescending { it.second }
+        val best = ranked.firstOrNull()?.second ?: 0.0
+        return ranked
+            .filter { it.second >= RELEVANCE_FLOOR * best }
             .take(limit)
             .map { it.first }
     }

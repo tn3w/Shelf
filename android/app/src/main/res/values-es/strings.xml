@@ -141,4 +141,6 @@
         <item quantity="other">Lee %d páginas para empezar una racha.</item>
         <item quantity="many">Lee %d páginas para empezar una racha.</item>
     </plurals>
+    <string name="because_you_read">Porque leíste %1$s</string>
+    <string name="not_for_me">No es para mí</string>
 </resources>

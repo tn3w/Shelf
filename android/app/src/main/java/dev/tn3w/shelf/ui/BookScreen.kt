@@ -39,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -71,8 +72,8 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                 }
             Details(book, catalogue.description(work), tags)
         }
-    val fallback = saved.firstOrNull { it.work == work }?.toBook()
-    val book = details?.book ?: fallback
+    val entry = saved.firstOrNull { it.work == work }
+    val book = details?.book ?: entry?.toBook()
     val series by load(work) { catalogue.book(work)?.let(recommender::series) }
     val byAuthor by load(work) { catalogue.book(work)?.let(recommender::byAuthor) }
     val similar by load(work) { catalogue.book(work)?.let(recommender::similar) }
@@ -80,7 +81,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { BackBar(navigator::back) }
         if (book == null) return@LazyColumn
-        item { BookHeader(book, origin, navigator) }
+        item { BookHeader(book, entry?.shelf, origin, navigator) }
         details
             ?.tags
             ?.takeIf { it.isNotEmpty() }
@@ -98,48 +99,63 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
             ?.takeIf { it.second.size > 1 }
             ?.let { (name, books) ->
                 item {
-                    SectionHeader(
+                    BookSection(
                         name,
-                        pluralStringResource(
-                            R.plurals.books_in_series,
-                            books.size,
-                            books.size,
-                        ),
+                        books,
+                        "series",
+                        navigator::book,
+                        subtitle =
+                            pluralStringResource(
+                                R.plurals.books_in_series,
+                                books.size,
+                                books.size,
+                            ),
+                        shared = false,
                     )
                 }
-                item { BookRow(books, "series", navigator::book, shared = false) }
             }
         byAuthor
             ?.takeIf { it.isNotEmpty() }
             ?.let { books ->
                 val author = book.authors.first()
                 item {
-                    SectionHeader(
+                    BookSection(
                         stringResource(R.string.more_by, author.name),
-                        onMore = {
-                            navigator.author(author)
-                        },
+                        books,
+                        "author",
+                        navigator::book,
+                        onMore = { navigator.author(author) },
+                        shared = false,
                     )
                 }
-                item { BookRow(books, "author", navigator::book, shared = false) }
             }
         similar
             ?.takeIf { it.isNotEmpty() }
             ?.let { books ->
-                item { SectionHeader(stringResource(R.string.similar)) }
-                item { BookRow(books, "similar", navigator::book, shared = false) }
+                item {
+                    BookSection(
+                        stringResource(R.string.similar),
+                        books,
+                        "similar",
+                        navigator::book,
+                        shared = false,
+                    )
+                }
             }
         item { Box(Modifier.height(24.dp)) }
     }
 }
 
 @Composable
-private fun BookHeader(book: Book, origin: String, navigator: Navigator) {
+private fun BookHeader(
+    book: Book,
+    shelf: Shelf?,
+    origin: String,
+    navigator: Navigator,
+) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
-    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
-    val shelf = saved.firstOrNull { it.work == book.work }?.shelf
     val position = progress[book.work]
     val unsupported = stringResource(R.string.unsupported_file)
     fun place(target: Shelf) = scope.launch {
@@ -234,14 +250,13 @@ private fun ShelfToggle(
     checked: Boolean,
     label: Int,
     onToggle: () -> Unit,
-    icon: (Boolean) -> androidx.compose.ui.graphics.vector.ImageVector,
+    icon: (Boolean) -> ImageVector,
 ) {
     FilledTonalIconToggleButton(checked = checked, onCheckedChange = { onToggle() }) {
         Icon(icon(checked), contentDescription = stringResource(label))
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun facts(book: Book): String {
     val popularity = book.popularity

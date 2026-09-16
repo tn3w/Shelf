@@ -130,18 +130,21 @@ private fun split(blocks: List<Block>): List<List<Block>> {
     return parts
 }
 
+private fun titled(blocks: List<Block>) =
+    blocks.firstOrNull { it.heading in 1..2 }?.text to blocks
+
 private fun byHeadings(blocks: List<Block>): TextDocument {
     val parts = mutableListOf<Pair<String?, List<Block>>>()
     var current = mutableListOf<Block>()
     for (block in blocks) {
         val starts = block.heading in 1..2 && current.any { it.heading == 0 }
         if (starts) {
-            parts += current.firstOrNull { it.heading in 1..2 }?.text to current
+            parts += titled(current)
             current = mutableListOf()
         }
         current += block
     }
-    parts += current.firstOrNull { it.heading in 1..2 }?.text to current
+    parts += titled(current)
     return assemble(parts)
 }
 

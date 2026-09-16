@@ -24,7 +24,6 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -142,11 +141,8 @@ private fun SearchField(query: String, onChange: (String) -> Unit, onSubmit: () 
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isEmpty()) return@TextField
-            IconButton(onClick = { onChange("") }) {
-                Icon(
-                    Icons.Outlined.Close,
-                    contentDescription = stringResource(R.string.clear),
-                )
+            IconAction(Icons.Outlined.Close, stringResource(R.string.clear)) {
+                onChange("")
             }
         },
         singleLine = true,

@@ -20,8 +20,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
     }
 
     flavorDimensions += "distribution"
@@ -71,14 +71,6 @@ android {
         includeInApk = false
         includeInBundle = false
     }
-
-    testOptions {
-        unitTests.all {
-            val directory = layout.buildDirectory.dir("testCatalogue").get().asFile
-            it.systemProperty("catalogue", directory.absolutePath)
-            it.dependsOn("downloadTestCatalogue")
-        }
-    }
 }
 
 abstract class DownloadCatalogue : DefaultTask() {
@@ -122,12 +114,6 @@ val downloadCatalogue = tasks.register<DownloadCatalogue>("downloadCatalogue") {
     output = layout.buildDirectory.dir("generated/catalogue")
 }
 
-tasks.register<DownloadCatalogue>("downloadTestCatalogue") {
-    release = catalogueRelease
-    filter = listOf("en-.*", "de-.*")
-    output = layout.buildDirectory.dir("testCatalogue")
-}
-
 androidComponents.onVariants { variant ->
     variant.sources.assets?.addGeneratedSourceDirectory(
         downloadCatalogue,
@@ -149,5 +135,4 @@ dependencies {
     implementation(libs.coil.network)
     implementation(libs.jsoup)
     debugImplementation(libs.compose.tooling)
-    testImplementation(libs.junit)
 }

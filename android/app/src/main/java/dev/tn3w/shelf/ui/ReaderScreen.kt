@@ -33,8 +33,6 @@ import androidx.compose.material.icons.outlined.TextDecrease
 import androidx.compose.material.icons.outlined.TextIncrease
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
@@ -461,9 +459,11 @@ private fun ReaderTopBar(state: ReaderState, onChapters: (() -> Unit)?) {
             Modifier.fillMaxWidth().padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { state.navigator.back() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-            }
+            IconAction(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                stringResource(R.string.back),
+                state.navigator::back,
+            )
             Text(
                 state.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -471,25 +471,21 @@ private fun ReaderTopBar(state: ReaderState, onChapters: (() -> Unit)?) {
                 modifier = Modifier.weight(1f),
             )
             onChapters?.let {
-                IconButton(onClick = it) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.List,
-                        stringResource(R.string.contents),
-                    )
-                }
+                val contents = Icons.AutoMirrored.Outlined.List
+                IconAction(contents, stringResource(R.string.contents), it)
             }
             state.onFontScale?.let { change ->
-                IconButton(onClick = { change(-0.1f) }) {
-                    Icon(
-                        Icons.Outlined.TextDecrease,
-                        stringResource(R.string.smaller_text),
-                    )
+                IconAction(
+                    Icons.Outlined.TextDecrease,
+                    stringResource(R.string.smaller_text),
+                ) {
+                    change(-0.1f)
                 }
-                IconButton(onClick = { change(0.1f) }) {
-                    Icon(
-                        Icons.Outlined.TextIncrease,
-                        stringResource(R.string.larger_text),
-                    )
+                IconAction(
+                    Icons.Outlined.TextIncrease,
+                    stringResource(R.string.larger_text),
+                ) {
+                    change(0.1f)
                 }
             }
         }

@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.data
 
 import java.util.BitSet
+import java.util.PriorityQueue
 import kotlin.math.ln
 
 data class Author(val number: Int, val name: String)
@@ -19,9 +20,23 @@ data class Book(
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
 
-    fun coverUrl(size: String = "M") =
+    fun coverUrl(size: String) =
         if (cover == 0) null else "https://covers.openlibrary.org/b/id/$cover-$size.jpg"
 }
+
+private val COMPANION =
+    Regex(
+        "box(ed)? set|collection set|books? collection|\\d ?books? set|" +
+            "\\(series\\)|\\d\\s*-\\s*\\d set|omnibus|" +
+            "colou?ring book|activity book|sticker|annual \\d{4}|calendar|planner|" +
+            "study guide|sparknotes|cliffs ?notes|summary of|analysis of|quiz|trivia|" +
+            "unofficial|companion|movie storybook|the making of|selections from|" +
+            "big book|adventure game|lesson plan",
+        RegexOption.IGNORE_CASE,
+    )
+
+val Book.isCompanion
+    get() = COMPANION.containsMatchIn("$title $subtitle")
 
 data class Tag(val id: Int, val slug: String, val label: String, val category: String)
 
@@ -29,10 +44,16 @@ data class Series(val name: String, val members: List<Int>)
 
 data class Location(val segment: Segment, val local: Int)
 
+private class Scores(val works: IntArray, val values: FloatArray) {
+    fun of(work: Int): Double {
+        val at = works.binarySearch(work)
+        return if (at < 0) 0.0 else values[at].toDouble()
+    }
+}
+
 class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ranks?) {
     private val visible = visibility(segments)
-    val month = (segments.map { it.month } + listOfNotNull(ranks?.month))
-        .maxWithOrNull(releaseOrder)
+    private val order = segments.withIndex().associate { (index, it) -> it to index }
     val workCount = visible.sumOf { it.cardinality() }
     val tags =
         segments.firstOrNull()?.tags.orEmpty().map {
@@ -49,9 +70,10 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         tags.associate { tag -> tag.id to segments.sumOf { it.tagCount(tag.id) } }
     }
 
-    fun isVisible(segment: Segment, local: Int) = visible[indexOf(segment)].get(local)
-
-    private fun indexOf(segment: Segment) = segments.indexOf(segment)
+    private val scores by lazy {
+        val works = allWorks()
+        Scores(works, FloatArray(works.size) { rawScore(works[it]).toFloat() })
+    }
 
     fun locate(work: Int): Location? {
         for (index in segments.indices.reversed()) {
@@ -63,7 +85,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         return null
     }
 
-    fun score(work: Int) = ranks?.popularity(work)?.score ?: 0.0
+    private fun rawScore(work: Int) = ranks?.popularity(work)?.score ?: 0.0
+
+    fun score(work: Int) = scores.of(work)
 
     fun popularity(work: Int) = ln(1 + score(work)) / ln(1 + maxScore)
 
@@ -106,22 +130,48 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         return Series(record.name, record.members.toList())
     }
 
-    fun visibleWorks(segment: Segment, locals: IntArray): List<Int> {
-        val bits = visible[indexOf(segment)]
-        return locals.filter { bits.get(it) }.map(segment::work)
+    fun visibleWorks(segment: Segment, locals: IntArray): IntArray {
+        val bits = visible[order.getValue(segment)]
+        val result = IntArrayList()
+        locals.forEach { if (bits.get(it)) result.add(segment.work(it)) }
+        return result.toArray()
     }
 
-    fun tagWorks(tag: Int) = segments.flatMap { visibleWorks(it, it.tagWorks(tag)) }
-
-    fun popularWorks(limit: Int, tag: Int? = null): List<Int> {
-        val candidates = if (tag == null) coreWorks() else tagWorks(tag)
-        return candidates.sortedByDescending(::score).take(limit)
+    fun tagWorks(tag: Int): IntArray {
+        val result = IntArrayList()
+        segments.forEach { segment ->
+            visibleWorks(segment, segment.tagWorks(tag)).forEach(result::add)
+        }
+        return result.toArray()
     }
 
-    private fun coreWorks() =
-        segments
-            .filter { it.pack == "core" }
-            .flatMap { visibleWorks(it, IntArray(it.workCount) { local -> local }) }
+    fun popularWorks(limit: Int, tag: Int? = null) =
+        topWorks(if (tag == null) scores.works else tagWorks(tag), limit)
+
+    fun topWorks(works: IntArray, limit: Int): List<Int> {
+        if (limit <= 0) return emptyList()
+        val heap = PriorityQueue<Int>(limit) { left, right ->
+            score(left).compareTo(score(right))
+        }
+        for (work in works) {
+            heap.add(work)
+            if (heap.size > limit) heap.poll()
+        }
+        return heap.sortedByDescending { score(it) }
+    }
+
+    private fun allWorks(): IntArray {
+        val result = IntArrayList()
+        segments.forEachIndexed { index, segment ->
+            val bits = visible[index]
+            var local = bits.nextSetBit(0)
+            while (local >= 0) {
+                result.add(segment.work(local))
+                local = bits.nextSetBit(local + 1)
+            }
+        }
+        return result.toArray().also { it.sort() }
+    }
 
     fun authorWorks(author: Author): List<Int> {
         val token = tokenize(author.name).maxByOrNull { it.length } ?: return emptyList()
@@ -131,7 +181,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
                 slots
                     .map(segment::author)
                     .filter { it.number == author.number }
-                    .flatMap { visibleWorks(segment, it.works) }
+                    .flatMap { visibleWorks(segment, it.works).toList() }
             }
             .distinct()
     }

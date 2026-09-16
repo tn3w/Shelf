@@ -5,7 +5,6 @@ import android.os.LocaleList
 import dev.tn3w.shelf.data.Catalogue
 import dev.tn3w.shelf.data.LANGUAGES
 import dev.tn3w.shelf.data.Library
-import dev.tn3w.shelf.data.PackState
 import dev.tn3w.shelf.data.Packs
 import dev.tn3w.shelf.data.Recommender
 import dev.tn3w.shelf.data.Searcher
@@ -103,7 +102,7 @@ class ShelfApp : Application() {
             }
         library.updateSettings { it.copy(lastCatalogueCheck = now) }
         val language = settings.language
-        val updates = packs.packs(language).filter { it.state == PackState.Update }
+        val updates = packs.pendingUpdates(language)
         val small = updates.sumOf { it.bytes } <= AUTOMATIC_UPDATE_BYTES
         if (small) updates.forEach { download(language, it.pack) }
     }

@@ -118,6 +118,11 @@ class Packs(private val context: Context) {
     private fun downloaded() =
         directory.listFiles().orEmpty().mapNotNull { parseName(it.name) }
 
+    private fun binOf(id: String) = directory.resolve("$id.bin")
+
+    private fun deleteAll(files: List<LocalFile>) =
+        files.forEach { binOf(it.id).delete() }
+
     private fun localIds() = (bundled + downloaded()).map { it.id }.toSet()
 
     fun storageBytes() = directory.listFiles().orEmpty().sumOf { it.length() }
@@ -140,9 +145,7 @@ class Packs(private val context: Context) {
             files
                 .filter { it.pack == "ranks" }
                 .maxWithOrNull(compareBy(releaseOrder) { it.month })
-                ?.let {
-                    Ranks(it.id, map(it))
-                }
+                ?.let { Ranks(map(it)) }
         return Catalogue(language, segments, ranks)
     }
 
@@ -155,10 +158,10 @@ class Packs(private val context: Context) {
         }
     }
 
-    private fun open(file: LocalFile) = Segment(file.id, map(file))
+    private fun open(file: LocalFile) = Segment(map(file))
 
     private fun map(file: LocalFile): ByteBuffer {
-        val local = directory.resolve("${file.id}.bin")
+        val local = binOf(file.id)
         if (local.exists()) return mapFile(local)
         val descriptor = context.assets.openFd("${file.id}.bin")
         return FileInputStream(descriptor.fileDescriptor).channel.use {
@@ -190,7 +193,7 @@ class Packs(private val context: Context) {
     }
 
     private fun sizeOf(file: LocalFile): Long {
-        val local = directory.resolve("${file.id}.bin")
+        val local = binOf(file.id)
         if (local.exists()) return local.length()
         return context.assets.openFd("${file.id}.bin").use { it.length }
     }
@@ -221,9 +224,7 @@ class Packs(private val context: Context) {
 
     private fun removeObsolete(manifest: Manifest) {
         val offered = manifest.segments.map { it.language to it.pack }.toSet()
-        downloaded()
-            .filter { it.language to it.pack !in offered }
-            .forEach { directory.resolve("${it.id}.bin").delete() }
+        deleteAll(downloaded().filter { it.language to it.pack !in offered })
     }
 
     fun pendingUpdates(language: String) =
@@ -255,16 +256,15 @@ class Packs(private val context: Context) {
     private fun prune(language: String, entries: List<ManifestEntry>) {
         val keep = entries.map { it.id }.toSet()
         val packs = entries.map { it.pack }.toSet()
-        downloaded()
-            .filter { it.language == language && it.pack in packs && it.id !in keep }
-            .forEach { directory.resolve("${it.id}.bin").delete() }
+        deleteAll(
+            downloaded().filter {
+                it.language == language && it.pack in packs && it.id !in keep
+            }
+        )
     }
 
-    fun remove(language: String, pack: String) {
-        downloaded()
-            .filter { it.language == language && it.pack == pack }
-            .forEach { directory.resolve("${it.id}.bin").delete() }
-    }
+    fun remove(language: String, pack: String) =
+        deleteAll(downloaded().filter { it.language == language && it.pack == pack })
 
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) {
         val temporary = directory.resolve("${entry.id}.part")
@@ -276,7 +276,7 @@ class Packs(private val context: Context) {
             temporary.delete()
             error("checksum mismatch for ${entry.id}")
         }
-        check(temporary.renameTo(directory.resolve("${entry.id}.bin")))
+        check(temporary.renameTo(binOf(entry.id)))
     }
 
     private fun writeAtomically(target: File, bytes: ByteArray) {

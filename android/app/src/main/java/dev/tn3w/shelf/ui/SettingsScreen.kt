@@ -40,7 +40,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -61,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.colorResource
@@ -160,7 +160,7 @@ fun SettingsScreen(navigator: Navigator) {
             stringResource(R.string.catalogue),
             stringResource(R.string.catalogue_hint),
         )
-        LanguageChoice(language) { chosen ->
+        CatalogueLanguageChoice(language) { chosen ->
             update { it.copy(language = chosen) }
             app.reload(chosen)
         }
@@ -227,22 +227,31 @@ fun SettingsScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun LanguageChoice(selected: String, onSelect: (String) -> Unit) {
+private fun LanguageChoice(
+    options: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    label: @Composable (String) -> String,
+) {
     SingleChoiceSegmentedButtonRow(
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)
     ) {
-        LANGUAGES.forEachIndexed { index, language ->
+        options.forEachIndexed { index, language ->
             SegmentedButton(
                 selected = selected == language,
                 onClick = { onSelect(language) },
-                shape = SegmentedButtonDefaults.itemShape(index, LANGUAGES.size),
+                shape = SegmentedButtonDefaults.itemShape(index, options.size),
                 icon = {},
             ) {
-                Text(nativeName(language), maxLines = 1)
+                Text(label(language), maxLines = 1)
             }
         }
     }
 }
+
+@Composable
+private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit) =
+    LanguageChoice(LANGUAGES, selected, onSelect) { nativeName(it) }
 
 @Composable
 private fun AppLanguageChoice() {
@@ -251,26 +260,12 @@ private fun AppLanguageChoice() {
     var current by remember {
         mutableStateOf(manager.applicationLocales.toLanguageTags())
     }
-    val options = listOf("") + LANGUAGES
-    SingleChoiceSegmentedButtonRow(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)
-    ) {
-        options.forEachIndexed { index, language ->
-            SegmentedButton(
-                selected = current == language,
-                onClick = {
-                    current = language
-                    manager.applicationLocales = LocaleList.forLanguageTags(language)
-                },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                icon = {},
-            ) {
-                val label =
-                    if (language.isEmpty()) stringResource(R.string.theme_system)
-                    else language.uppercase()
-                Text(label, maxLines = 1)
-            }
-        }
+    val onSelect = { language: String ->
+        current = language
+        manager.applicationLocales = LocaleList.forLanguageTags(language)
+    }
+    LanguageChoice(listOf("") + LANGUAGES, current, onSelect) {
+        if (it.isEmpty()) stringResource(R.string.theme_system) else it.uppercase()
     }
 }
 
@@ -370,33 +365,27 @@ private fun PackAction(
     onDownload: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    when {
-        download is Download.Running -> Box(Modifier.size(48.dp))
-        download is Download.Failed ->
-            IconButton(onClick = onDownload) {
-                Icon(
-                    Icons.Outlined.ErrorOutline,
-                    stringResource(R.string.retry_pack, label),
-                )
-            }
-        state == PackState.Available ->
-            IconButton(onClick = onDownload) {
-                Icon(
-                    Icons.Outlined.Download,
-                    stringResource(R.string.download_pack, label),
-                )
-            }
-        state == PackState.Update ->
-            IconButton(onClick = onDownload) {
-                Icon(Icons.Outlined.Update, stringResource(R.string.update_pack, label))
-            }
-        pack != "core" ->
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Outlined.Delete, stringResource(R.string.remove_pack, label))
-            }
-        else -> Box(Modifier.size(48.dp))
-    }
+    val action =
+        when {
+            download is Download.Running -> null
+            download is Download.Failed ->
+                PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
+            state == PackState.Available ->
+                PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
+            state == PackState.Update ->
+                PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
+            pack != "core" ->
+                PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
+            else -> null
+        } ?: return Box(Modifier.size(48.dp))
+    IconAction(action.icon, stringResource(action.label, label), action.onClick)
 }
+
+private class PackButton(
+    val icon: ImageVector,
+    @StringRes val label: Int,
+    val onClick: () -> Unit,
+)
 
 @Composable
 private fun SwitchRow(
@@ -644,7 +633,7 @@ fun OnboardingScreen() {
         )
         AboutText(stringResource(R.string.welcome_text))
         SectionHeader(stringResource(R.string.catalogue_language))
-        LanguageChoice(language) {
+        CatalogueLanguageChoice(language) {
             language = it
             app.reload(it)
         }

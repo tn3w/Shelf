@@ -133,4 +133,6 @@
         <item quantity="one">Lies %d Seite, um eine Serie zu starten.</item>
         <item quantity="other">Lies %d Seiten, um eine Serie zu starten.</item>
     </plurals>
+    <string name="because_you_read">Weil du %1$s gelesen hast</string>
+    <string name="not_for_me">Nichts für mich</string>
 </resources>

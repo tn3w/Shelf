@@ -37,12 +37,12 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,11 +55,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Habit
 import dev.tn3w.shelf.data.Shelf
 import dev.tn3w.shelf.data.toBook
 import java.time.LocalDate
 import java.time.format.TextStyle
+import kotlinx.coroutines.launch
 
 private val HOME_TAGS =
     listOf("fantasy", "mystery", "classics", "science-fiction", "romance")
@@ -71,7 +73,13 @@ fun HomeScreen(navigator: Navigator) {
     val saved by app.library.saved.collectAsStateWithLifecycle(null)
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val habit by app.library.habit.collectAsStateWithLifecycle(null)
-    val recommendations by load(saved) { saved?.let { recommender.recommend(it) } }
+    val dismissed by app.library.dismissed.collectAsStateWithLifecycle(emptySet())
+    val scope = rememberCoroutineScope()
+    val suggestions by
+        load(saved, dismissed) {
+            saved?.let { recommender.suggest(it, hidden = dismissed) }
+        }
+    fun dismiss(book: Book) = scope.launch { app.library.dismiss(book.work) }
     val genres by load {
         HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
             .map { it to recommender.popular(12, it.id) }
@@ -82,9 +90,8 @@ fun HomeScreen(navigator: Navigator) {
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item {
             LargeTitle(stringResource(R.string.home)) {
-                IconButton(onClick = navigator::settings) {
-                    Icon(Icons.Outlined.Settings, stringResource(R.string.settings))
-                }
+                val label = stringResource(R.string.settings)
+                IconAction(Icons.Outlined.Settings, label, navigator::settings)
             }
         }
         habit?.let { item { HabitCard(it) } }
@@ -108,28 +115,55 @@ fun HomeScreen(navigator: Navigator) {
         }
         if (want.isNotEmpty()) {
             item {
-                SectionHeader(
+                BookSection(
                     stringResource(R.string.want_to_read),
-                    stringResource(R.string.want_to_read_subtitle),
-                    navigator::library,
+                    want,
+                    "want",
+                    navigator::book,
+                    subtitle = stringResource(R.string.want_to_read_subtitle),
+                    onMore = navigator::library,
                 )
             }
-            item { BookRow(want, "want", navigator::book) }
         }
-        item {
-            val personal = !saved.isNullOrEmpty()
-            SectionHeader(
-                stringResource(if (personal) R.string.for_you else R.string.popular),
-                stringResource(
-                    if (personal) R.string.for_you_subtitle else R.string.popular_subtitle
-                ),
-            )
+        val groups = suggestions?.groupBy { it.because }
+        if (groups == null || groups.keys == setOf(null)) {
+            item {
+                val personal = !saved.isNullOrEmpty()
+                BookSection(
+                    stringResource(if (personal) R.string.for_you else R.string.popular),
+                    groups?.values?.first()?.map { it.book },
+                    "for-you",
+                    navigator::book,
+                    subtitle =
+                        stringResource(
+                            if (personal) R.string.for_you_subtitle
+                            else R.string.popular_subtitle
+                        ),
+                    onDismiss = ::dismiss,
+                )
+            }
         }
-        item { BookRow(recommendations, "for-you", navigator::book) }
+        groups?.forEach { (source, books) ->
+            if (source == null) return@forEach
+            item(key = "because-${source.work}") {
+                BookSection(
+                    stringResource(R.string.because_you_read, source.title),
+                    books.map { it.book },
+                    "because-${source.work}",
+                    navigator::book,
+                    onDismiss = ::dismiss,
+                )
+            }
+        }
         genres.orEmpty().forEach { (tag, books) ->
             item(key = tag.slug) {
-                SectionHeader(tag.label, onMore = { navigator.tag(tag.id) })
-                BookRow(books, tag.slug, navigator::book)
+                BookSection(
+                    tag.label,
+                    books,
+                    tag.slug,
+                    navigator::book,
+                    onMore = { navigator.tag(tag.id) },
+                )
             }
         }
         item { Box(Modifier.height(24.dp)) }

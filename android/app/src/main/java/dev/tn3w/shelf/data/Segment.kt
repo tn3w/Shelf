@@ -104,15 +104,14 @@ fun decodePostings(bytes: ByteArray): IntArray {
 
 class IntArrayList {
     private var values = IntArray(16)
-    var size = 0
-        private set
+    private var count = 0
 
     fun add(value: Int) {
-        if (size == values.size) values = values.copyOf(size * 2)
-        values[size++] = value
+        if (count == values.size) values = values.copyOf(count * 2)
+        values[count++] = value
     }
 
-    fun toArray(): IntArray = values.copyOf(size)
+    fun toArray(): IntArray = values.copyOf(count)
 }
 
 class Cache<K : Any, V : Any>(private val capacity: Int) {
@@ -305,10 +304,9 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
     }
 }
 
-class Segment(val name: String, buffer: ByteBuffer) {
+class Segment(buffer: ByteBuffer) {
     private val sections = readSections(buffer)
     private val meta = readMeta(section("meta"))
-    val language = meta.getValue("language")
     val pack = meta.getValue("pack")
     val month = meta.getValue("month")
     val base = meta["base"] ?: month
@@ -412,20 +410,20 @@ class Segment(val name: String, buffer: ByteBuffer) {
         return SeriesRecord(name, IntArray(reader.varint()) { reader.varint() })
     }
 
+    private fun afterTagLabels(tag: Int): Reader? {
+        if (tag >= tagTable.count) return null
+        return Reader(tagTable[tag]).also { reader ->
+            repeat(3) { reader.skip(reader.varint()) }
+        }
+    }
+
     fun tagWorks(tag: Int): IntArray {
-        if (tag >= tagTable.count) return IntArray(0)
-        val reader = Reader(tagTable[tag])
-        repeat(3) { reader.skip(reader.varint()) }
+        val reader = afterTagLabels(tag) ?: return IntArray(0)
         reader.varint()
         return decodePostings(reader.rest())
     }
 
-    fun tagCount(tag: Int): Int {
-        if (tag >= tagTable.count) return 0
-        val reader = Reader(tagTable[tag])
-        repeat(3) { reader.skip(reader.varint()) }
-        return reader.varint()
-    }
+    fun tagCount(tag: Int) = afterTagLabels(tag)?.varint() ?: 0
 
     fun description(local: Int): String {
         val block = descriptionFirsts.lastAtMost(local)
@@ -479,12 +477,9 @@ private class PopularityBlock(
     val rows: Array<Popularity>,
 )
 
-class Ranks(val name: String, buffer: ByteBuffer) {
+class Ranks(buffer: ByteBuffer) {
     private val sections = readSections(buffer)
-    private val meta = readMeta(sections.getValue("meta"))
-    val language = meta.getValue("language")
-    val month = meta.getValue("month")
-    val works = meta.getValue("works").toInt()
+    val works = readMeta(sections.getValue("meta")).getValue("works").toInt()
     private val terms = TermBlocks(sections.getValue("terms"), withPostings = false)
     private val firstWorks: List<Int>
     private val blocks: Table

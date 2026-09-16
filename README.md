@@ -46,9 +46,13 @@ by `builder/` and published as GitHub releases (`catalogue-YYYY-MM-DD`).
 
 ### Features
 
-- **Home:** daily goal + streak, continue reading, want-to-read, recommendations, genres.
-- **Explore:** popular works, genres, audiences, formats, topics → tag and author pages.
-- **Search:** typo-tolerant (trigrams + edit distance), prefix completions, authors.
+- **Home:** daily goal + streak, continue reading, want-to-read, one *Because you read X*
+  row per taste source with a *Not for me* long-press, genres.
+- **Explore:** popular works (all installed packs, ranked by score), genres, audiences,
+  formats, topics → tag and author pages.
+- **Search:** typo-tolerant (trigrams + edit distance), prefix completions, authors,
+  recent searches, trending; a series-name query returns volume 1; box sets, coloring
+  books, study guides and companions are demoted; weak matches are cut, not padded.
 - **Book:** facts from ranks (rating, readers, editions), tags, description, series in
   reading order, more by author, similar books; shelves Want / Reading / Finished.
 - **Library:** shelves; entries store the Open Library work number plus title, author and
@@ -64,6 +68,33 @@ by `builder/` and published as GitHub releases (`catalogue-YYYY-MM-DD`).
 - Edge-to-edge, predictive back, shared cover transition (lists → book; not between
   rows on a book page), animated lists, skeletons,
   animated download progress; animations off when the system animator scale is 0.
+
+### Discovery
+
+Recommendations run entirely on device over the installed segments.
+
+1. **Profile.** Each library entry becomes a tag vector: tag IDF x positional confidence,
+   form tags (`fiction`/`nonfiction`) at 0.25, audience tags excluded — audience is a
+   filter, not a taste. Shelf weight Reading 1.0, Read 0.8, Want 0.5.
+2. **Sources.** Up to six library books chosen greedily by weight minus overlap with
+   those already picked, so a wide shelf yields distinct tastes instead of one average.
+3. **Retrieval.** Per source: the works carrying its two most distinctive tags
+   (falling back to one when the intersection is thin), top 1500 by rank score via a
+   heap, plus up to 40 works per author.
+4. **Scoring.** `0.55 x cosine(candidate, source) + 0.25 x cosine(candidate, profile) +
+   0.20 x quality`, times a smooth audience fit (distance on a picture-book -> adult
+   scale) and form fit. Candidates below a 0.2 source cosine, or with no tag beyond
+   form, are dropped.
+5. **Diversification.** Round-robin across sources, so every source is represented and
+   each result carries the book it came from as its reason. One book per series, at most
+   two per author, no companion editions, no duplicate title keys.
+6. **Series.** A candidate in a series resolves to the next volume the reader has not
+   saved, so mid-series readers get the volume they actually need.
+7. **Feedback.** *Not for me* persists to `Library` storage and is excluded on the next
+   pass.
+
+Popularity lists (Explore, genre pages, cold start) use the same heap selection over a
+per-catalogue score index, capped at two books per author and one per series.
 
 ### Install
 
@@ -115,14 +146,11 @@ Neo Store or Aurora.
 
 ```sh
 cd android
-./gradlew assembleGithubDebug assembleFdroidRelease lint testGithubDebugUnitTest
+./gradlew assembleGithubDebug assembleFdroidRelease lint
 ```
 
 - `downloadCatalogue` fetches bundled segments from release `catalogueRelease`
   (`app/build.gradle.kts`), SHA-256 checked against its manifest.
-- Unit tests (`CatalogueTest`) use `en-*`/`de-*` of that release (`downloadTestCatalogue`):
-  German core title, English Harry Potter series order, `lightnig thief` search, fake delta
-  tombstone.
 - Release builds are unsigned without `KEYSTORE_FILE`; reproducible settings: pinned
   versions, `dependenciesInfo` off, literal `versionCode`.
 

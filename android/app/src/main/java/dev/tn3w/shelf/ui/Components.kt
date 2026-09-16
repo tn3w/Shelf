@@ -9,7 +9,9 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +36,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -75,7 +79,7 @@ import kotlinx.coroutines.withContext
 
 val ScreenPadding = 20.dp
 val TileWidth = 116.dp
-val GridTileWidth = 96.dp
+private val GridTileWidth = 96.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 val LocalSharedScope = compositionLocalOf<SharedTransitionScope?> { null }
@@ -213,6 +217,7 @@ fun SectionHeader(title: String, subtitle: String? = null, onMore: (() -> Unit)?
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookTile(
     book: Book,
@@ -220,8 +225,15 @@ fun BookTile(
     onOpen: (Book, String) -> Unit,
     modifier: Modifier = Modifier.width(TileWidth),
     shared: Boolean = true,
+    onDismiss: ((Book) -> Unit)? = null,
 ) {
-    Column(modifier.clickable { onOpen(book, origin) }) {
+    var menu by remember { mutableStateOf(false) }
+    Column(
+        modifier.combinedClickable(
+            onClick = { onOpen(book, origin) },
+            onLongClick = onDismiss?.let { { menu = true } },
+        )
+    ) {
         BookCover(
             book,
             modifier = Modifier.fillMaxWidth(),
@@ -242,6 +254,16 @@ fun BookTile(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (onDismiss == null) return@Column
+        DropdownMenu(menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.not_for_me)) },
+                onClick = {
+                    menu = false
+                    onDismiss(book)
+                },
+            )
+        }
     }
 }
 
@@ -251,6 +273,7 @@ fun BookRow(
     origin: String,
     onOpen: (Book, String) -> Unit,
     shared: Boolean = true,
+    onDismiss: ((Book) -> Unit)? = null,
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = ScreenPadding),
@@ -262,13 +285,30 @@ fun BookRow(
             return@LazyRow
         }
         items(books, key = { it.work }) {
-            Box(Modifier.animateItem()) { BookTile(it, origin, onOpen, shared = shared) }
+            Box(Modifier.animateItem()) {
+                BookTile(it, origin, onOpen, shared = shared, onDismiss = onDismiss)
+            }
         }
     }
 }
 
 @Composable
-fun skeletonAlpha(): Float {
+fun BookSection(
+    title: String,
+    books: List<Book>?,
+    origin: String,
+    onOpen: (Book, String) -> Unit,
+    subtitle: String? = null,
+    onMore: (() -> Unit)? = null,
+    shared: Boolean = true,
+    onDismiss: ((Book) -> Unit)? = null,
+) {
+    SectionHeader(title, subtitle, onMore)
+    BookRow(books, origin, onOpen, shared, onDismiss)
+}
+
+@Composable
+private fun skeletonAlpha(): Float {
     if (LocalReducedMotion.current) return 0.6f
     val alpha by
         rememberInfiniteTransition()
@@ -384,17 +424,21 @@ fun EmptyState(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun IconAction(icon: ImageVector, description: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick) { Icon(icon, contentDescription = description) }
+}
+
+@Composable
 fun BackBar(onBack: () -> Unit, title: String = "") {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(R.string.back),
-            )
-        }
+        IconAction(
+            Icons.AutoMirrored.Filled.ArrowBack,
+            stringResource(R.string.back),
+            onBack,
+        )
         Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
     }
 }
