@@ -16,7 +16,7 @@ FASTLANE = ROOT / "android/fastlane/metadata/android"
 DARK = ROOT / "android/design/screenshots"
 CACHE = Path(tempfile.gettempdir()) / "shelf-screenshots"
 DAY = 86_400_000
-PALETTE = "FFB5651D"
+PALETTE = "FF3C6E71"
 
 LOCALES = {
     "en": dict(
@@ -40,7 +40,7 @@ LOCALES = {
     ),
     "de": dict(
         folder="de",
-        tabs=("Start", "Bibliothek", "Entdecken"),
+        tabs=("Startseite", "Bibliothek", "Entdecken"),
         settings=("Einstellungen", "Alle ("),
         cover="Cover von",
         reader=(151411, "Alice im Wunderland", "Lewis Carroll", 8595966, 19778),
@@ -329,7 +329,9 @@ def prepare_device():
                   "animator_duration_scale"):
         shell("settings", "put", "global", scale, "0")
     palette = json.dumps({
+        "android.theme.customization.color_source": "preset",
         "android.theme.customization.system_palette": PALETTE,
+        "android.theme.customization.accent_color": PALETTE,
         "android.theme.customization.theme_style": "TONAL_SPOT",
     })
     shell("settings", "put", "secure", "theme_customization_overlay_packages",
