@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::ops::RangeInclusive;
 
 const MAGIC: &[u8; 4] = b"SHLF";
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 const NAME_BYTES: usize = 16;
 const RECORDS_PER_BLOCK: usize = 32;
 const TERMS_PER_BLOCK: usize = 16;
@@ -33,6 +33,7 @@ pub struct Work<'a> {
     pub tags: &'a [u8],
     pub series: Option<(&'a Series, u16)>,
     pub description: &'a str,
+    pub translated: bool,
 }
 
 pub struct Meta<'a> {
@@ -201,6 +202,7 @@ pub fn content_hash(work: &Work, authors: &Authors) -> u64 {
             .for_each(|&member| put_u32(&mut bytes, member));
     }
     put_text(&mut bytes, work.description);
+    bytes.push(u8::from(work.translated));
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, &byte| {
         (hash ^ byte as u64).wrapping_mul(0x0100_0000_01b3)
     })
@@ -355,10 +357,8 @@ fn description_section(works: &[Work], dictionary: &[u8]) -> Vec<u8> {
         if raw.is_empty() {
             firsts.push(index as u32);
         }
-        put_varint(
-            &mut raw,
-            index as u32 - firsts.last().expect("block started"),
-        );
+        let offset = index as u32 - firsts.last().expect("block started");
+        put_varint(&mut raw, offset << 1 | u32::from(work.translated));
         put_text(&mut raw, work.description);
         if raw.len() >= DESCRIPTION_BLOCK_BYTES {
             blocks.push(deflate(&std::mem::take(&mut raw), dictionary));

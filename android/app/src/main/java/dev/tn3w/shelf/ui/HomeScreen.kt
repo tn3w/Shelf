@@ -57,6 +57,8 @@ import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Habit
+import dev.tn3w.shelf.data.Row
+import dev.tn3w.shelf.data.RowKind
 import dev.tn3w.shelf.data.Shelf
 import dev.tn3w.shelf.data.toBook
 import java.time.LocalDate
@@ -75,9 +77,9 @@ fun HomeScreen(navigator: Navigator) {
     val habit by app.library.habit.collectAsStateWithLifecycle(null)
     val dismissed by app.library.dismissed.collectAsStateWithLifecycle(emptySet())
     val scope = rememberCoroutineScope()
-    val suggestions by
+    val rows by
         load(saved, dismissed) {
-            saved?.let { recommender.suggest(it, hidden = dismissed) }
+            saved?.let { recommender.rows(it, app.session, dismissed) }
         }
     fun dismiss(book: Book) = scope.launch { app.library.dismiss(book.work) }
     val genres by load {
@@ -125,32 +127,25 @@ fun HomeScreen(navigator: Navigator) {
                 )
             }
         }
-        val groups = suggestions?.groupBy { it.because }
-        if (groups == null || groups.keys == setOf(null)) {
+        if (rows == null) {
             item {
-                val personal = !saved.isNullOrEmpty()
                 BookSection(
-                    stringResource(if (personal) R.string.for_you else R.string.popular),
-                    groups?.values?.first()?.map { it.book },
+                    stringResource(R.string.for_you),
+                    null,
                     "for-you",
                     navigator::book,
-                    subtitle =
-                        stringResource(
-                            if (personal) R.string.for_you_subtitle
-                            else R.string.popular_subtitle
-                        ),
-                    onDismiss = ::dismiss,
+                    subtitle = stringResource(R.string.for_you_subtitle),
                 )
             }
         }
-        groups?.forEach { (source, books) ->
-            if (source == null) return@forEach
-            item(key = "because-${source.work}") {
+        rows.orEmpty().forEach { row ->
+            item(key = row.key) {
                 BookSection(
-                    stringResource(R.string.because_you_read, source.title),
-                    books.map { it.book },
-                    "because-${source.work}",
+                    rowTitle(row),
+                    row.books,
+                    row.key,
                     navigator::book,
+                    subtitle = rowSubtitle(row),
                     onDismiss = ::dismiss,
                 )
             }
@@ -169,6 +164,27 @@ fun HomeScreen(navigator: Navigator) {
         item { Box(Modifier.height(24.dp)) }
     }
 }
+
+@Composable
+private fun rowTitle(row: Row) =
+    when (row.kind) {
+        RowKind.Series -> stringResource(R.string.next_in_series)
+        RowKind.Author -> stringResource(R.string.more_by, row.author?.name.orEmpty())
+        RowKind.Popular -> stringResource(R.string.popular)
+        RowKind.Because ->
+            row.sources.take(2).map { it.title }.let { titles ->
+                if (titles.size < 2) stringResource(R.string.because_you_read, titles[0])
+                else stringResource(R.string.because_you_read_two, titles[0], titles[1])
+            }
+    }
+
+@Composable
+private fun rowSubtitle(row: Row) =
+    when (row.kind) {
+        RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
+        RowKind.Popular -> stringResource(R.string.popular_subtitle)
+        else -> null
+    }
 
 @Composable
 private fun HabitCard(habit: Habit) {

@@ -142,5 +142,9 @@
         <item quantity="many">Lee %d páginas para empezar una racha.</item>
     </plurals>
     <string name="because_you_read">Porque leíste %1$s</string>
+    <string name="because_you_read_two">Porque leíste %1$s y %2$s</string>
+    <string name="next_in_series">Lo siguiente en tus sagas</string>
+    <string name="next_in_series_subtitle">Continúa donde dejaste cada saga.</string>
     <string name="not_for_me">No es para mí</string>
+    <string name="machine_translated">Traducción automática</string>
 </resources>

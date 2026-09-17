@@ -54,7 +54,8 @@ jobs:
           previous=$(sort -V <<< "$tags" | tail -n 1)
           if [ -n "$previous" ]; then
             gh release download "$previous" --dir previous \
-              --pattern 'state-*.bin' --pattern manifest.json
+              --pattern 'state-*.bin' --pattern manifest.json \
+              --pattern 'translations-*.bin'
           fi
 
       - name: Download dumps
@@ -75,7 +76,27 @@ jobs:
         run: |
           flags=(--previous previous --month "$RELEASE")
           if [ "${{ inputs.rebase }}" = "true" ]; then flags+=(--rebase); fi
-          builder/target/release/builder /mnt/dumps out "${flags[@]}"
+          echo "FLAGS=${flags[*]}" >> "$GITHUB_ENV"
+          builder/target/release/builder /mnt/dumps out "${flags[@]}" \
+            --translations previous --requests requests
+          du -sh out
+
+      - name: Translate new descriptions
+        run: |
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet ctranslate2 transformers sentencepiece
+          for language in de fr es; do
+            python tooling/translate.py \
+              "requests/requests-$language.jsonl" \
+              "out/translations-$language.bin" --language "$language" \
+              --previous "previous/translations-$language.bin" \
+              --device cpu --compute-type int8 --limit 20000 \
+              --models-dir models --cache cache.jsonl
+          done
+
+      - name: Rebuild with translations
+        run: |
+          builder/target/release/builder /mnt/dumps out $FLAGS --translations out
           du -sh out
 
       - name: Publish release

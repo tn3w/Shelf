@@ -12,7 +12,39 @@ pub const OTHER_LANGUAGE: u32 = 1 << 31;
 const MIN_SCORE: f32 = 150.0;
 const MAX_TITLE_BYTES: usize = 160;
 const FOREIGN_TITLE_WORDS: usize = 3;
-const DESCRIPTION_LIMIT: usize = 480;
+const DESCRIPTION_TARGET: usize = 480;
+const DESCRIPTION_LIMIT: usize = 1000;
+const MAX_TAG_BYTES: usize = 80;
+const JUDGED_HEAD_BYTES: usize = 40;
+const MIN_PARAGRAPH_BYTES: usize = 60;
+const SHORT_LEAD_BYTES: usize = 200;
+const MAX_SHOUTED_SHARE: f32 = 0.7;
+
+const TAIL_MARKERS: &[&str] = &[
+    "-- back cover",
+    "- back cover",
+    "--back cover",
+    "-- from the publisher",
+    "-- publisher description",
+    "-- provided by publisher",
+    "-- amazon.com",
+    "-- goodreads",
+];
+
+const JUNK_MARKERS: &[&str] = &[
+    "about the author",
+    "praise for",
+    "translation of",
+    "includes index",
+    "includes bibliographical",
+    "originally published",
+    "table of contents",
+    "contents:",
+    "publisher's note",
+    "back cover",
+    "source:",
+    "wikipedia entry",
+];
 const JUDGED_WORDS: usize = 25;
 const MIN_STOP_WORD_SHARE: f32 = 0.05;
 const MAX_TOKEN_BYTES: usize = 24;
@@ -320,10 +352,188 @@ fn has_volume_range(title: &str) -> bool {
         .any(is_volume_range)
 }
 
-pub fn clean_description(text: &str) -> String {
-    let text = text[..text.find("\n\n----").unwrap_or(text.len())]
-        .trim()
-        .replace('\r', "");
+const ENTITIES: [(&str, &str); 7] = [
+    ("&amp;", "&"),
+    ("&lt;", "<"),
+    ("&gt;", ">"),
+    ("&quot;", "\""),
+    ("&apos;", "'"),
+    ("&#39;", "'"),
+    ("&nbsp;", " "),
+];
+
+fn is_link_definition(line: &str) -> bool {
+    let line = line.trim_start();
+    line.starts_with('[') && line.contains("]:")
+}
+
+fn is_subject_list(text: &str) -> bool {
+    let dashes = text.matches(" -- ").count();
+    dashes >= 2 || (dashes == 1 && text.matches(';').count() >= 2)
+}
+
+fn is_tag_start(character: char) -> bool {
+    character.is_ascii_alphabetic() || character == '/'
+}
+
+fn without_tags(text: &str) -> String {
+    let mut cleaned = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find('<') {
+        let tag = &rest[start..];
+        let end = tag.find('>').filter(|&end| end <= MAX_TAG_BYTES);
+        let opens_tag = tag[1..].starts_with(is_tag_start);
+        let Some(end) = end.filter(|_| opens_tag) else {
+            cleaned.push_str(&rest[..start + 1]);
+            rest = &rest[start + 1..];
+            continue;
+        };
+        cleaned.push_str(&rest[..start]);
+        rest = &tag[end + 1..];
+    }
+    cleaned + rest
+}
+
+fn without_citations(text: &str) -> String {
+    let mut cleaned = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find('[') {
+        let end = rest[start..].find(']').map(|end| start + end);
+        let marker = end.filter(|&end| {
+            let inside = &rest[start + 1..end];
+            !inside.is_empty() && inside.bytes().all(|byte| byte.is_ascii_digit())
+        });
+        let Some(end) = marker else {
+            cleaned.push_str(&rest[..start + 1]);
+            rest = &rest[start + 1..];
+            continue;
+        };
+        cleaned.push_str(&rest[..start]);
+        rest = &rest[end + 1..];
+    }
+    cleaned + rest
+}
+
+fn without_links(text: &str) -> String {
+    let mut cleaned = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find('[') {
+        let label_end = rest[start..].find(']').map(|end| start + end);
+        let Some(label_end) = label_end else { break };
+        let target = rest[label_end + 1..].starts_with(['(', '[']);
+        let closing = if rest[label_end + 1..].starts_with('(') { ')' } else { ']' };
+        let end = target
+            .then(|| rest[label_end..].find(closing))
+            .flatten()
+            .map(|end| label_end + end);
+        let Some(end) = end else {
+            cleaned.push_str(&rest[..label_end + 1]);
+            rest = &rest[label_end + 1..];
+            continue;
+        };
+        let image = rest[..start].ends_with('!');
+        cleaned.push_str(&rest[..start - usize::from(image)]);
+        if !image {
+            cleaned.push_str(&rest[start + 1..label_end]);
+        }
+        rest = &rest[end + 1..];
+    }
+    cleaned + rest
+}
+
+fn without_urls(text: &str) -> String {
+    let words = text.split(' ').filter(|word| {
+        let bare = word.trim_start_matches(['(', '<']);
+        !bare.starts_with("http://") && !bare.starts_with("https://")
+            && !bare.starts_with("www.")
+    });
+    words.collect::<Vec<&str>>().join(" ")
+}
+
+fn tidy(text: &str) -> String {
+    let lines = text
+        .lines()
+        .filter(|line| !is_link_definition(line))
+        .map(|line| line.trim_matches([' ', '\t', '*', '_', '#', '>']).to_string());
+    let mut cleaned = String::new();
+    for line in lines {
+        let blank = line.is_empty();
+        if blank && (cleaned.is_empty() || cleaned.ends_with("\n\n")) {
+            continue;
+        }
+        cleaned.push_str(&line);
+        cleaned.push('\n');
+        if blank {
+            cleaned.push('\n');
+        }
+    }
+    cleaned.replace("\n\n\n", "\n\n").trim().to_string()
+}
+
+fn is_junk_paragraph(paragraph: &str) -> bool {
+    let lowered = paragraph.to_lowercase();
+    let head = &lowered[..lowered.floor_char_boundary(JUDGED_HEAD_BYTES)];
+    if JUNK_MARKERS.iter().any(|marker| head.contains(marker)) {
+        return true;
+    }
+    if paragraph.len() < MIN_PARAGRAPH_BYTES
+        && !paragraph.ends_with(['.', '!', '?', '…'])
+    {
+        return true;
+    }
+    let letters = paragraph.chars().filter(|character| character.is_alphabetic());
+    let (shouted, total) = letters.fold((0, 0), |(shouted, total), character| {
+        (shouted + usize::from(character.is_uppercase()), total + 1)
+    });
+    total > 0 && shouted as f32 > MAX_SHOUTED_SHARE * total as f32
+}
+
+fn readable_paragraphs(text: &str) -> Vec<&str> {
+    let split: Vec<&str> = text
+        .split("\n\n")
+        .map(str::trim)
+        .filter(|paragraph| !paragraph.is_empty())
+        .collect();
+    let readable: Vec<&str> = split
+        .iter()
+        .copied()
+        .filter(|paragraph| !is_junk_paragraph(paragraph))
+        .collect();
+    let mut paragraphs = if readable.is_empty() { split } else { readable };
+    let Some(&lead) = paragraphs.first() else {
+        return paragraphs;
+    };
+    let overshadowed = paragraphs[1..]
+        .iter()
+        .any(|paragraph| paragraph.len() >= 2 * lead.len());
+    if lead.len() < SHORT_LEAD_BYTES && overshadowed {
+        paragraphs.remove(0);
+    }
+    paragraphs
+}
+
+fn without_wrapping_quotes(text: &str) -> &str {
+    let opens = ['"', '\u{201c}', '\u{201e}'];
+    let closes = ['"', '\u{201d}', '\u{201c}'];
+    let Some(first) = text.chars().next().filter(|c| opens.contains(c)) else {
+        return text;
+    };
+    let quotes = text
+        .chars()
+        .filter(|c| opens.contains(c) || closes.contains(c))
+        .count();
+    let wrapped = quotes == 2 && text.ends_with(closes);
+    if quotes.is_multiple_of(2) && !wrapped {
+        return text;
+    }
+    let body = text[first.len_utf8()..].trim_start();
+    match wrapped {
+        true => body.trim_end_matches(closes).trim_end(),
+        false => body,
+    }
+}
+
+fn truncate(text: String) -> String {
     if text.len() <= DESCRIPTION_LIMIT {
         return text;
     }
@@ -331,6 +541,49 @@ pub fn clean_description(text: &str) -> String {
     let window = &text[..end];
     let stop = window.rfind(". ").map_or(end, |position| position + 1);
     format!("{}…", window[..stop].trim())
+}
+
+fn without_tail(text: String) -> String {
+    let lowered = text.to_lowercase();
+    let cut = TAIL_MARKERS
+        .iter()
+        .filter_map(|marker| lowered.find(marker))
+        .min();
+    match cut {
+        Some(cut) => text[..cut].trim_end().trim_end_matches(['-', ' ']).to_string(),
+        None => text,
+    }
+}
+
+pub fn clean_description(text: &str) -> String {
+    let cut = text.find("\n\n----").unwrap_or(text.len());
+    let mut text = text[..cut].trim().replace('\r', "");
+    for (entity, character) in ENTITIES {
+        text = text.replace(entity, character);
+    }
+    for emphasis in ["**", "__"] {
+        text = text.replace(emphasis, "");
+    }
+    let stripped = without_citations(&without_links(&without_tags(&text)));
+    let text = tidy(&without_urls(&stripped));
+    if is_subject_list(&text) || !is_mostly_latin(&text) {
+        return String::new();
+    }
+    let paragraphs = readable_paragraphs(&text);
+
+    let mut kept = String::new();
+    for paragraph in paragraphs {
+        let extra = paragraph.len() + "\n\n".len();
+        if !kept.is_empty() && kept.len() + extra > DESCRIPTION_TARGET {
+            break;
+        }
+        if !kept.is_empty() {
+            kept.push_str("\n\n");
+        }
+        kept.push_str(paragraph);
+    }
+    let kept = without_tail(truncate(kept));
+    without_wrapping_quotes(&kept).to_string()
 }
 
 fn stop_word_language(word: &str) -> Option<usize> {
@@ -742,5 +995,29 @@ mod tests {
         ] {
             assert!(!is_bad_title(title), "{title}");
         }
+    }
+
+    #[test]
+    fn descriptions_cleaned() {
+        let lone = "\"Who is Matigari? He is young or old, dead or living. \
+                    These are the questions asked by the people of a country.";
+        assert!(!clean_description(lone).starts_with('"'));
+        let cited = "The Commitments (1987) is a novel by Roddy Doyle.[2] It is \
+                     about a band of unemployed young people in Dublin, Ireland.";
+        assert!(!clean_description(cited).contains("[2]"));
+        let emphasis = "**Leaves of Grass** is a poetry collection by the American \
+                        poet Walt Whitman, first published in 1855 at his own expense.";
+        assert!(!clean_description(emphasis).contains('*'));
+        let subjects = "Drug traffic -- Iran - History; Drug control -- Iran - \
+                        History; Drug abuse -- Iran -- Prevention.";
+        assert!(clean_description(subjects).is_empty());
+        let tail = "\"A young man returns to the village of his birth and finds it \
+                    changed beyond recognition by the war.\" -- back cover.";
+        let cleaned = clean_description(tail);
+        assert_eq!(
+            cleaned,
+            "A young man returns to the village of his birth and finds it changed \
+             beyond recognition by the war."
+        );
     }
 }

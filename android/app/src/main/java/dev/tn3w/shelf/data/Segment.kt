@@ -9,7 +9,7 @@ import java.nio.channels.FileChannel
 import java.util.zip.Inflater
 
 private const val MAGIC = "SHLF"
-private const val VERSION = 1
+private const val VERSION = 2
 private const val NAME_BYTES = 16
 private const val SEPARATOR = '\u001f'
 private const val YEAR_EPOCH = 1400
@@ -222,6 +222,8 @@ data class Facts(
 
 data class Heads(val title: String, val subtitle: String, val alternate: String)
 
+data class Description(val text: String, val translated: Boolean)
+
 data class AuthorRecord(
     val number: Int,
     val born: Int,
@@ -340,7 +342,7 @@ class Segment(buffer: ByteBuffer) {
             TagRecord(it, reader.text(), reader.text(), reader.text())
         }
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
-    private val descriptionBlocks = Cache<Int, Map<Int, String>>(64)
+    private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
 
     init {
         val section = section("descriptions")
@@ -425,18 +427,21 @@ class Segment(buffer: ByteBuffer) {
 
     fun tagCount(tag: Int) = afterTagLabels(tag)?.varint() ?: 0
 
-    fun description(local: Int): String {
+    fun description(local: Int): Description {
         val block = descriptionFirsts.lastAtMost(local)
-        if (block < 0) return ""
+        if (block < 0) return Description("", false)
         return descriptionBlocks
             .get(block) {
                 val reader = Reader(inflate(descriptions[it], textDictionary))
                 val first = descriptionFirsts[it]
                 buildMap {
-                    while (reader.hasMore) put(first + reader.varint(), reader.text())
+                    while (reader.hasMore) {
+                        val marked = reader.varint()
+                        val text = reader.text()
+                        put(first + (marked shr 1), Description(text, marked and 1 == 1))
+                    }
                 }
-            }[local]
-            .orEmpty()
+            }[local] ?: Description("", false)
     }
 
     fun term(text: String) = terms.find(text)

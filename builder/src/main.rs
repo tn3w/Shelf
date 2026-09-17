@@ -3,6 +3,7 @@ mod dumps;
 mod release;
 mod segment;
 mod tags;
+mod translations;
 
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
 use dumps::{Authors, Book, Context, Titles};
@@ -10,6 +11,7 @@ use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
 use std::path::{Path, PathBuf};
 use std::thread;
+use translations::{Request, Translations};
 
 pub const LANGUAGES: [&str; 4] = ["en", "de", "fr", "es"];
 const BUDGET_BYTES: usize = 75_000_000;
@@ -26,12 +28,15 @@ struct Options {
     rebase: bool,
     previous: Option<PathBuf>,
     month: Option<String>,
+    translations: Option<PathBuf>,
+    requests: Option<PathBuf>,
 }
 
 fn usage() -> ! {
     eprintln!(
         "usage: builder <dumps-source> <out-dir> \
-         [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]]"
+         [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
+         [--translations <dir>] [--requests <dir>]"
     );
     std::process::exit(2)
 }
@@ -48,17 +53,21 @@ fn release_label(argument: Option<String>) -> String {
     label
 }
 
+fn directory(argument: Option<String>) -> PathBuf {
+    PathBuf::from(argument.unwrap_or_else(|| usage()))
+}
+
 fn options() -> Options {
     let mut arguments = std::env::args().skip(1);
     let (mut rebase, mut previous, mut month) = (false, None, None);
+    let (mut translations, mut requests) = (None, None);
     let mut positional = Vec::new();
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--rebase" => rebase = true,
-            "--previous" => {
-                previous =
-                    Some(PathBuf::from(arguments.next().unwrap_or_else(|| usage())))
-            }
+            "--previous" => previous = Some(directory(arguments.next())),
+            "--translations" => translations = Some(directory(arguments.next())),
+            "--requests" => requests = Some(directory(arguments.next())),
             "--month" => month = Some(release_label(arguments.next())),
             _ => positional.push(argument),
         }
@@ -72,6 +81,8 @@ fn options() -> Options {
         rebase,
         previous,
         month,
+        translations,
+        requests,
     }
 }
 
@@ -83,6 +94,8 @@ struct Job<'a> {
     books: &'a [Book],
     authors: &'a Authors,
     output: &'a Path,
+    translations: &'a Translations,
+    requests: Option<&'a Path>,
 }
 
 #[derive(Clone, Copy)]
@@ -92,15 +105,27 @@ struct Placed<'a> {
     book: &'a Book,
 }
 
-fn placed_works<'a>(selection: &'a Selection, language: usize) -> Vec<Placed<'a>> {
+fn description<'a>(job: &Job<'a>, book: &'a Book) -> (&'a str, bool) {
+    if book.scores[job.language] < DESCRIPTION_MIN_SCORE {
+        return ("", false);
+    }
+    if book.description_language == Some(job.language) {
+        return (&book.description, false);
+    }
+    match job.translations.get(book.work) {
+        Some(text) => (text, true),
+        None => ("", false),
+    }
+}
+
+fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> {
     let mut placed: Vec<Placed> = selection
         .chosen
         .iter()
         .map(|chosen| {
             let (entry, book) = (chosen.entry, chosen.book);
             let retitled = entry.title != book.title;
-            let described = book.description_language == Some(language)
-                && book.scores[language] >= DESCRIPTION_MIN_SCORE;
+            let (description, translated) = description(job, book);
             let work = Work {
                 id: book.work,
                 title: &entry.title,
@@ -113,7 +138,8 @@ fn placed_works<'a>(selection: &'a Selection, language: usize) -> Vec<Placed<'a>
                 series: chosen
                     .series
                     .map(|(slot, order)| (&selection.series[slot], order)),
-                description: if described { &book.description } else { "" },
+                description,
+                translated,
             };
             Placed {
                 pack: chosen.pack,
@@ -124,6 +150,22 @@ fn placed_works<'a>(selection: &'a Selection, language: usize) -> Vec<Placed<'a>
         .collect();
     placed.sort_by_key(|placed| placed.work.id);
     placed
+}
+
+fn export_requests(job: &Job, placed: &[Placed]) {
+    let Some(directory) = job.requests.filter(|_| job.language != 0) else {
+        return;
+    };
+    let untranslated = placed.iter().filter(|placed| {
+        placed.work.description.is_empty()
+            && placed.book.description_language == Some(0)
+            && placed.book.scores[job.language] >= DESCRIPTION_MIN_SCORE
+    });
+    let requests: Vec<Request> = untranslated
+        .map(|placed| translations::request(placed.book, placed.work.title, job.authors))
+        .collect();
+    let file = directory.join(format!("requests-{}.jsonl", LANGUAGES[job.language]));
+    translations::write_requests(&file, &requests);
 }
 
 fn build_packs(job: &Job, placed: &[Placed], tombstones: &[Vec<u32>]) -> Vec<Vec<u8>> {
@@ -179,9 +221,10 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
     };
     let mut merged = job.previous.map_or([false; PACKS.len()], release::previous_merged);
     let mut best: Option<(usize, usize, Merged)> = None;
+    let mut smallest_core: Option<(usize, usize, Merged, usize)> = None;
     for round in 1..=FITTING_ROUNDS {
         let selection = release::select(entries, job.books, limit, core_limit, &merged);
-        let placed = placed_works(&selection, job.language);
+        let placed = placed_works(job, &selection);
         let sizes: Vec<usize> = build_packs(job, &placed, &no_tombstones)
             .iter()
             .map(Vec::len)
@@ -202,18 +245,30 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
         if settled && fits && best.is_none_or(|(known, ..)| limit > known) {
             best = Some((limit, core_limit, merged));
         }
+        let core_size = sizes[CORE as usize];
+        let smaller = smallest_core.is_none_or(|(.., known)| core_size < known);
+        if settled && total <= BUDGET_BYTES && smaller {
+            smallest_core = Some((limit, core_limit, merged, core_size));
+        }
         let filled =
             limit == fresh || total as f64 >= FILLED_ENOUGH * BUDGET_BYTES as f64;
         if settled && fits && filled {
             break;
         }
-        if sizes[CORE as usize] > CORE_BYTES {
-            let core_size = sizes[CORE as usize];
+        if core_size > CORE_BYTES {
             core_limit =
                 adjusted(core_limit, core_size, CORE_BYTES, core_works, FILLED_ENOUGH);
         }
         limit =
             adjusted(limit, total, BUDGET_BYTES, placed.len(), FILL_TARGET).min(fresh);
+    }
+    let fallback = smallest_core.filter(|_| best.is_none());
+    if let Some((limit, core_limit, merged, core_size)) = fallback {
+        eprintln!(
+            "{}: core stays {core_size} bytes over {CORE_BYTES}, keeping the smallest",
+            LANGUAGES[job.language]
+        );
+        return (limit, core_limit, merged);
     }
     best.unwrap_or((0, 0, merged))
 }
@@ -285,7 +340,8 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
         return None;
     }
     let selection = release::select(&entries, job.books, limit, core_limit, &merged);
-    let placed = placed_works(&selection, language);
+    let placed = placed_works(job, &selection);
+    export_requests(job, &placed);
     let tracked: Vec<Tracked> = placed
         .iter()
         .map(|placed| Tracked {
@@ -370,6 +426,19 @@ fn main() {
     eprintln!("month {month}, {} books", books.len());
     tags::fill_author_tags(&mut books);
 
+    if let Some(directory) = &options.requests {
+        std::fs::create_dir_all(directory).expect("create requests directory");
+    }
+    let loaded: Vec<Translations> = LANGUAGES
+        .iter()
+        .map(|language| match &options.translations {
+            Some(directory) => Translations::load(
+                &directory.join(format!("translations-{language}.bin")),
+            ),
+            None => Translations::default(),
+        })
+        .collect();
+
     let mut rebased = [false; 4];
     let mut published = Vec::new();
     for (language, state) in states.iter().enumerate() {
@@ -385,6 +454,8 @@ fn main() {
             books: &books,
             authors: &authors,
             output: &options.output,
+            translations: &loaded[language],
+            requests: options.requests.as_deref(),
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;

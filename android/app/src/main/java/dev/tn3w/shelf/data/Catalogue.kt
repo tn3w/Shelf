@@ -26,7 +26,9 @@ data class Book(
 
 private val COMPANION =
     Regex(
-        "box(ed)? set|collection set|books? collection|\\d ?books? set|" +
+        "box(ed)? set|collection set|books? collection|\\d ?books? set|gift set|" +
+            "books? bundle|\\buntitled\\b|" +
+            "\\bseries ?(box|set|collection)?\\s*$|" +
             "\\(series\\)|\\b\\d{1,2}\\s*[-–]\\s*\\d{1,2}\\b|omnibus|slipcase|" +
             "complete (series|collection|novels|saga|works)|collected (works|novels)|" +
             "trilogy|tetralogy|trilogie|gesamtausgabe|gesamtwerk|sammelband|" +
@@ -34,7 +36,8 @@ private val COMPANION =
             "colou?ring book|activity book|sticker|annual \\d{4}|calendar|planner|" +
             "study guide|sparknotes|cliffs ?notes|summary of|analysis of|quiz|trivia|" +
             "unofficial|companion|movie storybook|the making of|selections from|" +
-            "big book|adventure game|lesson plan",
+            "big book|adventure game|lesson plan|workbook|journal\\s*$|notes\\s*$|" +
+            "\\blevel \\d|\\d ?(paperback|hardcover)",
         RegexOption.IGNORE_CASE,
     )
 
@@ -123,7 +126,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     fun facts(work: Int) = locate(work)?.let { it.segment.facts(it.local) }
 
     fun description(work: Int) =
-        locate(work)?.let { it.segment.description(it.local) }.orEmpty()
+        locate(work)?.let { it.segment.description(it.local) } ?: Description("", false)
 
     fun series(work: Int): Series? {
         val (segment, local) = locate(work) ?: return null

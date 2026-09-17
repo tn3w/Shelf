@@ -8,6 +8,7 @@ import dev.tn3w.shelf.data.Library
 import dev.tn3w.shelf.data.Packs
 import dev.tn3w.shelf.data.Recommender
 import dev.tn3w.shelf.data.Searcher
+import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +40,7 @@ sealed interface Download {
 
 class ShelfApp : Application() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val session = Random.nextLong()
     val library by lazy { Library(this) }
     val packs by lazy { Packs(this) }
     val loaded = MutableStateFlow<Loaded?>(null)

@@ -50,13 +50,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Book
+import dev.tn3w.shelf.data.Description
 import dev.tn3w.shelf.data.Shelf
 import dev.tn3w.shelf.data.toBook
 import kotlinx.coroutines.launch
 
 private data class Details(
     val book: Book,
-    val description: String,
+    val description: Description,
     val tags: List<Pair<Int, String>>,
 )
 
@@ -90,10 +91,10 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
             }
         details
             ?.description
-            ?.takeIf { it.isNotBlank() }
-            ?.let { text ->
+            ?.takeIf { it.text.isNotBlank() }
+            ?.let { description ->
                 item { SectionHeader(stringResource(R.string.about_book)) }
-                item { Description(text) }
+                item { DescriptionText(description) }
             }
         series
             ?.takeIf { it.second.size > 1 }
@@ -279,18 +280,25 @@ private fun facts(book: Book): String {
 }
 
 @Composable
-private fun Description(text: String) {
+private fun DescriptionText(description: Description) {
     var expanded by remember { mutableStateOf(false) }
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyLarge,
-        maxLines = if (expanded) Int.MAX_VALUE else 6,
-        overflow = TextOverflow.Ellipsis,
-        modifier =
-            Modifier.padding(horizontal = ScreenPadding).animateContentSize().clickable {
-                expanded = !expanded
-            },
-    )
+    Column(Modifier.padding(horizontal = ScreenPadding)) {
+        Text(
+            description.text,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = if (expanded) Int.MAX_VALUE else 6,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.animateContentSize().clickable { expanded = !expanded },
+        )
+        if (description.translated) {
+            Text(
+                stringResource(R.string.machine_translated),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
