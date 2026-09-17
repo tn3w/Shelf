@@ -1,4 +1,5 @@
 use crate::catalog::{self, Traits};
+use crate::release;
 use crate::tags::{self, Classes};
 use flate2::read::MultiGzDecoder;
 use serde_json::Value;
@@ -12,85 +13,9 @@ use std::time::Duration;
 
 const BLOCK_BYTES: usize = 8 << 20;
 const MAX_RETRIES: u32 = 12;
-const MAX_TITLE_BYTES: usize = 160;
-const SUBTITLE_SEPARATOR: char = '\u{1f}';
 const MAX_AUTHORS: usize = 4;
-const NON_PRINT_FORMATS: [&str; 9] = [
-    "audio",
-    "cassette",
-    "cd",
-    "mp3",
-    "braille",
-    "player",
-    "sound",
-    "ebook",
-    "electronic",
-];
 const MIN_SCAN_WIDTH: f32 = 700.0;
 const MAJOR_PUBLISHER_EDITIONS: u32 = 2000;
-const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
-const LANGUAGE_CODES: [&str; 24] = [
-    "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe",
-    "ara", "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
-];
-const ISBN_GROUPS: [(&str, usize); 19] = [
-    ("9780", 0), ("9781", 0), ("9798", 0), ("9783", 1), ("9782", 2), ("97910", 2),
-    ("97884", 3), ("978607", 3), ("978612", 3), ("978628", 3), ("978631", 3),
-    ("978950", 3), ("978956", 3), ("978958", 3), ("978968", 3), ("978970", 3),
-    ("978987", 3), ("9789972", 3), ("9789974", 3),
-];
-
-const FOREIGN_ISBN_GROUPS: [&str; 17] = [
-    "9784", "9785", "9786", "9787", "97880", "97881", "97882", "97883", "97885",
-    "97886", "97887", "97888", "97889", "9789", "97911", "97912", "97913",
-];
-
-const OTHER_LANGUAGE: u32 = 1 << 31;
-
-const PRINT_ON_DEMAND: &[&str] = &[
-    "book on demand",
-    "books on demand",
-    "print on demand",
-    "createspace",
-    "independently published",
-    "valdebooks",
-    "bibliolife",
-    "bibliobazaar",
-    "kessinger",
-    "nabu press",
-    "general books",
-    "dodo press",
-    "hansebooks",
-    "hardpress",
-    "forgotten books",
-    "franklin classics",
-    "wentworth press",
-    "trieste publishing",
-    "sagwan press",
-    "andesite press",
-    "palala press",
-    "arkose press",
-    "scholar's choice",
-    "books llc",
-    "alpha edition",
-    "lector house",
-    "outlook verlag",
-    "lulu",
-    "echo library",
-    "tredition",
-    "salzwasser",
-    "hofenberg",
-    "good press",
-    "e-artnow",
-    "musaicum",
-    "digireads",
-    "1st world library",
-    "read books",
-    "hachette livre",
-    "adegi graphics",
-    "aegitas",
-    "sharp ink",
-];
 
 type CoverShape = (u16, u16);
 
@@ -147,28 +72,26 @@ impl Read for Download {
     }
 }
 
+fn buffered(reader: impl Read + Send + 'static) -> Box<dyn Read + Send> {
+    Box::new(MultiGzDecoder::new(BufReader::with_capacity(1 << 20, reader)))
+}
+
 fn open(source: &str, name: &str) -> Box<dyn Read + Send> {
     let latest = format!("ol_dump_{name}_latest.txt.gz");
     if source.starts_with("http://") || source.starts_with("https://") {
-        let url = format!("{}/{latest}", source.trim_end_matches('/'));
-        let download = Download {
-            url,
+        return buffered(Download {
+            url: format!("{}/{latest}", source.trim_end_matches('/')),
             offset: 0,
             failures: 0,
             body: None,
-        };
-        return Box::new(MultiGzDecoder::new(BufReader::with_capacity(
-            1 << 20,
-            download,
-        )));
+        });
     }
     let path = [latest, format!("ol_dump_{name}.txt.gz")]
         .into_iter()
         .map(|file_name| Path::new(source).join(file_name))
         .find(|path| path.exists())
         .unwrap_or_else(|| panic!("no {name} dump in {source}"));
-    let file = File::open(path).expect("open dump");
-    Box::new(MultiGzDecoder::new(BufReader::with_capacity(1 << 20, file)))
+    buffered(File::open(path).expect("open dump"))
 }
 
 fn fill(reader: &mut impl Read, buffer: &mut [u8]) -> usize {
@@ -278,45 +201,28 @@ fn slot<T: Clone + Default>(values: &mut Vec<T>, id: u32) -> &mut T {
 }
 
 fn text<'a>(value: &'a Value, name: &str) -> &'a str {
-    value
-        .get(name)
-        .and_then(Value::as_str)
-        .unwrap_or_default()
-        .trim()
+    value.get(name).and_then(Value::as_str).unwrap_or_default().trim()
+}
+
+fn array<'a>(value: &'a Value, name: &str) -> impl Iterator<Item = &'a Value> {
+    value.get(name).and_then(Value::as_array).into_iter().flatten()
 }
 
 fn strings<'a>(value: &'a Value, name: &str) -> impl Iterator<Item = &'a str> {
-    value
-        .get(name)
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
+    array(value, name).filter_map(Value::as_str)
 }
 
 fn keys<'a>(value: &'a Value, name: &str) -> impl Iterator<Item = &'a str> {
-    let entries = value
-        .get(name)
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten();
-    entries.filter_map(|entry| entry.get("key").and_then(Value::as_str))
+    array(value, name).filter_map(|entry| entry.get("key").and_then(Value::as_str))
 }
 
 fn has_items(value: &Value, name: &str) -> bool {
-    value
-        .get(name)
-        .and_then(Value::as_array)
-        .is_some_and(|items| !items.is_empty())
+    array(value, name).next().is_some()
 }
 
 fn first_cover(value: &Value) -> u32 {
-    let covers = value
-        .get("covers")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten();
-    let cover = covers.filter_map(Value::as_i64).find(|&id| id > 0);
+    let mut ids = array(value, "covers").filter_map(Value::as_i64);
+    let cover = ids.find(|&id| id > 0);
     cover.and_then(|id| u32::try_from(id).ok()).unwrap_or(0)
 }
 
@@ -361,11 +267,8 @@ pub fn signals(source: &str) -> Vec<Signal> {
         *counter = counter.saturating_add(1);
     });
     let rating = |line: &[u8]| {
-        let score: u32 = std::str::from_utf8(field(line, 2))
-            .ok()?
-            .trim()
-            .parse()
-            .ok()?;
+        let digits = std::str::from_utf8(field(line, 2)).ok()?.trim();
+        let score: u32 = digits.parse().ok()?;
         (1..=5)
             .contains(&score)
             .then_some((ol_id(field(line, 0))?, score))
@@ -417,19 +320,14 @@ fn latin_name(author: &Value) -> Option<&str> {
     let singles = ["name", "personal_name", "fuller_name"].map(|name| text(author, name));
     let mut names = singles
         .into_iter()
-        .chain(strings(author, "alternate_names").map(str::trim));
-    let mut names = names
-        .by_ref()
+        .chain(strings(author, "alternate_names").map(str::trim))
         .filter(|name| !name.is_empty() && name.len() <= 120);
     let first = names.next()?;
     if catalog::is_mostly_latin(first) {
         return Some(first);
     }
-    Some(
-        names
-            .find(|name| catalog::is_mostly_latin(name))
-            .unwrap_or(first),
-    )
+    let latin = names.find(|name| catalog::is_mostly_latin(name));
+    Some(latin.unwrap_or(first))
 }
 
 pub fn authors(source: &str) -> Authors {
@@ -469,17 +367,13 @@ pub struct Facts {
 impl Facts {
     fn absorb(&mut self, other: &Facts) {
         self.editions = self.editions.saturating_add(other.editions);
-        for (mine, theirs) in self
-            .language_editions
-            .iter_mut()
-            .zip(other.language_editions)
-        {
+        let counts = self.language_editions.iter_mut();
+        for (mine, theirs) in counts.zip(other.language_editions) {
             *mine = mine.saturating_add(theirs);
         }
         self.languages |= other.languages;
-        if other.first_year > 0
-            && (self.first_year == 0 || other.first_year < self.first_year)
-        {
+        let earlier = self.first_year == 0 || other.first_year < self.first_year;
+        if other.first_year > 0 && earlier {
             self.first_year = other.first_year;
         }
         self.flags |= other.flags;
@@ -528,7 +422,8 @@ impl Titles {
     fn full_title(&self, record: &TitleRecord) -> (&str, &str) {
         let start = record.start as usize;
         let text = &self.text[start..start + record.title_length as usize];
-        text.split_once(SUBTITLE_SEPARATOR).unwrap_or((text, ""))
+        text.split_once(catalog::SUBTITLE_SEPARATOR)
+            .unwrap_or((text, ""))
     }
 
     pub fn title(&self, record: &TitleRecord) -> &str {
@@ -586,14 +481,6 @@ struct Edition {
     publisher: u32,
 }
 
-fn language_bit(key: &str) -> u32 {
-    let code = key.rsplit('/').next().unwrap_or(key);
-    LANGUAGE_CODES
-        .iter()
-        .position(|&known| known == code)
-        .map_or(OTHER_LANGUAGE, |bit| 1 << bit)
-}
-
 fn is_scan(edition: &Value) -> bool {
     !text(edition, "ocaid").is_empty()
         && strings(edition, "source_records")
@@ -607,8 +494,7 @@ fn is_front_cover(shape: CoverShape, scanned: bool) -> bool {
 }
 
 fn print_cover(edition: &Value, shapes: &[CoverShape]) -> u32 {
-    let format = text(edition, "physical_format").to_ascii_lowercase();
-    if NON_PRINT_FORMATS.iter().any(|word| format.contains(word)) {
+    if tags::is_non_print(text(edition, "physical_format")) {
         return 0;
     }
     let cover = first_cover(edition);
@@ -620,7 +506,7 @@ fn print_cover(edition: &Value, shapes: &[CoverShape]) -> u32 {
     }
 }
 
-fn cover_shape(line: &[u8]) -> Option<(usize, CoverShape)> {
+fn cover_shape(line: &[u8]) -> Option<(u32, CoverShape)> {
     let text = |index| std::str::from_utf8(field(line, index)).ok();
     Some((
         text(0)?.parse().ok()?,
@@ -631,67 +517,13 @@ fn cover_shape(line: &[u8]) -> Option<(usize, CoverShape)> {
 fn cover_shapes(source: &str) -> Vec<CoverShape> {
     let mut shapes = Vec::new();
     scan(source, "covers_metadata", cover_shape, |(id, shape)| {
-        if id >= shapes.len() {
-            shapes.resize(id + 1, (0, 0));
-        }
-        shapes[id] = shape;
+        *slot(&mut shapes, id) = shape;
     });
     shapes
 }
 
-fn is_unreadable(format: &str) -> bool {
-    let format = format.to_ascii_lowercase();
-    let unreadable = [
-        "microform",
-        "microfilm",
-        "microfiche",
-        "thesis",
-        "manuscript",
-        "cd-rom",
-    ];
-    unreadable.iter().any(|bad| format.contains(bad))
-}
-
-fn edition_title(title: &str, subtitle: &str) -> String {
-    if title.len() > MAX_TITLE_BYTES {
-        return String::new();
-    }
-    if subtitle.is_empty() || subtitle.len() > MAX_TITLE_BYTES {
-        return title.to_string();
-    }
-    let labelled = format!("{title}{SUBTITLE_SEPARATOR}{subtitle}");
-    let fits = labelled.len() <= usize::from(u8::MAX);
-    if fits { labelled } else { title.to_string() }
-}
-
-fn normalized_isbn(isbn: &str) -> Option<String> {
-    let digits: String = isbn.chars().filter(char::is_ascii_digit).collect();
-    let normalized = if digits.len() == 10 { format!("978{digits}") } else { digits };
-    (normalized.len() == 13).then_some(normalized)
-}
-
-fn isbn_language(isbn: &str) -> Option<usize> {
-    let normalized = normalized_isbn(isbn)?;
-    ISBN_GROUPS
-        .iter()
-        .find(|(prefix, _)| normalized.starts_with(prefix))
-        .map(|&(_, language)| language)
-}
-
-fn is_foreign_isbn(isbn: &str) -> bool {
-    normalized_isbn(isbn).is_some_and(|normalized| {
-        FOREIGN_ISBN_GROUPS
-            .iter()
-            .any(|prefix| normalized.starts_with(prefix))
-    })
-}
-
 fn isbns(edition: &Value) -> impl Iterator<Item = &str> {
     strings(edition, "isbn_13").chain(strings(edition, "isbn_10"))
-}
-
-fn isbn_language_of(edition: &Value) -> Option<usize> {
-    isbns(edition).find_map(isbn_language)
 }
 
 fn publisher_key(edition: &Value) -> u32 {
@@ -708,21 +540,11 @@ fn publisher_key(edition: &Value) -> u32 {
     hash.max(1)
 }
 
-fn is_print_on_demand(edition: &Value) -> bool {
-    strings(edition, "publishers")
-        .map(|publisher| publisher.to_ascii_lowercase())
-        .any(|publisher| {
-            PRINT_ON_DEMAND
-                .iter()
-                .any(|reprinter| publisher.contains(reprinter))
-        })
-}
-
-fn implied_language(edition: &Value) -> Option<usize> {
-    if let Some(language) = isbn_language_of(edition) {
-        return Some(language);
+fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usize> {
+    if isbn_language.is_some() {
+        return isbn_language;
     }
-    if isbns(edition).any(is_foreign_isbn) {
+    if isbns(edition).any(catalog::is_foreign_isbn) {
         return None;
     }
     let title = format!("{} {}", text(edition, "title"), text(edition, "subtitle"));
@@ -730,6 +552,17 @@ fn implied_language(edition: &Value) -> Option<usize> {
         return None;
     }
     Some(catalog::detect_language(&title).unwrap_or(0))
+}
+
+fn edition_flags(edition: &Value) -> u8 {
+    let readable = !tags::is_unreadable(text(edition, "physical_format"));
+    let flags = [
+        (has_items(edition, "isbn_13") || has_items(edition, "isbn_10"), FLAG_ISBN),
+        (first_cover(edition) > 0, FLAG_COVER),
+        (has_items(edition, "publishers"), FLAG_PUBLISHER),
+        (readable, FLAG_READABLE),
+    ];
+    flags.iter().filter(|(set, _)| *set).fold(0, |all, (_, flag)| all | flag)
 }
 
 fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
@@ -740,50 +573,33 @@ fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
     };
     let mut labelled = false;
     for key in keys(edition, "languages") {
-        facts.languages |= language_bit(key);
+        facts.languages |= catalog::language_bit(key);
         labelled = true;
-        let code = key.rsplit('/').next().unwrap_or(key);
-        if let Some(target) = TARGET_CODES.iter().position(|&known| known == code) {
+        if let Some(target) = catalog::target_language(key) {
             facts.language_editions[target] = 1;
         }
     }
+    let isbn_language = isbns(edition).find_map(catalog::isbn_language);
     if facts.languages == 0 {
-        match implied_language(edition) {
+        match implied_language(edition, isbn_language) {
             Some(target) => {
                 facts.language_editions[target] = 1;
                 facts.languages = 1 << target;
             }
-            None => facts.languages = OTHER_LANGUAGE,
+            None => facts.languages = catalog::OTHER_LANGUAGE,
         }
     }
     facts.first_year = year_of(text(edition, "publish_date"));
     facts.classes = tags::classes_of(edition);
-    let flags = [
-        (
-            has_items(edition, "isbn_13") || has_items(edition, "isbn_10"),
-            FLAG_ISBN,
-        ),
-        (first_cover(edition) > 0, FLAG_COVER),
-        (has_items(edition, "publishers"), FLAG_PUBLISHER),
-        (
-            !is_unreadable(text(edition, "physical_format")),
-            FLAG_READABLE,
-        ),
-    ];
-    facts.flags = flags
-        .iter()
-        .filter(|(set, _)| *set)
-        .fold(0, |all, (_, flag)| all | flag);
-    let title = edition_title(text(edition, "title"), text(edition, "subtitle"));
-    let series = catalog::parse_series(&strings(edition, "series").collect::<Vec<_>>());
+    facts.flags = edition_flags(edition);
     Some(Edition {
         work,
         facts,
         cover: print_cover(edition, shapes),
-        title,
-        series,
-        known_language: labelled || isbn_language_of(edition).is_some(),
-        print_on_demand: is_print_on_demand(edition),
+        title: catalog::edition_title(text(edition, "title"), text(edition, "subtitle")),
+        series: release::parse_series(&strings(edition, "series").collect::<Vec<_>>()),
+        known_language: labelled || isbn_language.is_some(),
+        print_on_demand: strings(edition, "publishers").any(catalog::is_reprinter),
         scanned: is_scan(edition),
         publisher: publisher_key(edition),
     })
@@ -843,18 +659,8 @@ pub struct Context<'a> {
     pub sticky: &'a [bool],
 }
 
-struct WorkLine {
-    month: String,
-    book: Option<Book>,
-}
-
 fn author_ids(work: &Value, authors: &Authors) -> Vec<u32> {
-    let entries = work
-        .get("authors")
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten();
-    let keys = entries.filter_map(|entry| {
+    let keys = array(work, "authors").filter_map(|entry| {
         let key = entry.get("author").and_then(|author| author.get("key"));
         key.or_else(|| entry.get("key"))?.as_str()
     });
@@ -879,11 +685,7 @@ fn description_of(work: &Value) -> &str {
 
 fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
     let facts = context.facts.get(id as usize).copied().unwrap_or_default();
-    let signal = context
-        .signals
-        .get(id as usize)
-        .copied()
-        .unwrap_or_default();
+    let signal = context.signals.get(id as usize).copied().unwrap_or_default();
     let sticky = context.sticky.get(id as usize).copied().unwrap_or(false);
     let title = text(work, "title");
     let authors = author_ids(work, context.authors);
@@ -893,9 +695,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         has_author: !authors.is_empty(),
         good_title: !title.is_empty() && !catalog::is_bad_title(title),
         has_subjects: !subjects.is_empty(),
-        bad_subject: subjects
-            .iter()
-            .any(|subject| catalog::is_bad_subject(subject)),
+        bad_subject: subjects.iter().any(|subject| tags::is_bad_subject(subject)),
         has_description: description.len() >= 40,
         has_cover: first_cover(work) > 0,
     };
@@ -921,11 +721,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         subtitle: text(work, "subtitle").to_string(),
         tags: tags::confident_tags(subjects.into_iter(), &facts.classes, facts.editions),
         description_language: catalog::detect_language(&description),
-        description: if described {
-            description
-        } else {
-            String::new()
-        },
+        description: if described { description } else { String::new() },
         authors,
         cover: first_cover(work),
         year,
@@ -936,7 +732,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
     })
 }
 
-fn work_line(line: &[u8], context: &Context) -> Option<WorkLine> {
+fn work_line(line: &[u8], context: &Context) -> Option<(String, Option<Book>)> {
     if field(line, 0) != b"/type/work" {
         return None;
     }
@@ -947,12 +743,11 @@ fn work_line(line: &[u8], context: &Context) -> Option<WorkLine> {
         .get(id as usize)
         .is_some_and(|facts| facts.editions > 0);
     let sticky = context.sticky.get(id as usize).copied().unwrap_or(false);
-    let book = if has_editions || sticky {
-        book_from(id, &json(line)?, context)
-    } else {
-        None
+    let book = match has_editions || sticky {
+        true => book_from(id, &json(line)?, context),
+        false => None,
     };
-    Some(WorkLine { month, book })
+    Some((month, book))
 }
 
 pub struct Works {
@@ -965,11 +760,11 @@ pub fn works(source: &str, context: &Context) -> Works {
         books: Vec::new(),
         month: String::new(),
     };
-    let absorb = |line: WorkLine| {
-        if line.month > works.month {
-            works.month = line.month;
+    let absorb = |(month, book): (String, Option<Book>)| {
+        if month > works.month {
+            works.month = month;
         }
-        works.books.extend(line.book);
+        works.books.extend(book);
     };
     scan(source, "works", |line| work_line(line, context), absorb);
     works.books.sort_unstable_by_key(|book| book.work);

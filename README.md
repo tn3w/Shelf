@@ -401,9 +401,10 @@ dump, all languages from the same passes. Output is deterministic.
 Local run on the 2026-09 dumps, pinned to 4 cores: 211 s, peak RSS 9.1 GB, output
 127 MB; the next-month delta was 115 KB of segments (621 new works, no changes).
 
-Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes),
-`catalog.rs` (scoring, titles, series, packs), `tags.rs` (taxonomy), `segment.rs`
-(encoding), `release.rs` (state, manifest).
+Sources: `main.rs` (CLI, budget fitting, deltas), `dumps.rs` (streams, passes, dump
+models), `catalog.rs` (scoring, language, titles, covers, candidates), `tags.rs`
+(taxonomy, subject/format/pack classification), `segment.rs` (encoding), `release.rs`
+(packs, series, state, manifest).
 
 ## Database workflow
 

@@ -1,3 +1,4 @@
+use crate::dumps::Book;
 use Category::{Accolade, Audience, Form, Genre, Topic};
 use serde::Deserialize;
 use serde_json::Value;
@@ -64,6 +65,43 @@ const RELATIVE_FLOOR: f32 = 0.2;
 const RICH_SUBJECTS: usize = 25;
 const RICH_TOPIC_SUPPORT: u16 = 3;
 const MEMO_LIMIT: usize = 200_000;
+const AUTHOR_FILL_SHARE: f32 = 0.7;
+const AUTHOR_FILL_MINIMUM: usize = 2;
+
+const KIDS_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
+
+const BAD_SUBJECTS: &[&str] = &[
+    "periodicals",
+    "government publications",
+    "dissertations",
+    "congresses",
+    "bibliography",
+    "abstracts",
+    "statistics",
+    "catalogs",
+    "indexes",
+    "yearbooks",
+    "directories",
+    "handbooks, manuals",
+    "law reports",
+    "legislation",
+    "patents",
+    "standards",
+    "specifications",
+    "examinations",
+    "outlines, syllabi",
+    "notation",
+    "registers",
+    "tables",
+];
+
+const NON_PRINT_FORMATS: &[&str] = &[
+    "audio", "cassette", "cd", "mp3", "braille", "player", "sound", "ebook",
+    "electronic",
+];
+
+const UNREADABLE_FORMATS: &[&str] =
+    &["microform", "microfilm", "microfiche", "thesis", "manuscript", "cd-rom"];
 
 const IGNORED_PREFIXES: &[&str] = &[
     "nyt:",
@@ -154,6 +192,106 @@ pub fn category(tag: u8) -> Category {
 pub fn is_genre_like(tag: u8) -> bool {
     matches!(category(tag), Genre | Audience | Form)
         && !matches!(slug(tag), "fiction" | "nonfiction")
+}
+
+pub fn is_bad_subject(subject: &str) -> bool {
+    let lowered = subject.trim().to_ascii_lowercase();
+    BAD_SUBJECTS.iter().any(|bad| lowered.ends_with(bad))
+}
+
+pub fn is_non_print(format: &str) -> bool {
+    let lowered = format.to_ascii_lowercase();
+    NON_PRINT_FORMATS.iter().any(|word| lowered.contains(word))
+}
+
+pub fn is_unreadable(format: &str) -> bool {
+    let lowered = format.to_ascii_lowercase();
+    UNREADABLE_FORMATS.iter().any(|bad| lowered.contains(bad))
+}
+
+fn genre_pack(slug: &str) -> Option<&'static str> {
+    match slug {
+        "fantasy" | "epic-fantasy" | "urban-fantasy" | "paranormal" => Some("fantasy"),
+        "science-fiction" | "space-opera" | "dystopian" => Some("scifi"),
+        "mystery" | "cozy-mystery" | "thriller" | "crime" => Some("mystery"),
+        "romance" | "regency-romance" | "contemporary-romance" | "historical-romance" => {
+            Some("romance")
+        }
+        "nonfiction" => Some("nonfiction"),
+        _ => None,
+    }
+}
+
+pub fn pack_slug(tags: &[u8]) -> &'static str {
+    let slugs: Vec<&str> = tags.iter().map(|&tag| slug(tag)).collect();
+    if slugs.iter().any(|slug| KIDS_TAGS.contains(slug)) {
+        return "kids";
+    }
+    if slugs.contains(&"young-adult") {
+        return "young-adult";
+    }
+    slugs
+        .iter()
+        .find_map(|slug| genre_pack(slug))
+        .unwrap_or("general")
+}
+
+pub fn fill_author_tags(books: &mut [Book]) {
+    let fiction = tag("fiction");
+    let nonfiction = tag("nonfiction");
+    let is_shelved = |book: &Book| book.tags.iter().any(|&tag| is_genre_like(tag));
+    let mut order: Vec<usize> = (0..books.len())
+        .filter(|&index| !books[index].authors.is_empty())
+        .collect();
+    order.sort_by_key(|&index| books[index].authors[0]);
+    let mut fills: Vec<(usize, Vec<u8>)> = Vec::new();
+    for group in order.chunk_by(|&a, &b| books[a].authors[0] == books[b].authors[0]) {
+        let shelved: Vec<usize> = group
+            .iter()
+            .copied()
+            .filter(|&i| is_shelved(&books[i]))
+            .collect();
+        if shelved.len() < AUTHOR_FILL_MINIMUM || shelved.len() == group.len() {
+            continue;
+        }
+        let mut counts: HashMap<u8, usize> = HashMap::new();
+        for &index in &shelved {
+            let borrowable = books[index]
+                .tags
+                .iter()
+                .filter(|&&tag| is_genre_like(tag) || tag == fiction);
+            borrowable.for_each(|&tag| *counts.entry(tag).or_default() += 1);
+        }
+        let needed = AUTHOR_FILL_SHARE * shelved.len() as f32;
+        let mut shared: Vec<(usize, u8)> = counts
+            .into_iter()
+            .filter(|&(_, count)| count as f32 >= needed)
+            .map(|(tag, count)| (count, tag))
+            .collect();
+        shared.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+        for &index in group {
+            let book = &books[index];
+            let decided = book
+                .tags
+                .iter()
+                .any(|&tag| tag == fiction || tag == nonfiction);
+            if decided || is_shelved(book) {
+                continue;
+            }
+            let borrowed: Vec<u8> = shared
+                .iter()
+                .map(|&(_, tag)| tag)
+                .filter(|&tag| !book.tags.contains(&tag))
+                .filter(|&tag| book.tags.is_empty() || category(tag) != Audience)
+                .collect();
+            if borrowed.iter().any(|&tag| is_genre_like(tag)) {
+                fills.push((index, borrowed));
+            }
+        }
+    }
+    for (index, borrowed) in fills {
+        books[index].tags.extend(borrowed);
+    }
 }
 
 #[derive(Clone, Copy, Default)]

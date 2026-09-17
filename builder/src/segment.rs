@@ -1,5 +1,6 @@
-use crate::catalog::{Series, tokenize};
+use crate::catalog::tokenize;
 use crate::dumps::Authors;
+use crate::release::Series;
 use crate::tags;
 use flate2::{Compress, Compression, FlushCompress, Status};
 use std::collections::{BTreeMap, HashMap};
