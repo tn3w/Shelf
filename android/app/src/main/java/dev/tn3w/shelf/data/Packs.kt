@@ -133,7 +133,7 @@ class Packs(private val context: Context) {
             files
                 .filter { it.pack != "ranks" }
                 .distinctBy { it.id }
-                .map(::open)
+                .mapNotNull(::open)
                 .groupBy { it.pack }
                 .flatMap { (_, chain) -> currentChain(chain) }
                 .sortedWith(
@@ -145,7 +145,7 @@ class Packs(private val context: Context) {
             files
                 .filter { it.pack == "ranks" }
                 .maxWithOrNull(compareBy(releaseOrder) { it.month })
-                ?.let { Ranks(map(it)) }
+                ?.let { runCatching { Ranks(map(it)) }.getOrNull() }
         return Catalogue(language, segments, ranks)
     }
 
@@ -158,7 +158,7 @@ class Packs(private val context: Context) {
         }
     }
 
-    private fun open(file: LocalFile) = Segment(map(file))
+    private fun open(file: LocalFile) = runCatching { Segment(map(file)) }.getOrNull()
 
     private fun map(file: LocalFile): ByteBuffer {
         val local = binOf(file.id)
