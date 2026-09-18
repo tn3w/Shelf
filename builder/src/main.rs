@@ -436,7 +436,7 @@ fn main() {
         .collect();
     let sticky = sticky_works(&states);
 
-    let (signals, authors, (facts, titles)) = thread::scope(|scope| {
+    let (signals, authors, (facts, titles, shapes)) = thread::scope(|scope| {
         let signals = scope.spawn(|| dumps::signals(&options.source));
         let authors = scope.spawn(|| dumps::authors(&options.source));
         let editions = scope.spawn(|| dumps::editions(&options.source));
@@ -451,10 +451,11 @@ fn main() {
         signals: &signals,
         facts: &facts,
         authors: &authors,
+        shapes: &shapes,
         sticky: &sticky,
     };
     let works = dumps::works(&options.source, &context);
-    drop((signals, facts));
+    drop((signals, facts, shapes));
 
     let month = options.month.clone().unwrap_or(works.month);
     let mut books = works.books;

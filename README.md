@@ -74,6 +74,24 @@ merged with monthly deltas, and searched entirely on device.
 Small installed-pack updates can download quietly; larger rebases appear in Settings. The
 app does not run a background service.
 
+### Cover Selection
+
+Every edition cover is vetted while editions stream in, then one winner per work and
+language is scored in the catalogue pass.
+
+| Stage | Rule |
+|---|---|
+| Reject | Non-book formats (audio, CD, DVD, video, ebook, braille, microform, games) and edition titles marked as audiobook, movie tie-in or disc releases. |
+| Reject | Images that are not an upright front cover: aspect outside `0.58–0.72`, or under 250 px wide. |
+| Image points | Cover upload year (2024+ scores 70, down to 15 for 2013), stored resolution (1000 px scores 45, down to 12 for 320 px) and a bonus for the common trim (`0.62–0.68`). |
+| Localize | Winner must be an edition in the shelf language with a latin, non-foreign title; English is the fallback, the work cover the last resort. |
+| Score | Image points plus publisher reach (up to 25), edition year (10 from 1990, 5 from 1960) and a title match. |
+
+Publisher-supplied artwork is uploaded recently and at high resolution, so cover upload
+date and stored resolution stand in for design quality, which the dumps never state. The
+edition's own age barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint
+thumbnail. Print-on-demand reprinters stay excluded throughout.
+
 ## Discovery
 
 Recommendations run locally over your shelves and installed catalogue data.

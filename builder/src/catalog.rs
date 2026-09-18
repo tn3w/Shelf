@@ -19,6 +19,9 @@ const JUDGED_HEAD_BYTES: usize = 40;
 const MIN_PARAGRAPH_BYTES: usize = 60;
 const SHORT_LEAD_BYTES: usize = 200;
 const MAX_SHOUTED_SHARE: f32 = 0.7;
+const COVER_TITLE_POINTS: i32 = 10;
+const COVER_REACH_POINTS: [(u32, i32); 4] = [(20_000, 25), (5_000, 20), (1_000, 15), (100, 8)];
+const COVER_EDITION_POINTS: [(u16, i32); 2] = [(1990, 10), (1960, 5)];
 
 const TAIL_MARKERS: &[&str] = &[
     "-- back cover",
@@ -778,6 +781,17 @@ fn is_series_label(title: &str, series: &str) -> bool {
             .all(|(label, name)| *label == name)
 }
 
+fn award(earned: bool, points: i32) -> i32 {
+    if earned { points } else { 0 }
+}
+
+fn banded<T: PartialOrd>(value: T, points: &[(T, i32)]) -> i32 {
+    points
+        .iter()
+        .find(|(start, _)| value >= *start)
+        .map_or(0, |(_, points)| *points)
+}
+
 pub struct Entry {
     pub book: usize,
     pub title: String,
@@ -867,15 +881,12 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    fn cover_rank(&self, record: &TitleRecord, wanted: &str) -> (bool, bool, bool, bool, u16, u32) {
-        (
-            record.known_language,
-            self.titles.major_publisher(record),
-            !record.scanned,
-            title_key(self.title(record), &[]) == wanted,
-            record.year,
-            record.cover,
-        )
+    fn cover_score(&self, record: &TitleRecord, wanted: &str) -> i32 {
+        let matching = title_key(self.title(record), &[]) == wanted;
+        i32::from(record.cover_quality)
+            + banded(self.titles.publisher_editions(record), &COVER_REACH_POINTS)
+            + banded(record.year, &COVER_EDITION_POINTS)
+            + award(matching, COVER_TITLE_POINTS)
     }
 
     fn best_cover(&self, records: &[&TitleRecord], key: &str, language: usize) -> u32 {
@@ -886,7 +897,7 @@ impl<'a> Resolver<'a> {
             .filter(|record| is_mostly_latin(self.title(record)))
             .filter(|record| !is_foreign_title(self.title(record), language));
         usable
-            .max_by_key(|record| self.cover_rank(record, key))
+            .max_by_key(|record| (self.cover_score(record, key), record.year, record.cover))
             .map_or(0, |record| record.cover)
     }
 

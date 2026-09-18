@@ -14,11 +14,73 @@ use std::time::Duration;
 const BLOCK_BYTES: usize = 8 << 20;
 const MAX_RETRIES: u32 = 12;
 const MAX_AUTHORS: usize = 4;
-const MIN_SCAN_WIDTH: f32 = 700.0;
-const MAJOR_PUBLISHER_EDITIONS: u32 = 2000;
+const MIN_COVER_WIDTH: u16 = 250;
+const NARROWEST_BOOK: f32 = 0.58;
+const WIDEST_BOOK: f32 = 0.72;
+const IDEAL_BOOK: std::ops::RangeInclusive<f32> = 0.62..=0.68;
+const IDEAL_ASPECT_POINTS: u8 = 15;
 
-type CoverShape = (u16, u16);
+const UPLOAD_POINTS: [(u16, u8); 4] = [(2024, 70), (2021, 55), (2017, 35), (2013, 15)];
+const RESOLUTION_POINTS: [(u16, u8); 4] = [(1000, 45), (600, 32), (450, 22), (320, 12)];
 
+const NON_BOOK_FORMATS: &[&str] = &[
+    "audio",
+    "cassette",
+    "cd",
+    "mp3",
+    "dvd",
+    "vhs",
+    "blu-ray",
+    "video",
+    "film",
+    "sound",
+    "record",
+    "braille",
+    "ebook",
+    "e-book",
+    "kindle",
+    "electronic",
+    "downloadable",
+    "streaming",
+    "playaway",
+    "calendar",
+    "poster",
+    "game",
+    "toy",
+    "puzzle",
+    "microform",
+    "microfilm",
+    "microfiche",
+];
+
+const NON_BOOK_TITLES: &[&str] = &[
+    "audiobook",
+    "audio book",
+    "audio cd",
+    "audio edition",
+    "unabridged",
+    "abridged",
+    "read by",
+    "dvd",
+    "vhs",
+    "blu-ray",
+    "cd-rom",
+    "compact disc",
+    "soundtrack",
+    "motion picture",
+    "movie tie",
+    "film tie",
+    "media tie",
+    "the movie",
+    "the film",
+];
+
+#[derive(Clone, Copy, Default)]
+struct CoverImage {
+    width: u16,
+    height: u16,
+    uploaded: u16,
+}
 pub const FLAG_ISBN: u8 = 1;
 pub const FLAG_COVER: u8 = 2;
 pub const FLAG_PUBLISHER: u8 = 4;
@@ -424,9 +486,8 @@ pub struct TitleRecord {
     pub position: u16,
     pub year: u16,
     pub cover: u32,
-    pub known_language: bool,
     pub print_on_demand: bool,
-    pub scanned: bool,
+    pub cover_quality: u8,
     publisher: u32,
     start: u32,
     title_length: u8,
@@ -462,9 +523,11 @@ impl Titles {
         self.full_title(record).1
     }
 
-    pub fn major_publisher(&self, record: &TitleRecord) -> bool {
-        let editions = self.publisher_editions.get(&record.publisher);
-        editions.is_some_and(|&count| count >= MAJOR_PUBLISHER_EDITIONS)
+    pub fn publisher_editions(&self, record: &TitleRecord) -> u32 {
+        self.publisher_editions
+            .get(&record.publisher)
+            .copied()
+            .unwrap_or(0)
     }
 
     pub fn series(&self, record: &TitleRecord) -> &str {
@@ -486,9 +549,8 @@ impl Titles {
             position,
             year: edition.facts.first_year,
             cover: edition.cover,
-            known_language: edition.known_language,
             print_on_demand: edition.print_on_demand,
-            scanned: edition.scanned,
+            cover_quality: edition.cover_quality,
             publisher: edition.publisher,
             start,
             title_length: edition.title.len() as u8,
@@ -501,53 +563,89 @@ struct Edition {
     work: u32,
     facts: Facts,
     cover: u32,
+    cover_quality: u8,
     title: String,
     series: Option<(String, u16)>,
-    known_language: bool,
     print_on_demand: bool,
-    scanned: bool,
     publisher: u32,
 }
 
-fn is_scan(edition: &Value) -> bool {
-    !text(edition, "ocaid").is_empty()
-        && strings(edition, "source_records")
-            .any(|record| record.starts_with("ia:") || record.starts_with("promise:"))
+#[derive(Default)]
+pub struct Shapes {
+    images: Vec<CoverImage>,
 }
 
-fn is_front_cover(shape: CoverShape, scanned: bool) -> bool {
-    let (width, height) = (f32::from(shape.0), f32::from(shape.1));
-    let upright = height > 0.0 && (0.55..=0.8).contains(&(width / height));
-    upright && width >= 180.0 && (!scanned || width >= MIN_SCAN_WIDTH)
+impl Shapes {
+    fn load(source: &str) -> Shapes {
+        let mut loaded = Shapes::default();
+        let parse = |line: &[u8]| {
+            let column = |index| std::str::from_utf8(field(line, index)).ok();
+            let id: u32 = column(0)?.parse().ok()?;
+            let image = CoverImage {
+                width: column(1)?.parse().ok()?,
+                height: column(2)?.parse().ok()?,
+                uploaded: year_of(column(3).unwrap_or_default()),
+            };
+            Some((id, image))
+        };
+        scan(source, "covers_metadata", parse, |(id, image)| {
+            *slot(&mut loaded.images, id) = image;
+        });
+        loaded
+    }
+
+    fn of(&self, cover: u32) -> CoverImage {
+        self.images.get(cover as usize).copied().unwrap_or_default()
+    }
 }
 
-fn print_cover(edition: &Value, shapes: &[CoverShape]) -> u32 {
-    if tags::is_non_print(text(edition, "physical_format")) {
+fn banded(value: u16, points: &[(u16, u8)]) -> u8 {
+    points
+        .iter()
+        .find(|(start, _)| value >= *start)
+        .map_or(0, |(_, points)| *points)
+}
+
+fn cover_quality(image: CoverImage) -> u8 {
+    if image.height == 0 || image.width < MIN_COVER_WIDTH {
         return 0;
     }
-    let cover = first_cover(edition);
-    let shape = shapes.get(cover as usize).copied().unwrap_or_default();
-    if is_front_cover(shape, is_scan(edition)) {
-        cover
+    let aspect = f32::from(image.width) / f32::from(image.height);
+    if !(NARROWEST_BOOK..=WIDEST_BOOK).contains(&aspect) {
+        return 0;
+    }
+    let ideal = if IDEAL_BOOK.contains(&aspect) {
+        IDEAL_ASPECT_POINTS
     } else {
         0
+    };
+    banded(image.uploaded, &UPLOAD_POINTS) + banded(image.width, &RESOLUTION_POINTS) + ideal + 1
+}
+
+fn contains_any(text: &str, needles: &[&str]) -> bool {
+    let lowered = text.to_ascii_lowercase();
+    needles.iter().any(|needle| lowered.contains(needle))
+}
+
+fn is_non_book(format: &str, title: &str) -> bool {
+    contains_any(format, NON_BOOK_FORMATS) || contains_any(title, NON_BOOK_TITLES)
+}
+
+fn vetted_cover(edition: &Value, shapes: &Shapes) -> (u32, u8) {
+    let cover = first_cover(edition);
+    let format = text(edition, "physical_format");
+    if cover == 0 || is_non_book(format, text(edition, "title")) {
+        return (0, 0);
+    }
+    match cover_quality(shapes.of(cover)) {
+        0 => (0, 0),
+        quality => (cover, quality),
     }
 }
 
-fn cover_shape(line: &[u8]) -> Option<(u32, CoverShape)> {
-    let text = |index| std::str::from_utf8(field(line, index)).ok();
-    Some((
-        text(0)?.parse().ok()?,
-        (text(1)?.parse().ok()?, text(2)?.parse().ok()?),
-    ))
-}
-
-fn cover_shapes(source: &str) -> Vec<CoverShape> {
-    let mut shapes = Vec::new();
-    scan(source, "covers_metadata", cover_shape, |(id, shape)| {
-        *slot(&mut shapes, id) = shape;
-    });
-    shapes
+pub fn work_cover(cover: u32, shapes: &Shapes) -> u32 {
+    let usable = cover > 0 && cover_quality(shapes.of(cover)) > 0;
+    if usable { cover } else { 0 }
 }
 
 fn isbns(edition: &Value) -> impl Iterator<Item = &str> {
@@ -599,16 +697,14 @@ fn edition_flags(edition: &Value) -> u8 {
         .fold(0, |all, (_, flag)| all | flag)
 }
 
-fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
+fn edition_from(edition: &Value, shapes: &Shapes) -> Option<Edition> {
     let work = ol_id(keys(edition, "works").next()?.as_bytes())?;
     let mut facts = Facts {
         editions: 1,
         ..Facts::default()
     };
-    let mut labelled = false;
     for key in keys(edition, "languages") {
         facts.languages |= catalog::language_bit(key);
-        labelled = true;
         if let Some(target) = catalog::target_language(key) {
             facts.language_editions[target] = 1;
         }
@@ -626,23 +722,23 @@ fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
     facts.first_year = year_of(text(edition, "publish_date"));
     facts.classes = tags::classes_of(edition);
     facts.flags = edition_flags(edition);
+    let (cover, cover_quality) = vetted_cover(edition, shapes);
     Some(Edition {
         work,
         facts,
-        cover: print_cover(edition, shapes),
+        cover,
+        cover_quality,
         title: catalog::edition_title(text(edition, "title"), text(edition, "subtitle")),
         series: release::parse_series(&strings(edition, "series").collect::<Vec<_>>()),
-        known_language: labelled || isbn_language.is_some(),
         print_on_demand: strings(edition, "publishers").any(catalog::is_reprinter),
-        scanned: is_scan(edition),
         publisher: publisher_key(edition),
     })
 }
 
-pub fn editions(source: &str) -> (Vec<Facts>, Titles) {
+pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
-    let shapes = cover_shapes(source);
+    let shapes = Shapes::load(source);
     scan(
         source,
         "editions",
@@ -670,7 +766,7 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles) {
         .sort_unstable_by_key(|record| (record.work, record.language));
     titles.records.shrink_to_fit();
     titles.text.shrink_to_fit();
-    (facts, titles)
+    (facts, titles, shapes)
 }
 
 pub struct Book {
@@ -693,6 +789,7 @@ pub struct Context<'a> {
     pub signals: &'a [Signal],
     pub facts: &'a [Facts],
     pub authors: &'a Authors,
+    pub shapes: &'a Shapes,
     pub sticky: &'a [bool],
 }
 
@@ -768,7 +865,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
             String::new()
         },
         authors,
-        cover: first_cover(work),
+        cover: work_cover(first_cover(work), context.shapes),
         year,
         editions: facts.editions,
         signal,

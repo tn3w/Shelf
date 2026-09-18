@@ -94,18 +94,6 @@ const BAD_SUBJECTS: &[&str] = &[
     "tables",
 ];
 
-const NON_PRINT_FORMATS: &[&str] = &[
-    "audio",
-    "cassette",
-    "cd",
-    "mp3",
-    "braille",
-    "player",
-    "sound",
-    "ebook",
-    "electronic",
-];
-
 const UNREADABLE_FORMATS: &[&str] = &[
     "microform",
     "microfilm",
@@ -209,11 +197,6 @@ pub fn is_genre_like(tag: u8) -> bool {
 pub fn is_bad_subject(subject: &str) -> bool {
     let lowered = subject.trim().to_ascii_lowercase();
     BAD_SUBJECTS.iter().any(|bad| lowered.ends_with(bad))
-}
-
-pub fn is_non_print(format: &str) -> bool {
-    let lowered = format.to_ascii_lowercase();
-    NON_PRINT_FORMATS.iter().any(|word| lowered.contains(word))
 }
 
 pub fn is_unreadable(format: &str) -> bool {
