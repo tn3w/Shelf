@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Icon
@@ -114,10 +113,16 @@ fun SearchScreen(navigator: Navigator) {
                     query = "$it "
                 }
             }
-            items(current.authors, key = { "author-${it.number}" }) {
-                SuggestionRow(Icons.Outlined.Person, it.name, Modifier.animateItem()) {
-                    saveQuery()
-                    navigator.author(it)
+            items(current.authors, key = { "author-${it.number}" }) { author ->
+                SuggestionRow(
+                    author.name,
+                    Modifier.animateItem(),
+                    onClick = {
+                        saveQuery()
+                        navigator.author(author)
+                    },
+                ) {
+                    AuthorAvatar(author, 36.dp)
                 }
             }
             items(current.books, key = { "book-${it.work}" }) { book ->
@@ -194,13 +199,7 @@ private fun SuggestionRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    SuggestionRow(text, modifier, onClick) {
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -213,6 +212,24 @@ private fun SuggestionRow(
                 modifier = Modifier.padding(8.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun SuggestionRow(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    leading: @Composable () -> Unit,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = ScreenPadding, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        leading()
         Text(
             text,
             style = MaterialTheme.typography.bodyLarge,

@@ -4,7 +4,10 @@ import java.util.BitSet
 import java.util.PriorityQueue
 import kotlin.math.ln
 
-data class Author(val number: Int, val name: String)
+data class Author(val number: Int, val name: String) {
+    fun photoUrl(size: String) =
+        "https://covers.openlibrary.org/a/olid/OL${number}A-$size.jpg?default=false"
+}
 
 data class Book(
     val work: Int,

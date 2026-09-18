@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -72,6 +73,8 @@ import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Loaded
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
+import dev.tn3w.shelf.data.Author
+import dev.tn3w.shelf.data.AuthorGroup
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Settings
 import kotlinx.coroutines.Dispatchers
@@ -143,6 +146,40 @@ fun BookCover(
             onSuccess = { loaded = true },
             modifier = Modifier.fillMaxSize(),
         )
+    }
+}
+
+private fun initials(name: String) =
+    name.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("")
+
+@Composable
+fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
+    val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
+    var loaded by remember(author.number) { mutableStateOf(false) }
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = modifier.size(size),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (!loaded) {
+                Text(
+                    initials(author.name),
+                    style =
+                        if (size < 64.dp) MaterialTheme.typography.titleMedium
+                        else MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            if (!settings.onlineCovers) return@Box
+            AsyncImage(
+                model = author.photoUrl(if (size < 64.dp) "S" else "M"),
+                contentDescription = author.name,
+                contentScale = ContentScale.Crop,
+                onSuccess = { loaded = true },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 
@@ -464,6 +501,42 @@ fun BookGrid(
         }
         items(books, key = { it.work }) {
             BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
+        }
+    }
+}
+
+@Composable
+fun GroupedBookGrid(
+    groups: List<AuthorGroup>?,
+    origin: String,
+    onOpen: (Book, String) -> Unit,
+    header: LazyGridScope.() -> Unit = {},
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(GridTileWidth),
+        contentPadding = PaddingValues(ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        header()
+        if (groups == null) {
+            items(12) { SkeletonTile(Modifier.fillMaxWidth()) }
+            return@LazyVerticalGrid
+        }
+        val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
+        groups.forEach { group ->
+            if (labelled) {
+                fullWidth {
+                    Text(
+                        group.series ?: stringResource(R.string.other_books),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
+                    )
+                }
+            }
+            items(group.books, key = { it.work }) {
+                BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
+            }
         }
     }
 }

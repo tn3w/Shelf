@@ -143,38 +143,23 @@ fun TagScreen(id: Int, navigator: Navigator) {
 
 @Composable
 fun AuthorScreen(author: Author, navigator: Navigator) {
-    val books by load(author) { recommender.authorBooks(author) }
+    val groups by load(author) { recommender.authorShelf(author) }
     val born by load(author) { catalogue.authorBorn(author) }
+    val count = groups?.sumOf { it.books.size }
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(navigator::back)
-        BookGrid(books, "author-${author.number}", navigator::book) {
-            fullWidth { AuthorHeader(author.name, born ?: 0, books?.size) }
+        GroupedBookGrid(groups, "author-${author.number}", navigator::book) {
+            fullWidth { AuthorHeader(author, born ?: 0, count) }
         }
     }
 }
 
 @Composable
-private fun AuthorHeader(name: String, born: Int, count: Int?) {
+private fun AuthorHeader(author: Author, born: Int, count: Int?) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(96.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    name
-                        .split(" ")
-                        .mapNotNull { it.firstOrNull() }
-                        .take(2)
-                        .joinToString(""),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
+        AuthorAvatar(author, 96.dp)
         Text(
-            name,
+            author.name,
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp),

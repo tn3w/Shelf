@@ -66,6 +66,8 @@ private class Profile(
 
 private class Scored(val score: Double, val work: Int)
 
+data class AuthorGroup(val series: String?, val books: List<Book>)
+
 enum class RowKind {
     Series,
     Because,
@@ -450,6 +452,30 @@ class Recommender(private val catalogue: Catalogue) {
     fun authorBooks(author: Author, limit: Int = 90): List<Book> {
         val works = catalogue.authorWorks(author).sortedByDescending(catalogue::score)
         return distinct(catalogue.books(works.take(limit * 2)), limit)
+    }
+
+    fun authorShelf(author: Author, limit: Int = 90): List<AuthorGroup> {
+        val grouped = authorBooks(author, limit).groupBy { catalogue.series(it.work)?.name }
+        val (series, single) = grouped.entries.partition { it.key != null && it.value.size > 1 }
+        val standalone = single.flatMap { it.value }
+        val groups =
+            series
+                .map { (name, members) -> AuthorGroup(name, readingOrder(members)) }
+                .sortedByDescending { group ->
+                    group.books.maxOf { catalogue.score(it.work) }
+                }
+        if (standalone.isEmpty()) return groups
+        return groups + AuthorGroup(null, standalone.sortedByDescending {
+            catalogue.score(it.work)
+        })
+    }
+
+    private fun readingOrder(books: List<Book>): List<Book> {
+        val order = catalogue.series(books.first().work)?.members.orEmpty()
+        return books.sortedBy {
+            val rank = order.indexOf(it.work)
+            if (rank < 0) order.size else rank
+        }
     }
 
     fun popular(limit: Int = 20, tag: Int? = null): List<Book> {

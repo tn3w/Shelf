@@ -46,6 +46,10 @@ releases.
 |---|---|---|
 | Search with typo tolerance, open author and tag pages, explore popular works and genres. | Read EPUB, PDF, TXT/Markdown, HTML, FB2 and CBZ files with progress and chapters. | Keep Want, Reading and Finished shelves, daily goals, streaks and series progress. |
 
+Author pages and author search results show Open Library author photos when online covers
+are on, falling back to initials, and group works by series in reading order,
+most prominent series first, with standalone titles under "Other books".
+
 Home rows surface next series volumes, more from favorite authors and books related to
 your library, built locally from your shelves, tags, authors and ratings, and capped so
 one author or series cannot take over a page.
