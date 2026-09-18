@@ -136,9 +136,8 @@ fun TagScreen(id: Int, navigator: Navigator) {
     val tag by load(id) { catalogue.tags.getOrNull(id) }
     val books by load(id) { recommender.popular(90, id) }
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        BookGrid(books, "tag-$id", navigator::book) {
-            fullWidth { BackBar(navigator::back, tag?.label.orEmpty()) }
-        }
+        BackBar(navigator::back, tag?.label.orEmpty())
+        BookGrid(books, "tag-$id", navigator::book)
     }
 }
 
@@ -147,8 +146,8 @@ fun AuthorScreen(author: Author, navigator: Navigator) {
     val books by load(author) { recommender.authorBooks(author) }
     val born by load(author) { catalogue.authorBorn(author) }
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+        BackBar(navigator::back)
         BookGrid(books, "author-${author.number}", navigator::book) {
-            fullWidth { BackBar(navigator::back) }
             fullWidth { AuthorHeader(author.name, born ?: 0, books?.size) }
         }
     }

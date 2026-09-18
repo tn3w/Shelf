@@ -12,6 +12,7 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -94,6 +95,8 @@ import kotlinx.serialization.Serializable
 @Serializable object SettingsRoute
 
 @Serializable object AboutRoute
+
+private const val ScreenFadeMillis = 220
 
 private data class Tab(@StringRes val label: Int, val icon: ImageVector, val route: Any)
 
@@ -213,11 +216,14 @@ private fun ShelfNavigation(settings: Settings) {
 @Composable
 private fun Routes(controller: NavHostController, navigator: Navigator) {
     val reduced = LocalReducedMotion.current
+    val fade = tween<Float>(ScreenFadeMillis)
     NavHost(
         controller,
         startDestination = HomeRoute,
-        enterTransition = { if (reduced) EnterTransition.None else fadeIn() },
-        exitTransition = { if (reduced) ExitTransition.None else fadeOut() },
+        enterTransition = { if (reduced) EnterTransition.None else fadeIn(fade) },
+        exitTransition = { if (reduced) ExitTransition.None else fadeOut(fade) },
+        popEnterTransition = { if (reduced) EnterTransition.None else fadeIn(fade) },
+        popExitTransition = { if (reduced) ExitTransition.None else fadeOut(fade) },
     ) {
         screen<HomeRoute> { HomeScreen(navigator) }
         screen<LibraryRoute> { LibraryScreen(navigator) }

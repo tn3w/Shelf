@@ -78,6 +78,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 val ScreenPadding = 20.dp
+val BackBarPadding = 4.dp
 val TileWidth = 116.dp
 private val GridTileWidth = 96.dp
 
@@ -431,7 +432,7 @@ fun IconAction(icon: ImageVector, description: String, onClick: () -> Unit) {
 @Composable
 fun BackBar(onBack: () -> Unit, title: String = "") {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        Modifier.fillMaxWidth().padding(horizontal = BackBarPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconAction(
