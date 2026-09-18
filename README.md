@@ -95,9 +95,13 @@ barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint thumbnail.
 ## Install
 
 [GitHub releases](https://github.com/tn3w/Shelf/releases/latest) carry one `shelf.apk`
-(stable URL) with `SHA256SUMS`; that flavor can check for updates and install them through
-Android's package installer. F-Droid builds the `fdroid` flavor from source without the
-updater; recipe in `android/fdroid/dev.tn3w.shelf.yml`, store metadata (descriptions,
+(stable URL) and one `shelf-fdroid.apk`, both listed in `SHA256SUMS`; the `github` flavor
+can check for updates and install them through Android's package installer. F-Droid builds
+the `fdroid` flavor from source without the updater and verifies the result against
+`shelf-fdroid.apk` (`Binaries:` plus `AllowedAPKSigningKeys:` with the release key's
+SHA-256, `3e2d6f28…`), so both APKs must stay signed with that one keystore and every
+`Builds:` entry pins a full commit hash, never a tag; recipe in
+`android/fdroid/dev.tn3w.shelf.yml`, store metadata (descriptions,
 screenshots, icon, changelogs) in `android/app/fastlane/`, where fdroidserver finds it
 next to the recipe's `subdir: android/app`. That build ships no catalogue: onboarding
 names the core download and its size, and nothing is fetched until it is confirmed.

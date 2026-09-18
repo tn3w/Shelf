@@ -42,14 +42,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: >
-          ./gradlew assembleGithubRelease -x lintVitalGithubRelease
+          ./gradlew assembleGithubRelease assembleFdroidRelease
+          -x lintVitalGithubRelease -x lintVitalFdroidRelease
           --parallel --build-cache
 
       - name: Collect
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/github/release/*.apk dist/shelf.apk
-          (cd dist && sha256sum shelf.apk > SHA256SUMS)
+          cp app/build/outputs/apk/fdroid/release/*.apk dist/shelf-fdroid.apk
+          (cd dist && sha256sum shelf.apk shelf-fdroid.apk > SHA256SUMS)
 
       - name: Release
         env:
