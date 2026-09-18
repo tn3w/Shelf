@@ -91,7 +91,9 @@ barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint thumbnail.
 [GitHub releases](https://github.com/tn3w/Shelf/releases/latest) carry one `shelf.apk`
 (stable URL) with `SHA256SUMS`; that flavor can check for updates and install them through
 Android's package installer. F-Droid builds the `fdroid` flavor from source without the
-updater; recipe in `android/fdroid/dev.tn3w.shelf.yml`, metadata in `android/fastlane/`.
+updater; recipe in `android/fdroid/dev.tn3w.shelf.yml`, store metadata (descriptions,
+screenshots, icon, changelogs) in `android/app/fastlane/`, where fdroidserver finds it
+next to the recipe's `subdir: android/app`.
 
 ## Build
 

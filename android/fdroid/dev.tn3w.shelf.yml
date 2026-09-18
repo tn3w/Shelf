@@ -6,11 +6,12 @@ SourceCode: https://github.com/tn3w/Shelf
 IssueTracker: https://github.com/tn3w/Shelf/issues
 Changelog: https://github.com/tn3w/Shelf/releases
 
-AutoName: Shelf
-
 RepoType: git
 Repo: https://github.com/tn3w/Shelf.git
 
+# The build downloads the catalogue data packs pinned by the tag in app/build.gradle.kts
+# and verifies each against the sha256 in the release manifest. They are data, not code:
+# public-domain Open Library dumps compiled by builder/ in this repository.
 Builds:
   - versionName: 1.0.0
     versionCode: 1
@@ -18,7 +19,6 @@ Builds:
     subdir: android/app
     gradle:
       - fdroid
-    prebuild: sed -i -e '/foojay-resolver-convention/d' ../settings.gradle.kts
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v.*
