@@ -19,6 +19,7 @@
     <string name="continue_percent">Weiterlesen · %d%%</string>
     <string name="continue_reading">Weiterlesen</string>
     <string name="core_offline">Die beliebtesten Bücher funktionieren sofort offline.</string>
+    <string name="core_required">Der Kernkatalog wird für Shelf benötigt. Es wird nichts geladen, bis du auf Herunterladen tippst.</string>
     <string name="cover_of">Cover von %s</string>
     <string name="daily_goal">Tagesziel</string>
     <string name="daily_goal_hint">Seiten pro Tag, um die Serie zu halten.</string>
@@ -53,6 +54,7 @@
     <string name="open_library_note">Buchdaten von Open Library, monatlich aus den öffentlichen Dumps erstellt.</string>
     <string name="pack_available">Nicht installiert</string>
     <string name="pack_core">Basis</string>
+    <string name="pack_failed">Download fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.</string>
     <string name="pack_fantasy">Fantasy</string>
     <string name="pack_general">Allgemein</string>
     <string name="pack_installed">Installiert</string>
@@ -100,6 +102,7 @@
     <string name="want_to_read">Merkliste</string>
     <string name="want_to_read_subtitle">Bücher, die du als Nächstes lesen willst.</string>
     <string name="welcome">Willkommen bei Shelf</string>
+    <string name="welcome_download">Bücher offline finden, verfolgen und lesen. Wähle zuerst einen Katalog zum Herunterladen.</string>
     <string name="welcome_text">Bücher offline finden, verfolgen und lesen.</string>
     <plurals name="books">
         <item quantity="one">%d Buch</item>

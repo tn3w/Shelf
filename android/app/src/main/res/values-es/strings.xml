@@ -19,6 +19,7 @@
     <string name="continue_percent">Continuar · %d%%</string>
     <string name="continue_reading">Seguir leyendo</string>
     <string name="core_offline">Los libros más populares funcionan sin conexión desde ya.</string>
+    <string name="core_required">El catálogo básico es necesario para usar Shelf. No se descarga nada hasta que pulses Descargar.</string>
     <string name="cover_of">Portada de %s</string>
     <string name="daily_goal">Meta diaria</string>
     <string name="daily_goal_hint">Páginas diarias para mantener la racha.</string>
@@ -53,6 +54,7 @@
     <string name="open_library_note">Datos de Open Library, generados cada mes a partir de sus volcados públicos.</string>
     <string name="pack_available">No instalado</string>
     <string name="pack_core">Básico</string>
+    <string name="pack_failed">Error de descarga. Comprueba tu conexión e inténtalo de nuevo.</string>
     <string name="pack_fantasy">Fantasía</string>
     <string name="pack_general">General</string>
     <string name="pack_installed">Instalado</string>
@@ -100,6 +102,7 @@
     <string name="want_to_read">Quiero leer</string>
     <string name="want_to_read_subtitle">Libros que quieres leer pronto.</string>
     <string name="welcome">Bienvenido a Shelf</string>
+    <string name="welcome_download">Encuentra, sigue y lee libros sin conexión. Primero elige un catálogo para descargar.</string>
     <string name="welcome_text">Encuentra, sigue y lee libros sin conexión.</string>
     <plurals name="books">
         <item quantity="one">%d libro</item>

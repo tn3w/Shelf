@@ -616,6 +616,16 @@ fun OnboardingScreen() {
     var language by remember { mutableStateOf(app.systemLanguage()) }
     val selected = remember(language) { mutableStateListOf<String>() }
     val packs = packInfos(language)
+    val downloads by app.downloads.collectAsStateWithLifecycle()
+    val required = !BuildConfig.BUNDLED_CATALOGUE
+    val core = packs?.firstOrNull { it.pack == "core" }
+    val coreDownload = downloads["$language-core"]
+    var started by remember(language) { mutableStateOf(false) }
+
+    LaunchedEffect(started, core?.state) {
+        if (!started || core?.state == PackState.Available) return@LaunchedEffect
+        update { it.copy(onboarded = true, language = language) }
+    }
 
     Column(
         Modifier.fillMaxSize()
@@ -631,7 +641,11 @@ fun OnboardingScreen() {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp),
         )
-        AboutText(stringResource(R.string.welcome_text))
+        AboutText(
+            stringResource(
+                if (required) R.string.welcome_download else R.string.welcome_text
+            )
+        )
         SectionHeader(stringResource(R.string.catalogue_language))
         CatalogueLanguageChoice(language) {
             language = it
@@ -639,23 +653,31 @@ fun OnboardingScreen() {
         }
         SectionHeader(
             stringResource(R.string.choose_packs),
-            stringResource(R.string.core_offline),
+            stringResource(if (required) R.string.core_required else R.string.core_offline),
         )
-        OnboardingPacks(packs, selected)
+        if (required) CoreRow(core, coreDownload)
+        OnboardingPacks(packs, selected, skip = if (required) "core" else null)
         Row(
             Modifier.fillMaxWidth().padding(ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
         ) {
-            TextButton(
-                onClick = { update { it.copy(onboarded = true, language = language) } }
-            ) {
-                Text(stringResource(R.string.later))
+            if (!required) {
+                TextButton(
+                    onClick = {
+                        update { it.copy(onboarded = true, language = language) }
+                    }
+                ) {
+                    Text(stringResource(R.string.later))
+                }
             }
+            val waiting = started && coreDownload !is Download.Failed
             Button(
-                enabled = selected.isNotEmpty(),
+                enabled =
+                    !waiting && if (required) core != null else selected.isNotEmpty(),
                 onClick = {
+                    if (required) app.download(language, "core")
                     selected.forEach { app.download(language, it) }
-                    update { it.copy(onboarded = true, language = language) }
+                    started = true
                 },
             ) {
                 Text(stringResource(R.string.download))
@@ -665,13 +687,48 @@ fun OnboardingScreen() {
 }
 
 @Composable
-private fun OnboardingPacks(packs: List<PackInfo>?, selected: MutableList<String>) {
+private fun CoreRow(info: PackInfo?, download: Download?) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(PACK_LABELS.getValue("core")),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                if (info != null) bytes(info.bytes) else "–",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        if (download is Download.Running) {
+            val progress by animateFloatAsState(download.progress)
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            )
+        }
+        if (download is Download.Failed) {
+            Text(
+                stringResource(R.string.pack_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingPacks(
+    packs: List<PackInfo>?,
+    selected: MutableList<String>,
+    skip: String?,
+) {
     if (packs == null) {
         LinearProgressIndicator(Modifier.fillMaxWidth().padding(ScreenPadding))
         return
     }
     packs
-        .filter { it.state == PackState.Available }
+        .filter { it.state == PackState.Available && it.pack != skip }
         .forEach { info ->
             val checked = info.pack in selected
             Row(

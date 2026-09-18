@@ -20,6 +20,7 @@
     <string name="continue_percent">Continue · %d%%</string>
     <string name="continue_reading">Continue reading</string>
     <string name="core_offline">The most popular books work offline right away.</string>
+    <string name="core_required">The core catalogue is needed to use Shelf. Nothing is downloaded until you tap Download.</string>
     <string name="cover_of">Cover of %s</string>
     <string name="daily_goal">Daily goal</string>
     <string name="daily_goal_hint">Pages to read each day to keep your streak.</string>
@@ -54,6 +55,7 @@
     <string name="open_library_note">Book data from Open Library, built monthly from its public dumps.</string>
     <string name="pack_available">Not installed</string>
     <string name="pack_core">Core</string>
+    <string name="pack_failed">Download failed. Check your connection and try again.</string>
     <string name="pack_fantasy">Fantasy</string>
     <string name="pack_general">General</string>
     <string name="pack_installed">Installed</string>
@@ -101,6 +103,7 @@
     <string name="want_to_read">Want to read</string>
     <string name="want_to_read_subtitle">Books you would like to read next.</string>
     <string name="welcome">Welcome to Shelf</string>
+    <string name="welcome_download">Find, track and read books offline. Choose a catalogue to download first.</string>
     <string name="welcome_text">Find, track and read books offline.</string>
     <plurals name="books">
         <item quantity="one">%d book</item>

@@ -29,9 +29,11 @@ android {
     productFlavors {
         create("github") {
             dimension = "distribution"
+            buildConfigField("boolean", "BUNDLED_CATALOGUE", "true")
         }
         create("fdroid") {
             dimension = "distribution"
+            buildConfigField("boolean", "BUNDLED_CATALOGUE", "false")
         }
     }
 
@@ -123,7 +125,9 @@ val downloadCatalogue = tasks.register<DownloadCatalogue>("downloadCatalogue") {
     output = layout.buildDirectory.dir("generated/catalogue")
 }
 
-androidComponents.onVariants { variant ->
+androidComponents.onVariants(
+    androidComponents.selector().withFlavor("distribution" to "github")
+) { variant ->
     variant.sources.assets?.addGeneratedSourceDirectory(
         downloadCatalogue,
         DownloadCatalogue::output,

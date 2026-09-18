@@ -17,19 +17,20 @@ Search, explore, track reading streaks, read your own files.
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
 
 <p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/2_library.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/2_library.jpg" width="15%" alt="library"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/3_book.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/3_book.jpg" width="15%" alt="book"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/4_series.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/4_series.jpg" width="15%" alt="series"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_explore.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/5_explore.jpg" width="15%" alt="explore"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_reader.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/6_reader.jpg" width="15%" alt="reader"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/2_library.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/2_library.jpg" width="15%" alt="library"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/3_book.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/3_book.jpg" width="15%" alt="book"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/4_series.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/4_series.jpg" width="15%" alt="series"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_explore.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/5_explore.jpg" width="15%" alt="explore"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_reader.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/6_reader.jpg" width="15%" alt="reader"></picture>
 </p>
 
 </div>
 
 Shelf is a private, offline-first Android app for browsing, discovering and reading
-books. It bundles a starter catalogue, downloads optional packs, and keeps your library on
-device. The catalogue is rebuilt from
+books. The GitHub build bundles a starter catalogue, the F-Droid build downloads one on
+first launch, both fetch optional packs on request, and your library stays on device. The
+catalogue is rebuilt from
 [Open Library dumps](https://openlibrary.org/developers/dumps) and published as GitHub
 releases.
 
@@ -38,7 +39,7 @@ releases.
 | App | Catalogue | Builder | Privacy |
 |---|---|---|---|
 | Kotlin + Jetpack Compose | English, German, French, Spanish | Rust, deterministic output | No account, trackers, Play Services or Firebase |
-| Android 8+ | Core data bundled in the APK | Monthly Open Library import | Network only for packs, updates and optional covers |
+| Android 8+ | Core data bundled (GitHub) or fetched (F-Droid) | Monthly Open Library import | Network only for packs, updates and optional covers |
 | GitHub and F-Droid flavors | Packs for genres, audiences and nonfiction | Segments, ranks and deltas | Library backup stays in app DataStore |
 
 | Browse | Read | Track |
@@ -51,7 +52,8 @@ one author or series cannot take over a page.
 
 ## Catalogue
 
-`core` ships with the APK; `fantasy`, `scifi`, `mystery`, `romance`, `kids`,
+`core` ships with the GitHub APK and is the first download in the F-Droid build;
+`fantasy`, `scifi`, `mystery`, `romance`, `kids`,
 `young-adult`, `nonfiction` and `general` download on demand, alongside a shared `ranks`
 file of popularity and search statistics. Each work belongs to one pack. Small packs merge
 into `core` for smaller languages. Installed packs are memory-mapped, merged with monthly
@@ -93,7 +95,8 @@ barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint thumbnail.
 Android's package installer. F-Droid builds the `fdroid` flavor from source without the
 updater; recipe in `android/fdroid/dev.tn3w.shelf.yml`, store metadata (descriptions,
 screenshots, icon, changelogs) in `android/app/fastlane/`, where fdroidserver finds it
-next to the recipe's `subdir: android/app`.
+next to the recipe's `subdir: android/app`. That build ships no catalogue: onboarding
+names the core download and its size, and nothing is fetched until it is confirmed.
 
 ## Build
 
@@ -103,7 +106,9 @@ cd android
 ```
 
 `downloadCatalogue` fetches bundled catalogue files from `catalogueRelease` and verifies
-them against its manifest. Release builds are unsigned unless `KEYSTORE_FILE` is set.
+them against its manifest; it runs for the `github` flavor only, so the `fdroid` APK ships
+no catalogue and builds from source alone. Release builds are unsigned unless
+`KEYSTORE_FILE` is set.
 
 ```sh
 cd builder
