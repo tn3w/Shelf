@@ -169,20 +169,35 @@ const PRINT_ON_DEMAND: &[&str] = &[
 const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
 
 const LANGUAGE_CODES: [&str; 24] = [
-    "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe",
-    "ara", "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
+    "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe", "ara",
+    "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
 ];
 
 const ISBN_GROUPS: [(&str, usize); 19] = [
-    ("9780", 0), ("9781", 0), ("9798", 0), ("9783", 1), ("9782", 2), ("97910", 2),
-    ("97884", 3), ("978607", 3), ("978612", 3), ("978628", 3), ("978631", 3),
-    ("978950", 3), ("978956", 3), ("978958", 3), ("978968", 3), ("978970", 3),
-    ("978987", 3), ("9789972", 3), ("9789974", 3),
+    ("9780", 0),
+    ("9781", 0),
+    ("9798", 0),
+    ("9783", 1),
+    ("9782", 2),
+    ("97910", 2),
+    ("97884", 3),
+    ("978607", 3),
+    ("978612", 3),
+    ("978628", 3),
+    ("978631", 3),
+    ("978950", 3),
+    ("978956", 3),
+    ("978958", 3),
+    ("978968", 3),
+    ("978970", 3),
+    ("978987", 3),
+    ("9789972", 3),
+    ("9789974", 3),
 ];
 
 const FOREIGN_ISBN_GROUPS: [&str; 17] = [
-    "9784", "9785", "9786", "9787", "97880", "97881", "97882", "97883", "97885",
-    "97886", "97887", "97888", "97889", "9789", "97911", "97912", "97913",
+    "9784", "9785", "9786", "9787", "97880", "97881", "97882", "97883", "97885", "97886", "97887",
+    "97888", "97889", "9789", "97911", "97912", "97913",
 ];
 
 const FOLDED: [(&str, char); 9] = [
@@ -200,9 +215,7 @@ const FOLDED: [(&str, char); 9] = [
 static STOP_WORD_LANGUAGE: LazyLock<HashMap<&'static str, usize>> = LazyLock::new(|| {
     let lists = STOP_WORDS.iter().enumerate();
     lists
-        .flat_map(|(language, list)| {
-            list.split_whitespace().map(move |word| (word, language))
-        })
+        .flat_map(|(language, list)| list.split_whitespace().map(move |word| (word, language)))
         .collect()
 });
 
@@ -215,28 +228,21 @@ pub struct Traits {
     pub has_cover: bool,
 }
 
-pub fn is_eligible(
-    traits: &Traits,
-    facts: &Facts,
-    signal: &Signal,
-    language: usize,
-) -> bool {
+pub fn is_eligible(traits: &Traits, facts: &Facts, signal: &Signal, language: usize) -> bool {
     let readers = signal.readers();
     let named = traits.has_author && traits.good_title;
     let published = facts.language_editions[language] > 0
         && facts.has(FLAG_READABLE)
         && (facts.has(FLAG_ISBN) || readers > 0);
     let described = traits.has_subjects || readers > 0;
-    let wanted =
-        readers > 0 || facts.has(FLAG_COVER) || traits.has_cover || facts.editions >= 2;
+    let wanted = readers > 0 || facts.has(FLAG_COVER) || traits.has_cover || facts.editions >= 2;
     let junk = traits.bad_subject && readers < 3;
     let popular = score(traits, facts, signal, language) >= MIN_SCORE;
     named && published && described && wanted && !junk && popular
 }
 
 pub fn score(traits: &Traits, facts: &Facts, signal: &Signal, language: usize) -> f32 {
-    let attention =
-        3.0 * signal.finished as f32 + 2.0 * signal.reading as f32 + signal.want as f32;
+    let attention = 3.0 * signal.finished as f32 + 2.0 * signal.reading as f32 + signal.want as f32;
     let language_editions = facts.language_editions[language] as f32;
     let mut score = 100.0 * attention.ln_1p()
         + 60.0 * (signal.ratings as f32).ln_1p()
@@ -300,7 +306,11 @@ pub fn is_reprinter(publisher: &str) -> bool {
 
 fn normalized_isbn(isbn: &str) -> Option<String> {
     let digits: String = isbn.chars().filter(char::is_ascii_digit).collect();
-    let normalized = if digits.len() == 10 { format!("978{digits}") } else { digits };
+    let normalized = if digits.len() == 10 {
+        format!("978{digits}")
+    } else {
+        digits
+    };
     (normalized.len() == 13).then_some(normalized)
 }
 
@@ -421,7 +431,11 @@ fn without_links(text: &str) -> String {
         let label_end = rest[start..].find(']').map(|end| start + end);
         let Some(label_end) = label_end else { break };
         let target = rest[label_end + 1..].starts_with(['(', '[']);
-        let closing = if rest[label_end + 1..].starts_with('(') { ')' } else { ']' };
+        let closing = if rest[label_end + 1..].starts_with('(') {
+            ')'
+        } else {
+            ']'
+        };
         let end = target
             .then(|| rest[label_end..].find(closing))
             .flatten()
@@ -444,8 +458,7 @@ fn without_links(text: &str) -> String {
 fn without_urls(text: &str) -> String {
     let words = text.split(' ').filter(|word| {
         let bare = word.trim_start_matches(['(', '<']);
-        !bare.starts_with("http://") && !bare.starts_with("https://")
-            && !bare.starts_with("www.")
+        !bare.starts_with("http://") && !bare.starts_with("https://") && !bare.starts_with("www.")
     });
     words.collect::<Vec<&str>>().join(" ")
 }
@@ -454,7 +467,10 @@ fn tidy(text: &str) -> String {
     let lines = text
         .lines()
         .filter(|line| !is_link_definition(line))
-        .map(|line| line.trim_matches([' ', '\t', '*', '_', '#', '>']).to_string());
+        .map(|line| {
+            line.trim_matches([' ', '\t', '*', '_', '#', '>'])
+                .to_string()
+        });
     let mut cleaned = String::new();
     for line in lines {
         let blank = line.is_empty();
@@ -476,12 +492,12 @@ fn is_junk_paragraph(paragraph: &str) -> bool {
     if JUNK_MARKERS.iter().any(|marker| head.contains(marker)) {
         return true;
     }
-    if paragraph.len() < MIN_PARAGRAPH_BYTES
-        && !paragraph.ends_with(['.', '!', '?', '…'])
-    {
+    if paragraph.len() < MIN_PARAGRAPH_BYTES && !paragraph.ends_with(['.', '!', '?', '…']) {
         return true;
     }
-    let letters = paragraph.chars().filter(|character| character.is_alphabetic());
+    let letters = paragraph
+        .chars()
+        .filter(|character| character.is_alphabetic());
     let (shouted, total) = letters.fold((0, 0), |(shouted, total), character| {
         (shouted + usize::from(character.is_uppercase()), total + 1)
     });
@@ -550,7 +566,10 @@ fn without_tail(text: String) -> String {
         .filter_map(|marker| lowered.find(marker))
         .min();
     match cut {
-        Some(cut) => text[..cut].trim_end().trim_end_matches(['-', ' ']).to_string(),
+        Some(cut) => text[..cut]
+            .trim_end()
+            .trim_end_matches(['-', ' '])
+            .to_string(),
         None => text,
     }
 }
@@ -591,7 +610,9 @@ fn stop_word_language(word: &str) -> Option<usize> {
         return None;
     }
     if !word.is_ascii() {
-        return STOP_WORD_LANGUAGE.get(word.to_lowercase().as_str()).copied();
+        return STOP_WORD_LANGUAGE
+            .get(word.to_lowercase().as_str())
+            .copied();
     }
     let mut lowered = [0u8; MAX_STOP_WORD_BYTES];
     let bytes = &mut lowered[..word.len()];
@@ -633,8 +654,7 @@ pub fn detect_language(text: &str) -> Option<usize> {
         .enumerate()
         .filter(|&(language, _)| language != best);
     let runner_up = others.map(|(_, &count)| count).max().unwrap_or(0);
-    let thin =
-        words >= JUDGED_WORDS && (hits[best] as f32) < MIN_STOP_WORD_SHARE * words as f32;
+    let thin = words >= JUDGED_WORDS && (hits[best] as f32) < MIN_STOP_WORD_SHARE * words as f32;
     (best < 4 && hits[best] > runner_up && !thin).then_some(best)
 }
 
@@ -847,11 +867,7 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    fn cover_rank(
-        &self,
-        record: &TitleRecord,
-        wanted: &str,
-    ) -> (bool, bool, bool, bool, u16, u32) {
+    fn cover_rank(&self, record: &TitleRecord, wanted: &str) -> (bool, bool, bool, bool, u16, u32) {
         (
             record.known_language,
             self.titles.major_publisher(record),
@@ -897,9 +913,7 @@ impl<'a> Resolver<'a> {
             alternate.clear();
         }
         let key = title_key(&title, &[]);
-        if title_key(&alternate, &[]) == key
-            || alternate.to_lowercase() == title.to_lowercase()
-        {
+        if title_key(&alternate, &[]) == key || alternate.to_lowercase() == title.to_lowercase() {
             alternate.clear();
         }
         let cover = [

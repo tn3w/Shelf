@@ -73,24 +73,44 @@ impl Read for Download {
 }
 
 fn buffered(reader: impl Read + Send + 'static) -> Box<dyn Read + Send> {
-    Box::new(MultiGzDecoder::new(BufReader::with_capacity(1 << 20, reader)))
+    Box::new(MultiGzDecoder::new(BufReader::with_capacity(
+        1 << 20,
+        reader,
+    )))
+}
+
+fn local_dump(source: &str, name: &str) -> Option<std::path::PathBuf> {
+    let prefix = format!("ol_dump_{name}");
+    let mut matches: Vec<_> = std::fs::read_dir(source)
+        .ok()?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|file_name| {
+            file_name.ends_with(".txt.gz")
+                && matches!(
+                    file_name.strip_prefix(&prefix),
+                    Some(rest) if rest.starts_with('_') || rest == ".txt.gz"
+                )
+        })
+        .collect();
+    matches.sort();
+    let newest = matches.pop()?;
+    Some(Path::new(source).join(newest))
 }
 
 fn open(source: &str, name: &str) -> Box<dyn Read + Send> {
-    let latest = format!("ol_dump_{name}_latest.txt.gz");
     if source.starts_with("http://") || source.starts_with("https://") {
         return buffered(Download {
-            url: format!("{}/{latest}", source.trim_end_matches('/')),
+            url: format!(
+                "{}/ol_dump_{name}_latest.txt.gz",
+                source.trim_end_matches('/')
+            ),
             offset: 0,
             failures: 0,
             body: None,
         });
     }
-    let path = [latest, format!("ol_dump_{name}.txt.gz")]
-        .into_iter()
-        .map(|file_name| Path::new(source).join(file_name))
-        .find(|path| path.exists())
-        .unwrap_or_else(|| panic!("no {name} dump in {source}"));
+    let path = local_dump(source, name).unwrap_or_else(|| panic!("no {name} dump in {source}"));
     buffered(File::open(path).expect("open dump"))
 }
 
@@ -201,11 +221,19 @@ fn slot<T: Clone + Default>(values: &mut Vec<T>, id: u32) -> &mut T {
 }
 
 fn text<'a>(value: &'a Value, name: &str) -> &'a str {
-    value.get(name).and_then(Value::as_str).unwrap_or_default().trim()
+    value
+        .get(name)
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .trim()
 }
 
 fn array<'a>(value: &'a Value, name: &str) -> impl Iterator<Item = &'a Value> {
-    value.get(name).and_then(Value::as_array).into_iter().flatten()
+    value
+        .get(name)
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
 }
 
 fn strings<'a>(value: &'a Value, name: &str) -> impl Iterator<Item = &'a str> {
@@ -557,12 +585,18 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
 fn edition_flags(edition: &Value) -> u8 {
     let readable = !tags::is_unreadable(text(edition, "physical_format"));
     let flags = [
-        (has_items(edition, "isbn_13") || has_items(edition, "isbn_10"), FLAG_ISBN),
+        (
+            has_items(edition, "isbn_13") || has_items(edition, "isbn_10"),
+            FLAG_ISBN,
+        ),
         (first_cover(edition) > 0, FLAG_COVER),
         (has_items(edition, "publishers"), FLAG_PUBLISHER),
         (readable, FLAG_READABLE),
     ];
-    flags.iter().filter(|(set, _)| *set).fold(0, |all, (_, flag)| all | flag)
+    flags
+        .iter()
+        .filter(|(set, _)| *set)
+        .fold(0, |all, (_, flag)| all | flag)
 }
 
 fn edition_from(edition: &Value, shapes: &[CoverShape]) -> Option<Edition> {
@@ -616,7 +650,10 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles) {
         |edition| {
             slot(&mut facts, edition.work).absorb(&edition.facts);
             if edition.publisher > 0 {
-                *titles.publisher_editions.entry(edition.publisher).or_default() += 1;
+                *titles
+                    .publisher_editions
+                    .entry(edition.publisher)
+                    .or_default() += 1;
             }
             if edition.title.is_empty() {
                 return;
@@ -685,7 +722,11 @@ fn description_of(work: &Value) -> &str {
 
 fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
     let facts = context.facts.get(id as usize).copied().unwrap_or_default();
-    let signal = context.signals.get(id as usize).copied().unwrap_or_default();
+    let signal = context
+        .signals
+        .get(id as usize)
+        .copied()
+        .unwrap_or_default();
     let sticky = context.sticky.get(id as usize).copied().unwrap_or(false);
     let title = text(work, "title");
     let authors = author_ids(work, context.authors);
@@ -721,7 +762,11 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         subtitle: text(work, "subtitle").to_string(),
         tags: tags::confident_tags(subjects.into_iter(), &facts.classes, facts.editions),
         description_language: catalog::detect_language(&description),
-        description: if described { description } else { String::new() },
+        description: if described {
+            description
+        } else {
+            String::new()
+        },
         authors,
         cover: first_cover(work),
         year,

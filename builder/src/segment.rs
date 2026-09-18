@@ -271,8 +271,7 @@ fn term_blocks(terms: &BTreeMap<String, Postings>, with_postings: bool) -> Vec<u
                 put_varint(&mut raw, lists.titles.len() as u32);
                 put_varint(&mut raw, lists.authors.len() as u32);
                 if with_postings {
-                    let (titles, authors) =
-                        (postings(&lists.titles), postings(&lists.authors));
+                    let (titles, authors) = (postings(&lists.titles), postings(&lists.authors));
                     put_varint(&mut raw, titles.len() as u32);
                     put_varint(&mut raw, authors.len() as u32);
                     raw.extend(titles);
@@ -486,12 +485,7 @@ fn series_slots<'a>(works: &[Work<'a>]) -> (Vec<&'a Series>, Vec<Option<u32>>) {
     (listed, slots)
 }
 
-pub fn segment(
-    meta: &Meta,
-    works: &[Work],
-    tombstones: &[u32],
-    authors: &Authors,
-) -> Vec<u8> {
+pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Authors) -> Vec<u8> {
     let (order, slots) = author_slots(works);
     let (series, series_of) = series_slots(works);
     let fact_records: Vec<Vec<u8>> = works
@@ -562,8 +556,7 @@ fn popularity_section(rows: &[Popularity]) -> Vec<u8> {
     blocks
         .iter()
         .for_each(|block| put_u32(&mut section, block[0].id));
-    let compressed: Vec<Vec<u8>> =
-        blocks.iter().map(|block| popularity_block(block)).collect();
+    let compressed: Vec<Vec<u8>> = blocks.iter().map(|block| popularity_block(block)).collect();
     section.extend(offset_table(&compressed));
     section
 }

@@ -26,8 +26,7 @@ const MIN_SERIES_NAME: usize = 4;
 const MAX_SERIES_NAME: usize = 80;
 
 const VOLUME_MARKERS: &[&str] = &[
-    "no", "nos", "v", "vol", "volume", "bk", "book", "part", "pt", "band", "tome",
-    "issue",
+    "no", "nos", "v", "vol", "volume", "bk", "book", "part", "pt", "band", "tome", "issue",
 ];
 
 const GENERIC_SERIES: &[&str] = &[
@@ -84,9 +83,9 @@ fn roman_value(token: &str) -> Option<u32> {
 fn position_of(part: &str) -> Option<u16> {
     let tokens = tokenize(part);
     let (number, markers) = tokens.split_last()?;
-    let all_markers = markers.iter().all(|token| {
-        VOLUME_MARKERS.contains(&token.as_str()) || roman_value(token).is_some()
-    });
+    let all_markers = markers
+        .iter()
+        .all(|token| VOLUME_MARKERS.contains(&token.as_str()) || roman_value(token).is_some());
     if !all_markers {
         return None;
     }
@@ -102,9 +101,7 @@ fn tidy(text: &str) -> &str {
 
 fn strip_volume_suffix(name: &str) -> &str {
     match name.rfind([',', '#']) {
-        Some(cut) if cut > 0 && position_of(&name[cut..]).is_some() => {
-            name[..cut].trim_end()
-        }
+        Some(cut) if cut > 0 && position_of(&name[cut..]).is_some() => name[..cut].trim_end(),
         _ => name,
     }
 }

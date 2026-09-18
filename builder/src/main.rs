@@ -247,7 +247,9 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
     } else {
         0
     };
-    let mut merged = job.previous.map_or([false; PACKS.len()], release::previous_merged);
+    let mut merged = job
+        .previous
+        .map_or([false; PACKS.len()], release::previous_merged);
     let mut best: Option<(usize, usize, Merged)> = None;
     let mut smallest_core: Option<(usize, usize, Merged, usize)> = None;
     for round in 1..=FITTING_ROUNDS {
@@ -278,17 +280,14 @@ fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
         if settled && total <= BUDGET_BYTES && smaller {
             smallest_core = Some((limit, core_limit, merged, core_size));
         }
-        let filled =
-            limit == fresh || total as f64 >= FILLED_ENOUGH * BUDGET_BYTES as f64;
+        let filled = limit == fresh || total as f64 >= FILLED_ENOUGH * BUDGET_BYTES as f64;
         if settled && fits && filled {
             break;
         }
         if core_size > CORE_BYTES {
-            core_limit =
-                adjusted(core_limit, core_size, CORE_BYTES, core_works, FILLED_ENOUGH);
+            core_limit = adjusted(core_limit, core_size, CORE_BYTES, core_works, FILLED_ENOUGH);
         }
-        limit =
-            adjusted(limit, total, BUDGET_BYTES, placed.len(), FILL_TARGET).min(fresh);
+        limit = adjusted(limit, total, BUDGET_BYTES, placed.len(), FILL_TARGET).min(fresh);
     }
     let fallback = smallest_core.filter(|_| best.is_none());
     if let Some((limit, core_limit, merged, core_size)) = fallback {
@@ -359,11 +358,13 @@ fn ranks(job: &Job, placed: &[Placed]) -> Vec<u8> {
 
 fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let language = job.language;
-    let entries =
-        catalog::candidates(job.books, titles, job.authors, language, job.previous);
+    let entries = catalog::candidates(job.books, titles, job.authors, language, job.previous);
     eprintln!("{}: {} candidates", LANGUAGES[language], entries.len());
     let (limit, core_limit, merged) = fit(job, &entries);
-    if job.previous.is_some_and(|previous| release::previous_merged(previous) != merged) {
+    if job
+        .previous
+        .is_some_and(|previous| release::previous_merged(previous) != merged)
+    {
         eprintln!("{}: pack merge changed, rebasing", LANGUAGES[language]);
         return None;
     }
@@ -466,9 +467,9 @@ fn main() {
     let loaded: Vec<Translations> = LANGUAGES
         .iter()
         .map(|language| match &options.translations {
-            Some(directory) => Translations::load(
-                &directory.join(format!("translations-{language}.bin")),
-            ),
+            Some(directory) => {
+                Translations::load(&directory.join(format!("translations-{language}.bin")))
+            }
             None => Translations::default(),
         })
         .collect();

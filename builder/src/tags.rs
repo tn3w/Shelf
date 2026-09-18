@@ -45,9 +45,8 @@ struct Taxonomy {
     bisac: BTreeMap<String, Vec<String>>,
 }
 
-static TAXONOMY: LazyLock<Taxonomy> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../tags.json")).expect("valid tags.json")
-});
+static TAXONOMY: LazyLock<Taxonomy> =
+    LazyLock::new(|| serde_json::from_str(include_str!("../tags.json")).expect("valid tags.json"));
 
 const MAX_TAGS: usize = 8;
 const WEAK_TAG_FILL: usize = 3;
@@ -96,12 +95,25 @@ const BAD_SUBJECTS: &[&str] = &[
 ];
 
 const NON_PRINT_FORMATS: &[&str] = &[
-    "audio", "cassette", "cd", "mp3", "braille", "player", "sound", "ebook",
+    "audio",
+    "cassette",
+    "cd",
+    "mp3",
+    "braille",
+    "player",
+    "sound",
+    "ebook",
     "electronic",
 ];
 
-const UNREADABLE_FORMATS: &[&str] =
-    &["microform", "microfilm", "microfiche", "thesis", "manuscript", "cd-rom"];
+const UNREADABLE_FORMATS: &[&str] = &[
+    "microform",
+    "microfilm",
+    "microfiche",
+    "thesis",
+    "manuscript",
+    "cd-rom",
+];
 
 const IGNORED_PREFIXES: &[&str] = &[
     "nyt:",
@@ -325,10 +337,7 @@ impl Classes {
     }
 }
 
-fn lowercase_strings<'a>(
-    edition: &'a Value,
-    field: &str,
-) -> impl Iterator<Item = String> + 'a {
+fn lowercase_strings<'a>(edition: &'a Value, field: &str) -> impl Iterator<Item = String> + 'a {
     edition
         .get(field)
         .and_then(Value::as_array)
@@ -358,10 +367,8 @@ pub fn classes_of(edition: &Value) -> Classes {
     }
     for code in lowercase_strings(edition, "lc_classifications") {
         classes.classified += 1;
-        classes.juvenile +=
-            u16::from(class_number(&code, "pz").is_some_and(|number| number >= 5));
-        let comics = class_number(&code, "pn")
-            .is_some_and(|number| (6700..6800).contains(&number));
+        classes.juvenile += u16::from(class_number(&code, "pz").is_some_and(|number| number >= 5));
+        let comics = class_number(&code, "pn").is_some_and(|number| (6700..6800).contains(&number));
         classes.comics += u16::from(comics);
     }
     let bands: Vec<String> = lowercase_strings(edition, "subjects").collect();
@@ -401,13 +408,15 @@ impl Rule {
     }
 
     fn matches(&self, subject: &str) -> bool {
-        !self.is_excluded(subject)
-            && self.include.iter().any(|good| contains_word(subject, good))
+        !self.is_excluded(subject) && self.include.iter().any(|good| contains_word(subject, good))
     }
 
     fn matches_motif(&self, subject: &str) -> bool {
         !self.is_excluded(subject)
-            && self.motifs.iter().any(|motif| contains_word(subject, motif))
+            && self
+                .motifs
+                .iter()
+                .any(|motif| contains_word(subject, motif))
     }
 }
 
@@ -481,8 +490,7 @@ fn bisac_tags(path: &str) -> Vec<u8> {
         .bisac
         .iter()
         .filter(|(prefix, _)| {
-            path == *prefix
-                || path.starts_with(*prefix) && path[prefix.len()..].starts_with(", ")
+            path == *prefix || path.starts_with(*prefix) && path[prefix.len()..].starts_with(", ")
         })
         .flat_map(|(_, slugs)| slugs.iter().map(|slug| tag(slug)))
         .collect();
@@ -542,8 +550,7 @@ enum Reader {
 
 fn reader_of(classes: &Classes, editions: u16) -> Reader {
     let juvenile_share = classes.share(classes.juvenile);
-    if classes.classified >= ADULT_MIN_CLASSIFIED && juvenile_share < ADULT_JUVENILE_SHARE
-    {
+    if classes.classified >= ADULT_MIN_CLASSIFIED && juvenile_share < ADULT_JUVENILE_SHARE {
         return Reader::Adult;
     }
     if classes.classified > 0 && juvenile_share < YOUNG_JUVENILE_SHARE {
@@ -682,7 +689,6 @@ pub fn confident_tags<'a>(
     }
     support.0.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
     let fiction = support.of("fiction");
-    let chosen =
-        select_supported(support.0.clone(), fiction, seen.len() >= RICH_SUBJECTS);
+    let chosen = select_supported(support.0.clone(), fiction, seen.len() >= RICH_SUBJECTS);
     with_nonfiction(resolve_reader(chosen, &reader, &support))
 }

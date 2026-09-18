@@ -83,11 +83,7 @@ impl Translations {
     }
 }
 
-pub fn request<'a>(
-    book: &'a Book,
-    title: &'a str,
-    authors: &'a Authors,
-) -> Request<'a> {
+pub fn request<'a>(book: &'a Book, title: &'a str, authors: &'a Authors) -> Request<'a> {
     Request {
         work: book.work,
         title,
@@ -107,7 +103,6 @@ pub fn write_requests(path: &Path, requests: &[Request]) {
         .iter()
         .map(|request| serde_json::to_string(request).expect("request json") + "\n")
         .collect();
-    std::fs::write(path, lines)
-        .unwrap_or_else(|error| panic!("write {}: {error}", path.display()));
+    std::fs::write(path, lines).unwrap_or_else(|error| panic!("write {}: {error}", path.display()));
     eprintln!("{}: {} requests", path.display(), requests.len());
 }
