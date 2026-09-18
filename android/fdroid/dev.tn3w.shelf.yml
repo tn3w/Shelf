@@ -9,10 +9,7 @@ Changelog: https://github.com/tn3w/Shelf/releases
 
 RepoType: git
 Repo: https://github.com/tn3w/Shelf.git
-
 Binaries: https://github.com/tn3w/Shelf/releases/download/v%v/shelf-fdroid.apk
-
-AllowedAPKSigningKeys: 3e2d6f2866c8fa3ea8927ec59747aada5dfd52162fdf087568002095ab654a7d
 
 Builds:
   - versionName: 1.0.0
@@ -21,6 +18,8 @@ Builds:
     subdir: android/app
     gradle:
       - fdroid
+
+AllowedAPKSigningKeys: 3e2d6f2866c8fa3ea8927ec59747aada5dfd52162fdf087568002095ab654a7d
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v.*
