@@ -28,7 +28,7 @@ private val STORES =
         "com.machiav3lli.fdroid",
         "com.aurora.store",
     )
-private val APK_NAME = Regex("shelf-github-(\\d+)\\.apk")
+private const val APK_NAME = "shelf.apk"
 private val json = Json { ignoreUnknownKeys = true }
 
 @Serializable private data class Asset(val name: String, val browser_download_url: String)
@@ -41,6 +41,18 @@ private data class GithubRelease(
     val prerelease: Boolean = false,
     val assets: List<Asset> = emptyList(),
 )
+
+private fun numbers(version: String) = version.split(".").map { it.toIntOrNull() ?: 0 }
+
+private fun isNewer(version: String): Boolean {
+    val (candidate, installed) = numbers(version) to numbers(BuildConfig.VERSION_NAME)
+    val length = maxOf(candidate.size, installed.size)
+    val differing =
+        (0 until length).firstOrNull {
+            candidate.getOrElse(it) { 0 } != installed.getOrElse(it) { 0 }
+        } ?: return false
+    return candidate.getOrElse(differing) { 0 } > installed.getOrElse(differing) { 0 }
+}
 
 private fun text(url: String) =
     connect(url).inputStream.use { it.readBytes().decodeToString() }
@@ -65,12 +77,11 @@ object Updater {
                     it.tag_name.startsWith("v") && !it.draft && !it.prerelease
                 }
             val assets = release?.assets.orEmpty()
-            val apk = assets.firstOrNull { APK_NAME.matches(it.name) }
+            val apk = assets.firstOrNull { it.name == APK_NAME }
             val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
             if (release == null || apk == null || sums == null) return@withContext null
-            val code = APK_NAME.matchEntire(apk.name)!!.groupValues[1].toInt()
-            if (code <= BuildConfig.VERSION_CODE) return@withContext null
             val version = release.tag_name.removePrefix("v")
+            if (!isNewer(version)) return@withContext null
             AppRelease(
                 version,
                 release.body,

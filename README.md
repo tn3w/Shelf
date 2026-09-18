@@ -14,7 +14,7 @@ Search, explore, track reading streaks, read your own files.
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
 
 <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522filterReleaseTitlesByRegEx%255C%2522%253A%2520%255C%2522%255EShelf%2520v%255C%2522%252C%2520%255C%2522apkFilterRegEx%255C%2522%253A%2520%255C%2522shelf-github-%255C%2522%252C%2520%255C%2522fallbackToOlderReleases%255C%2522%253A%2520true%252C%2520%255C%2522includePrereleases%255C%2522%253A%2520false%257D%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
 
 <p align="center">
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
@@ -92,8 +92,8 @@ does not take over a page.
 
 | Source | File |
 |---|---|
-| [GitHub release](https://github.com/tn3w/Shelf/releases/latest) | `shelf-github-<versionCode>.apk`, mirrored as `shelf.apk`, with `SHA256SUMS`. |
-| F-Droid | `fdroid` flavor, metadata in `android/fastlane/`, recipe in `android/fdroid/dev.tn3w.shelf.yml`. |
+| [GitHub release](https://github.com/tn3w/Shelf/releases/latest) | One `shelf.apk` (stable URL) with `SHA256SUMS`. |
+| F-Droid | Builds the `fdroid` flavor from source (no updater); recipe in `android/fdroid/dev.tn3w.shelf.yml`, metadata in `android/fastlane/`. |
 
 The GitHub flavor can check for app updates and install them through Android's package
 installer. That updater is hidden for F-Droid-style installs.
@@ -138,7 +138,8 @@ unless `KEYSTORE_FILE` is set.
 cd builder
 cargo build --release
 target/release/builder <dumps-source> <out-dir> [--previous <dir>] [--rebase] \
-  [--month YYYY-MM-DD[-N]] [--translations <dir>] [--requests <dir>]
+  [--month YYYY-MM-DD[-N]] [--translations <dir>] [--requests <dir>] \
+  [--translator <command>]
 ```
 
 The builder can stream dumps from Open Library or read local dump files. It writes the
@@ -156,14 +157,22 @@ python tooling/translate.py requests/requests-de.jsonl out/translations-de.bin \
   --language de --previous previous/translations-de.bin
 ```
 
+With `--translator "python tooling/translate.py <flags>"` the builder runs it itself per
+language, right after exporting requests, and rebuilds descriptions from the fresh
+output. The dumps are parsed once; requests, translation and segments happen in a single
+builder pass. The builder appends the requests file, output file, `--language` and
+`--previous`.
+
 ## Database Workflow
 
 | Step | What happens |
 |---|---|
 | Schedule | Runs monthly, on relevant builder changes, or by manual dispatch. |
-| Inputs | Downloads previous catalogue state, translations and the newest Open Library dumps. |
-| Build | Generates updated segments, ranks, requests and manifest. |
-| Translate | Reuses existing translations and fills new requests where available. |
-| Publish | Uploads a `catalogue-<label>` GitHub release; old releases stay for delta chains. |
+| Inputs | Downloads previous state and translations in parallel with the newest dumps. |
+| Build | One builder pass: requests → translation via `--translator` → segments, ranks, manifest. |
+| Publish | Creates the `catalogue-<label>` release with all output files. |
+| Prune | Deletes catalogue releases no longer referenced by the new manifest, tags included. |
 
-Old `db-YYYY-MM` releases are kept for older APKs that only know that naming scheme.
+Unchanged packs keep their old release URL in the manifest, so a release is deleted only
+once nothing points at it. Old `db-YYYY-MM` releases are kept for older APKs that only
+know that naming scheme.

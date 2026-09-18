@@ -10,6 +10,7 @@ use dumps::{Authors, Book, Context, Titles};
 use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::thread;
 use translations::{Request, Translations};
 
@@ -30,13 +31,14 @@ struct Options {
     month: Option<String>,
     translations: Option<PathBuf>,
     requests: Option<PathBuf>,
+    translator: Option<String>,
 }
 
 fn usage() -> ! {
     eprintln!(
         "usage: builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
-         [--translations <dir>] [--requests <dir>]"
+         [--translations <dir>] [--requests <dir>] [--translator <command>]"
     );
     std::process::exit(2)
 }
@@ -60,7 +62,7 @@ fn directory(argument: Option<String>) -> PathBuf {
 fn options() -> Options {
     let mut arguments = std::env::args().skip(1);
     let (mut rebase, mut previous, mut month) = (false, None, None);
-    let (mut translations, mut requests) = (None, None);
+    let (mut translations, mut requests, mut translator) = (None, None, None);
     let mut positional = Vec::new();
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -68,6 +70,7 @@ fn options() -> Options {
             "--previous" => previous = Some(directory(arguments.next())),
             "--translations" => translations = Some(directory(arguments.next())),
             "--requests" => requests = Some(directory(arguments.next())),
+            "--translator" => translator = Some(arguments.next().unwrap_or_else(|| usage())),
             "--month" => month = Some(release_label(arguments.next())),
             _ => positional.push(argument),
         }
@@ -83,9 +86,11 @@ fn options() -> Options {
         month,
         translations,
         requests,
+        translator,
     }
 }
 
+#[derive(Clone, Copy)]
 struct Job<'a> {
     language: usize,
     month: &'a str,
@@ -96,6 +101,8 @@ struct Job<'a> {
     output: &'a Path,
     translations: &'a Translations,
     requests: Option<&'a Path>,
+    sources: Option<&'a Path>,
+    translator: Option<&'a str>,
 }
 
 #[derive(Clone, Copy)]
@@ -166,6 +173,27 @@ fn export_requests(job: &Job, placed: &[Placed]) {
         .collect();
     let file = directory.join(format!("requests-{}.jsonl", LANGUAGES[job.language]));
     translations::write_requests(&file, &requests);
+}
+
+fn translate(job: &Job) -> Option<Translations> {
+    let command = job.translator.filter(|_| job.language != 0)?;
+    let language = LANGUAGES[job.language];
+    let requests = job.requests?.join(format!("requests-{language}.jsonl"));
+    let output = job.output.join(format!("translations-{language}.bin"));
+    let mut words = command.split_whitespace();
+    let mut child = Command::new(words.next()?);
+    child
+        .args(words)
+        .arg(&requests)
+        .arg(&output)
+        .args(["--language", language]);
+    if let Some(sources) = job.sources {
+        child.arg("--previous");
+        child.arg(sources.join(format!("translations-{language}.bin")));
+    }
+    let status = child.status().expect("run translator");
+    assert!(status.success(), "translator failed for {language}");
+    Some(Translations::load(&output))
 }
 
 fn build_packs(job: &Job, placed: &[Placed], tombstones: &[Vec<u32>]) -> Vec<Vec<u8>> {
@@ -342,6 +370,12 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let selection = release::select(&entries, job.books, limit, core_limit, &merged);
     let placed = placed_works(job, &selection);
     export_requests(job, &placed);
+    let fresh = translate(job);
+    let job = &Job {
+        translations: fresh.as_ref().unwrap_or(job.translations),
+        ..*job
+    };
+    let placed = placed_works(job, &selection);
     let tracked: Vec<Tracked> = placed
         .iter()
         .map(|placed| Tracked {
@@ -456,6 +490,8 @@ fn main() {
             output: &options.output,
             translations: &loaded[language],
             requests: options.requests.as_deref(),
+            sources: options.translations.as_deref(),
+            translator: options.translator.as_deref(),
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;

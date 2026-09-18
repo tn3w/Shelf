@@ -25,6 +25,7 @@ private const val AUTHOR_DEPTH = 40
 private const val MAX_PER_AUTHOR = 2
 private const val MAX_AUTHOR_ROWS = 2
 private const val MIN_ROW = 4
+private const val MIN_SERIES_ROW = 2
 private const val ADULT = 4
 private const val MAX_AUDIENCE_GAP = 2.0
 private const val SPECIFIC_TAGS = 3.0
@@ -42,6 +43,7 @@ private class Source(
     val weight: Double,
     val audience: Int,
     val fiction: Boolean,
+    val read: Boolean,
 )
 
 private class Cluster(val sources: List<Source>) {
@@ -50,6 +52,7 @@ private class Cluster(val sources: List<Source>) {
     val audience = sources.sumOf { it.weight * it.audience } / weight
     val fiction = sources.sumOf { it.weight * if (it.fiction) 1.0 else 0.0 } >= weight / 2
     val books = sources.map { it.book }
+    val readBooks = sources.filter { it.read }.map { it.book }
 }
 
 private class Profile(
@@ -77,7 +80,12 @@ class Row(
     val author: Author? = null,
 ) {
     val key =
-        listOf(kind.name, sources.joinToString("-") { "${it.work}" }, "${author?.number}")
+        listOf(
+                kind.name,
+                "${books.firstOrNull()?.work}",
+                sources.joinToString("-") { "${it.work}" },
+                "${author?.number}",
+            )
             .joinToString("-")
 }
 
@@ -162,6 +170,7 @@ class Recommender(private val catalogue: Catalogue) {
             SHELF_WEIGHT.getValue(entry.shelf),
             audienceOf(slugs),
             "fiction" in slugs || "nonfiction" !in slugs,
+            entry.shelf != Shelf.Want,
         )
     }
 
@@ -327,7 +336,7 @@ class Recommender(private val catalogue: Catalogue) {
                 .let(catalogue::books)
                 .filter { taken.add(titleKey(it)) }
                 .take(size)
-        return if (books.isEmpty()) null else Row(RowKind.Series, books)
+        return if (books.size < MIN_SERIES_ROW) null else Row(RowKind.Series, books)
     }
 
     private fun nextVolume(work: Int, profile: Profile): Int? {
@@ -403,7 +412,7 @@ class Recommender(private val catalogue: Catalogue) {
                 rank(profile, cluster, random, size * 4)
                     .mapNotNull { picker.accept(it.work) }
             if (books.size >= MIN_ROW) {
-                rows += Row(RowKind.Because, books.take(size), cluster.books)
+                rows += Row(RowKind.Because, books.take(size), cluster.readBooks)
             }
         }
         rows += authorRows(profile, taken, size)

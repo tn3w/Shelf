@@ -57,6 +57,7 @@ import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Habit
+import dev.tn3w.shelf.data.mainTitle
 import dev.tn3w.shelf.data.Row
 import dev.tn3w.shelf.data.RowKind
 import dev.tn3w.shelf.data.Shelf
@@ -172,10 +173,9 @@ private fun rowTitle(row: Row) =
         RowKind.Author -> stringResource(R.string.more_by, row.author?.name.orEmpty())
         RowKind.Popular -> stringResource(R.string.popular)
         RowKind.Because ->
-            row.sources.take(2).map { it.title }.let { titles ->
-                if (titles.size < 2) stringResource(R.string.because_you_read, titles[0])
-                else stringResource(R.string.because_you_read_two, titles[0], titles[1])
-            }
+            row.sources.firstOrNull()?.let {
+                stringResource(R.string.because_you_read, mainTitle(it.title))
+            } ?: stringResource(R.string.for_you)
     }
 
 @Composable
@@ -183,6 +183,8 @@ private fun rowSubtitle(row: Row) =
     when (row.kind) {
         RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
         RowKind.Popular -> stringResource(R.string.popular_subtitle)
+        RowKind.Because ->
+            if (row.sources.isEmpty()) stringResource(R.string.for_you_subtitle) else null
         else -> null
     }
 

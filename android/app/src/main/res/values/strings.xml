@@ -135,7 +135,6 @@
         <item quantity="other">Read %d pages to start a streak.</item>
     </plurals>
     <string name="because_you_read">Because you read %1$s</string>
-    <string name="because_you_read_two">Because you read %1$s and %2$s</string>
     <string name="next_in_series">Next in your series</string>
     <string name="next_in_series_subtitle">Continue where each series left off.</string>
     <string name="not_for_me">Not for me</string>

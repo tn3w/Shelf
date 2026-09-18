@@ -142,7 +142,6 @@
         <item quantity="many">Lisez %d pages pour lancer une série.</item>
     </plurals>
     <string name="because_you_read">Parce que vous avez lu %1$s</string>
-    <string name="because_you_read_two">Parce que vous avez lu %1$s et %2$s</string>
     <string name="next_in_series">La suite de vos séries</string>
     <string name="next_in_series_subtitle">Reprenez chaque série là où vous en êtes.</string>
     <string name="not_for_me">Pas pour moi</string>

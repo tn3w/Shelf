@@ -134,7 +134,6 @@
         <item quantity="other">Lies %d Seiten, um eine Serie zu starten.</item>
     </plurals>
     <string name="because_you_read">Weil du %1$s gelesen hast</string>
-    <string name="because_you_read_two">Weil du %1$s und %2$s gelesen hast</string>
     <string name="next_in_series">Als Nächstes in deinen Reihen</string>
     <string name="next_in_series_subtitle">Dort weiterlesen, wo jede Reihe aufgehört hat.</string>
     <string name="not_for_me">Nichts für mich</string>
