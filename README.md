@@ -27,8 +27,8 @@ Search, explore, track reading streaks, read your own files.
 
 </div>
 
-Shelf is a private, offline-first Android app for browsing, discovering and reading books.
-It bundles a starter catalogue, downloads optional packs, and keeps your library on
+Shelf is a private, offline-first Android app for browsing, discovering and reading
+books. It bundles a starter catalogue, downloads optional packs, and keeps your library on
 device. The catalogue is rebuilt from
 [Open Library dumps](https://openlibrary.org/developers/dumps) and published as GitHub
 releases.
@@ -41,80 +41,57 @@ releases.
 | Android 8+ | Core data bundled in the APK | Monthly Open Library import | Network only for packs, updates and optional covers |
 | GitHub and F-Droid flavors | Packs for genres, audiences and nonfiction | Segments, ranks and deltas | Library backup stays in app DataStore |
 
-## Experience
-
 | Browse | Read | Track |
 |---|---|---|
 | Search with typo tolerance, open author and tag pages, explore popular works and genres. | Read EPUB, PDF, TXT/Markdown, HTML, FB2 and CBZ files with progress and chapters. | Keep Want, Reading and Finished shelves, daily goals, streaks and series progress. |
 
-| Discover | Personalize | Stay Offline |
-|---|---|---|
-| Home rows surface next series volumes, more from favorite authors and books related to your library. | Pick book language, packs, app language, theme, covers and update behavior. | Core works without setup; downloaded packs are verified and stored locally. |
+Home rows surface next series volumes, more from favorite authors and books related to
+your library, built locally from your shelves, tags, authors and ratings, and capped so
+one author or series cannot take over a page.
 
 ## Catalogue
 
-| Layer | Purpose |
-|---|---|
-| `core` | Compact starter set bundled with the APK. |
-| Genre packs | `fantasy`, `scifi`, `mystery`, `romance`. |
-| Audience packs | `kids`, `young-adult`. |
-| General packs | `nonfiction`, `general`. |
-| Ranks | Popularity and search statistics shared by installed packs. |
+`core` ships with the APK; `fantasy`, `scifi`, `mystery`, `romance`, `kids`,
+`young-adult`, `nonfiction` and `general` download on demand, alongside a shared `ranks`
+file of popularity and search statistics. Each work belongs to one pack. Small packs merge
+into `core` for smaller languages. Installed packs are memory-mapped, merged with monthly
+deltas, and searched entirely on device.
 
-Each work belongs to one pack. Small packs can be merged into `core` for smaller
-languages, while English can use the full split. Installed packs are memory-mapped,
-merged with monthly deltas, and searched entirely on device.
+Works, editions, authors, ratings, reading logs and covers stream into the builder; GitHub
+publishes segments, ranks, translation bins, state and `manifest.json`; the app checks the
+manifest, downloads what is missing, verifies SHA-256 and swaps files in atomically. Small
+pack updates download quietly, larger rebases appear in Settings, and no background
+service runs.
 
-## Data Pipeline
-
-| Open Library dumps | Catalogue release | Android app |
-|---|---|---|
-| Works, editions, authors, ratings, reading logs and covers stream into the builder. | GitHub publishes segment files, rank files, translation bins, state and `manifest.json`. | The app checks the manifest, downloads missing files, verifies SHA-256 and swaps them in atomically. |
-
-Small installed-pack updates can download quietly; larger rebases appear in Settings. The
-app does not run a background service.
+Catalogue format 2 is the only format the app reads. Anything else is refused, a stored
+format 1 manifest is dropped, and a downloaded segment that no longer opens is deleted on
+the next load, so a device upgrading from format 1 clears itself and refetches.
+`app/build.gradle.kts` pins the bundled release in `catalogueRelease` and checks the
+manifest format before bundling.
 
 ### Cover Selection
 
-Every edition cover is vetted while editions stream in, then one winner per work and
-language is scored in the catalogue pass.
+Every edition cover is vetted while editions stream in; one winner per work and language
+is scored in the catalogue pass.
 
 | Stage | Rule |
 |---|---|
-| Reject | Non-book formats (audio, CD, DVD, video, ebook, braille, microform, games) and edition titles marked as audiobook, movie tie-in or disc releases. |
+| Reject | Non-book formats (audio, CD, DVD, video, ebook, braille, microform, games), titles marked as audiobook, movie tie-in or disc release, and print-on-demand reprinters. |
 | Reject | Images that are not an upright front cover: aspect outside `0.58–0.72`, or under 250 px wide. |
-| Image points | Cover upload year (2024+ scores 70, down to 15 for 2013), stored resolution (1000 px scores 45, down to 12 for 320 px) and a bonus for the common trim (`0.62–0.68`). |
+| Image points | Cover upload year (2024+ scores 70, down to 15 for 2013), stored resolution (1000 px scores 45, down to 12 for 320 px), bonus for the common trim (`0.62–0.68`). |
 | Localize | Winner must be an edition in the shelf language with a latin, non-foreign title; English is the fallback, the work cover the last resort. |
 | Score | Image points plus publisher reach (up to 25), edition year (10 from 1990, 5 from 1960) and a title match. |
 
-Publisher-supplied artwork is uploaded recently and at high resolution, so cover upload
-date and stored resolution stand in for design quality, which the dumps never state. The
-edition's own age barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint
-thumbnail. Print-on-demand reprinters stay excluded throughout.
-
-## Discovery
-
-Recommendations run locally over your shelves and installed catalogue data.
-
-| Signal | Use |
-|---|---|
-| Shelves and reading progress | Build a lightweight taste profile. |
-| Tags, authors, series and audience | Retrieve books that fit the profile without mixing incompatible rows. |
-| Popularity and ratings | Keep results useful when several candidates match. |
-| Diversity rules | Avoid repeating the same author, series or already-saved work. |
-
-Explore and genre pages use the same catalogue ranking, capped so one author or series
-does not take over a page.
+Publisher artwork is uploaded recently and at high resolution, so upload date and stored
+resolution stand in for design quality, which the dumps never state. The edition's own age
+barely counts: a 1974 cover scanned at 431 px can beat a 2022 reprint thumbnail.
 
 ## Install
 
-| Source | File |
-|---|---|
-| [GitHub release](https://github.com/tn3w/Shelf/releases/latest) | One `shelf.apk` (stable URL) with `SHA256SUMS`. |
-| F-Droid | Builds the `fdroid` flavor from source (no updater); recipe in `android/fdroid/dev.tn3w.shelf.yml`, metadata in `android/fastlane/`. |
-
-The GitHub flavor can check for app updates and install them through Android's package
-installer. That updater is hidden for F-Droid-style installs.
+[GitHub releases](https://github.com/tn3w/Shelf/releases/latest) carry one `shelf.apk`
+(stable URL) with `SHA256SUMS`; that flavor can check for updates and install them through
+Android's package installer. F-Droid builds the `fdroid` flavor from source without the
+updater; recipe in `android/fdroid/dev.tn3w.shelf.yml`, metadata in `android/fastlane/`.
 
 ## Build
 
@@ -123,34 +100,8 @@ cd android
 ./gradlew assembleGithubDebug assembleFdroidRelease lint
 ```
 
-`downloadCatalogue` fetches bundled catalogue files from the configured
-`catalogueRelease` and verifies them against its manifest. Release builds are unsigned
-unless `KEYSTORE_FILE` is set.
-
-## Project Map
-
-| Path | Role |
-|---|---|
-| `android/` | Android app, flavors, UI, reader, local library and catalogue loading. |
-| `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
-| `tooling/screenshots.py` | Emulator-driven screenshots for Fastlane and this README. |
-| `tooling/translate.py` | Optional machine-translation helper for missing descriptions. |
-| `.github/workflows/` | Monthly catalogue builds and app releases. |
-
-## Key App Sources
-
-| File | Role |
-|---|---|
-| `data/Segment.kt` | Reads segment and rank files. |
-| `data/Catalogue.kt` | Merges packs, exposes works, authors, tags and series. |
-| `data/Search.kt` | Search candidates, fuzzy terms, completions and ranking. |
-| `data/Recommend.kt` | Home recommendations and discovery rows. |
-| `data/Packs.kt` | Manifest refresh, downloads and installed-pack state. |
-| `data/Library.kt` | Shelves, progress, streaks and settings. |
-| `data/Documents.kt` | Reader document parsing. |
-| `ui/*` | Compose screens, theme and shared components. |
-
-## Builder
+`downloadCatalogue` fetches bundled catalogue files from `catalogueRelease` and verifies
+them against its manifest. Release builds are unsigned unless `KEYSTORE_FILE` is set.
 
 ```sh
 cd builder
@@ -160,9 +111,9 @@ target/release/builder <dumps-source> <out-dir> [--previous <dir>] [--rebase] \
   [--translator <command>]
 ```
 
-The builder can stream dumps from Open Library or read local dump files. It writes the
-current release files only: catalogue segments, ranks, state and manifest. Previous state
-lets monthly builds publish small deltas instead of full replacements.
+The builder streams dumps from Open Library or reads local files, and writes the current
+release only: segments, ranks, state and manifest. Previous state lets monthly builds
+publish small deltas instead of full replacements.
 
 ## Translations
 
@@ -175,11 +126,9 @@ python tooling/translate.py requests/requests-de.jsonl out/translations-de.bin \
   --language de --previous previous/translations-de.bin
 ```
 
-With `--translator "python tooling/translate.py <flags>"` the builder runs it itself per
-language, right after exporting requests, and rebuilds descriptions from the fresh
-output. The dumps are parsed once; requests, translation and segments happen in a single
-builder pass. The builder appends the requests file, output file, `--language` and
-`--previous`.
+With `--translator "python tooling/translate.py <flags>"` the builder runs it per language
+right after exporting requests, appending the requests file, output file, `--language` and
+`--previous`, then rebuilds descriptions from the fresh output in the same pass.
 
 ## Database Workflow
 
@@ -192,5 +141,24 @@ builder pass. The builder appends the requests file, output file, `--language` a
 | Prune | Deletes catalogue releases no longer referenced by the new manifest, tags included. |
 
 Unchanged packs keep their old release URL in the manifest, so a release is deleted only
-once nothing points at it. Old `db-YYYY-MM` releases are kept for older APKs that only
-know that naming scheme.
+once nothing points at it.
+
+## Project Map
+
+| Path | Role |
+|---|---|
+| `android/` | App, flavors, UI, reader, local library and catalogue loading. |
+| `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
+| `tooling/` | Emulator screenshots and the machine-translation helper. |
+| `.github/workflows/` | Monthly catalogue builds and app releases. |
+
+| App source | Role |
+|---|---|
+| `data/Segment.kt` | Reads segment and rank files. |
+| `data/Catalogue.kt` | Merges packs, exposes works, authors, tags and series. |
+| `data/Search.kt` | Search candidates, fuzzy terms, completions and ranking. |
+| `data/Recommend.kt` | Home recommendations and discovery rows. |
+| `data/Packs.kt` | Manifest refresh, downloads and installed-pack state. |
+| `data/Library.kt` | Shelves, progress, streaks and settings. |
+| `data/Documents.kt` | Reader document parsing. |
+| `ui/*` | Compose screens, theme and shared components. |

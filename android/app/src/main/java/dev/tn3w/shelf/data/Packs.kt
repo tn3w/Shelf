@@ -107,13 +107,15 @@ class Packs(private val context: Context) {
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
     val manifest: Manifest?
-        get() =
-            manifestFile
-                .takeIf { it.exists() }
-                ?.let {
-                    runCatching { json.decodeFromString<Manifest>(it.readText()) }
-                        .getOrNull()
-                }
+        get() {
+            if (!manifestFile.exists()) return null
+            val stored =
+                runCatching { json.decodeFromString<Manifest>(manifestFile.readText()) }
+                    .getOrNull()
+            if (stored?.format == CATALOGUE_FORMAT) return stored
+            manifestFile.delete()
+            return null
+        }
 
     private fun downloaded() =
         directory.listFiles().orEmpty().mapNotNull { parseName(it.name) }
@@ -158,7 +160,11 @@ class Packs(private val context: Context) {
         }
     }
 
-    private fun open(file: LocalFile) = runCatching { Segment(map(file)) }.getOrNull()
+    private fun open(file: LocalFile): Segment? {
+        val segment = runCatching { Segment(map(file)) }.getOrNull()
+        if (segment == null) binOf(file.id).delete()
+        return segment
+    }
 
     private fun map(file: LocalFile): ByteBuffer {
         val local = binOf(file.id)
@@ -217,6 +223,9 @@ class Packs(private val context: Context) {
                 release.assets.first { it.name == "manifest.json" }.browser_download_url
             val text = connect(url).inputStream.use { it.readBytes().decodeToString() }
             val manifest = json.decodeFromString<Manifest>(text)
+            check(manifest.format == CATALOGUE_FORMAT) {
+                "catalogue format ${manifest.format} is no longer supported"
+            }
             writeAtomically(manifestFile, text.toByteArray())
             removeObsolete(manifest)
             manifest

@@ -9,8 +9,7 @@ import java.nio.channels.FileChannel
 import java.util.zip.Inflater
 
 private const val MAGIC = "SHLF"
-private val SUPPORTED_VERSIONS = 1..2
-private const val TRANSLATION_FLAG_VERSION = 2
+const val CATALOGUE_FORMAT = 2
 private const val NAME_BYTES = 16
 private const val SEPARATOR = '\u001f'
 private const val YEAR_EPOCH = 1400
@@ -193,12 +192,11 @@ private fun <T : Comparable<T>> List<T>.lastAtMost(key: T) =
 private fun <T : Comparable<T>> List<T>.firstAtLeast(key: T) =
     binarySearch(key).let { if (it >= 0) it else -it - 1 }
 
-private fun readVersion(buffer: ByteBuffer): Int {
+private fun readVersion(buffer: ByteBuffer) {
     buffer.order(ByteOrder.LITTLE_ENDIAN)
     check(String(buffer.bytes(0, 4)) == MAGIC) { "not a shelf segment" }
     val version = buffer.getInt(4)
-    check(version in SUPPORTED_VERSIONS) { "unsupported segment version $version" }
-    return version
+    check(version == CATALOGUE_FORMAT) { "unsupported segment version $version" }
 }
 
 private fun readSections(buffer: ByteBuffer): Map<String, ByteBuffer> {
@@ -313,7 +311,6 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
 }
 
 class Segment(buffer: ByteBuffer) {
-    private val version = readVersion(buffer)
     private val sections = readSections(buffer)
     private val meta = readMeta(section("meta"))
     val pack = meta.getValue("pack")
@@ -348,7 +345,6 @@ class Segment(buffer: ByteBuffer) {
             val reader = Reader(tagTable[it])
             TagRecord(it, reader.text(), reader.text(), reader.text())
         }
-    private val hasTranslationFlags = version >= TRANSLATION_FLAG_VERSION
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
 
@@ -446,8 +442,8 @@ class Segment(buffer: ByteBuffer) {
                     while (reader.hasMore) {
                         val marked = reader.varint()
                         val text = reader.text()
-                        val offset = if (hasTranslationFlags) marked shr 1 else marked
-                        val translated = hasTranslationFlags && marked and 1 == 1
+                        val offset = marked shr 1
+                        val translated = marked and 1 == 1
                         put(first + offset, Description(text, translated))
                     }
                 }

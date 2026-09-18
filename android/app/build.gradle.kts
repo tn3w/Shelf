@@ -7,7 +7,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-09-15"
+val catalogueRelease = "catalogue-2026-09-18"
+val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 
 android {
@@ -20,8 +21,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 7
-        versionName = "1.0.6"
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     flavorDimensions += "distribution"
@@ -78,6 +79,9 @@ abstract class DownloadCatalogue : DefaultTask() {
     abstract val release: Property<String>
 
     @get:Input
+    abstract val format: Property<Int>
+
+    @get:Input
     abstract val filter: ListProperty<String>
 
     @get:OutputDirectory
@@ -87,6 +91,10 @@ abstract class DownloadCatalogue : DefaultTask() {
     fun download() {
         val base = "https://github.com/tn3w/Shelf/releases/download/${release.get()}"
         val manifest = URI("$base/manifest.json").toURL().readText()
+        val found = Regex("\"format\": (\\d+)").find(manifest)?.groupValues?.get(1)
+        check(found == format.get().toString()) {
+            "catalogue format $found is not supported"
+        }
         val entryHead = "\"id\": \"([^\"]+)\"[^}]*?"
         val entryTail = "\"sha256\": \"([0-9a-f]+)\"[^}]*?\"url\": \"([^\"]+)\""
         val entries = Regex(entryHead + entryTail)
@@ -110,6 +118,7 @@ abstract class DownloadCatalogue : DefaultTask() {
 
 val downloadCatalogue = tasks.register<DownloadCatalogue>("downloadCatalogue") {
     release = catalogueRelease
+    format = catalogueFormat
     filter = bundledPacks.map { "[a-z]{2}-$it-.*" }
     output = layout.buildDirectory.dir("generated/catalogue")
 }
