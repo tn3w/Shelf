@@ -214,8 +214,10 @@ class Recommender(private val catalogue: Catalogue) {
             .filter { group ->
                 group.all { abs(it.audience - source.audience) <= MERGE_AUDIENCE_GAP }
             }
-            .maxByOrNull { overlap(source.vector, blend(it)) }
-            ?.takeIf { overlap(source.vector, blend(it)) >= needed }
+            .map { it to overlap(source.vector, blend(it)) }
+            .maxByOrNull { it.second }
+            ?.takeIf { it.second >= needed }
+            ?.first
     }
 
     private fun worksOf(author: Author) =
@@ -449,15 +451,18 @@ class Recommender(private val catalogue: Catalogue) {
         )
     }
 
-    fun authorBooks(author: Author, limit: Int = 90): List<Book> {
+    private fun authorBooks(author: Author, limit: Int): List<Book> {
         val works = catalogue.authorWorks(author).sortedByDescending(catalogue::score)
         return distinct(catalogue.books(works.take(limit * 2)), limit)
     }
 
     fun authorShelf(author: Author, limit: Int = 90): List<AuthorGroup> {
-        val grouped = authorBooks(author, limit).groupBy { catalogue.series(it.work)?.name }
-        val (series, single) = grouped.entries.partition { it.key != null && it.value.size > 1 }
+        val grouped =
+            authorBooks(author, limit).groupBy { catalogue.series(it.work)?.name }
+        val (series, single) =
+            grouped.entries.partition { it.key != null && it.value.size > 1 }
         val standalone = single.flatMap { it.value }
+        val byScore = compareByDescending<Book> { catalogue.score(it.work) }
         val groups =
             series
                 .map { (name, members) -> AuthorGroup(name, readingOrder(members)) }
@@ -465,9 +470,7 @@ class Recommender(private val catalogue: Catalogue) {
                     group.books.maxOf { catalogue.score(it.work) }
                 }
         if (standalone.isEmpty()) return groups
-        return groups + AuthorGroup(null, standalone.sortedByDescending {
-            catalogue.score(it.work)
-        })
+        return groups + AuthorGroup(null, standalone.sortedWith(byScore))
     }
 
     private fun readingOrder(books: List<Book>): List<Book> {

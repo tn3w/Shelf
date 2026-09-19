@@ -81,8 +81,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 val ScreenPadding = 20.dp
-val BackBarPadding = 4.dp
-val TileWidth = 116.dp
+private val BackBarPadding = 4.dp
+private val TileWidth = 116.dp
 private val GridTileWidth = 96.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -482,12 +482,7 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
 }
 
 @Composable
-fun BookGrid(
-    books: List<Book>?,
-    origin: String,
-    onOpen: (Book, String) -> Unit,
-    header: LazyGridScope.() -> Unit = {},
-) {
+private fun TileGrid(header: LazyGridScope.() -> Unit, body: LazyGridScope.() -> Unit) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(GridTileWidth),
         contentPadding = PaddingValues(ScreenPadding),
@@ -495,15 +490,31 @@ fun BookGrid(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         header()
-        if (books == null) {
-            items(12) { SkeletonTile(Modifier.fillMaxWidth()) }
-            return@LazyVerticalGrid
-        }
-        items(books, key = { it.work }) {
-            BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
-        }
+        body()
     }
 }
+
+private fun LazyGridScope.skeletonTiles() =
+    items(12) { SkeletonTile(Modifier.fillMaxWidth()) }
+
+private fun LazyGridScope.bookTiles(
+    books: List<Book>,
+    origin: String,
+    onOpen: (Book, String) -> Unit,
+) = items(books, key = { it.work }) {
+    BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
+}
+
+@Composable
+fun BookGrid(
+    books: List<Book>?,
+    origin: String,
+    onOpen: (Book, String) -> Unit,
+    header: LazyGridScope.() -> Unit = {},
+) =
+    TileGrid(header) {
+        if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
+    }
 
 @Composable
 fun GroupedBookGrid(
@@ -511,18 +522,9 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(GridTileWidth),
-        contentPadding = PaddingValues(ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        header()
-        if (groups == null) {
-            items(12) { SkeletonTile(Modifier.fillMaxWidth()) }
-            return@LazyVerticalGrid
-        }
+) =
+    TileGrid(header) {
+        if (groups == null) return@TileGrid skeletonTiles()
         val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
         groups.forEach { group ->
             if (labelled) {
@@ -534,12 +536,9 @@ fun GroupedBookGrid(
                     )
                 }
             }
-            items(group.books, key = { it.work }) {
-                BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
-            }
+            bookTiles(group.books, origin, onOpen)
         }
     }
-}
 
 fun LazyGridScope.fullWidth(content: @Composable () -> Unit) =
     item(span = { GridItemSpan(maxLineSpan) }) { content() }

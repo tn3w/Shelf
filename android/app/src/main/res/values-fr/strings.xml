@@ -88,6 +88,7 @@
     <string name="search">Recherche</string>
     <string name="search_hint">Livres et auteurs</string>
     <string name="settings">Paramètres</string>
+    <string name="other_books">Autres livres</string>
     <string name="show_all">Tout afficher</string>
     <string name="similar">Vous aimerez aussi</string>
     <string name="smaller_text">Texte plus petit</string>

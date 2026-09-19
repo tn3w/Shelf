@@ -7,8 +7,11 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams
 import android.os.Build
+import dev.tn3w.shelf.data.Asset
+import dev.tn3w.shelf.data.RELEASES
 import dev.tn3w.shelf.data.connect
 import dev.tn3w.shelf.data.copy
+import dev.tn3w.shelf.data.fetchText
 import dev.tn3w.shelf.data.sha256
 import java.security.DigestInputStream
 import java.security.MessageDigest
@@ -17,8 +20,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private const val RELEASES =
-    "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
 private const val INSTALL_ACTION = "dev.tn3w.shelf.INSTALL_STATUS"
 private val STORES =
     setOf(
@@ -30,8 +31,6 @@ private val STORES =
     )
 private const val APK_NAME = "shelf.apk"
 private val json = Json { ignoreUnknownKeys = true }
-
-@Serializable private data class Asset(val name: String, val browser_download_url: String)
 
 @Serializable
 private data class GithubRelease(
@@ -54,9 +53,6 @@ private fun isNewer(version: String): Boolean {
     return candidate.getOrElse(differing) { 0 } > installed.getOrElse(differing) { 0 }
 }
 
-private fun text(url: String) =
-    connect(url).inputStream.use { it.readBytes().decodeToString() }
-
 object Updater {
     fun isEnabled(context: Context): Boolean {
         val manager = context.packageManager
@@ -73,9 +69,11 @@ object Updater {
     suspend fun latest(): AppRelease? =
         withContext(Dispatchers.IO) {
             val release =
-                json.decodeFromString<List<GithubRelease>>(text(RELEASES)).firstOrNull {
-                    it.tag_name.startsWith("v") && !it.draft && !it.prerelease
-                }
+                json
+                    .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
+                    .firstOrNull {
+                        it.tag_name.startsWith("v") && !it.draft && !it.prerelease
+                    }
             val assets = release?.assets.orEmpty()
             val apk = assets.firstOrNull { it.name == APK_NAME }
             val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
@@ -98,7 +96,7 @@ object Updater {
         withContext(Dispatchers.IO) {
             val name = release.apkUrl.substringAfterLast('/')
             val expected =
-                text(release.checksumsUrl)
+                fetchText(release.checksumsUrl)
                     .lines()
                     .map { it.trim() }
                     .first { it.endsWith(name) }
@@ -133,7 +131,7 @@ object Updater {
         if (status != 200) error("download failed: $status")
         val total = connection.contentLengthLong
         DigestInputStream(connection.inputStream, digest).use { input ->
-            session.openWrite("shelf.apk", 0, total).use { output ->
+            session.openWrite(APK_NAME, 0, total).use { output ->
                 copy(input, output) { if (total > 0) onProgress(it.toFloat() / total) }
                 session.fsync(output)
             }

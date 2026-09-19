@@ -37,8 +37,7 @@ val releaseOrder = Comparator<String> { first, second ->
         ?: left.size.compareTo(right.size)
 }
 
-private const val RELEASES =
-    "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
+const val RELEASES = "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
 private val json = Json { ignoreUnknownKeys = true }
 
 @Serializable
@@ -55,7 +54,7 @@ data class ManifestEntry(
 @Serializable
 data class Manifest(val format: Int, val month: String, val segments: List<ManifestEntry>)
 
-@Serializable private data class Asset(val name: String, val browser_download_url: String)
+@Serializable data class Asset(val name: String, val browser_download_url: String)
 
 @Serializable private data class Release(val tag_name: String, val assets: List<Asset>)
 
@@ -100,6 +99,9 @@ fun connect(url: String): HttpURLConnection =
         readTimeout = 30_000
         setRequestProperty("Accept", "application/vnd.github+json")
     }
+
+fun fetchText(url: String) =
+    connect(url).inputStream.use { it.readBytes().decodeToString() }
 
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply { mkdirs() }
@@ -213,15 +215,13 @@ class Packs(private val context: Context) {
 
     suspend fun refreshManifest(): Manifest =
         withContext(Dispatchers.IO) {
-            val releases =
-                connect(RELEASES).inputStream.use { it.readBytes().decodeToString() }
             val release =
-                json.decodeFromString<List<Release>>(releases).first {
+                json.decodeFromString<List<Release>>(fetchText(RELEASES)).first {
                     it.tag_name.startsWith("catalogue-")
                 }
             val url =
                 release.assets.first { it.name == "manifest.json" }.browser_download_url
-            val text = connect(url).inputStream.use { it.readBytes().decodeToString() }
+            val text = fetchText(url)
             val manifest = json.decodeFromString<Manifest>(text)
             check(manifest.format == CATALOGUE_FORMAT) {
                 "catalogue format ${manifest.format} is no longer supported"

@@ -61,6 +61,12 @@ private data class Details(
     val tags: List<Pair<Int, String>>,
 )
 
+private data class Related(
+    val series: Pair<String, List<Book>>?,
+    val byAuthor: List<Book>,
+    val similar: List<Book>,
+)
+
 @Composable
 fun BookScreen(work: Int, origin: String, navigator: Navigator) {
     val saved by shelfApp().library.saved.collectAsStateWithLifecycle(emptyList())
@@ -75,9 +81,15 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         }
     val entry = saved.firstOrNull { it.work == work }
     val book = details?.book ?: entry?.toBook()
-    val series by load(work) { catalogue.book(work)?.let(recommender::series) }
-    val byAuthor by load(work) { catalogue.book(work)?.let(recommender::byAuthor) }
-    val similar by load(work) { catalogue.book(work)?.let(recommender::similar) }
+    val related by
+        load(work) {
+            val found = catalogue.book(work) ?: return@load null
+            Related(
+                recommender.series(found),
+                recommender.byAuthor(found),
+                recommender.similar(found),
+            )
+        }
 
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { BackBar(navigator::back) }
@@ -96,7 +108,8 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                 item { SectionHeader(stringResource(R.string.about_book)) }
                 item { DescriptionText(description) }
             }
-        series
+        related
+            ?.series
             ?.takeIf { it.second.size > 1 }
             ?.let { (name, books) ->
                 item {
@@ -115,7 +128,8 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                     )
                 }
             }
-        byAuthor
+        related
+            ?.byAuthor
             ?.takeIf { it.isNotEmpty() }
             ?.let { books ->
                 val author = book.authors.first()
@@ -130,7 +144,8 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                     )
                 }
             }
-        similar
+        related
+            ?.similar
             ?.takeIf { it.isNotEmpty() }
             ?.let { books ->
                 item {

@@ -136,9 +136,9 @@ private fun rememberSettings(): Pair<Settings, ((Settings) -> Settings) -> Unit>
 @Composable
 private fun packInfos(language: String): List<PackInfo>? {
     val app = shelfApp()
-    val version by app.catalogueVersion.collectAsStateWithLifecycle()
+    val loaded by app.loaded.collectAsStateWithLifecycle()
     val downloads by app.downloads.collectAsStateWithLifecycle()
-    return produceState<List<PackInfo>?>(null, language, version, downloads.size) {
+    return produceState<List<PackInfo>?>(null, language, loaded, downloads.size) {
             value =
                 withContext(Dispatchers.IO) {
                     if (app.packs.manifest == null)
@@ -355,18 +355,22 @@ private fun PackRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (download is Download.Running) {
-                val progress by animateFloatAsState(download.progress)
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                )
-            }
+            DownloadBar(download)
         }
         AnimatedContent(download to info.state, label = "pack") { (running, state) ->
             PackAction(label, running, state, info.pack, onDownload, onRemove)
         }
     }
+}
+
+@Composable
+private fun DownloadBar(download: Download?) {
+    if (download !is Download.Running) return
+    val progress by animateFloatAsState(download.progress)
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+    )
 }
 
 @Composable
@@ -698,7 +702,9 @@ fun OnboardingScreen() {
         }
         SectionHeader(
             stringResource(R.string.choose_packs),
-            stringResource(if (required) R.string.core_required else R.string.core_offline),
+            stringResource(
+                if (required) R.string.core_required else R.string.core_offline
+            ),
         )
         if (required) CoreRow(core, coreDownload)
         OnboardingPacks(packs, selected, skip = if (required) "core" else null)
@@ -745,13 +751,7 @@ private fun CoreRow(info: PackInfo?, download: Download?) {
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
-        if (download is Download.Running) {
-            val progress by animateFloatAsState(download.progress)
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            )
-        }
+        DownloadBar(download)
         if (download is Download.Failed) {
             Text(
                 stringResource(R.string.pack_failed),

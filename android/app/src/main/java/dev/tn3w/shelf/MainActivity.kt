@@ -179,8 +179,9 @@ private fun ShelfNavigation(settings: Settings) {
     val hierarchy = entry?.destination?.hierarchy.orEmpty()
     val onTab =
         tabs.indexOfFirst { tab -> hierarchy.any { it.hasRoute(tab.route::class) } }
-    var selected by rememberSaveable { mutableIntStateOf(0) }
-    if (onTab >= 0 && onTab != selected) selected = onTab
+    var lastTab by rememberSaveable { mutableIntStateOf(0) }
+    LaunchedEffect(onTab) { if (onTab >= 0) lastTab = onTab }
+    val selected = if (onTab >= 0) onTab else lastTab
     val reading = hierarchy.any { it.hasRoute(ReaderRoute::class) }
     val adaptive =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
@@ -197,7 +198,6 @@ private fun ShelfNavigation(settings: Settings) {
                     selected = index == selected,
                     onClick = {
                         navigator.tab(tab.route, reselected = index == selected)
-                        selected = index
                     },
                     icon = { Icon(tab.icon, contentDescription = null) },
                     label = { Text(stringResource(tab.label)) },

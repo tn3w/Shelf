@@ -45,7 +45,6 @@ class ShelfApp : Application() {
     val packs by lazy { Packs(this) }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
-    val catalogueVersion = MutableStateFlow(0)
 
     override fun onCreate() {
         super.onCreate()
@@ -64,10 +63,7 @@ class ShelfApp : Application() {
     }
 
     fun reload(language: String) =
-        scope.launch(Dispatchers.IO) {
-            loaded.value = Loaded(packs.load(language))
-            catalogueVersion.update { it + 1 }
-        }
+        scope.launch(Dispatchers.IO) { loaded.value = Loaded(packs.load(language)) }
 
     fun download(language: String, pack: String) =
         scope.launch(Dispatchers.IO) {
@@ -98,10 +94,7 @@ class ShelfApp : Application() {
         val settings = library.settings.first()
         val now = System.currentTimeMillis()
         if (now - settings.lastCatalogueCheck < MONTH_MILLIS) return
-        runCatching { packs.refreshManifest() }
-            .onFailure {
-                return
-            }
+        runCatching { packs.refreshManifest() }.getOrElse { return }
         library.updateSettings { it.copy(lastCatalogueCheck = now) }
         val language = settings.language
         val updates = packs.pendingUpdates(language)
