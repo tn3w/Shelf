@@ -146,7 +146,7 @@ contrast target. Cached in memory and as WebP.
 |---|---|
 | `android/` | App, flavors, UI, reader, local library and catalogue loading. |
 | `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
-| `tooling/` | Emulator screenshots, machine translation, cover design bench. |
+| `tooling/` | Emulator screenshots and machine translation. |
 | `.github/workflows/` | CI on pull requests, monthly catalogue builds, app releases. |
 | `data/Segment.kt`, `data/Catalogue.kt` | Segment and rank files; merged works, authors, tags and series. |
 | `data/Search.kt`, `data/Recommend.kt` | Search candidates and ranking; home and discovery rows. |
