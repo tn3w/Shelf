@@ -128,18 +128,31 @@ The monthly workflow downloads previous state and the newest dumps, runs one bui
 publishes a `catalogue-<label>` release and deletes catalogue releases the new manifest no
 longer points at.
 
+## Generated covers
+
+<p align="center">
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, fantasy, science fiction, horror, romance, adventure, vintage and children's"></picture>
+</p>
+
+Books without their own cover get one drawn on device, from `Canvas` shaders and the font
+families Android ships: no downloads, no assets. Tag slugs pick the genre, then a
+`work|title|author` seed picks one of 29 art directions and every colour inside it, so a
+cover never changes. Title and author bands are measured and scrimmed until they clear a
+contrast target. Cached in memory and as WebP; `tooling/covers.py` is the design bench.
+
 ## Project map
 
 | Path | Role |
 |---|---|
 | `android/` | App, flavors, UI, reader, local library and catalogue loading. |
 | `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
-| `tooling/` | Emulator screenshots and the machine-translation helper. |
+| `tooling/` | Emulator screenshots, machine translation, cover design bench. |
 | `.github/workflows/` | CI on pull requests, monthly catalogue builds, app releases. |
 | `data/Segment.kt`, `data/Catalogue.kt` | Segment and rank files; merged works, authors, tags and series. |
 | `data/Search.kt`, `data/Recommend.kt` | Search candidates and ranking; home and discovery rows. |
 | `data/Packs.kt`, `data/Library.kt` | Manifest, downloads and pack state; shelves, progress, settings and backup. |
 | `data/Documents.kt`, `ui/*` | Reader document parsing; Compose screens, theme and components. |
+| `cover/`, `cover/art/*` | Seeded cover generator: palette, type, legibility; the art directions. |
 
 ## Contributing
 

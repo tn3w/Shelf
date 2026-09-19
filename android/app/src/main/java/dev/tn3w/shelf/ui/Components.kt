@@ -71,6 +71,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Loaded
+import dev.tn3w.shelf.cover.CoverRequest
+import dev.tn3w.shelf.cover.GeneratedCover
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.Author
@@ -130,6 +132,7 @@ fun BookCover(
     val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
     val offline = settings.isOffline(LocalContext.current)
     var loaded by remember(book.work) { mutableStateOf(false) }
+    var failed by remember(book.work) { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
@@ -139,13 +142,17 @@ fun BookCover(
             .clip(shape)
             .background(placeholderColor(book.work))
     ) {
+        if (offline || !settings.onlineCovers || book.cover == 0 || failed) {
+            DrawnCover(book)
+            return@Box
+        }
         if (!loaded) CoverPlaceholder(book)
-        if (offline || !settings.onlineCovers || book.cover == 0) return@Box
         AsyncImage(
             model = book.coverUrl("L"),
             contentDescription = stringResource(R.string.cover_of, book.title),
             contentScale = ContentScale.Crop,
             onSuccess = { loaded = true },
+            onError = { failed = true },
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -184,6 +191,19 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+@Composable
+private fun DrawnCover(book: Book) {
+    val catalogue = shelfApp().loaded.collectAsStateWithLifecycle().value?.catalogue
+    val slugs =
+        remember(book.work, catalogue) {
+            book.tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+        }
+    GeneratedCover(
+        CoverRequest(book.work, book.title, book.author, slugs),
+        stringResource(R.string.cover_of, book.title),
+    )
 }
 
 @Composable
