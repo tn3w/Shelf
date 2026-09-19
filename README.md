@@ -40,7 +40,7 @@ releases.
 |---|---|---|---|
 | Kotlin + Jetpack Compose | English, German, French, Spanish | Rust, deterministic output | No account, trackers, Play Services or Firebase |
 | Android 8+ | Core data bundled (GitHub) or fetched (F-Droid) | Monthly Open Library import | Network only for packs, updates and optional covers |
-| GitHub and F-Droid flavors | Packs for genres, audiences and nonfiction | Segments, ranks and deltas | Library backup stays in app DataStore |
+| GitHub and F-Droid flavors | Packs for genres, audiences and nonfiction | Segments, ranks and deltas | Library export/import as a zip you choose |
 
 | Browse | Read | Track |
 |---|---|---|
@@ -49,6 +49,12 @@ releases.
 Author pages and author search results show Open Library author photos when online covers
 are on, falling back to initials, and group works by series in reading order,
 most prominent series first, with standalone titles under "Other books".
+
+Settings → Backup writes a zip holding `library.json` (shelves, progress, activity,
+dismissed recommendations, settings) plus every imported book file, through the system
+file picker, and reads one back. Import merges: newest shelf entry per work wins,
+on-device reading progress and activity are kept, book files already present are not
+overwritten.
 
 Home rows surface next series volumes, more from favorite authors and books related to
 your library, built locally from your shelves, tags, authors and ratings, and capped so
@@ -174,6 +180,6 @@ once nothing points at it.
 | `data/Search.kt` | Search candidates, fuzzy terms, completions and ranking. |
 | `data/Recommend.kt` | Home recommendations and discovery rows. |
 | `data/Packs.kt` | Manifest refresh, downloads and installed-pack state. |
-| `data/Library.kt` | Shelves, progress, streaks and settings. |
+| `data/Library.kt` | Shelves, progress, streaks, settings and zip backup. |
 | `data/Documents.kt` | Reader document parsing. |
 | `ui/*` | Compose screens, theme and shared components. |

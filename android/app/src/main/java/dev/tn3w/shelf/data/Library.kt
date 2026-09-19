@@ -7,8 +7,14 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import java.io.InputStream
+import java.io.OutputStream
 import java.time.LocalDate
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -22,6 +28,8 @@ private val PROGRESS = stringPreferencesKey("progress")
 private val ACTIVITY = stringPreferencesKey("activity")
 private val SETTINGS = stringPreferencesKey("settings")
 private val DISMISSED = stringPreferencesKey("dismissed")
+private const val BACKUP_ENTRY = "library.json"
+private const val BOOKS_PREFIX = "books/"
 private val json = Json { ignoreUnknownKeys = true }
 
 enum class Shelf {
@@ -70,6 +78,15 @@ data class Settings(
     val checkUpdates: Boolean = true,
     val lastCatalogueCheck: Long = 0,
     val lastAppCheck: Long = 0,
+)
+
+@Serializable
+data class Backup(
+    val entries: List<Saved> = emptyList(),
+    val progress: Map<Int, Progress> = emptyMap(),
+    val activity: Map<String, Int> = emptyMap(),
+    val dismissed: Set<Int> = emptySet(),
+    val settings: Settings = Settings(),
 )
 
 data class Habit(val goal: Int, val today: Int, val streak: Int, val week: List<Int>) {
@@ -139,7 +156,10 @@ class Library(private val context: Context) {
         return Habit(goal, pages(today), streak, week)
     }
 
-    fun bookFile(name: String) = context.filesDir.resolve("books").resolve(name)
+    private val booksDir
+        get() = context.filesDir.resolve("books")
+
+    fun bookFile(name: String) = booksDir.resolve(name)
 
     suspend fun importBook(book: Book, uri: Uri): Boolean {
         val resolver = context.contentResolver
@@ -199,4 +219,104 @@ class Library(private val context: Context) {
     suspend fun clearSearches() = store.edit { it.remove(RECENT) }
 
     suspend fun dismiss(work: Int) = update(DISMISSED, emptySet<Int>()) { it + work }
+
+    suspend fun exportTo(uri: Uri): Boolean {
+        val backup = store.data.first().toBackup()
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                    val output =
+                        context.contentResolver.openOutputStream(uri)
+                            ?: return@runCatching false
+                    output.use { writeArchive(it, backup) }
+                    true
+                }
+                .getOrDefault(false)
+        }
+    }
+
+    private fun writeArchive(output: OutputStream, backup: Backup) =
+        ZipOutputStream(output).use { archive ->
+            archive.putNextEntry(ZipEntry(BACKUP_ENTRY))
+            archive.write(json.encodeToString(backup).toByteArray())
+            archive.closeEntry()
+            booksDir.listFiles().orEmpty().forEach { file ->
+                archive.putNextEntry(ZipEntry("$BOOKS_PREFIX${file.name}"))
+                file.inputStream().use { it.copyTo(archive) }
+                archive.closeEntry()
+            }
+        }
+
+    suspend fun importFrom(uri: Uri): Boolean {
+        val backup =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                        context.contentResolver.openInputStream(uri)?.use {
+                            readArchive(it)
+                        }
+                    }
+                    .getOrNull()
+            } ?: return false
+        merge(backup)
+        return true
+    }
+
+    private fun readArchive(input: InputStream): Backup? {
+        var backup: Backup? = null
+        ZipInputStream(input).use { archive ->
+            while (true) {
+                val name = (archive.nextEntry ?: break).name
+                when {
+                    name == BACKUP_ENTRY ->
+                        backup =
+                            json.decodeFromString(archive.readBytes().decodeToString())
+                    name.startsWith(BOOKS_PREFIX) -> extractBook(name, archive)
+                }
+            }
+        }
+        return backup
+    }
+
+    private fun extractBook(entry: String, input: InputStream) {
+        val name = entry.substringAfterLast('/')
+        if (name.isEmpty()) return
+        val target = bookFile(name).apply { parentFile?.mkdirs() }
+        if (target.exists()) return
+        target.outputStream().use { input.copyTo(it) }
+    }
+
+    private suspend fun merge(backup: Backup) =
+        store.edit { preferences ->
+            val merged = preferences.toBackup().mergedWith(backup)
+            preferences[ENTRIES] = json.encodeToString(merged.entries)
+            preferences[PROGRESS] = json.encodeToString(merged.progress)
+            preferences[ACTIVITY] = json.encodeToString(merged.activity)
+            preferences[DISMISSED] = json.encodeToString(merged.dismissed)
+            preferences[SETTINGS] = json.encodeToString(merged.settings)
+        }
 }
+
+private fun Preferences.toBackup() =
+    Backup(
+        decode(ENTRIES, emptyList()),
+        decode(PROGRESS, emptyMap()),
+        decode(ACTIVITY, emptyMap()),
+        decode(DISMISSED, emptySet()),
+        decode(SETTINGS, Settings()),
+    )
+
+private fun Backup.mergedWith(imported: Backup) =
+    Backup(
+        entries = newestPerWork(entries + imported.entries),
+        progress = imported.progress + progress,
+        activity = maxPerDay(imported.activity, activity),
+        dismissed = dismissed + imported.dismissed,
+        settings = imported.settings.copy(onboarded = settings.onboarded),
+    )
+
+private fun newestPerWork(entries: List<Saved>) =
+    entries.groupBy { it.work }.map { (_, saved) -> saved.maxBy { it.updated } }
+
+private fun maxPerDay(imported: Map<String, Int>, current: Map<String, Int>) =
+    (imported.keys + current.keys).associateWith {
+        maxOf(imported[it] ?: 0, current[it] ?: 0)
+    }

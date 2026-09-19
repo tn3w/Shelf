@@ -7,6 +7,12 @@
     <string name="appearance">Appearance</string>
     <string name="audience">Age group</string>
     <string name="back">Back</string>
+    <string name="backup">Backup</string>
+    <string name="backup_hint">Save shelves, progress, settings and imported book files to a zip file.</string>
+    <string name="backup_export">Export to file</string>
+    <string name="backup_import">Import from file</string>
+    <string name="backup_done">Library merged in.</string>
+    <string name="backup_failed">That file could not be used.</string>
     <string name="born">Born %d</string>
     <string name="catalogue">Catalogue</string>
     <string name="catalogue_hint">Book language and offline packs.</string>

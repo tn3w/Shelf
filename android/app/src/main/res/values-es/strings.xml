@@ -6,6 +6,12 @@
     <string name="appearance">Apariencia</string>
     <string name="audience">Edad</string>
     <string name="back">Atrás</string>
+    <string name="backup">Copia de seguridad</string>
+    <string name="backup_hint">Guarda estantes, progreso, ajustes y archivos de libros importados en un zip.</string>
+    <string name="backup_export">Exportar a archivo</string>
+    <string name="backup_import">Importar desde archivo</string>
+    <string name="backup_done">Biblioteca combinada.</string>
+    <string name="backup_failed">No se pudo usar ese archivo.</string>
     <string name="born">Nacido en %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Idioma de los libros y paquetes sin conexión.</string>

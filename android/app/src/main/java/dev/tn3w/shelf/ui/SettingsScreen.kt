@@ -1,9 +1,13 @@
 package dev.tn3w.shelf.ui
 
 import android.app.LocaleManager
+import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
 import android.text.format.Formatter
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -82,9 +86,12 @@ import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.ThemeMode
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+private const val BACKUP_FILE = "shelf-library.zip"
+private val BACKUP_TYPES = arrayOf("application/zip", "application/octet-stream")
 private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
@@ -220,6 +227,12 @@ fun SettingsScreen(navigator: Navigator) {
                 update { it.copy(checkUpdates = value) }
             }
         }
+
+        SectionHeader(
+            stringResource(R.string.backup),
+            stringResource(R.string.backup_hint),
+        )
+        BackupRows()
 
         LinkRow(R.string.about, navigator::about)
         Spacer(Modifier.height(24.dp))
@@ -410,6 +423,38 @@ private fun SwitchRow(
         }
         Switch(checked = checked, onCheckedChange = onChange)
     }
+}
+
+@Composable
+private fun BackupRows() {
+    val app = shelfApp()
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<Int?>(null) }
+
+    fun report(action: suspend () -> Boolean) {
+        scope.launch {
+            status = if (action()) R.string.backup_done else R.string.backup_failed
+        }
+    }
+
+    suspend fun importFrom(uri: Uri): Boolean {
+        if (!app.library.importFrom(uri)) return false
+        app.reload(app.library.settings.first().language)
+        return true
+    }
+
+    val export =
+        rememberLauncherForActivityResult(CreateDocument("application/zip")) { uri ->
+            uri?.let { target -> report { app.library.exportTo(target) } }
+        }
+    val import =
+        rememberLauncherForActivityResult(OpenDocument()) { uri ->
+            uri?.let { source -> report { importFrom(source) } }
+        }
+
+    LinkRow(R.string.backup_export) { export.launch(BACKUP_FILE) }
+    LinkRow(R.string.backup_import) { import.launch(BACKUP_TYPES) }
+    status?.let { AboutText(stringResource(it)) }
 }
 
 @Composable
