@@ -135,8 +135,21 @@ longer points at.
 | `android/` | App, flavors, UI, reader, local library and catalogue loading. |
 | `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
 | `tooling/` | Emulator screenshots and the machine-translation helper. |
-| `.github/workflows/` | Monthly catalogue builds and app releases. |
+| `.github/workflows/` | CI on pull requests, monthly catalogue builds, app releases. |
 | `data/Segment.kt`, `data/Catalogue.kt` | Segment and rank files; merged works, authors, tags and series. |
 | `data/Search.kt`, `data/Recommend.kt` | Search candidates and ranking; home and discovery rows. |
 | `data/Packs.kt`, `data/Library.kt` | Manifest, downloads and pack state; shelves, progress, settings and backup. |
 | `data/Documents.kt`, `ui/*` | Reader document parsing; Compose screens, theme and components. |
+
+## Contributing
+
+Issues, translations and pull requests are welcome, and forking is encouraged: MIT, so
+build your own Shelf if you want. Start with [CONTRIBUTING.md](CONTRIBUTING.md); every
+pull request runs the app and builder checks in CI. Vulnerabilities go through
+[SECURITY.md](SECURITY.md), conduct through
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE). Catalogue data comes from
+[Open Library](https://openlibrary.org), dedicated to the public domain.
