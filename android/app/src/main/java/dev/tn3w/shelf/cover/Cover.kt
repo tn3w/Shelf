@@ -3,6 +3,7 @@ package dev.tn3w.shelf.cover
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.util.LruCache
 import dev.tn3w.shelf.cover.art.adventureMap
 import dev.tn3w.shelf.cover.art.biographyPortrait
@@ -142,11 +143,13 @@ object Covers {
         if (!file.exists()) null else runCatching { BitmapFactory.decodeFile(file.path) }
             .getOrNull()
 
+    private val compressFormat =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) Bitmap.CompressFormat.WEBP_LOSSY
+        else Bitmap.CompressFormat.JPEG
+
     private fun store(file: File, bitmap: Bitmap) {
         runCatching {
-            file.outputStream().use {
-                bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 82, it)
-            }
+            file.outputStream().use { bitmap.compress(compressFormat, 82, it) }
         }
     }
 }
