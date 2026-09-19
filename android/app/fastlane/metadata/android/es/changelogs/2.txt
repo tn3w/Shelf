@@ -1,0 +1,1 @@
+Ahora todo sin conexión: las portadas se crean en tu dispositivo y tu biblioteca se puede guardar y restaurar. Los autores ya tienen foto.
