@@ -79,7 +79,7 @@
     <string name="popular_now_subtitle">Lo que abren los lectores.</string>
     <string name="popular_subtitle">Favoritos de los lectores.</string>
     <string name="privacy">Privacidad</string>
-    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas. Shelf solo contacta GitHub para actualizaciones y Open Library para portadas si está activado. Tu biblioteca queda en el dispositivo.</string>
+    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo y actualizaciones desde GitHub, portadas y fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
     <string name="reading">Leyendo</string>
     <string name="recent">Búsquedas recientes</string>
     <string name="remove_pack">Eliminar %s</string>
@@ -156,4 +156,14 @@
     <string name="next_in_series_subtitle">Continúa donde dejaste cada saga.</string>
     <string name="not_for_me">No es para mí</string>
     <string name="machine_translated">Traducción automática</string>
+    <string name="author_images">Fotos de autores</string>
+    <string name="author_images_hint">Descargar retratos de autores de Open Library.</string>
+    <string name="catalogue_updates">Actualizaciones del catálogo</string>
+    <string name="catalogue_updates_hint">Buscar cada mes paquetes nuevos y actualizaciones pequeñas.</string>
+    <string name="check_catalogue">Buscar actualizaciones del catálogo</string>
+    <string name="delete_all">Eliminar todo</string>
+    <string name="offline_forced">Sin permiso de red, Shelf permanece sin conexión.</string>
+    <string name="offline_mode">Modo sin conexión</string>
+    <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin catálogo, sin imágenes.</string>
+    <string name="start_offline">Continuar sin conexión</string>
 </resources>

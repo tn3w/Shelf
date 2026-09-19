@@ -80,7 +80,7 @@
     <string name="popular_now_subtitle">What readers everywhere are opening.</string>
     <string name="popular_subtitle">Loved by readers everywhere.</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_note">No tracking, no ads, no accounts. Shelf only contacts GitHub for catalogue and app updates, and Open Library for covers if enabled. Your library stays on this device.</string>
+    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs and app updates from GitHub, covers and author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
     <string name="reading">Reading</string>
     <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
@@ -149,4 +149,14 @@
     <string name="next_in_series_subtitle">Continue where each series left off.</string>
     <string name="not_for_me">Not for me</string>
     <string name="machine_translated">Machine translated</string>
+    <string name="author_images">Author photos</string>
+    <string name="author_images_hint">Fetch author portraits from Open Library.</string>
+    <string name="catalogue_updates">Catalogue updates</string>
+    <string name="catalogue_updates_hint">Check monthly for new catalogue packs and small updates.</string>
+    <string name="check_catalogue">Check for catalogue updates</string>
+    <string name="delete_all">Delete all</string>
+    <string name="offline_forced">Network access is not granted, so Shelf stays offline.</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="offline_mode_hint">No network at all: no updates, no catalogue refresh, no images.</string>
+    <string name="start_offline">Continue offline</string>
 </resources>

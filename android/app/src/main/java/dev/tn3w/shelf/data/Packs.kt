@@ -38,6 +38,7 @@ val releaseOrder = Comparator<String> { first, second ->
 }
 
 const val RELEASES = "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
+private const val MANIFEST_NAME = "manifest.json"
 private val json = Json { ignoreUnknownKeys = true }
 
 @Serializable
@@ -93,31 +94,50 @@ fun copy(input: InputStream, output: OutputStream, onBytes: (Long) -> Unit) {
 
 fun sha256(digest: MessageDigest) = digest.digest().joinToString("") { "%02x".format(it) }
 
-fun connect(url: String): HttpURLConnection =
-    (URI(url).toURL().openConnection() as HttpURLConnection).apply {
+const val USER_AGENT = "Shelf"
+
+fun connect(url: String): HttpURLConnection {
+    val target = URI(url).toURL()
+    require(target.protocol == "https") { "refusing plain http request" }
+    return (target.openConnection() as HttpURLConnection).apply {
         connectTimeout = 15_000
         readTimeout = 30_000
+        useCaches = false
+        setRequestProperty("User-Agent", USER_AGENT)
         setRequestProperty("Accept", "application/vnd.github+json")
     }
+}
 
 fun fetchText(url: String) =
     connect(url).inputStream.use { it.readBytes().decodeToString() }
 
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply { mkdirs() }
-    private val manifestFile = directory.resolve("manifest.json")
+    private val manifestFile = directory.resolve(MANIFEST_NAME)
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
     val manifest: Manifest?
-        get() {
-            if (!manifestFile.exists()) return null
-            val stored =
-                runCatching { json.decodeFromString<Manifest>(manifestFile.readText()) }
-                    .getOrNull()
-            if (stored?.format == CATALOGUE_FORMAT) return stored
-            manifestFile.delete()
-            return null
-        }
+        get() = stored() ?: bundledManifest()
+
+    private fun stored(): Manifest? {
+        if (!manifestFile.exists()) return null
+        val manifest = parseManifest(manifestFile.readText())
+        if (manifest != null) return manifest
+        manifestFile.delete()
+        return null
+    }
+
+    private fun bundledManifest() =
+        runCatching {
+                context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
+            }
+            .getOrNull()
+            ?.let(::parseManifest)
+
+    private fun parseManifest(text: String) =
+        runCatching { json.decodeFromString<Manifest>(text) }
+            .getOrNull()
+            ?.takeIf { it.format == CATALOGUE_FORMAT }
 
     private fun downloaded() =
         directory.listFiles().orEmpty().mapNotNull { parseName(it.name) }
@@ -129,7 +149,7 @@ class Packs(private val context: Context) {
 
     private fun localIds() = (bundled + downloaded()).map { it.id }.toSet()
 
-    fun storageBytes() = directory.listFiles().orEmpty().sumOf { it.length() }
+    fun storageBytes() = downloaded().sumOf { binOf(it.id).length() }
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
@@ -274,6 +294,8 @@ class Packs(private val context: Context) {
 
     fun remove(language: String, pack: String) =
         deleteAll(downloaded().filter { it.language == language && it.pack == pack })
+
+    fun removeAll() = deleteAll(downloaded())
 
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) {
         val temporary = directory.resolve("${entry.id}.part")

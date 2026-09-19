@@ -2,12 +2,18 @@ package dev.tn3w.shelf
 
 import android.app.Application
 import android.os.LocaleList
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import dev.tn3w.shelf.data.Catalogue
 import dev.tn3w.shelf.data.LANGUAGES
 import dev.tn3w.shelf.data.Library
 import dev.tn3w.shelf.data.Packs
 import dev.tn3w.shelf.data.Recommender
 import dev.tn3w.shelf.data.Searcher
+import dev.tn3w.shelf.data.USER_AGENT
+import dev.tn3w.shelf.data.isOffline
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +22,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.CookieJar
+import okhttp3.OkHttpClient
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
 private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
@@ -38,7 +46,7 @@ sealed interface Download {
     data object Failed : Download
 }
 
-class ShelfApp : Application() {
+class ShelfApp : Application(), SingletonImageLoader.Factory {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val session = Random.nextLong()
     val library by lazy { Library(this) }
@@ -53,6 +61,23 @@ class ShelfApp : Application() {
             reload(settings.language.ifEmpty { systemLanguage() })
             if (settings.onboarded) checkCatalogue()
         }
+    }
+
+    // Coil type-checks the Application for this; dropping it restores its default client.
+    override fun newImageLoader(context: PlatformContext) =
+        ImageLoader.Builder(context)
+            .components { add(OkHttpNetworkFetcherFactory({ anonymousClient })) }
+            .build()
+
+    private val anonymousClient by lazy {
+        OkHttpClient.Builder()
+            .cookieJar(CookieJar.NO_COOKIES)
+            .addInterceptor { chain ->
+                val headers =
+                    chain.request().newBuilder().header("User-Agent", USER_AGENT)
+                chain.proceed(headers.header("Accept", "image/*").build())
+            }
+            .build()
     }
 
     fun systemLanguage(): String {
@@ -90,8 +115,15 @@ class ShelfApp : Application() {
             reload(language)
         }
 
+    fun removeAll(language: String) =
+        scope.launch(Dispatchers.IO) {
+            packs.removeAll()
+            reload(language)
+        }
+
     private suspend fun checkCatalogue() {
         val settings = library.settings.first()
+        if (!settings.catalogueUpdates || settings.isOffline(this)) return
         val now = System.currentTimeMillis()
         if (now - settings.lastCatalogueCheck < MONTH_MILLIS) return
         runCatching { packs.refreshManifest() }.getOrElse { return }

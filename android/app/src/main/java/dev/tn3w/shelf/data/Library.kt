@@ -1,6 +1,8 @@
 package dev.tn3w.shelf.data
 
+import android.Manifest.permission.INTERNET
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.datastore.preferences.core.Preferences
@@ -74,11 +76,19 @@ data class Settings(
     val theme: ThemeMode = ThemeMode.System,
     val dailyGoal: Int = 10,
     val fontScale: Float = 1f,
+    val offline: Boolean = false,
     val onlineCovers: Boolean = true,
+    val authorImages: Boolean = true,
+    val catalogueUpdates: Boolean = true,
     val checkUpdates: Boolean = true,
     val lastCatalogueCheck: Long = 0,
     val lastAppCheck: Long = 0,
 )
+
+fun networkPermitted(context: Context) =
+    context.checkSelfPermission(INTERNET) == PackageManager.PERMISSION_GRANTED
+
+fun Settings.isOffline(context: Context) = offline || !networkPermitted(context)
 
 @Serializable
 data class Backup(

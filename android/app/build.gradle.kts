@@ -97,13 +97,14 @@ abstract class DownloadCatalogue : DefaultTask() {
         check(found == format.get().toString()) {
             "catalogue format $found is not supported"
         }
+        val directory = output.get().asFile
+        directory.resolve("manifest.json").writeText(manifest)
         val entryHead = "\"id\": \"([^\"]+)\"[^}]*?"
         val entryTail = "\"sha256\": \"([0-9a-f]+)\"[^}]*?\"url\": \"([^\"]+)\""
         val entries = Regex(entryHead + entryTail)
             .findAll(manifest)
             .map { it.destructured }
             .filter { (id) -> filter.get().any { Regex(it).matches(id) } }
-        val directory = output.get().asFile
         for ((id, sha256, url) in entries) {
             val target = directory.resolve("$id.bin")
             if (target.exists() && digest(target.readBytes()) == sha256) continue
@@ -118,21 +119,25 @@ abstract class DownloadCatalogue : DefaultTask() {
         .joinToString("") { "%02x".format(it) }
 }
 
-val downloadCatalogue = tasks.register<DownloadCatalogue>("downloadCatalogue") {
-    release = catalogueRelease
-    format = catalogueFormat
-    filter = bundledPacks.map { "[a-z]{2}-$it-.*" }
-    output = layout.buildDirectory.dir("generated/catalogue")
+fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
+    val task = tasks.register<DownloadCatalogue>(taskName) {
+        release = catalogueRelease
+        format = catalogueFormat
+        filter = packs.map { "[a-z]{2}-$it-.*" }
+        output = layout.buildDirectory.dir("generated/$taskName")
+    }
+    androidComponents.onVariants(
+        androidComponents.selector().withFlavor("distribution" to flavor)
+    ) { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(
+            task,
+            DownloadCatalogue::output,
+        )
+    }
 }
 
-androidComponents.onVariants(
-    androidComponents.selector().withFlavor("distribution" to "github")
-) { variant ->
-    variant.sources.assets?.addGeneratedSourceDirectory(
-        downloadCatalogue,
-        DownloadCatalogue::output,
-    )
-}
+bundleCatalogue("github", "downloadCatalogue", bundledPacks)
+bundleCatalogue("fdroid", "downloadManifest", emptyList())
 
 dependencies {
     implementation(platform(libs.compose.bom))

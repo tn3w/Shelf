@@ -77,6 +77,7 @@ import dev.tn3w.shelf.data.Author
 import dev.tn3w.shelf.data.AuthorGroup
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Settings
+import dev.tn3w.shelf.data.isOffline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -127,6 +128,7 @@ fun BookCover(
     sharedKey: String? = null,
 ) {
     val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
+    val offline = settings.isOffline(LocalContext.current)
     var loaded by remember(book.work) { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
     Box(
@@ -138,7 +140,7 @@ fun BookCover(
             .background(placeholderColor(book.work))
     ) {
         if (!loaded) CoverPlaceholder(book)
-        if (!settings.onlineCovers || book.cover == 0) return@Box
+        if (offline || !settings.onlineCovers || book.cover == 0) return@Box
         AsyncImage(
             model = book.coverUrl("L"),
             contentDescription = stringResource(R.string.cover_of, book.title),
@@ -155,6 +157,7 @@ private fun initials(name: String) =
 @Composable
 fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
     val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
+    val offline = settings.isOffline(LocalContext.current)
     var loaded by remember(author.number) { mutableStateOf(false) }
     Surface(
         shape = CircleShape,
@@ -171,7 +174,7 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            if (!settings.onlineCovers) return@Box
+            if (offline || !settings.authorImages) return@Box
             AsyncImage(
                 model = author.photoUrl(if (size < 64.dp) "S" else "M"),
                 contentDescription = author.name,

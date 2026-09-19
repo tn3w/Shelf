@@ -56,6 +56,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -84,6 +85,8 @@ import dev.tn3w.shelf.data.PackInfo
 import dev.tn3w.shelf.data.PackState
 import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.ThemeMode
+import dev.tn3w.shelf.data.isOffline
+import dev.tn3w.shelf.data.networkPermitted
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -125,8 +128,10 @@ private fun nativeName(language: String) =
 private fun bytes(value: Long) =
     Formatter.formatShortFileSize(LocalContext.current, value)
 
+private typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
+
 @Composable
-private fun rememberSettings(): Pair<Settings, ((Settings) -> Settings) -> Unit> {
+private fun rememberSettings(): Pair<Settings, SettingsUpdate> {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
     val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
@@ -134,17 +139,13 @@ private fun rememberSettings(): Pair<Settings, ((Settings) -> Settings) -> Unit>
 }
 
 @Composable
-private fun packInfos(language: String): List<PackInfo>? {
+private fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
     val app = shelfApp()
     val loaded by app.loaded.collectAsStateWithLifecycle()
     val downloads by app.downloads.collectAsStateWithLifecycle()
-    return produceState<List<PackInfo>?>(null, language, loaded, downloads.size) {
-            value =
-                withContext(Dispatchers.IO) {
-                    if (app.packs.manifest == null)
-                        runCatching { app.packs.refreshManifest() }
-                    app.packs.packs(language)
-                }
+    val keys = arrayOf(language, loaded, downloads.size, refreshes)
+    return produceState<List<PackInfo>?>(null, *keys) {
+            value = withContext(Dispatchers.IO) { app.packs.packs(language) }
         }
         .value
 }
@@ -153,9 +154,13 @@ private fun packInfos(language: String): List<PackInfo>? {
 @Composable
 fun SettingsScreen(navigator: Navigator) {
     val app = shelfApp()
+    val context = LocalContext.current
     val (settings, update) = rememberSettings()
+    val scope = rememberCoroutineScope()
     val language = settings.language
-    val packs = packInfos(language)
+    var refreshes by remember { mutableIntStateOf(0) }
+    val packs = packInfos(language, refreshes)
+    val offline = settings.isOffline(context)
 
     Column(
         Modifier.windowInsetsPadding(WindowInsets.systemBars)
@@ -171,7 +176,15 @@ fun SettingsScreen(navigator: Navigator) {
             update { it.copy(language = chosen) }
             app.reload(chosen)
         }
-        PackList(language, packs)
+        PackList(language, packs, offline)
+        if (!offline) {
+            LinkRow(R.string.check_catalogue) {
+                scope.launch {
+                    runCatching { app.packs.refreshManifest() }
+                    refreshes++
+                }
+            }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             SectionHeader(stringResource(R.string.app_language))
@@ -211,18 +224,37 @@ fun SettingsScreen(navigator: Navigator) {
         }
 
         SectionHeader(stringResource(R.string.privacy))
+        OfflineRow(settings, update)
         SwitchRow(
             R.string.online_covers,
             R.string.online_covers_hint,
             settings.onlineCovers,
+            enabled = !offline,
         ) { value ->
             update { it.copy(onlineCovers = value) }
         }
-        if (Updater.isEnabled(LocalContext.current)) {
+        SwitchRow(
+            R.string.author_images,
+            R.string.author_images_hint,
+            settings.authorImages,
+            enabled = !offline,
+        ) { value ->
+            update { it.copy(authorImages = value) }
+        }
+        SwitchRow(
+            R.string.catalogue_updates,
+            R.string.catalogue_updates_hint,
+            settings.catalogueUpdates,
+            enabled = !offline,
+        ) { value ->
+            update { it.copy(catalogueUpdates = value) }
+        }
+        if (Updater.isEnabled(context)) {
             SwitchRow(
                 R.string.check_updates,
                 R.string.check_updates_hint,
                 settings.checkUpdates,
+                enabled = !offline,
             ) { value ->
                 update { it.copy(checkUpdates = value) }
             }
@@ -283,7 +315,7 @@ private fun AppLanguageChoice() {
 }
 
 @Composable
-private fun PackList(language: String, packs: List<PackInfo>?) {
+private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean) {
     val app = shelfApp()
     val downloads by app.downloads.collectAsStateWithLifecycle()
     val storage by
@@ -299,12 +331,14 @@ private fun PackList(language: String, packs: List<PackInfo>?) {
             PackRow(
                 info,
                 downloads["$language-${info.pack}"],
+                offline,
                 onDownload = { app.download(language, info.pack) },
                 onRemove = { app.remove(language, info.pack) },
             )
         }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -314,7 +348,14 @@ private fun PackList(language: String, packs: List<PackInfo>?) {
                 modifier = Modifier.weight(1f),
             )
             val pending = packs.filter { it.state != PackState.Installed }
-            if (pending.isEmpty()) return@Row
+            if (offline || pending.isEmpty()) {
+                if (storage > 0) {
+                    OutlinedButton(onClick = { app.removeAll(language) }) {
+                        Text(stringResource(R.string.delete_all))
+                    }
+                }
+                return@Row
+            }
             OutlinedButton(
                 onClick = { pending.forEach { app.download(language, it.pack) } }
             ) {
@@ -333,6 +374,7 @@ private fun PackList(language: String, packs: List<PackInfo>?) {
 private fun PackRow(
     info: PackInfo,
     download: Download?,
+    offline: Boolean,
     onDownload: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -358,7 +400,7 @@ private fun PackRow(
             DownloadBar(download)
         }
         AnimatedContent(download to info.state, label = "pack") { (running, state) ->
-            PackAction(label, running, state, info.pack, onDownload, onRemove)
+            PackAction(label, running, state, info.pack, offline, onDownload, onRemove)
         }
     }
 }
@@ -379,20 +421,23 @@ private fun PackAction(
     download: Download?,
     state: PackState,
     pack: String,
+    offline: Boolean,
     onDownload: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    val removable = state != PackState.Available && pack != "core"
+    val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
     val action =
         when {
             download is Download.Running -> null
+            offline -> remove.takeIf { removable }
             download is Download.Failed ->
                 PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
             state == PackState.Available ->
                 PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
             state == PackState.Update ->
                 PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
-            pack != "core" ->
-                PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
+            removable -> remove
             else -> null
         } ?: return Box(Modifier.size(48.dp))
     IconAction(action.icon, stringResource(action.label, label), action.onClick)
@@ -409,23 +454,42 @@ private fun SwitchRow(
     @StringRes title: Int,
     @StringRes hint: Int,
     checked: Boolean,
+    enabled: Boolean = true,
     onChange: (Boolean) -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth()
-            .clickable { onChange(!checked) }
+            .clickable(enabled = enabled) { onChange(!checked) }
             .padding(horizontal = ScreenPadding, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val fade = if (enabled) 1f else 0.5f
         Column(Modifier.weight(1f).padding(end = 16.dp)) {
-            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(title),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = fade),
+            )
             Text(
                 stringResource(hint),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = fade),
             )
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+    }
+}
+
+@Composable
+private fun OfflineRow(settings: Settings, update: SettingsUpdate) {
+    val permitted = networkPermitted(LocalContext.current)
+    SwitchRow(
+        R.string.offline_mode,
+        if (permitted) R.string.offline_mode_hint else R.string.offline_forced,
+        checked = settings.offline || !permitted,
+        enabled = permitted,
+    ) { value ->
+        update { it.copy(offline = value) }
     }
 }
 
@@ -503,6 +567,9 @@ fun AboutScreen(navigator: Navigator) {
         }
     var release by remember { mutableStateOf<UpdateCheck?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val (settings, _) = rememberSettings()
+    val online = Updater.isEnabled(context) && !settings.isOffline(context)
 
     Column(
         Modifier.windowInsetsPadding(WindowInsets.systemBars)
@@ -524,7 +591,7 @@ fun AboutScreen(navigator: Navigator) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (Updater.isEnabled(LocalContext.current)) {
+        if (online) {
             TextButton(
                 onClick = {
                     release = UpdateCheck.Checking
@@ -610,8 +677,8 @@ fun UpdatePrompt(settings: Settings) {
     LaunchedEffect(Unit) {
         val now = System.currentTimeMillis()
         val due = now - settings.lastAppCheck > DAY_MILLIS
-        if (!settings.checkUpdates || !due || !Updater.isEnabled(context))
-            return@LaunchedEffect
+        val allowed = settings.checkUpdates && !settings.isOffline(context)
+        if (!allowed || !due || !Updater.isEnabled(context)) return@LaunchedEffect
         app.library.updateSettings { it.copy(lastAppCheck = now) }
         release = runCatching { Updater.latest() }.getOrNull()
     }
@@ -661,7 +728,8 @@ private fun UpdateDialog(release: AppRelease, onDismiss: () -> Unit) {
 @Composable
 fun OnboardingScreen() {
     val app = shelfApp()
-    val (_, update) = rememberSettings()
+    val (settings, update) = rememberSettings()
+    val offline = settings.isOffline(LocalContext.current)
     var language by remember { mutableStateOf(app.systemLanguage()) }
     val selected = remember(language) { mutableStateListOf<String>() }
     val packs = packInfos(language)
@@ -700,6 +768,17 @@ fun OnboardingScreen() {
             language = it
             app.reload(it)
         }
+        SectionHeader(stringResource(R.string.privacy))
+        OfflineRow(settings, update)
+        if (offline) {
+            Button(
+                onClick = { update { it.copy(onboarded = true, language = language) } },
+                modifier = Modifier.padding(ScreenPadding),
+            ) {
+                Text(stringResource(R.string.start_offline))
+            }
+            return@Column
+        }
         SectionHeader(
             stringResource(R.string.choose_packs),
             stringResource(
@@ -708,6 +787,7 @@ fun OnboardingScreen() {
         )
         if (required) CoreRow(core, coreDownload)
         OnboardingPacks(packs, selected, skip = if (required) "core" else null)
+        val available = packs.orEmpty().filter { it.state == PackState.Available }
         Row(
             Modifier.fillMaxWidth().padding(ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
@@ -722,6 +802,22 @@ fun OnboardingScreen() {
                 }
             }
             val waiting = started && coreDownload !is Download.Failed
+            if (available.isNotEmpty()) {
+                OutlinedButton(
+                    enabled = !waiting,
+                    onClick = {
+                        available.forEach { app.download(language, it.pack) }
+                        started = true
+                    },
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.download_all,
+                            bytes(available.sumOf { it.bytes }),
+                        )
+                    )
+                }
+            }
             Button(
                 enabled =
                     !waiting && if (required) core != null else selected.isNotEmpty(),
