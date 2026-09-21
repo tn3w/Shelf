@@ -525,3 +525,50 @@ private fun gear(centerX: Float, centerY: Float, radius: Float, teeth: Int): Pat
     path.close()
     return path
 }
+
+private val TYPE_PALETTES =
+    listOf(
+        Color.rgb(242, 236, 224) to Color.rgb(28, 26, 24),
+        Color.rgb(28, 40, 64) to Color.rgb(240, 230, 208),
+        Color.rgb(36, 64, 50) to Color.rgb(236, 228, 206),
+        Color.rgb(176, 84, 58) to Color.rgb(250, 238, 222),
+        Color.rgb(214, 170, 76) to Color.rgb(30, 26, 22),
+        Color.rgb(110, 30, 44) to Color.rgb(244, 214, 214),
+        Color.rgb(222, 226, 222) to Color.rgb(40, 60, 90),
+    )
+
+internal fun literaryType(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val (paper, ink) = random.pick(TYPE_PALETTES)
+        canvas.drawRect(0f, 0f, width, height, fillPaint(paper))
+        texture(0.10f)
+        val rule = fillPaint(alpha(ink, 0.85f))
+        for (y in listOf(0.29f, 0.71f)) {
+            val lineY = height * y
+            canvas.drawRect(width * 0.2f, lineY, width * 0.8f, lineY + unit(0.004f), rule)
+        }
+        canvas.drawRect(width * 0.2f, height * 0.29f - unit(0.012f), width * 0.8f,
+            height * 0.29f - unit(0.010f), rule)
+        canvas.drawRect(width * 0.2f, height * 0.71f + unit(0.012f), width * 0.8f,
+            height * 0.71f + unit(0.014f), rule)
+        val mark = unit(0.02f)
+        canvas.drawPath(starPath(width / 2f, height * 0.82f, mark, mark * 0.35f, 4),
+            fillPaint(ink))
+
+        grain(0.03f)
+        Typeset(
+            ink = ink,
+            titleFont = CoverFont.Serif,
+            titleWeight = random.pick(listOf(400, 600, 700)),
+            titleItalic = random.chance(0.3f),
+            titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
+            titleTracking = random.range(0.02f, 0.10f),
+            titleLeading = 1.12f,
+            titleSize = random.range(0.085f, 0.11f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.24f,
+            anchor = Anchor.Center,
+            rule = Rule.None,
+        )
+    }

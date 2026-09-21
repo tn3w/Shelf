@@ -1,0 +1,1 @@
+Generated covers fit each book better: improved genre matching and new styles for classics, biographies and dystopias.

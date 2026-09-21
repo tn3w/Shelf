@@ -176,7 +176,7 @@ internal fun dystopianBarcode(cover: CoverCanvas): Typeset =
     with(cover) {
         val base = hsv(random.range(0f, 1f), random.range(0.02f, 0.10f),
             random.range(0.14f, 0.22f))
-        val alarm = hsv(random.pick(listOf(1f, 0.09f, 0.52f)), 0.85f, 0.85f)
+        val alarm = hsv(random.pick(listOf(1f, 0.03f, 0.08f)), 0.85f, 0.85f)
         verticalGradient(shade(base, 1.3f), base, 1f)
         texture(0.16f)
 

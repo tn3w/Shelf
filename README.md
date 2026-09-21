@@ -134,11 +134,9 @@ longer points at.
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, fantasy, science fiction, horror, romance, adventure, vintage and children's"></picture>
 </p>
 
-Books without their own cover get one drawn on device, from `Canvas` shaders and the font
-families Android ships: no downloads, no assets. Tag slugs pick the genre, then a
-`work|title|author` seed picks one of 69 art directions and every colour inside it, so a
-cover never changes. Title and author bands are measured and scrimmed until they clear a
-contrast target. Cached in memory and as WebP.
+Books without a cover get one drawn on device from `Canvas` shaders and system fonts.
+Tags pick one of 19 genres, then a `work|title|author` seed picks one of 72 styles and its
+colours, so a cover never changes. Text is scrimmed until legible; results are cached.
 
 ## Project map
 

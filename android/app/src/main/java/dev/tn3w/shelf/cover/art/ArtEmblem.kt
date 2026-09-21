@@ -470,3 +470,76 @@ private fun silhouette(
             headY - head * 0.5f)
         canvas.drawRoundRect(crown, head * 0.3f, head * 0.3f, paint)
     }
+
+private val CAMEO_GROUNDS = listOf(0.40f, 0.52f, 0.62f, 0.98f, 0.08f)
+
+internal fun biographyCameo(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val ground = hsv(random.pick(CAMEO_GROUNDS), random.range(0.35f, 0.55f),
+            random.range(0.30f, 0.45f))
+        val cream = hsv(random.range(0.08f, 0.12f), 0.14f, 0.95f)
+        val gold = hsv(random.range(0.10f, 0.12f), 0.55f, 0.85f)
+        verticalGradient(shade(ground, 1.15f), shade(ground, 0.75f), 1f)
+        texture(0.1f)
+
+        val centerX = width / 2f
+        val centerY = height * 0.60f
+        val oval = RectF(centerX - width * 0.26f, centerY - width * 0.34f,
+            centerX + width * 0.26f, centerY + width * 0.34f)
+        canvas.drawOval(RectF(oval).apply { inset(-unit(0.03f), -unit(0.03f)) },
+            fillPaint(gold))
+        canvas.drawOval(oval, fillPaint(cream))
+        canvas.save()
+        canvas.clipPath(Path().apply { addOval(oval, Path.Direction.CW) })
+        canvas.drawPath(profile(centerX, centerY + width * 0.02f, width * 0.24f,
+            random.chance(0.5f)), fillPaint(shade(ground, 0.6f)))
+        canvas.restore()
+        canvas.drawOval(RectF(oval).apply { inset(-unit(0.015f), -unit(0.015f)) },
+            strokePaint(shade(gold, 0.7f), unit(0.003f)))
+
+        vignette(0.4f, 0.6f)
+        grain(0.03f)
+        frame(CoverFrame.Hairline, gold)
+        Typeset(
+            ink = cream,
+            authorInk = gold,
+            titleFont = CoverFont.Serif,
+            titleWeight = random.pick(listOf(500, 700)),
+            titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
+            titleTracking = random.range(0.04f, 0.10f),
+            titleSize = random.range(0.08f, 0.10f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.22f,
+            rule = Rule.Line,
+            shadow = 0.4f,
+        )
+    }
+
+private val PROFILE =
+    listOf(
+        0.42f to -0.35f, 0.46f to -0.27f, 0.60f to -0.03f, 0.48f to 0.04f, 0.51f to 0.12f,
+        0.46f to 0.17f, 0.49f to 0.22f, 0.43f to 0.36f, 0.34f to 0.44f, 0.20f to 0.48f,
+        0.24f to 0.90f, 0.95f to 1.30f, 0.95f to 2f, -0.95f to 2f, -0.95f to 1.30f,
+        -0.36f to 0.90f,
+    )
+
+private fun profile(
+    centerX: Float,
+    centerY: Float,
+    size: Float,
+    mirrored: Boolean,
+): Path {
+    val facing = if (mirrored) -1f else 1f
+    val path = Path()
+    path.moveTo(centerX - 0.36f * size * facing, centerY + 0.9f * size)
+    path.cubicTo(centerX - 0.62f * size * facing, centerY + 0.2f * size,
+        centerX - 0.66f * size * facing, centerY - 0.72f * size,
+        centerX - 0.04f * size * facing, centerY - 0.86f * size)
+    path.cubicTo(centerX + 0.34f * size * facing, centerY - 0.92f * size,
+        centerX + 0.44f * size * facing, centerY - 0.58f * size,
+        centerX + 0.42f * size * facing, centerY - 0.35f * size)
+    for ((x, y) in PROFILE) path.lineTo(centerX + x * size * facing, centerY + y * size)
+    path.close()
+    return path
+}

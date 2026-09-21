@@ -24,8 +24,8 @@ enum class CoverGenre {
 
 private val SLUG_GENRES =
     mapOf(
-        "epic-fantasy" to (CoverGenre.Fantasy to 7),
-        "urban-fantasy" to (CoverGenre.Fantasy to 7),
+        "epic-fantasy" to (CoverGenre.Fantasy to 5),
+        "urban-fantasy" to (CoverGenre.Fantasy to 5),
         "fantasy" to (CoverGenre.Fantasy to 6),
         "folklore" to (CoverGenre.Fantasy to 5),
         "dystopian" to (CoverGenre.Dystopian to 7),
@@ -63,10 +63,10 @@ private val SLUG_GENRES =
         "psychology" to (CoverGenre.Business to 5),
         "society" to (CoverGenre.Business to 4),
         "politics" to (CoverGenre.Business to 4),
-        "humor" to (CoverGenre.Humor to 7),
-        "graphic-novel" to (CoverGenre.Humor to 5),
+        "humor" to (CoverGenre.Humor to 5),
+        "graphic-novel" to (CoverGenre.Humor to 3),
         "classics" to (CoverGenre.Vintage to 6),
-        "biography" to (CoverGenre.Biography to 6),
+        "biography" to (CoverGenre.Biography to 8),
         "history" to (CoverGenre.History to 6),
         "war-history" to (CoverGenre.History to 6),
         "historical-fiction" to (CoverGenre.History to 6),
@@ -85,14 +85,24 @@ private val SLUG_GENRES =
         "drama" to (CoverGenre.Literary to 4),
         "short-stories" to (CoverGenre.Literary to 3),
         "fiction" to (CoverGenre.Literary to 1),
-        "nonfiction" to (CoverGenre.Technical to 1),
+    )
+
+private val TOPICS =
+    setOf(
+        "nature", "health", "cooking", "travel", "business", "economics", "self-help",
+        "psychology", "society", "politics", "history", "war-history", "law",
+        "technology", "science", "mathematics", "education", "reference", "language",
+        "music", "art", "spirituality", "religion", "philosophy", "parenting", "sports",
+        "biography",
     )
 
 internal fun classify(slugs: List<String>): CoverGenre {
     val scores = IntArray(CoverGenre.entries.size)
+    val fiction = "fiction" in slugs
     for (slug in slugs) {
         val match = SLUG_GENRES[slug] ?: continue
-        scores[match.first.ordinal] += match.second
+        val weight = if (fiction && slug in TOPICS) match.second / 2 else match.second
+        scores[match.first.ordinal] += weight
     }
     val best = scores.indices.maxByOrNull { scores[it] } ?: return CoverGenre.Literary
     return if (scores[best] == 0) CoverGenre.Literary else CoverGenre.entries[best]

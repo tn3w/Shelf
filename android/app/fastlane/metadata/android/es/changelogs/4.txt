@@ -1,0 +1,1 @@
+Las portadas generadas encajan mejor con cada libro: mejor detección de géneros y nuevos estilos para clásicos, biografías y distopías.

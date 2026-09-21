@@ -217,7 +217,8 @@ internal fun historyTemple(cover: CoverCanvas): Typeset =
             val inset = unit(0.03f) * (2 - step)
             val stepTop = base + unit(0.03f) * step
             val reach = unit(0.06f) - inset
-            canvas.drawRect(left - reach, stepTop, right + reach, stepTop + unit(0.024f), paint)
+            val stepBottom = stepTop + unit(0.024f)
+            canvas.drawRect(left - reach, stepTop, right + reach, stepBottom, paint)
         }
         val columns = random.pick(listOf(4, 6))
         val capital = height * 0.52f

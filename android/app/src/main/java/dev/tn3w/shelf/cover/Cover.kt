@@ -8,6 +8,7 @@ import android.util.LruCache
 import dev.tn3w.shelf.cover.art.adventureCompass
 import dev.tn3w.shelf.cover.art.adventureMap
 import dev.tn3w.shelf.cover.art.bauhausTiles
+import dev.tn3w.shelf.cover.art.biographyCameo
 import dev.tn3w.shelf.cover.art.biographyPortrait
 import dev.tn3w.shelf.cover.art.businessAscent
 import dev.tn3w.shelf.cover.art.businessGraph
@@ -19,6 +20,7 @@ import dev.tn3w.shelf.cover.art.dystopianBlocks
 import dev.tn3w.shelf.cover.art.dystopianEye
 import dev.tn3w.shelf.cover.art.dystopianGlitch
 import dev.tn3w.shelf.cover.art.dystopianMonolith
+import dev.tn3w.shelf.cover.art.dystopianPropaganda
 import dev.tn3w.shelf.cover.art.fantasyCrystal
 import dev.tn3w.shelf.cover.art.fantasyDawn
 import dev.tn3w.shelf.cover.art.fantasyForest
@@ -37,6 +39,7 @@ import dev.tn3w.shelf.cover.art.humorConfetti
 import dev.tn3w.shelf.cover.art.humorPop
 import dev.tn3w.shelf.cover.art.literaryFields
 import dev.tn3w.shelf.cover.art.literaryShape
+import dev.tn3w.shelf.cover.art.literaryType
 import dev.tn3w.shelf.cover.art.mysteryBlinds
 import dev.tn3w.shelf.cover.art.mysteryKeyhole
 import dev.tn3w.shelf.cover.art.mysteryPrint
@@ -85,58 +88,45 @@ internal fun directions(genre: CoverGenre): List<ArtDirection> =
                 ::fantasyIlluminated, ::fantasyCrystal, ::fantasySword)
         CoverGenre.Dystopian ->
             listOf(::dystopianMonolith, ::dystopianEye, ::dystopianBlocks,
-                ::dystopianGlitch, ::dystopianBarcode, ::scifiCircuit)
+                ::dystopianPropaganda, ::dystopianBarcode)
         CoverGenre.ScienceFiction ->
             listOf(::scifiPlanet, ::scifiOrbit, ::scifiCircuit, ::scifiTunnel,
-                ::fantasyCrystal, ::scifiRetro, ::technicalAtom)
+                ::scifiRetro, ::dystopianGlitch)
         CoverGenre.Mystery ->
             listOf(::mysteryStreet, ::mysteryKeyhole, ::mysteryPrint, ::mysteryBlinds,
                 ::mysteryRedThread)
         CoverGenre.Horror ->
-            listOf(::horrorMoon, ::horrorCracks, ::horrorDrip, ::mysteryBlinds,
-                ::horrorFog)
+            listOf(::horrorMoon, ::horrorCracks, ::horrorDrip, ::horrorFog)
         CoverGenre.Romance ->
-            listOf(::romanceBotanical, ::romanceDeco, ::romanceBloom, ::poetryWash,
-                ::romanceLetter, ::vintageDeco)
+            listOf(::romanceBotanical, ::romanceDeco, ::romanceBloom, ::romanceLetter)
         CoverGenre.Adventure ->
-            listOf(::adventureMap, ::adventureCompass, ::seigaihaWaves, ::travelStamp,
-                ::fantasySword, ::natureLake, ::travelRoute)
+            listOf(::adventureMap, ::adventureCompass, ::travelRoute, ::seigaihaWaves)
         CoverGenre.Children ->
-            listOf(::childrenMeadow, ::childrenBalloons, ::risoHalftone, ::bauhausTiles,
-                ::childrenRainbow, ::natureTree)
+            listOf(::childrenMeadow, ::childrenBalloons, ::childrenRainbow, ::natureTree)
         CoverGenre.Poetry ->
-            listOf(::poetryWash, ::poetryMoons, ::spiritualEnso, ::literaryShape,
-                ::poetryRain, ::literaryFields)
+            listOf(::poetryWash, ::poetryMoons, ::poetryRain, ::literaryFields)
         CoverGenre.Nature ->
-            listOf(::natureContours, ::natureLeaves, ::seigaihaWaves, ::fantasyDawn,
-                ::natureLake, ::natureTree)
+            listOf(::natureContours, ::natureLeaves, ::natureLake, ::natureTree)
         CoverGenre.Travel ->
-            listOf(::travelPoster, ::travelStamp, ::seigaihaWaves, ::adventureCompass,
-                ::travelRoute, ::natureLake)
+            listOf(::travelPoster, ::travelStamp, ::travelRoute, ::natureLake)
         CoverGenre.Spiritual ->
-            listOf(::spiritualRays, ::spiritualMandala, ::spiritualEnso, ::poetryMoons,
-                ::spiritualLotus)
+            listOf(::spiritualRays, ::spiritualMandala, ::spiritualEnso, ::spiritualLotus)
         CoverGenre.Business ->
-            listOf(::businessAscent, ::swissGrid, ::bauhausTiles, ::technicalBlueprint,
-                ::businessGraph)
+            listOf(::businessAscent, ::businessGraph, ::swissGrid, ::technicalBlueprint)
         CoverGenre.Humor ->
-            listOf(::humorConfetti, ::risoHalftone, ::childrenBalloons, ::bauhausTiles,
-                ::humorPop)
+            listOf(::humorConfetti, ::humorPop, ::risoHalftone, ::childrenBalloons)
         CoverGenre.Vintage ->
-            listOf(::vintageBands, ::penguinBands, ::bauhausTiles, ::travelPoster,
-                ::vintageDeco)
+            listOf(::vintageBands, ::penguinBands, ::vintageDeco, ::bauhausTiles)
         CoverGenre.Biography ->
-            listOf(::biographyPortrait, ::penguinBands, ::swissGrid, ::historyLaurel,
-                ::literaryFields)
+            listOf(::biographyPortrait, ::biographyCameo, ::historyLaurel, ::penguinBands)
         CoverGenre.History ->
-            listOf(::historyEmblem, ::historyLaurel, ::fantasyIlluminated, ::adventureMap,
-                ::historyTemple)
+            listOf(::historyEmblem, ::historyLaurel, ::historyTemple,
+                ::fantasyIlluminated)
         CoverGenre.Technical ->
-            listOf(::technicalGeometry, ::technicalBlueprint, ::bauhausTiles, ::swissGrid,
-                ::scifiCircuit, ::technicalAtom)
+            listOf(::technicalGeometry, ::technicalBlueprint, ::technicalAtom,
+                ::bauhausTiles)
         CoverGenre.Literary ->
-            listOf(::literaryShape, ::penguinBands, ::swissGrid, ::spiritualEnso,
-                ::poetryWash, ::literaryFields)
+            listOf(::literaryType, ::literaryShape, ::penguinBands, ::literaryFields)
     }
 
 internal fun allDirections(): List<Pair<String, ArtDirection>> =
@@ -190,7 +180,7 @@ object Covers {
     fun cached(context: Context, request: CoverRequest, widthPixels: Int): Bitmap {
         val width = snap(widthPixels)
         val seed = coverSeed(request.work, request.title, request.author)
-        val key = "v2-$seed-$width"
+        val key = "v3-$seed-$width"
         memory.get(key)?.let { return it }
 
         val file = File(directory(context), "$key.webp")
