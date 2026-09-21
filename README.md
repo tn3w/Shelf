@@ -136,7 +136,7 @@ longer points at.
 
 Books without their own cover get one drawn on device, from `Canvas` shaders and the font
 families Android ships: no downloads, no assets. Tag slugs pick the genre, then a
-`work|title|author` seed picks one of 29 art directions and every colour inside it, so a
+`work|title|author` seed picks one of 69 art directions and every colour inside it, so a
 cover never changes. Title and author bands are measured and scrimmed until they clear a
 contrast target. Cached in memory and as WebP.
 

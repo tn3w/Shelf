@@ -542,3 +542,113 @@ internal fun romanceDeco(cover: CoverCanvas): Typeset =
             rule = Rule.Ornament,
         )
     }
+
+internal fun romanceBloom(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val hue = random.pick(listOf(0.96f, 0.99f, 0.03f, 0.92f, 0.08f))
+        val blush = hsv(hue, random.range(0.10f, 0.20f), random.range(0.95f, 0.99f))
+        val deep = hsv(hue, random.range(0.55f, 0.75f), random.range(0.60f, 0.78f))
+        val leafTone = hsv(random.range(0.30f, 0.40f), 0.40f, random.range(0.40f, 0.55f))
+        verticalGradient(blush, mix(blush, deep, 0.25f), 1.4f)
+        texture(0.06f)
+
+        val centerX = width * random.range(0.42f, 0.58f)
+        val centerY = height * random.range(0.57f, 0.61f)
+        val radius = width * random.range(0.24f, 0.28f)
+        for (side in listOf(-1f, 1f)) {
+            canvas.save()
+            canvas.rotate(side * random.range(25f, 45f) + 90f, centerX, centerY)
+            val leaf = RectF(centerX, centerY - radius * 0.22f, centerX + radius * 1.5f,
+                centerY + radius * 0.22f)
+            canvas.drawOval(leaf, fillPaint(leafTone))
+            canvas.restore()
+        }
+        for (ring in 0 until 4) {
+            val petals = 11 - ring * 2
+            val distance = radius * (0.68f - ring * 0.17f)
+            val petal = radius * (0.40f - ring * 0.06f)
+            val tone = mix(mix(deep, blush, 0.55f), deep, ring / 3f)
+            val phase = random.range(0f, TAU)
+            for (index in 0 until petals) {
+                val angle = TAU * index / petals + phase
+                val x = centerX + cos(angle) * distance
+                val y = centerY + sin(angle) * distance
+                canvas.drawCircle(x, y, petal, fillPaint(tone))
+                canvas.drawCircle(x, y, petal,
+                    strokePaint(alpha(shade(deep, 0.7f), 0.35f), unit(0.003f)))
+            }
+        }
+        canvas.drawCircle(centerX, centerY, radius * 0.14f, fillPaint(shade(deep, 0.7f)))
+
+        vignette(0.25f, 0.7f)
+        grain(0.025f)
+        Typeset(
+            ink = mix(deep, Color.rgb(40, 20, 30), 0.7f),
+            authorInk = mix(deep, Color.rgb(30, 15, 25), 0.5f),
+            titleFont = CoverFont.Script,
+            titleWeight = random.pick(listOf(500, 700)),
+            titleCase = LetterCase.Title,
+            titleTracking = 0f,
+            titleLeading = 0.98f,
+            titleSize = random.range(0.12f, 0.15f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.22f,
+            rule = Rule.Ornament,
+        )
+    }
+
+internal fun childrenBalloons(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val sky = hsv(random.range(0.50f, 0.60f), random.range(0.25f, 0.45f), 1f)
+        verticalGradient(mix(sky, Color.WHITE, 0.5f), sky, 1f)
+        val white = fillPaint(Color.WHITE)
+        for (index in 0 until random.between(2, 3)) {
+            val cloudX = random.range(0.1f, 0.9f) * width
+            val cloudY = random.range(0.72f, 0.82f) * height
+            val puff = width * random.range(0.05f, 0.08f)
+            for (offset in listOf(-1f, -0.35f, 0.35f, 1f)) {
+                canvas.drawCircle(cloudX + offset * puff, cloudY,
+                    puff * if (abs(offset) > 0.6f) 0.62f else 1f, white)
+            }
+        }
+
+        val knotX = width * random.range(0.4f, 0.6f)
+        val knotY = height * 0.84f
+        val string = strokePaint(Color.rgb(90, 90, 100), unit(0.003f))
+        val count = random.between(5, 8)
+        val hues = List(count) { random.float() }
+        for (index in 0 until count) {
+            val column = 0.18f + 0.64f * index / (count - 1f)
+            val x = width * (column + random.range(-0.04f, 0.04f))
+            val y = height * random.range(0.38f, 0.60f)
+            val radius = width * random.range(0.07f, 0.10f)
+            val tone = hsv(hues[index], random.range(0.55f, 0.75f), 0.95f)
+            val cord = Path()
+            cord.moveTo(x, y + radius * 1.2f)
+            cord.quadTo(x + unit(0.04f), (y + knotY) / 2f, knotX, knotY)
+            canvas.drawPath(cord, string)
+            val body = RectF(x - radius, y - radius * 1.2f, x + radius, y + radius * 1.2f)
+            canvas.drawOval(body, fillPaint(tone))
+            val knot = fillPaint(shade(tone, 0.8f))
+            canvas.drawCircle(x, y + radius * 1.22f, radius * 0.12f, knot)
+            val shine = RectF(x - radius * 0.55f, y - radius * 0.8f, x - radius * 0.25f,
+                y - radius * 0.3f)
+            canvas.drawOval(shine, fillPaint(alpha(Color.WHITE, 0.55f)))
+        }
+
+        Typeset(
+            ink = hsv(random.range(0.60f, 0.70f), 0.60f, 0.30f),
+            authorInk = hsv(0.62f, 0.5f, 0.35f),
+            titleFont = CoverFont.Casual,
+            titleCase = LetterCase.Title,
+            titleTracking = 0f,
+            titleLeading = 1.05f,
+            titleSize = random.range(0.105f, 0.135f),
+            authorFont = CoverFont.Casual,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.06f,
+            authorSize = 0.030f,
+            rule = Rule.None,
+        )
+    }

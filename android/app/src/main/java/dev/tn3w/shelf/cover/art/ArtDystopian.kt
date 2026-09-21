@@ -1,7 +1,10 @@
 package dev.tn3w.shelf.cover.art
 
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Path
+import android.graphics.Rect
+import android.graphics.RectF
 import dev.tn3w.shelf.cover.Anchor
 import dev.tn3w.shelf.cover.CoverCanvas
 import dev.tn3w.shelf.cover.CoverFont
@@ -160,4 +163,54 @@ internal fun dystopianBlocks(cover: CoverCanvas): Typeset =
         radialGlow(margin + cellWidth * (markedColumn + 0.5f),
             margin + cellHeight * (markedRow + 0.5f), width * 0.3f, palette.alarm, 0.45f, 2.4f)
         dystopianFinish(cover, palette.alarm)
+    }
+
+internal fun dystopianGlitch(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val palette = concrete(cover)
+        val centerX = width * random.range(0.4f, 0.6f)
+        val centerY = height * random.range(0.60f, 0.64f)
+        val size = width * random.range(0.20f, 0.26f)
+        val shift = unit(random.range(0.015f, 0.03f))
+        val shape = random.index(3)
+        glitchShape(cover, shape, centerX - shift, centerY, size, Color.rgb(40, 220, 230))
+        glitchShape(cover, shape, centerX + shift, centerY, size, palette.alarm)
+        glitchShape(cover, shape, centerX, centerY, size, shade(palette.low, 0.6f))
+
+        val copy = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, false)
+        for (index in 0 until random.between(8, 16)) {
+            val top = height * random.range(0.35f, 0.85f)
+            val slice = height * random.range(0.004f, 0.03f)
+            val offset = unit(random.range(-0.12f, 0.12f))
+            val source = Rect(0, top.toInt(), width.toInt(), (top + slice).toInt())
+            val target = RectF(offset, top, width + offset, top + slice)
+            canvas.drawBitmap(copy, source, target, null)
+        }
+        copy.recycle()
+        dystopianFinish(cover, palette.alarm).copy(anchor = Anchor.Top)
+    }
+
+private fun glitchShape(
+    cover: CoverCanvas,
+    shape: Int,
+    x: Float,
+    y: Float,
+    size: Float,
+    color: Int,
+) =
+    with(cover) {
+        val paint = fillPaint(color)
+        when (shape) {
+            0 -> canvas.drawCircle(x, y, size, paint)
+            1 -> {
+                val pyramid = Path()
+                pyramid.moveTo(x, y - size * 1.1f)
+                pyramid.lineTo(x + size * 1.1f, y + size * 0.8f)
+                pyramid.lineTo(x - size * 1.1f, y + size * 0.8f)
+                pyramid.close()
+                canvas.drawPath(pyramid, paint)
+            }
+            else -> canvas.drawRect(x - size * 0.45f, y - size * 1.1f, x + size * 0.45f,
+                y + size * 1.1f, paint)
+        }
     }

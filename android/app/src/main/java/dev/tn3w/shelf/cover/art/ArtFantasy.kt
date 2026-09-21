@@ -2,6 +2,7 @@ package dev.tn3w.shelf.cover.art
 
 import android.graphics.Color
 import android.graphics.Path
+import android.graphics.RectF
 import dev.tn3w.shelf.cover.Anchor
 import dev.tn3w.shelf.cover.CoverCanvas
 import dev.tn3w.shelf.cover.CoverFont
@@ -10,6 +11,7 @@ import dev.tn3w.shelf.cover.LetterCase
 import dev.tn3w.shelf.cover.Rule
 import dev.tn3w.shelf.cover.TAU
 import dev.tn3w.shelf.cover.Typeset
+import dev.tn3w.shelf.cover.alpha
 import dev.tn3w.shelf.cover.fillPaint
 import dev.tn3w.shelf.cover.frame
 import dev.tn3w.shelf.cover.glowPaint
@@ -17,14 +19,17 @@ import dev.tn3w.shelf.cover.grain
 import dev.tn3w.shelf.cover.hsv
 import dev.tn3w.shelf.cover.mix
 import dev.tn3w.shelf.cover.radialGlow
+import dev.tn3w.shelf.cover.randomHarmonics
 import dev.tn3w.shelf.cover.ridge
 import dev.tn3w.shelf.cover.scrimBand
 import dev.tn3w.shelf.cover.shade
+import dev.tn3w.shelf.cover.starPath
 import dev.tn3w.shelf.cover.stars
 import dev.tn3w.shelf.cover.strokePaint
 import dev.tn3w.shelf.cover.texture
 import dev.tn3w.shelf.cover.verticalGradient
 import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.wobblyRingPath
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -40,7 +45,7 @@ internal fun fantasyPeaks(cover: CoverCanvas): Typeset =
         stars((width * 0.55f).toInt(), height * horizon, Color.WHITE, unit(0.003f))
 
         val moonX = random.pick(listOf(0.24f, 0.30f, 0.70f, 0.78f)) * width
-        val moonY = random.range(0.16f, 0.30f) * height
+        val moonY = random.range(0.30f, 0.38f) * height
         val moonRadius = random.range(0.055f, 0.095f) * width
         radialGlow(moonX, moonY, moonRadius * 7f, accent, 0.45f, 2.6f)
         canvas.drawCircle(moonX, moonY, moonRadius,
@@ -280,4 +285,300 @@ internal fun fantasyForest(cover: CoverCanvas): Typeset =
             rule = Rule.Ornament,
             shadow = 0.9f,
         )
+    }
+
+internal fun fantasyDawn(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val warm = random.pick(listOf(0.02f, 0.06f, 0.10f, 0.95f))
+        val glow = hsv(warm, random.range(0.35f, 0.55f), 1f)
+        val deep = hsv(random.pick(listOf(0.62f, 0.70f, 0.78f, 0.85f)),
+            random.range(0.35f, 0.55f), random.range(0.28f, 0.38f))
+        verticalGradient(hsv(0.60f, random.range(0.12f, 0.24f), 0.96f), glow, 1.3f)
+
+        val horizon = random.range(0.54f, 0.60f)
+        val sunX = width * random.range(0.3f, 0.7f)
+        val sunRadius = width * random.range(0.14f, 0.20f)
+        radialGlow(sunX, horizon * height, width, Color.WHITE, 0.45f, 2f)
+        canvas.drawCircle(sunX, horizon * height - sunRadius * 0.3f, sunRadius,
+            fillPaint(mix(glow, Color.WHITE, 0.65f)))
+
+        val bird = strokePaint(alpha(deep, 0.7f), unit(0.004f))
+        for (index in 0 until random.between(3, 7)) {
+            val x = width * random.range(0.15f, 0.85f)
+            val y = height * random.range(0.40f, 0.50f)
+            val span = unit(random.range(0.015f, 0.03f))
+            canvas.drawLine(x - span, y - span * 0.5f, x, y, bird)
+            canvas.drawLine(x, y, x + span, y - span * 0.5f, bird)
+        }
+
+        val layers = 4
+        for (index in 0 until layers) {
+            val depth = index / (layers - 1f)
+            val shape = ridge(horizon + depth * 0.24f, random.range(0.04f, 0.12f),
+                random.range(0.04f, 0.08f))
+            canvas.drawPath(shape.fill, fillPaint(mix(mix(glow, Color.WHITE, 0.3f), deep,
+                0.25f + depth * 0.75f)))
+        }
+
+        grain(0.025f)
+        frame(CoverFrame.Hairline, deep)
+        Typeset(
+            ink = shade(deep, 0.6f),
+            authorInk = mix(glow, Color.WHITE, 0.5f),
+            titleFont = CoverFont.Serif,
+            titleWeight = random.pick(listOf(500, 700)),
+            titleItalic = random.chance(0.3f),
+            titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
+            titleTracking = random.range(0.04f, 0.10f),
+            titleSize = random.range(0.085f, 0.105f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.20f,
+            rule = Rule.Ornament,
+        )
+    }
+
+internal fun fantasyIlluminated(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val vellum = hsv(random.range(0.09f, 0.12f), random.range(0.14f, 0.24f), 0.94f)
+        val gold = hsv(random.range(0.10f, 0.12f), 0.65f, random.range(0.78f, 0.86f))
+        val blue = hsv(random.range(0.60f, 0.64f), 0.75f, random.range(0.45f, 0.58f))
+        val red = hsv(random.range(0.98f, 1.01f), 0.75f, random.range(0.60f, 0.72f))
+        verticalGradient(vellum, shade(vellum, 0.9f), 1f)
+        texture(0.14f)
+
+        val inset = width * 0.05f
+        val band = width * 0.045f
+        val outer = RectF(inset, inset, width - inset, height - inset)
+        canvas.drawRect(outer, strokePaint(random.pick(listOf(blue, red)), band))
+        canvas.drawRect(RectF(outer).apply { inset(-band * 0.6f, -band * 0.6f) },
+            strokePaint(gold, unit(0.003f)))
+        canvas.drawRect(RectF(outer).apply { inset(band * 0.6f, band * 0.6f) },
+            strokePaint(gold, unit(0.003f)))
+        val dot = fillPaint(gold)
+        val step = band * 1.2f
+        var along = outer.left
+        while (along <= outer.right) {
+            canvas.drawCircle(along, outer.top, band * 0.16f, dot)
+            canvas.drawCircle(along, outer.bottom, band * 0.16f, dot)
+            along += step
+        }
+        along = outer.top
+        while (along <= outer.bottom) {
+            canvas.drawCircle(outer.left, along, band * 0.16f, dot)
+            canvas.drawCircle(outer.right, along, band * 0.16f, dot)
+            along += step
+        }
+
+        val centerX = width * 0.5f
+        val centerY = height * random.range(0.60f, 0.64f)
+        val radius = width * random.range(0.15f, 0.19f)
+        for (index in 0 until 4) {
+            curl(cover, centerX, centerY, radius, TAU * (index + 0.5f) / 4, gold, red)
+        }
+        canvas.drawCircle(centerX, centerY, radius, fillPaint(blue))
+        canvas.drawCircle(centerX, centerY, radius, strokePaint(gold, unit(0.012f)))
+        val petals = random.pick(listOf(6, 8))
+        for (index in 0 until petals) {
+            val angle = TAU * index / petals
+            canvas.drawCircle(centerX + cos(angle) * radius * 0.45f,
+                centerY + sin(angle) * radius * 0.45f, radius * 0.24f, fillPaint(red))
+        }
+        canvas.drawCircle(centerX, centerY, radius * 0.25f, fillPaint(gold))
+
+        grain(0.03f)
+        Typeset(
+            ink = shade(red, 0.55f),
+            authorInk = shade(blue, 0.7f),
+            titleFont = CoverFont.Serif,
+            titleWeight = 700,
+            titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
+            titleTracking = random.range(0.03f, 0.08f),
+            titleSize = random.range(0.08f, 0.10f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.18f,
+            rule = Rule.Ornament,
+        )
+    }
+
+private fun curl(
+    cover: CoverCanvas,
+    centerX: Float,
+    centerY: Float,
+    radius: Float,
+    direction: Float,
+    gold: Int,
+    red: Int,
+) =
+    with(cover) {
+        val spiralX = centerX + cos(direction) * radius * 1.7f
+        val spiralY = centerY + sin(direction) * radius * 1.7f
+        val vine = Path()
+        vine.moveTo(centerX + cos(direction) * radius, centerY + sin(direction) * radius)
+        for (step in 0..60) {
+            val progress = step / 60f
+            val angle = direction + TAU / 2 + progress * TAU * 1.2f
+            val distance = radius * 0.7f * (1f - progress * 0.85f)
+            val x = spiralX + cos(angle) * distance
+            val y = spiralY + sin(angle) * distance
+            vine.lineTo(x, y)
+            if (step % 15 == 7) canvas.drawCircle(x, y, radius * 0.09f, fillPaint(red))
+        }
+        canvas.drawPath(vine, strokePaint(gold, unit(0.008f)))
+    }
+
+private val CRYSTAL_HUES = listOf(0.33f, 0.98f, 0.78f, 0.58f, 0.12f, 0.48f)
+
+internal fun fantasyCrystal(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val hue = random.pick(CRYSTAL_HUES)
+        val gem = hsv(hue, random.range(0.60f, 0.80f), random.range(0.80f, 0.95f))
+        verticalGradient(hsv(hue + 0.04f, 0.70f, 0.08f), hsv(hue, 0.60f, 0.30f), 1.2f)
+        stars((width * 0.3f).toInt(), height * 0.7f, mix(gem, Color.WHITE, 0.6f),
+            unit(0.002f))
+
+        val baseY = height * 0.86f
+        radialGlow(width * 0.5f, baseY - height * 0.15f, width * 0.8f, gem, 0.45f, 2.2f)
+        val shards =
+            List(random.between(5, 8)) {
+                Triple(width * random.range(0.36f, 0.64f), random.range(-24f, 24f),
+                    height * random.range(0.16f, 0.40f))
+            }.sortedByDescending { it.third }
+        for ((x, tilt, length) in shards) {
+            val breadth = width * random.range(0.035f, 0.065f)
+            shard(cover, x, baseY, length, breadth, tilt, gem)
+        }
+
+        val rock = ridge(0.87f, 0f, 0.03f)
+        canvas.drawPath(rock.fill, fillPaint(hsv(hue, 0.35f, 0.07f)))
+        val sparkle = fillPaint(Color.WHITE)
+        for (index in 0 until random.between(4, 8)) {
+            val size = unit(random.range(0.012f, 0.025f))
+            canvas.drawPath(starPath(width * random.range(0.2f, 0.8f),
+                height * random.range(0.45f, 0.82f), size, size * 0.2f, 4), sparkle)
+        }
+
+        vignette(0.5f, 0.55f)
+        grain(0.03f)
+        Typeset(
+            ink = mix(gem, Color.WHITE, 0.8f),
+            authorInk = mix(gem, Color.WHITE, 0.4f),
+            titleFont = random.pick(listOf(CoverFont.Serif, CoverFont.Sans)),
+            titleWeight = random.pick(listOf(300, 600)),
+            titleTracking = random.range(0.12f, 0.22f),
+            titleSize = random.range(0.07f, 0.09f),
+            authorFont = CoverFont.Sans,
+            authorWeight = 400,
+            authorTracking = 0.28f,
+            rule = Rule.Line,
+            shadow = 0.6f,
+        )
+    }
+
+private fun shard(
+    cover: CoverCanvas,
+    x: Float,
+    baseY: Float,
+    length: Float,
+    breadth: Float,
+    tilt: Float,
+    gem: Int,
+) =
+    with(cover) {
+        val tone = mix(gem, Color.WHITE, random.range(0f, 0.3f))
+        canvas.save()
+        canvas.rotate(tilt, x, baseY)
+        val shoulder = baseY - length * 0.78f
+        val tip = baseY - length
+        val left = Path()
+        left.moveTo(x - breadth, baseY)
+        left.lineTo(x - breadth, shoulder)
+        left.lineTo(x, tip)
+        left.lineTo(x, baseY)
+        left.close()
+        val right = Path()
+        right.moveTo(x + breadth, baseY)
+        right.lineTo(x + breadth, shoulder)
+        right.lineTo(x, tip)
+        right.lineTo(x, baseY)
+        right.close()
+        canvas.drawPath(left, fillPaint(mix(tone, Color.WHITE, 0.35f)))
+        canvas.drawPath(right, fillPaint(shade(tone, 0.55f)))
+        canvas.drawLine(x, baseY, x, tip,
+            strokePaint(alpha(Color.WHITE, 0.7f), unit(0.003f)))
+        canvas.restore()
+    }
+
+private val SKIES =
+    listOf(
+        Triple(0.98f, 0.07f, 0.12f),
+        Triple(0.75f, 0.03f, 0.10f),
+        Triple(0.60f, 0.52f, 0.14f),
+    )
+
+internal fun fantasySword(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val (topHue, lowHue, sunHue) = random.pick(SKIES)
+        val low = hsv(lowHue, random.range(0.55f, 0.75f), random.range(0.85f, 0.95f))
+        verticalGradient(hsv(topHue, 0.75f, 0.22f), low, 0.9f)
+        val sunY = height * random.range(0.58f, 0.63f)
+        val sunRadius = width * random.range(0.24f, 0.30f)
+        val sun = hsv(sunHue, 0.35f, 1f)
+        radialGlow(width * 0.5f, sunY, sunRadius * 3f, sun, 0.5f, 2f)
+        canvas.drawCircle(width * 0.5f, sunY, sunRadius, fillPaint(alpha(sun, 0.85f)))
+        val ray = strokePaint(alpha(sun, 0.25f), unit(0.004f))
+        for (index in 0 until 24) {
+            val angle = TAU * index / 24
+            canvas.drawLine(width * 0.5f + cos(angle) * sunRadius * 1.15f,
+                sunY + sin(angle) * sunRadius * 1.15f,
+                width * 0.5f + cos(angle) * sunRadius * 1.6f,
+                sunY + sin(angle) * sunRadius * 1.6f, ray)
+        }
+
+        val ink = hsv(topHue, 0.5f, 0.08f)
+        sword(cover, width * 0.5f, height * 0.56f, ink)
+        val stone = wobblyRingPath(width * 0.5f, height * 0.93f, width * 0.32f,
+            randomHarmonics(random, 3, 0.06f), squash = 0.45f)
+        canvas.drawPath(stone, fillPaint(ink))
+        canvas.drawRect(0f, height * 0.94f, width, height, fillPaint(ink))
+
+        vignette(0.45f, 0.6f)
+        grain(0.035f)
+        frame(CoverFrame.Corners, sun)
+        Typeset(
+            ink = mix(sun, Color.WHITE, 0.6f),
+            authorInk = mix(sun, Color.WHITE, 0.3f),
+            titleFont = CoverFont.Serif,
+            titleWeight = 700,
+            titleTracking = random.range(0.08f, 0.14f),
+            titleSize = random.range(0.08f, 0.10f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.22f,
+            rule = Rule.Ornament,
+            shadow = 0.7f,
+        )
+    }
+
+private fun sword(cover: CoverCanvas, x: Float, guardY: Float, ink: Int) =
+    with(cover) {
+        val paint = fillPaint(ink)
+        val blade = Path()
+        blade.moveTo(x - unit(0.038f), guardY)
+        blade.lineTo(x + unit(0.038f), guardY)
+        blade.lineTo(x + unit(0.026f), height * 0.84f)
+        blade.lineTo(x, height * 0.87f)
+        blade.lineTo(x - unit(0.026f), height * 0.84f)
+        blade.close()
+        canvas.drawPath(blade, paint)
+        val guard = Path()
+        guard.moveTo(x - unit(0.15f), guardY + unit(0.035f))
+        guard.quadTo(x, guardY - unit(0.045f), x + unit(0.15f), guardY + unit(0.035f))
+        guard.quadTo(x, guardY - unit(0.005f), x - unit(0.15f), guardY + unit(0.035f))
+        guard.close()
+        canvas.drawPath(guard, paint)
+        canvas.drawRect(x - unit(0.011f), guardY - unit(0.11f), x + unit(0.011f), guardY,
+            paint)
+        canvas.drawCircle(x, guardY - unit(0.12f), unit(0.024f), paint)
     }

@@ -216,3 +216,64 @@ internal fun scifiOrbit(cover: CoverCanvas): Typeset =
             shadow = 0.4f,
         )
     }
+
+internal fun scifiTunnel(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val hue = random.pick(listOf(0.50f, 0.55f, 0.80f, 0.88f, 0.08f))
+        val accent = hsv(hue, random.range(0.60f, 0.85f), 1f)
+        verticalGradient(Color.rgb(4, 4, 10), hsv(hue, 0.7f, 0.12f), 1f)
+        val centerX = width * random.range(0.42f, 0.58f)
+        val centerY = height * random.range(0.58f, 0.64f)
+        radialGlow(centerX, centerY, width * 0.5f, accent, 0.6f, 2.6f)
+
+        val sides = random.pick(listOf(4, 6, 0))
+        val spokes = if (sides == 0) 16 else sides * 2
+        val line = strokePaint(alpha(accent, 0.25f), unit(0.002f))
+        for (index in 0 until spokes) {
+            val angle = TAU * index / spokes + if (sides == 4) TAU / 8 else 0f
+            canvas.drawLine(centerX, centerY, centerX + cos(angle) * width * 1.5f,
+                centerY + sin(angle) * width * 1.5f, line)
+        }
+        var reach = width * 1.1f
+        var ring = 0
+        while (reach > width * 0.02f) {
+            val strength = (0.25f + ring * 0.07f).coerceAtMost(0.95f)
+            val paint = strokePaint(alpha(accent, strength), unit(0.004f))
+            if (sides == 0) canvas.drawCircle(centerX, centerY, reach, paint)
+            else canvas.drawPath(polygon(centerX, centerY, reach, sides), paint)
+            reach *= random.range(0.72f, 0.80f)
+            ring++
+        }
+        canvas.drawCircle(centerX, centerY, unit(0.02f),
+            glowPaint(mix(accent, Color.WHITE, 0.7f), unit(0.02f)))
+
+        vignette(0.5f, 0.5f)
+        grain(0.03f)
+        Typeset(
+            ink = Color.rgb(240, 244, 250),
+            authorInk = accent,
+            titleFont = random.pick(listOf(CoverFont.Sans, CoverFont.Mono)),
+            titleWeight = random.pick(listOf(300, 700)),
+            titleTracking = random.range(0.14f, 0.26f),
+            titleSize = random.range(0.065f, 0.085f),
+            authorFont = CoverFont.Mono,
+            authorWeight = 400,
+            authorTracking = 0.22f,
+            rule = Rule.None,
+            shadow = 0.6f,
+            scrim = 0.3f,
+        )
+    }
+
+private fun polygon(centerX: Float, centerY: Float, radius: Float, sides: Int): Path {
+    val path = Path()
+    val turn = if (sides == 4) TAU / 8 else 0f
+    for (index in 0 until sides) {
+        val angle = TAU * index / sides + turn
+        val x = centerX + cos(angle) * radius
+        val y = centerY + sin(angle) * radius
+        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+    return path
+}

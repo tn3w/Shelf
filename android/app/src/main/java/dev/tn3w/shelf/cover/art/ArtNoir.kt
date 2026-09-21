@@ -1,7 +1,10 @@
 package dev.tn3w.shelf.cover.art
 
+import android.graphics.BlurMaskFilter
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Path
+import android.graphics.Shader
 import dev.tn3w.shelf.cover.Anchor
 import dev.tn3w.shelf.cover.CoverCanvas
 import dev.tn3w.shelf.cover.CoverFont
@@ -9,6 +12,7 @@ import dev.tn3w.shelf.cover.CoverFrame
 import dev.tn3w.shelf.cover.Rule
 import dev.tn3w.shelf.cover.TAU
 import dev.tn3w.shelf.cover.Typeset
+import dev.tn3w.shelf.cover.alpha
 import dev.tn3w.shelf.cover.fillPaint
 import dev.tn3w.shelf.cover.frame
 import dev.tn3w.shelf.cover.glowPaint
@@ -18,6 +22,7 @@ import dev.tn3w.shelf.cover.mix
 import dev.tn3w.shelf.cover.radialGlow
 import dev.tn3w.shelf.cover.randomHarmonics
 import dev.tn3w.shelf.cover.scanlines
+import dev.tn3w.shelf.cover.scrimBand
 import dev.tn3w.shelf.cover.shade
 import dev.tn3w.shelf.cover.strokePaint
 import dev.tn3w.shelf.cover.texture
@@ -293,4 +298,121 @@ internal fun horrorMoon(cover: CoverCanvas): Typeset =
         grain(0.08f)
         frame(CoverFrame.Rule, shade(blood, 0.7f))
         horrorType(cover, blood)
+    }
+
+internal fun horrorDrip(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val blood = hsv(random.range(0.98f, 1.01f), random.range(0.85f, 0.95f),
+            random.range(0.55f, 0.68f))
+        val bone = hsv(random.range(0.08f, 0.12f), random.range(0.06f, 0.14f),
+            random.range(0.88f, 0.94f))
+        canvas.drawRect(0f, 0f, width, height, fillPaint(bone))
+        texture(0.12f)
+
+        val band = height * 0.11f
+        val drips = mutableListOf<Drip>()
+        val path = Path()
+        path.moveTo(0f, 0f)
+        path.lineTo(0f, band)
+        var x = 0f
+        while (x < width) {
+            val bulb = unit(random.range(0.010f, 0.026f))
+            val length = height * random.range(0.1f, 0.62f).let { it * it }
+            val center = x + unit(random.range(0.03f, 0.09f)) + bulb
+            if (center + bulb * 2f > width) break
+            val edge = band + height * random.range(-0.008f, 0.012f)
+            path.quadTo((x + center) / 2f, edge, center - bulb * 1.8f, band)
+            drips += drip(path, center, band, length, bulb)
+            x = center + bulb * 1.8f
+        }
+        path.quadTo((x + width) / 2f, band + height * 0.01f, width, band)
+        path.lineTo(width, 0f)
+        path.close()
+
+        val shadow = fillPaint(alpha(Color.BLACK, 0.35f))
+        shadow.maskFilter = BlurMaskFilter(unit(0.008f), BlurMaskFilter.Blur.NORMAL)
+        canvas.save()
+        canvas.translate(unit(0.003f), unit(0.006f))
+        canvas.drawPath(path, shadow)
+        canvas.restore()
+        val paint = fillPaint(blood)
+        paint.shader =
+            LinearGradient(0f, 0f, 0f, height * 0.6f, shade(blood, 0.45f), blood,
+                Shader.TileMode.CLAMP)
+        canvas.drawPath(path, paint)
+
+        val gloss = strokePaint(alpha(Color.WHITE, 0.35f), unit(0.003f))
+        for (drop in drips) {
+            if (drop.length < drop.bulb * 4f) continue
+            canvas.drawLine(drop.x - drop.bulb * 0.25f, band + drop.length * 0.25f,
+                drop.x - drop.bulb * 0.25f, band + drop.length - drop.bulb, gloss)
+            canvas.drawCircle(drop.x - drop.bulb * 0.4f, band + drop.length,
+                drop.bulb * 0.22f, fillPaint(alpha(Color.WHITE, 0.45f)))
+        }
+        for (index in 0 until random.between(3, 7)) {
+            val dropX = random.range(0.05f, 0.95f) * width
+            val dropY = height * random.range(0.25f, 0.6f)
+            val size = unit(random.range(0.004f, 0.010f))
+            canvas.drawCircle(dropX, dropY, size, fillPaint(blood))
+            canvas.drawCircle(dropX + size * 1.8f, dropY + size * 1.2f, size * 0.35f,
+                fillPaint(blood))
+        }
+
+        vignette(0.35f, 0.6f)
+        grain(0.06f)
+        Typeset(
+            ink = Color.rgb(24, 14, 14),
+            authorInk = bone,
+            titleFont = CoverFont.Serif,
+            titleWeight = 800,
+            titleTracking = random.range(0.02f, 0.08f),
+            titleSize = random.range(0.10f, 0.13f),
+            authorFont = CoverFont.Serif,
+            authorWeight = 400,
+            authorTracking = 0.28f,
+            anchor = Anchor.Bottom,
+            rule = Rule.None,
+        )
+    }
+
+private class Drip(val x: Float, val length: Float, val bulb: Float)
+
+private fun drip(path: Path, x: Float, top: Float, length: Float, bulb: Float): Drip {
+    val neck = bulb * 0.55f
+    val bottom = top + length
+    val shoulder = top + length * 0.3f
+    path.cubicTo(x - neck, top, x - neck, shoulder, x - neck, bottom - bulb * 1.1f)
+    path.cubicTo(x - bulb * 1.45f, bottom + bulb * 1.35f, x + bulb * 1.45f,
+        bottom + bulb * 1.35f, x + neck, bottom - bulb * 1.1f)
+    path.cubicTo(x + neck, shoulder, x + neck, top, x + bulb * 1.8f, top)
+    return Drip(x, length, bulb)
+}
+
+internal fun horrorFog(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val haze = hsv(random.range(0.30f, 0.55f), random.range(0.06f, 0.18f),
+            random.range(0.55f, 0.70f))
+        val blood = hsv(random.range(0.98f, 1.02f), 0.8f, 0.7f)
+        verticalGradient(shade(haze, 0.35f), haze, 1.2f)
+        val moonY = height * random.range(0.42f, 0.48f)
+        canvas.drawCircle(width * random.range(0.25f, 0.75f), moonY, width * 0.1f,
+            fillPaint(mix(haze, Color.WHITE, 0.6f)))
+
+        for (layer in 0 until 3) {
+            val trees = Path()
+            for (index in 0 until random.between(3, 5)) {
+                branch(cover, trees, random.range(-0.05f, 1.05f) * width, height * 1.02f,
+                    -TAU / 4f + random.range(-0.15f, 0.15f),
+                    height * random.range(0.12f, 0.18f) * (0.7f + layer * 0.25f), 7)
+            }
+            val tone = mix(haze, Color.rgb(8, 10, 10), 0.35f + layer * 0.3f)
+            canvas.drawPath(trees, strokePaint(tone, unit(0.006f + layer * 0.005f)))
+            if (layer < 2) scrimBand(height * 0.45f, height * 1.4f, haze, 0.55f)
+        }
+
+        vignette(0.7f, 0.4f)
+        grain(0.07f)
+        horrorType(cover, blood)
+            .copy(ink = Color.rgb(236, 232, 226), authorInk = Color.rgb(220, 214, 210),
+                anchor = Anchor.Top)
     }

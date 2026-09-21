@@ -406,3 +406,122 @@ internal fun biographyPortrait(cover: CoverCanvas): Typeset =
             authorTracking = 0.20f,
         )
     }
+
+internal fun spiritualEnso(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val paper = hsv(random.range(0.08f, 0.12f), random.range(0.06f, 0.14f),
+            random.range(0.92f, 0.96f))
+        val sumi = Color.rgb(24, 22, 24)
+        canvas.drawRect(0f, 0f, width, height, fillPaint(paper))
+        texture(0.16f)
+
+        val centerX = width * 0.5f
+        val centerY = height * random.range(0.60f, 0.64f)
+        val radius = width * random.range(0.25f, 0.30f)
+        val brush = unit(random.range(0.035f, 0.05f))
+        val start = random.range(0f, TAU)
+        val sweep = TAU * random.range(0.82f, 0.94f)
+        val paint = fillPaint(sumi)
+        for (step in 0..500) {
+            val progress = step / 500f
+            val angle = start + sweep * progress
+            val swell = 1f - 0.75f * progress * progress
+            val wobble = radius * (1f + 0.03f * sin(progress * TAU * 2f))
+            paint.alpha = if (random.chance(0.15f * progress)) 90 else 235
+            canvas.drawCircle(centerX + cos(angle) * wobble + random.range(-1f, 1f),
+                centerY + sin(angle) * wobble + random.range(-1f, 1f),
+                brush * swell * random.range(0.85f, 1f), paint)
+        }
+
+        val seal = unit(0.05f)
+        val sealX = centerX + radius * 1.1f
+        val sealY = centerY + radius * 1.05f
+        canvas.drawRect(sealX - seal, sealY - seal, sealX + seal, sealY + seal,
+            fillPaint(hsv(0.99f, 0.80f, 0.72f)))
+        canvas.drawRect(sealX - seal * 0.6f, sealY - seal * 0.6f, sealX + seal * 0.6f,
+            sealY + seal * 0.6f, strokePaint(paper, seal * 0.14f))
+
+        grain(0.03f)
+        Typeset(
+            ink = sumi,
+            authorInk = Color.rgb(80, 74, 70),
+            titleFont = CoverFont.Serif,
+            titleWeight = 400,
+            titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
+            titleTracking = random.range(0.06f, 0.14f),
+            titleSize = random.range(0.07f, 0.09f),
+            authorFont = CoverFont.SmallCaps,
+            authorCase = LetterCase.Title,
+            authorTracking = 0.22f,
+            rule = Rule.None,
+        )
+    }
+
+internal fun technicalBlueprint(cover: CoverCanvas): Typeset =
+    with(cover) {
+        val blue = hsv(random.range(0.58f, 0.62f), random.range(0.70f, 0.85f),
+            random.range(0.45f, 0.58f))
+        val chalk = Color.rgb(236, 242, 250)
+        verticalGradient(shade(blue, 1.1f), shade(blue, 0.8f), 1f)
+        val fine = strokePaint(alpha(chalk, 0.10f), 1f)
+        val coarse = strokePaint(alpha(chalk, 0.22f), 1f)
+        val pitch = width / 24f
+        for (index in 0..48) {
+            val paint = if (index % 4 == 0) coarse else fine
+            canvas.drawLine(index * pitch, 0f, index * pitch, height, paint)
+            canvas.drawLine(0f, index * pitch, width, index * pitch, paint)
+        }
+
+        val centerX = width * random.range(0.42f, 0.58f)
+        val centerY = height * random.range(0.60f, 0.64f)
+        val radius = width * random.range(0.22f, 0.28f)
+        val line = strokePaint(chalk, unit(0.005f))
+        canvas.drawPath(gear(centerX, centerY, radius, random.between(10, 16)), line)
+        canvas.drawCircle(centerX, centerY, radius * 0.55f, line)
+        canvas.drawCircle(centerX, centerY, radius * 0.18f, line)
+        val dashed = strokePaint(alpha(chalk, 0.6f), unit(0.002f))
+        val axis = radius * 1.3f
+        canvas.drawLine(centerX - axis, centerY, centerX + axis, centerY, dashed)
+        canvas.drawLine(centerX, centerY - axis, centerX, centerY + axis, dashed)
+        val smallX = centerX + radius * random.pick(listOf(-1.5f, 1.5f))
+        val smallY = centerY + radius * 0.9f
+        canvas.drawPath(gear(smallX, smallY, radius * 0.45f, 8), line)
+        canvas.drawCircle(smallX, smallY, radius * 0.12f, line)
+
+        val dimensionY = centerY - radius * 1.35f
+        val left = centerX - radius
+        canvas.drawLine(left, dimensionY, centerX + radius, dimensionY, dashed)
+        for (side in listOf(-1f, 1f)) {
+            val tip = centerX + side * radius
+            canvas.drawLine(tip, dimensionY - unit(0.02f), tip, dimensionY + unit(0.02f),
+                dashed)
+        }
+
+        grain(0.03f)
+        frame(CoverFrame.Hairline, chalk)
+        Typeset(
+            ink = chalk,
+            titleFont = CoverFont.Mono,
+            titleWeight = 700,
+            titleTracking = random.range(0.02f, 0.08f),
+            titleLeading = 1.05f,
+            titleSize = random.range(0.08f, 0.10f),
+            authorFont = CoverFont.Mono,
+            authorWeight = 400,
+            authorTracking = 0.16f,
+            rule = Rule.Line,
+        )
+    }
+
+private fun gear(centerX: Float, centerY: Float, radius: Float, teeth: Int): Path {
+    val path = Path()
+    for (index in 0 until teeth * 4) {
+        val angle = TAU * index / (teeth * 4)
+        val reach = if (index % 4 == 1 || index % 4 == 2) radius else radius * 0.84f
+        val x = centerX + cos(angle) * reach
+        val y = centerY + sin(angle) * reach
+        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+    return path
+}
