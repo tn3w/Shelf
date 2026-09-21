@@ -131,7 +131,7 @@ longer points at.
 ## Generated covers
 
 <p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, fantasy, science fiction, horror, romance, adventure, vintage and children's"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, adventure, science fiction, romance, vintage, fantasy, mystery and spiritual"></picture>
 </p>
 
 Books without a cover get one drawn on device from `Canvas` shaders and system fonts.
