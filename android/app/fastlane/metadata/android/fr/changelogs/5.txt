@@ -1,0 +1,1 @@
+Les couvertures et photos d'auteurs désactivées n'envoient plus aucune requête. Le téléchargement de tous les packs récupère chaque fichier une seule fois, et la taille de core inclut désormais le fichier de classement.

@@ -738,10 +738,16 @@ fun OnboardingScreen() {
     val core = packs?.firstOrNull { it.pack == "core" }
     val coreDownload = downloads["$language-core"]
     var started by remember(language) { mutableStateOf(false) }
+    val finish = {
+        val now = System.currentTimeMillis()
+        update {
+            it.copy(onboarded = true, language = language, lastCatalogueCheck = now)
+        }
+    }
 
     LaunchedEffect(started, core?.state) {
         if (!started || core?.state == PackState.Available) return@LaunchedEffect
-        update { it.copy(onboarded = true, language = language) }
+        finish()
     }
 
     Column(
@@ -772,7 +778,7 @@ fun OnboardingScreen() {
         OfflineRow(settings, update)
         if (offline) {
             Button(
-                onClick = { update { it.copy(onboarded = true, language = language) } },
+                onClick = { finish() },
                 modifier = Modifier.padding(ScreenPadding),
             ) {
                 Text(stringResource(R.string.start_offline))
@@ -793,11 +799,7 @@ fun OnboardingScreen() {
             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
         ) {
             if (!required) {
-                TextButton(
-                    onClick = {
-                        update { it.copy(onboarded = true, language = language) }
-                    }
-                ) {
+                TextButton(onClick = { finish() }) {
                     Text(stringResource(R.string.later))
                 }
             }

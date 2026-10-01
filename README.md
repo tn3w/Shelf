@@ -49,11 +49,16 @@ system file picker and merges one back in.
 No account, trackers, Play Services or Firebase, and no background service.
 
 - Both APKs bundle `manifest.json`, so onboarding lists every pack and size offline.
-  Nothing downloads until you tap Download.
+  First launch sends no request; nothing downloads until you tap Download, and the
+  monthly catalogue check starts a month after onboarding.
 - Offline mode, on onboarding and in Settings, switches off app updates, catalogue
   refresh, covers and author photos. Each is also its own switch.
 - Offline mode locks on when the INTERNET permission is denied, read from the permission
   state, never by probing a URL.
+- Core download = `core` + `ranks` (English 7.7 MB), shown as one size. Parallel pack
+  downloads fetch each file once.
+- Cover and photo requests wait until settings load, so a disabled switch sends nothing,
+  not even DNS. `covers.openlibrary.org` redirects to `archive.org`.
 - Requests are https only and carry no identifiers or cookies, with a fixed `Shelf` user
   agent in place of the device one.
 

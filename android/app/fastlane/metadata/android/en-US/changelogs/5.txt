@@ -1,0 +1,1 @@
+Disabled covers and author photos no longer send any request. Downloading all packs fetches each file once, and the core size now includes the ranks file.

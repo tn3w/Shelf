@@ -123,14 +123,21 @@ private fun placeholderColor(work: Int): Color {
 }
 
 @Composable
+private fun loadedSettings(): Settings? {
+    val settings by
+        shelfApp().library.settings.collectAsStateWithLifecycle<Settings?>(null)
+    return settings
+}
+
+@Composable
 fun BookCover(
     book: Book,
     width: Dp = Dp.Unspecified,
     modifier: Modifier = Modifier,
     sharedKey: String? = null,
 ) {
-    val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
-    val offline = settings.isOffline(LocalContext.current)
+    val settings = loadedSettings()
+    val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(book.work) { mutableStateOf(false) }
     var failed by remember(book.work) { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
@@ -142,6 +149,7 @@ fun BookCover(
             .clip(shape)
             .background(placeholderColor(book.work))
     ) {
+        if (settings == null) return@Box
         if (offline || !settings.onlineCovers || book.cover == 0 || failed) {
             DrawnCover(book)
             return@Box
@@ -163,8 +171,8 @@ private fun initials(name: String) =
 
 @Composable
 fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
-    val settings by shelfApp().library.settings.collectAsStateWithLifecycle(Settings())
-    val offline = settings.isOffline(LocalContext.current)
+    val settings = loadedSettings()
+    val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(author.number) { mutableStateOf(false) }
     Surface(
         shape = CircleShape,
@@ -181,7 +189,7 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            if (offline || !settings.authorImages) return@Box
+            if (settings == null || offline || !settings.authorImages) return@Box
             AsyncImage(
                 model = author.photoUrl(if (size < 64.dp) "S" else "M"),
                 contentDescription = author.name,

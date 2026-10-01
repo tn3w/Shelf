@@ -1,0 +1,1 @@
+Las portadas y fotos de autores desactivadas ya no envían ninguna solicitud. Al descargar todos los paquetes cada archivo se descarga una sola vez, y el tamaño de core incluye ahora el archivo de rankings.

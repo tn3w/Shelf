@@ -1,0 +1,1 @@
+Deaktivierte Cover und Autorenfotos senden keine Anfrage mehr. Beim Laden aller Pakete wird jede Datei nur einmal geladen, und die Core-Größe enthält jetzt die Ranking-Datei.

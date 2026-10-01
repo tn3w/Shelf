@@ -12,6 +12,8 @@ import java.nio.channels.FileChannel
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -114,6 +116,7 @@ fun fetchText(url: String) =
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply { mkdirs() }
     private val manifestFile = directory.resolve(MANIFEST_NAME)
+    private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
     val manifest: Manifest?
@@ -206,14 +209,17 @@ class Packs(private val context: Context) {
         val installed = (bundled + downloaded()).filter { it.language == language }
         val entries = manifest?.segments.orEmpty().filter { it.language == language }
         val offered = entries.map { it.pack }.toSet()
+        val missingRanks =
+            entries.filter { it.pack == "ranks" && it.id !in ids }.sumOf { it.size }
         val listed = if (manifest == null) PACKS else PACKS.filter { it in offered }
         return listed.map { pack ->
             val needed = entries.filter { it.pack == pack }
             val present = installed.filter { it.pack == pack }
             val missing = needed.filter { it.id !in ids }.sumOf { it.size }
+            val extra = if (pack == "core") missingRanks else 0
             when {
                 present.isEmpty() ->
-                    PackInfo(pack, PackState.Available, needed.sumOf { it.size })
+                    PackInfo(pack, PackState.Available, needed.sumOf { it.size } + extra)
                 missing > 0 -> PackInfo(pack, PackState.Update, missing)
                 else -> PackInfo(pack, PackState.Installed, present.sumOf(::sizeOf))
             }
@@ -275,7 +281,11 @@ class Packs(private val context: Context) {
             val total = missing.sumOf { it.size }.coerceAtLeast(1)
             var done = 0L
             for (entry in missing) {
-                fetch(entry) { onProgress((done + it).toFloat() / total) }
+                fetching.withLock {
+                    if (entry.id !in localIds()) {
+                        fetch(entry) { onProgress((done + it).toFloat() / total) }
+                    }
+                }
                 done += entry.size
             }
             prune(language, entries)
