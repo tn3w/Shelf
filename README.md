@@ -95,8 +95,10 @@ Upload date and resolution stand in for design quality, which the dumps never st
 `shelf-fdroid.apk`, both listed in `SHA256SUMS`. The `github` flavor can update itself
 through Android's package installer; F-Droid builds the `fdroid` flavor from source
 without the updater and verifies it against `shelf-fdroid.apk`, so both APKs must stay
-signed with the one keystore and every `Builds:` entry pins a full commit hash. Recipe in
-`android/fdroid/dev.tn3w.shelf.yml`, store metadata in `android/app/fastlane/`.
+signed with the one keystore, native libraries keep their debug symbols so builds with
+and without an NDK match byte for byte, and every `Builds:` entry pins a full commit
+hash. Recipe in `android/fdroid/dev.tn3w.shelf.yml`, store metadata in
+`android/app/fastlane/`.
 
 ## Build
 

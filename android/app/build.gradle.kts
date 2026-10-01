@@ -21,8 +21,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.1.3"
+        versionCode = 6
+        versionName = "1.1.4"
     }
 
     flavorDimensions += "distribution"
@@ -68,6 +68,12 @@ android {
     androidResources {
         noCompress += "bin"
         generateLocaleConfig = true
+    }
+
+    packaging {
+        jniLibs {
+            keepDebugSymbols += "**/*.so"
+        }
     }
 
     dependenciesInfo {
