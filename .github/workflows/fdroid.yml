@@ -1,0 +1,79 @@
+name: F-Droid repo
+
+on:
+  workflow_run:
+    workflows: [Android]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Build repo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEYSTORE_BASE64: ${{ secrets.FDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+        run: |
+          pip install --quiet fdroidserver
+          mkdir -p fdroid/repo fdroid/metadata/dev.tn3w.shelf
+          cd fdroid
+          cp ../android/app/fastlane/metadata/android/en-US/images/icon.png .
+
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore.p12
+          cat > config.yml <<EOF
+          repo_url: https://tn3w.github.io/Shelf/repo
+          repo_name: Shelf
+          repo_description: Shelf releases, signed by tn3w.
+          repo_keyalias: repokey
+          keystore: keystore.p12
+          keystorepass: $KEYSTORE_PASSWORD
+          keypass: $KEYSTORE_PASSWORD
+          EOF
+          chmod 600 config.yml
+
+          tag=$(gh release view --json tagName -q .tagName)
+          apk="repo/dev.tn3w.shelf_${tag#v}.apk"
+          gh release download "$tag" --pattern shelf-fdroid.apk --output "$apk"
+          version_code=$(python -c \
+            "from fdroidserver.common import get_apk_id; print(get_apk_id('$apk')[1])")
+
+          sed '/^Builds:/,$d' ../android/fdroid/dev.tn3w.shelf.yml > metadata/dev.tn3w.shelf.yml
+          cat >> metadata/dev.tn3w.shelf.yml <<EOF
+          Builds:
+            - versionName: ${tag#v}
+              versionCode: $version_code
+              commit: $tag
+          CurrentVersion: ${tag#v}
+          CurrentVersionCode: $version_code
+          EOF
+          cp -r ../android/app/fastlane/metadata/android/* metadata/dev.tn3w.shelf/
+
+          fdroid update
+          mkdir site && mv repo site/
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: fdroid/site
+
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
