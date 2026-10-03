@@ -46,3 +46,7 @@ __pycache__/
 !CODE_OF_CONDUCT.md
 !SECURITY.md
 !.github/PULL_REQUEST_TEMPLATE.md
+
+.env
+
+tooling/promo/out/

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="android/design/shelf-icon.svg" width="96" alt="Shelf icon">
+https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 # Shelf
 
@@ -16,8 +16,6 @@ Search, explore, track reading streaks, read your own files.
 <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
 <a href="https://f-droid.org/packages/dev.tn3w.shelf/"><img src="https://f-droid.org/badge/get-it-on.png" height="60" alt="Get it on F-Droid"></a>
-
-https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 <p align="center">
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
@@ -180,7 +178,7 @@ colours, so a cover never changes. Text is scrimmed until legible; results are c
 |---|---|
 | `android/` | App, flavors, UI, reader, local library and catalogue loading. |
 | `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
-| `tooling/` | Emulator screenshots and machine translation. |
+| `tooling/` | Emulator screenshots, machine translation, `promo/` launch film. |
 | `.github/workflows/` | CI on pull requests, monthly catalogue builds, app releases. |
 | `data/Segment.kt`, `data/Catalogue.kt` | Segment and rank files; merged works, authors, tags and series. |
 | `data/Search.kt`, `data/Recommend.kt` | Search candidates and ranking; home and discovery rows. |
