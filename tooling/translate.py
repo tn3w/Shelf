@@ -178,7 +178,7 @@ class Engine:
         import ctranslate2
         from transformers import AutoTokenizer
 
-        self.name = model
+        self.name = f"{model}:{language}"
         self.target = NLLB_CODES[language] if "nllb" in model else None
         multi_target = model.endswith(MULTI_TARGET_SUFFIXES)
         self.prefix = f">>{OPUS_CODES[language]}<< " if multi_target else ""
