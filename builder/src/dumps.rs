@@ -677,7 +677,8 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
     if !catalog::is_mostly_latin(&title) {
         return None;
     }
-    Some(catalog::detect_language(&title).unwrap_or(0))
+    let language = catalog::detect_language(&title).filter(|&language| language < 4);
+    Some(language.unwrap_or(0))
 }
 
 fn edition_flags(edition: &Value) -> u8 {

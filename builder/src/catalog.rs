@@ -53,7 +53,9 @@ const MIN_STOP_WORD_SHARE: f32 = 0.05;
 const MAX_TOKEN_BYTES: usize = 24;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-const STOP_WORDS: [&str; 5] = [
+pub const SOURCE_LANGUAGES: [&str; 7] = ["en", "de", "fr", "es", "pt", "it", "nl"];
+
+const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "the and of to in is that it was for with as his her he she on but not you this \
      are at by from have had they all one their who been will would there what when \
      which him them",
@@ -64,8 +66,13 @@ const STOP_WORDS: [&str; 5] = [
      elle mais ou sont être été par lui leur je il avait",
     "el los las que por con para del su sus como pero este esta es al lo más fue \
      sobre entre también cuando muy hay ya",
-    "het een van dat zijn niet wordt naar voor ook maar deze wij zij hun gli che di \
-     da sono alla della nel os uma não seu sua ao pelo pela",
+    "não uma os com dos são foi ele ela seu sua seus suas ao pelo pela pelos pelas \
+     também muito já está têm quando sem nas num numa isso esse essa mesmo ainda depois \
+     onde",
+    "gli che di sono alla della nel nella delle dei degli per non più come questo \
+     questa anche suo suoi sue hanno molto tra fra dopo essere stato stata",
+    "het een van dat zijn niet wordt naar voor ook maar deze wij zij hun werd waren \
+     heeft hebben geen door met bij uit over zich ik",
 ];
 
 const BAD_TITLE_PREFIXES: &[&str] = &[
@@ -625,11 +632,11 @@ fn stop_word_language(word: &str) -> Option<usize> {
     STOP_WORD_LANGUAGE.get(lowered).copied()
 }
 
-fn stop_word_hits(text: &str) -> ([usize; 5], usize) {
+fn stop_word_hits(text: &str) -> ([usize; SOURCE_LANGUAGES.len()], usize) {
     let words = text
         .split(|character: char| !character.is_alphabetic())
         .filter(|word| !word.is_empty());
-    let mut hits = [0usize; 5];
+    let mut hits = [0usize; SOURCE_LANGUAGES.len()];
     let mut count = 0;
     for word in words {
         count += 1;
@@ -658,7 +665,7 @@ pub fn detect_language(text: &str) -> Option<usize> {
         .filter(|&(language, _)| language != best);
     let runner_up = others.map(|(_, &count)| count).max().unwrap_or(0);
     let thin = words >= JUDGED_WORDS && (hits[best] as f32) < MIN_STOP_WORD_SHARE * words as f32;
-    (best < 4 && hits[best] > runner_up && !thin).then_some(best)
+    (hits[best] > runner_up && !thin).then_some(best)
 }
 
 pub fn is_mostly_latin(text: &str) -> bool {
@@ -1044,5 +1051,34 @@ mod tests {
             "A young man returns to the village of his birth and finds it changed \
              beyond recognition by the war."
         );
+    }
+
+    #[test]
+    fn source_languages_detected() {
+        for (language, text) in [
+            (
+                "en",
+                "The story of a girl who was lost and found by her father.",
+            ),
+            (
+                "es",
+                "La historia de una niña que fue encontrada por su padre.",
+            ),
+            (
+                "pt",
+                "A história de uma menina que não foi encontrada pelo seu pai.",
+            ),
+            (
+                "it",
+                "La storia di una ragazza che non è stata trovata dal suo papà.",
+            ),
+            (
+                "nl",
+                "Het verhaal van een meisje dat niet werd gevonden door haar vader.",
+            ),
+        ] {
+            let detected = detect_language(text).map(|index| SOURCE_LANGUAGES[index]);
+            assert_eq!(detected, Some(language), "{text}");
+        }
     }
 }

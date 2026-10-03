@@ -1,3 +1,4 @@
+use crate::catalog::SOURCE_LANGUAGES;
 use crate::dumps::{Authors, Book};
 use flate2::read::DeflateDecoder;
 use serde::Serialize;
@@ -14,6 +15,7 @@ pub struct Request<'a> {
     pub title: &'a str,
     pub source_title: &'a str,
     pub authors: Vec<&'a str>,
+    pub source_language: Option<&'static str>,
     pub text: &'a str,
 }
 
@@ -94,6 +96,9 @@ pub fn request<'a>(book: &'a Book, title: &'a str, authors: &'a Authors) -> Requ
             .filter_map(|&id| authors.get(id))
             .map(|author| author.name)
             .collect(),
+        source_language: book
+            .description_language
+            .map(|index| SOURCE_LANGUAGES[index]),
         text: &book.description,
     }
 }

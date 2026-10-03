@@ -13,9 +13,17 @@ from pathlib import Path
 
 MAGIC = b"SHLT"
 VERSION = 1
-MODEL = "Helsinki-NLP/opus-mt-tc-bible-big-deu_eng_fra_por_spa-ine"
-NLLB_CODES = {"en": "eng_Latn", "de": "deu_Latn", "fr": "fra_Latn", "es": "spa_Latn"}
-OPUS_CODES = {"de": "deu", "fr": "fra", "es": "spa"}
+MODEL = "facebook/nllb-200-3.3B"
+NLLB_CODES = {
+    "en": "eng_Latn",
+    "de": "deu_Latn",
+    "fr": "fra_Latn",
+    "es": "spa_Latn",
+    "pt": "por_Latn",
+    "it": "ita_Latn",
+    "nl": "nld_Latn",
+}
+OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
 PLACEHOLDER = "@{}@"
 PLACEHOLDER_PATTERN = re.compile(r"@\s?(\d{1,2})\s?@")
@@ -29,6 +37,7 @@ MIN_SHOUTED_WORDS = 3
 ABBREVIATIONS = {
     "st", "mr", "mrs", "ms", "dr", "prof", "vol", "no", "jr", "sr", "vs", "etc",
     "ed", "pp", "al", "inc", "ltd", "co", "dept", "est", "ca", "approx",
+    "nr", "art", "blz", "bijv", "drs", "ir", "dott", "sig", "sra", "dra",
 }
 MIN_LENGTH_RATIO = 0.5
 MAX_LENGTH_RATIO = 2.5
@@ -178,12 +187,15 @@ class Engine:
             str(path), device=device, compute_type=compute_type
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model)
-        if self.target:
-            self.tokenizer.src_lang = NLLB_CODES["en"]
 
-    def translate(self, pieces, beam_size, batch_tokens):
-        encoded = self.tokenizer([self.prefix + piece for piece in pieces]).input_ids
-        tokens = [self.tokenizer.convert_ids_to_tokens(ids) for ids in encoded]
+    def encode(self, source, piece):
+        if self.target:
+            self.tokenizer.src_lang = NLLB_CODES.get(source, NLLB_CODES["en"])
+        ids = self.tokenizer(self.prefix + piece).input_ids
+        return self.tokenizer.convert_ids_to_tokens(ids)
+
+    def translate(self, pairs, beam_size, batch_tokens):
+        tokens = [self.encode(source, piece) for source, piece in pairs]
         prefix = [[self.target]] * len(tokens) if self.target else None
         results = self.translator.translate_batch(
             tokens,
@@ -219,8 +231,9 @@ def convert(model, models_dir, compute_type):
     return path
 
 
-def cache_key(model, text):
-    return hashlib.sha256(f"{model}\n{text}".encode()).hexdigest()[:32]
+def cache_key(model, pair):
+    source, text = pair
+    return hashlib.sha256(f"{model}\n{source}\n{text}".encode()).hexdigest()[:32]
 
 
 def load_cache(path):
@@ -295,10 +308,11 @@ def prepare(requests):
 
 
 def flatten(prepared):
-    pieces = []
-    for _, _, _, paragraphs in prepared:
-        pieces.extend(piece for paragraph in paragraphs for piece in paragraph)
-    return pieces
+    pairs = []
+    for request, _, _, paragraphs in prepared:
+        source = request.get("source_language")
+        pairs.extend((source, piece) for paragraph in paragraphs for piece in paragraph)
+    return pairs
 
 
 def regroup(prepared, translated):
@@ -313,8 +327,8 @@ def regroup(prepared, translated):
 
 
 def retry_unmasked(engine, prepared, grouped, options):
-    pieces, spots = [], []
-    for index, ((_, _, replacements, paragraphs), translated) in enumerate(
+    pairs, spots = [], []
+    for index, ((request, _, replacements, paragraphs), translated) in enumerate(
         zip(prepared, grouped)
     ):
         joined = " ".join(piece for paragraph in translated for piece in paragraph)
@@ -322,13 +336,15 @@ def retry_unmasked(engine, prepared, grouped, options):
             continue
         for number, paragraph in enumerate(paragraphs):
             for position, source in enumerate(paragraph):
-                pieces.append(restore(source, replacements, original=True))
+                piece = restore(source, replacements, original=True)
+                pairs.append((request.get("source_language"), piece))
                 spots.append((index, number, position))
         replacements.clear()
-    if not pieces:
+    if not pairs:
         return grouped
     print(f"retranslating {len(spots)} sentences unmasked", file=sys.stderr)
-    for spot, text in zip(spots, engine.translate(pieces, options.beam, options.batch)):
+    done = engine.translate(pairs, options.beam, options.batch)
+    for spot, text in zip(spots, done):
         index, number, position = spot
         grouped[index][number][position] = text
     return grouped
@@ -336,21 +352,21 @@ def retry_unmasked(engine, prepared, grouped, options):
 
 def translate_requests(engine, requests, options):
     prepared = prepare(requests)
-    pieces = flatten(prepared)
+    pairs = flatten(prepared)
     cache = load_cache(options.cache)
-    missing = [piece for piece in pieces if cache_key(engine.name, piece) not in cache]
-    unique = sorted(set(missing), key=len, reverse=True)
+    missing = [pair for pair in pairs if cache_key(engine.name, pair) not in cache]
+    unique = sorted(set(missing), key=lambda pair: len(pair[1]), reverse=True)
     started = time.time()
     fresh = {}
     for index in range(0, len(unique), options.chunk):
         batch = unique[index : index + options.chunk]
         done = engine.translate(batch, options.beam, options.batch)
-        for piece, text in zip(batch, done):
-            fresh[cache_key(engine.name, piece)] = text
+        for pair, text in zip(batch, done):
+            fresh[cache_key(engine.name, pair)] = text
         report(index + len(batch), len(unique), started)
     save_cache(options.cache, fresh)
     cache.update(fresh)
-    translated = [cache[cache_key(engine.name, piece)] for piece in pieces]
+    translated = [cache[cache_key(engine.name, pair)] for pair in pairs]
     grouped = regroup(prepared, translated)
     return prepared, retry_unmasked(engine, prepared, grouped, options)
 

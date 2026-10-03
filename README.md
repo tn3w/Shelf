@@ -166,9 +166,13 @@ The builder streams dumps or reads local files and writes one release: segments,
 state and manifest. Previous state turns monthly builds into small deltas. Manifest URLs
 are `<base-url>/catalogue-<label>/<file>`, by default the GitHub release download path.
 
-`tooling/translate.py` fills missing German, French and Spanish descriptions, which the
-app labels *Machine translated*. With `--translator "python tooling/translate.py <flags>"`
-the builder runs it per language and rebuilds descriptions in the same pass.
+`tooling/translate.py` fills missing descriptions in all four languages, which the app
+labels *Machine translated*. Every non-empty description not written in the target
+language is translated. The builder detects the source (en, de, fr, es, pt, it, nl) and
+sends it as `source_language`; descriptions with an undetected language are skipped. The
+default `nllb-200-3.3B` takes the source per sentence; `--model` also accepts Opus-MT
+models, which ignore it. With `--translator "python tooling/translate.py <flags>"` the builder runs it
+per language and rebuilds descriptions in the same pass.
 
 ```sh
 python tooling/translate.py requests/requests-de.jsonl out/translations-de.bin \

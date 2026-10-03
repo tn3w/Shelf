@@ -165,12 +165,15 @@ fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> 
 }
 
 fn export_requests(job: &Job, placed: &[Placed]) {
-    let Some(directory) = job.requests.filter(|_| job.language != 0) else {
+    let Some(directory) = job.requests else {
         return;
     };
     let untranslated = placed.iter().filter(|placed| {
         placed.work.description.is_empty()
-            && placed.book.description_language == Some(0)
+            && placed
+                .book
+                .description_language
+                .is_some_and(|source| source != job.language)
             && placed.book.scores[job.language] >= DESCRIPTION_MIN_SCORE
     });
     let requests: Vec<Request> = untranslated
@@ -181,7 +184,7 @@ fn export_requests(job: &Job, placed: &[Placed]) {
 }
 
 fn translate(job: &Job) -> Option<Translations> {
-    let command = job.translator.filter(|_| job.language != 0)?;
+    let command = job.translator?;
     let language = LANGUAGES[job.language];
     let requests = job.requests?.join(format!("requests-{language}.jsonl"));
     let output = job.output.join(format!("translations-{language}.bin"));
