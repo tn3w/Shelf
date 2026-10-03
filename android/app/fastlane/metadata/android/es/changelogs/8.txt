@@ -1,0 +1,1 @@
+Navegación corregida: al volver a una pestaña se marca la pestaña correcta, y tocarla de nuevo vuelve a su pantalla principal.

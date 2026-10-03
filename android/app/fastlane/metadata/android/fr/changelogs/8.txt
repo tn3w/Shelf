@@ -1,0 +1,1 @@
+Navigation corrigée : en revenant à un onglet, le bon onglet est sélectionné, et un nouvel appui ramène à son écran principal.

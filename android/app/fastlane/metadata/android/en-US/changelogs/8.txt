@@ -1,0 +1,1 @@
+Navigation fix: returning to a tab now highlights the right tab, and tapping it again goes back to its main screen.

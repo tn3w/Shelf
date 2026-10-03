@@ -38,9 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -48,7 +45,6 @@ import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -201,19 +197,18 @@ private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
     }
 }
 
+private fun tabOf(entry: NavBackStackEntry) =
+    tabs.indexOfFirst { entry.destination.hasRoute(it.route::class) }.takeIf { it >= 0 }
+
 @OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) {
     val controller = rememberNavController()
     val navigator = Navigator(controller)
     val entry by controller.currentBackStackEntryAsState()
-    val hierarchy = entry?.destination?.hierarchy.orEmpty()
-    val onTab =
-        tabs.indexOfFirst { tab -> hierarchy.any { it.hasRoute(tab.route::class) } }
-    var lastTab by rememberSaveable { mutableIntStateOf(0) }
-    LaunchedEffect(onTab) { if (onTab >= 0) lastTab = onTab }
-    val selected = if (onTab >= 0) onTab else lastTab
-    val reading = hierarchy.any { it.hasRoute(ReaderRoute::class) }
+    val stack by controller.currentBackStack.collectAsStateWithLifecycle()
+    val selected = stack.asReversed().firstNotNullOfOrNull(::tabOf) ?: 0
+    val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true
     val adaptive =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
             currentWindowAdaptiveInfoV2()

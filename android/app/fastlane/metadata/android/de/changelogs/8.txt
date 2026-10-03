@@ -1,0 +1,1 @@
+Navigation korrigiert: Beim Zurückkehren zu einem Tab ist der richtige Tab markiert, und erneutes Antippen führt zu seinem Hauptbildschirm.
