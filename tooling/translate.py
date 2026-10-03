@@ -226,6 +226,7 @@ def convert(model, models_dir, compute_type):
         str(path),
         "--quantization",
         compute_type,
+        "--low_cpu_mem_usage",
     ]
     subprocess.run(command, check=True)
     return path

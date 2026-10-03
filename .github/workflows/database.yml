@@ -19,6 +19,7 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   DUMPS: https://openlibrary.org/data
+  HF_HOME: /mnt/huggingface
 
 jobs:
   build:
@@ -49,7 +50,11 @@ jobs:
           done
           echo "RELEASE=$release" >> "$GITHUB_ENV"
           mkdir -p previous
-          sudo install -d -o "$USER" /mnt/dumps
+          sudo install -d -o "$USER" /mnt/dumps /mnt/models /mnt/huggingface
+          sudo fallocate -l 12G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile >/dev/null
+          sudo swapon /mnt/swapfile
           [ -n "$latest" ] && gh release download "$latest" --dir previous \
             --pattern 'state-*.bin' --pattern 'translations-*.bin' \
             --pattern manifest.json &
@@ -68,7 +73,7 @@ jobs:
             --month "$RELEASE" --previous previous --translations previous \
             --requests requests ${{ inputs.rebase && '--rebase' || '' }} \
             --translator "python tooling/translate.py --device cpu \
-              --compute-type int8 --limit 20000"
+              --compute-type int8 --limit 20000 --models-dir /mnt/models"
           du -sh out
 
       - name: Publish release
