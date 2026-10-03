@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -197,8 +198,9 @@ private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
     }
 }
 
-private fun tabOf(entry: NavBackStackEntry) =
-    tabs.indexOfFirst { entry.destination.hasRoute(it.route::class) }.takeIf { it >= 0 }
+private fun NavHostController.selectedTab() =
+    tabs.indexOfLast { runCatching { getBackStackEntry(it.route) }.isSuccess }
+        .coerceAtLeast(0)
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
@@ -206,8 +208,7 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     val controller = rememberNavController()
     val navigator = Navigator(controller)
     val entry by controller.currentBackStackEntryAsState()
-    val stack by controller.currentBackStack.collectAsStateWithLifecycle()
-    val selected = stack.asReversed().firstNotNullOfOrNull(::tabOf) ?: 0
+    val selected = remember(entry) { controller.selectedTab() }
     val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true
     val adaptive =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
