@@ -15,7 +15,7 @@ Search, explore, track reading streaks, read your own files.
 
 <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
-<a href="#f-droid-repo"><img src="https://f-droid.org/badge/get-it-on.png" height="60" alt="Get it on F-Droid"></a>
+<a href="https://tn3w.github.io/Shelf/"><img src="https://f-droid.org/badge/get-it-on.png" height="60" alt="Get it on F-Droid"></a>
 
 <p align="center">
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="15%" alt="home"></picture>
@@ -136,7 +136,9 @@ https://tn3w.github.io/Shelf/repo?fingerprint=609727C42C7E14B52C2D52DB75C6506885
 `.github/workflows/fdroid.yml` runs after every successful Android release, or by hand,
 and republishes the latest `shelf-fdroid.apk` with `fdroid update`, including the
 fastlane icon, screenshots, descriptions and changelog in every locale, plus the QR code
-`repo/index.png`. The app metadata is the recipe without `Builds:`, plus a `Builds:`
+`repo/index.png`. It also publishes `android/fdroid/index.html` as the Pages root: the
+F-Droid badge links there, Android gets redirected to `fdroidrepos://`, other devices to
+the repo page. The app metadata is the recipe without `Builds:`, plus a `Builds:`
 entry for the released version so the changelog shows. It signs the index
 with the `FDROID_KEYSTORE_BASE64` and `FDROID_KEYSTORE_PASSWORD` secrets (alias
 `repokey`). Changing that key changes the fingerprint and breaks existing clients.

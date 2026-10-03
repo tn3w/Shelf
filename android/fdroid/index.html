@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shelf on F-Droid</title>
+<p><a id="link" href="repo">Open the Shelf F-Droid repo</a></p>
+<script>
+  const fingerprint = "609727C42C7E14B52C2D52DB75C6506885F8F7B6ED54604A918E15EC46C23D0C";
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const repo = `${location.origin}${location.pathname}repo?fingerprint=${fingerprint}`;
+  const target = isAndroid ? repo.replace(/^https?:/, "fdroidrepos:") : repo;
+  document.getElementById("link").href = target;
+  location.replace(target);
+</script>
