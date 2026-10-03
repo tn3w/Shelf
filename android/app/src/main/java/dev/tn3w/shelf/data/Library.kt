@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -83,7 +84,12 @@ data class Settings(
     val checkUpdates: Boolean = true,
     val lastCatalogueCheck: Long = 0,
     val lastAppCheck: Long = 0,
-)
+    val catalogueSource: String = "",
+    val coverSource: String = "",
+) {
+    val coverHost
+        get() = coverSource.ifEmpty { COVERS }.trimEnd('/')
+}
 
 fun networkPermitted(context: Context) =
     context.checkSelfPermission(INTERNET) == PackageManager.PERMISSION_GRANTED
@@ -107,18 +113,31 @@ data class Habit(val goal: Int, val today: Int, val streak: Int, val week: List<
 fun Book.toSaved(shelf: Shelf) =
     Saved(work, shelf, System.currentTimeMillis(), title, author, cover)
 
-fun Saved.toBook() =
-    Book(
-        work,
-        title,
-        "",
-        "",
-        listOf(Author(0, author)),
-        0,
-        cover,
-        emptyList(),
-        null,
-    )
+fun Saved.toBook() = bookOf(work, title, author, cover)
+
+private fun bookOf(work: Int, title: String, author: String, cover: Int = 0) =
+    Book(work, title, "", "", listOf(Author(0, author)), 0, cover, emptyList(), null)
+
+val Book.isLocal
+    get() = work < 0
+
+private fun localWork(fileName: String) = -1 - (fileName.hashCode() and Int.MAX_VALUE)
+
+fun Context.displayName(uri: Uri): String {
+    val name =
+        contentResolver
+            .query(uri, null, null, null, null)
+            ?.use { cursor ->
+                val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (cursor.moveToFirst() && column >= 0) cursor.getString(column)
+                else null
+            }
+            ?: uri.lastPathSegment.orEmpty()
+    if ('.' in name) return name
+    val type = contentResolver.getType(uri) ?: return name
+    val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(type)
+    return if (extension == null) name else "$name.$extension"
+}
 
 private inline fun <reified T> Preferences.decode(
     key: Preferences.Key<String>,
@@ -172,28 +191,51 @@ class Library(private val context: Context) {
     fun bookFile(name: String) = booksDir.resolve(name)
 
     suspend fun importBook(book: Book, uri: Uri): Boolean {
-        val resolver = context.contentResolver
-        val displayName =
-            resolver
-                .query(uri, null, null, null, null)
-                ?.use { cursor ->
-                    val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (cursor.moveToFirst() && column >= 0) cursor.getString(column)
-                    else null
-                }
-                .orEmpty()
-        val extension = displayName.substringAfterLast('.', "").lowercase()
-        if (extension !in READABLE_EXTENSIONS) return false
-        val name = "${book.work}.$extension"
-        val target = bookFile(name).apply { parentFile?.mkdirs() }
-        withContext(Dispatchers.IO) {
-            resolver.openInputStream(uri)?.use { input ->
-                target.outputStream().use { input.copyTo(it) }
-            }
-        }
+        val name = copyBook(uri, context.displayName(uri), book.work) ?: return false
         saveProgress(book.work, Progress(name))
         place(book, Shelf.Reading)
         return true
+    }
+
+    suspend fun importFile(uri: Uri): Int? {
+        val fileName = context.displayName(uri)
+        val work = localWork(fileName)
+        val name = copyBook(uri, fileName, work) ?: return null
+        val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
+        val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
+        update(PROGRESS, emptyMap<Int, Progress>()) {
+            if (work in it) it else it + (work to Progress(name))
+        }
+        val shelf = saved.first().firstOrNull { it.work == work }?.shelf ?: Shelf.Reading
+        place(bookOf(work, title, metadata?.author.orEmpty()), shelf)
+        return work
+    }
+
+    private suspend fun copyBook(uri: Uri, fileName: String, work: Int): String? {
+        val extension = fileName.substringAfterLast('.', "").lowercase()
+        if (extension !in READABLE_EXTENSIONS) return null
+        val name = "$work.$extension"
+        val target = bookFile(name).apply { parentFile?.mkdirs() }
+        val copied =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            target.outputStream().use { input.copyTo(it) }
+                        }
+                    }
+                    .getOrNull()
+            }
+        if (copied != null) return name
+        target.delete()
+        return null
+    }
+
+    suspend fun deleteBook(work: Int) {
+        progress.first()[work]?.let { bookFile(it.file).delete() }
+        update(PROGRESS, emptyMap<Int, Progress>()) { it - work }
+        update(ENTRIES, emptyList<Saved>()) { entries ->
+            entries.filter { it.work != work }
+        }
     }
 
     private suspend inline fun <reified T> update(

@@ -1,0 +1,1 @@
+Beliebige Buchdateien öffnen: in der Bibliothek importieren, mit „Öffnen mit“ oder per Teilen an Shelf. Eigene Katalogquelle (GitHub-Repository, Gitea/Forgejo-Releases oder Manifest-URL) und Cover-Server einstellen oder Katalogdateien ohne Download importieren. Aufgeräumter Start und ein klarer Hinweis, wenn kein Katalog installiert ist.

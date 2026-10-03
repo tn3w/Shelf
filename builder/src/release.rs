@@ -128,7 +128,7 @@ const STATE_MAGIC: &[u8; 4] = b"SHST";
 const STATE_VERSION: u32 = 3;
 const LEGACY_LABEL_BYTES: usize = 10;
 const RECORD_BYTES: usize = 13;
-const RELEASE_URL: &str = "https://github.com/tn3w/Shelf/releases/download";
+pub const RELEASE_URL: &str = "https://github.com/tn3w/Shelf/releases/download";
 
 #[derive(Clone, Copy)]
 pub struct Tracked {
@@ -364,7 +364,7 @@ pub struct Published {
     pub file: String,
 }
 
-fn manifest_entry(output: &Path, published: &Published) -> Value {
+fn manifest_entry(output: &Path, published: &Published, base_url: &str) -> Value {
     let bytes = std::fs::read(output.join(&published.file)).expect("read published file");
     let sha256: String = Sha256::digest(&bytes)
         .iter()
@@ -377,7 +377,7 @@ fn manifest_entry(output: &Path, published: &Published) -> Value {
         "month": published.month,
         "size": bytes.len(),
         "sha256": sha256,
-        "url": format!("{RELEASE_URL}/catalogue-{}/{}", published.month, published.file),
+        "url": format!("{base_url}/catalogue-{}/{}", published.month, published.file),
     })
 }
 
@@ -395,6 +395,7 @@ pub fn write_manifest(
     month: &str,
     rebased: &[bool; 4],
     published: &[Published],
+    base_url: &str,
 ) {
     let previous: Option<Value> = previous
         .and_then(|directory| std::fs::read(directory.join("manifest.json")).ok())
@@ -406,7 +407,9 @@ pub fn write_manifest(
         .flatten()
         .filter(|entry| is_kept(entry, rebased))
         .cloned();
-    let fresh = published.iter().map(|entry| manifest_entry(output, entry));
+    let fresh = published
+        .iter()
+        .map(|entry| manifest_entry(output, entry, base_url));
     let segments: Vec<Value> = kept.chain(fresh).collect();
     let manifest = json!({
         "format": crate::segment::VERSION,

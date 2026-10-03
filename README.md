@@ -41,6 +41,11 @@ releases; your library never leaves the device.
 |---|---|---|
 | Search with typo tolerance, author and tag pages, popular works and genres. | EPUB, PDF, TXT/Markdown, HTML, FB2 and CBZ with progress and chapters. | Want, Reading and Finished shelves, daily goals, streaks and series progress. |
 
+Any book file opens, catalogue or not: Library → import, *Open with* from a file manager
+or *Share* to Shelf. EPUB and FB2 titles and authors come from the file, anything else
+from its name; such books live in the library with a drawn cover and can be removed from
+their book page (the imported copy goes, the original stays).
+
 Home rows and author pages are built locally from your shelves, tags, authors and ratings.
 Settings → Backup writes a zip (`library.json` plus imported book files) through the
 system file picker and merges one back in.
@@ -62,6 +67,8 @@ No account, trackers, Play Services or Firebase, and no background service.
   not even DNS. `covers.openlibrary.org` redirects to `archive.org`.
 - Requests are https only and carry no identifiers or cookies, with a fixed `Shelf` user
   agent in place of the device one.
+- Nothing is tied to one host: Settings → Own servers and files (also folded into
+  onboarding) sets the catalogue source and cover server, or imports catalogue files.
 
 ## Catalogue
 
@@ -70,6 +77,20 @@ No account, trackers, Play Services or Firebase, and no background service.
 `general` download on demand, alongside a shared `ranks` file. Each work belongs to one
 pack; small packs merge into `core` for smaller languages. Installed packs are
 memory-mapped, merged with monthly deltas and searched on device.
+
+### Own servers and files
+
+| Setting | Accepts |
+|---|---|
+| Catalogue source | `owner/name` on GitHub, a releases API URL (GitHub, Gitea, Forgejo), or a direct `manifest.json` URL. Empty = `tn3w/Shelf`. The manifest loads on Save, never before. |
+| Cover server | Base URL serving Open Library's `/b/id/…` and `/a/olid/…` paths. Empty = `covers.openlibrary.org`. |
+| Import catalogue files | Segment and ranks files named as released (`en-core-2026-09-18.bin`, `en-ranks-…`), plus an optional `manifest.json`. Each must open as a format-2 segment or ranks file. |
+
+Onboarding closes by itself once one language has both `core` and `ranks`, switching to
+that language if needed; otherwise it says which file is missing. Without any catalogue
+(e.g. *Continue offline* in the F-Droid build), Home and Explore say so and link to Settings. Self-hosting: run the
+builder with `--base-url https://host/path` and serve `catalogue-<label>/<file>` below
+it, or point the source at a releases API carrying the same assets.
 
 The app verifies SHA-256 and swaps files in atomically. Small pack updates download
 quietly, larger rebases appear in Settings. Format 2 is the only format read: anything
@@ -136,11 +157,12 @@ cd builder
 cargo build --release
 target/release/builder <dumps-source> <out-dir> [--previous <dir>] [--rebase] \
   [--month YYYY-MM-DD[-N]] [--translations <dir>] [--requests <dir>] \
-  [--translator <command>]
+  [--translator <command>] [--base-url <url>]
 ```
 
 The builder streams dumps or reads local files and writes one release: segments, ranks,
-state and manifest. Previous state turns monthly builds into small deltas.
+state and manifest. Previous state turns monthly builds into small deltas. Manifest URLs
+are `<base-url>/catalogue-<label>/<file>`, by default the GitHub release download path.
 
 `tooling/translate.py` fills missing German, French and Spanish descriptions, which the
 app labels *Machine translated*. With `--translator "python tooling/translate.py <flags>"`

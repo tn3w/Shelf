@@ -4,9 +4,11 @@ import java.util.BitSet
 import java.util.PriorityQueue
 import kotlin.math.ln
 
+const val COVERS = "https://covers.openlibrary.org"
+
 data class Author(val number: Int, val name: String) {
-    fun photoUrl(size: String) =
-        "https://covers.openlibrary.org/a/olid/OL${number}A-$size.jpg?default=false"
+    fun photoUrl(host: String, size: String) =
+        "$host/a/olid/OL${number}A-$size.jpg?default=false"
 }
 
 data class Book(
@@ -23,8 +25,8 @@ data class Book(
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
 
-    fun coverUrl(size: String) =
-        if (cover == 0) null else "https://covers.openlibrary.org/b/id/$cover-$size.jpg"
+    fun coverUrl(host: String, size: String) =
+        if (cover == 0) null else "$host/b/id/$cover-$size.jpg"
 }
 
 private val COMPANION =

@@ -1,0 +1,1 @@
+Ouvrez n'importe quel fichier de livre : import dans la bibliothèque, « Ouvrir avec » ou partage vers Shelf. Définissez votre propre source de catalogue (dépôt GitHub, releases Gitea/Forgejo ou URL de manifeste) et serveur de couvertures, ou importez des fichiers de catalogue sans téléchargement. Premier lancement épuré et message clair sans catalogue installé.

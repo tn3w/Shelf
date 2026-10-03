@@ -49,7 +49,7 @@
     <string name="larger_text">Larger text</string>
     <string name="later">Later</string>
     <string name="library">Library</string>
-    <string name="library_empty">Books you start or save appear here.</string>
+    <string name="library_empty">Books you start, save or import appear here.</string>
     <string name="license">License (MIT)</string>
     <string name="mark_finished">Mark as finished</string>
     <string name="more_by">More by %s</string>
@@ -80,7 +80,7 @@
     <string name="popular_now_subtitle">What readers everywhere are opening.</string>
     <string name="popular_subtitle">Loved by readers everywhere.</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs and app updates from GitHub, covers and author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
+    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers and author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
     <string name="reading">Reading</string>
     <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
@@ -159,4 +159,23 @@
     <string name="offline_mode">Offline mode</string>
     <string name="offline_mode_hint">No network at all: no updates, no catalogue refresh, no images.</string>
     <string name="start_offline">Continue offline</string>
+    <string name="import_book">Import book</string>
+    <string name="delete_book">Remove from Shelf</string>
+    <string name="delete_book_confirm">Remove %s, its progress and its imported copy? The original file stays where it is.</string>
+    <string name="remove">Remove</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="reset">Reset</string>
+    <string name="catalogue_source">Catalogue source</string>
+    <string name="catalogue_source_hint">A GitHub repository (owner/name), a releases API (GitHub, Gitea, Forgejo) or a link to a manifest.json, https only. Empty means the default. The manifest loads when you save.</string>
+    <string name="import_catalogue">Import catalogue files</string>
+    <string name="catalogue_imported">Catalogue files imported.</string>
+    <string name="import_failed">Some files are not Shelf catalogue files.</string>
+    <string name="own_sources">Own servers and files</string>
+    <string name="own_sources_hint">Use a self-hosted catalogue or cover server, or import catalogue files.</string>
+    <string name="cover_source">Cover server</string>
+    <string name="cover_source_hint">Base URL of an Open Library covers server, https only. Empty means the default.</string>
+    <string name="catalogue_incomplete">Import both the core and the ranks file of one language.</string>
+    <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
+    <string name="open_settings">Open settings</string>
 </resources>

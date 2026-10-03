@@ -39,7 +39,20 @@ val releaseOrder = Comparator<String> { first, second ->
         ?: left.size.compareTo(right.size)
 }
 
-const val RELEASES = "https://api.github.com/repos/tn3w/Shelf/releases?per_page=30"
+const val REPOSITORY = "tn3w/Shelf"
+private val GITHUB_REPOSITORY = Regex("""[\w.-]+/[\w.-]+""")
+
+fun releasesUrl(source: String): String {
+    val repository = source.ifEmpty { REPOSITORY }
+    if (!GITHUB_REPOSITORY.matches(repository)) return repository
+    return "https://api.github.com/repos/$repository/releases?per_page=30"
+}
+
+val RELEASES = releasesUrl(REPOSITORY)
+
+fun isValidSource(source: String) =
+    source.isEmpty() || GITHUB_REPOSITORY.matches(source) || source.startsWith("https://")
+
 private const val MANIFEST_NAME = "manifest.json"
 private val json = Json { ignoreUnknownKeys = true }
 
@@ -119,8 +132,12 @@ class Packs(private val context: Context) {
     private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
+    var source = ""
+
     val manifest: Manifest?
-        get() = stored() ?: bundledManifest()
+        get() = stored() ?: bundledManifest().takeIf { source.isEmpty() }
+
+    fun forgetManifest() = manifestFile.delete()
 
     private fun stored(): Manifest? {
         if (!manifestFile.exists()) return null
@@ -241,13 +258,7 @@ class Packs(private val context: Context) {
 
     suspend fun refreshManifest(): Manifest =
         withContext(Dispatchers.IO) {
-            val release =
-                json.decodeFromString<List<Release>>(fetchText(RELEASES)).first {
-                    it.tag_name.startsWith("catalogue-")
-                }
-            val url =
-                release.assets.first { it.name == "manifest.json" }.browser_download_url
-            val text = fetchText(url)
+            val text = fetchText(manifestUrl())
             val manifest = json.decodeFromString<Manifest>(text)
             check(manifest.format == CATALOGUE_FORMAT) {
                 "catalogue format ${manifest.format} is no longer supported"
@@ -257,9 +268,46 @@ class Packs(private val context: Context) {
             manifest
         }
 
+    private fun manifestUrl(): String {
+        val url = releasesUrl(source)
+        if (url.substringBefore('?').endsWith(MANIFEST_NAME)) return url
+        val release =
+            json.decodeFromString<List<Release>>(fetchText(url)).first {
+                it.tag_name.startsWith("catalogue-")
+            }
+        return release.assets.first { it.name == MANIFEST_NAME }.browser_download_url
+    }
+
+    fun importFile(name: String, input: InputStream): Boolean {
+        if (name == MANIFEST_NAME) return importManifest(input.readBytes())
+        val file = parseName(name) ?: return false
+        val temporary = directory.resolve("${file.id}.part")
+        temporary.outputStream().use { input.copyTo(it) }
+        val valid =
+            runCatching {
+                    val buffer = mapFile(temporary)
+                    if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
+                }
+                .isSuccess
+        if (valid && temporary.renameTo(binOf(file.id))) return true
+        temporary.delete()
+        return false
+    }
+
+    private fun importManifest(bytes: ByteArray): Boolean {
+        parseManifest(bytes.decodeToString()) ?: return false
+        writeAtomically(manifestFile, bytes)
+        return true
+    }
+
     private fun removeObsolete(manifest: Manifest) {
         val offered = manifest.segments.map { it.language to it.pack }.toSet()
         deleteAll(downloaded().filter { it.language to it.pack !in offered })
+    }
+
+    fun isComplete(language: String): Boolean {
+        val packs = (bundled + downloaded()).filter { it.language == language }
+        return packs.any { it.pack == "core" } && packs.any { it.pack == "ranks" }
     }
 
     fun pendingUpdates(language: String) =

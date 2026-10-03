@@ -48,7 +48,7 @@
     <string name="larger_text">Texto más grande</string>
     <string name="later">Más tarde</string>
     <string name="library">Biblioteca</string>
-    <string name="library_empty">Aquí aparecen los libros que empiezas o guardas.</string>
+    <string name="library_empty">Aquí aparecen los libros que empiezas, guardas o importas.</string>
     <string name="license">Licencia (MIT)</string>
     <string name="mark_finished">Marcar como leído</string>
     <string name="more_by">Más de %s</string>
@@ -79,7 +79,7 @@
     <string name="popular_now_subtitle">Lo que abren los lectores.</string>
     <string name="popular_subtitle">Favoritos de los lectores.</string>
     <string name="privacy">Privacidad</string>
-    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo y actualizaciones desde GitHub, portadas y fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
+    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas y fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
     <string name="reading">Leyendo</string>
     <string name="recent">Búsquedas recientes</string>
     <string name="remove_pack">Eliminar %s</string>
@@ -166,4 +166,23 @@
     <string name="offline_mode">Modo sin conexión</string>
     <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin catálogo, sin imágenes.</string>
     <string name="start_offline">Continuar sin conexión</string>
+    <string name="import_book">Importar libro</string>
+    <string name="delete_book">Quitar de Shelf</string>
+    <string name="delete_book_confirm">¿Quitar %s, su progreso y su copia importada? El archivo original no se toca.</string>
+    <string name="remove">Quitar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="save">Guardar</string>
+    <string name="reset">Restablecer</string>
+    <string name="catalogue_source">Fuente del catálogo</string>
+    <string name="catalogue_source_hint">Un repositorio de GitHub (owner/name), una API de releases (GitHub, Gitea, Forgejo) o un enlace a un manifest.json, solo https. Vacío significa el predeterminado. El manifiesto se carga al guardar.</string>
+    <string name="import_catalogue">Importar archivos de catálogo</string>
+    <string name="catalogue_imported">Archivos de catálogo importados.</string>
+    <string name="import_failed">Algunos archivos no son archivos de catálogo de Shelf.</string>
+    <string name="own_sources">Servidores y archivos propios</string>
+    <string name="own_sources_hint">Usa un servidor de catálogo o de portadas propio, o importa archivos de catálogo.</string>
+    <string name="cover_source">Servidor de portadas</string>
+    <string name="cover_source_hint">URL base de un servidor de portadas de Open Library, solo https. Vacío significa el predeterminado.</string>
+    <string name="catalogue_incomplete">Importa el archivo core y el archivo ranks de un mismo idioma.</string>
+    <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
+    <string name="open_settings">Abrir ajustes</string>
 </resources>

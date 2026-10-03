@@ -1,0 +1,1 @@
+Open any book file: import it in Library, use Open with or share it to Shelf. Set your own catalogue source (GitHub repository, Gitea/Forgejo releases or a manifest URL) and cover server, or import catalogue files without downloading. Cleaner first start, and a clear hint when no catalogue is installed.

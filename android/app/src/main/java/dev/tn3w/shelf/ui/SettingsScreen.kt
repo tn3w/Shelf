@@ -8,6 +8,7 @@ import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
+import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -32,9 +33,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -43,10 +47,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -71,6 +77,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,12 +87,15 @@ import dev.tn3w.shelf.Download
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.Updater
+import dev.tn3w.shelf.data.COVERS
 import dev.tn3w.shelf.data.LANGUAGES
 import dev.tn3w.shelf.data.PackInfo
 import dev.tn3w.shelf.data.PackState
+import dev.tn3w.shelf.data.REPOSITORY
 import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.ThemeMode
 import dev.tn3w.shelf.data.isOffline
+import dev.tn3w.shelf.data.isValidSource
 import dev.tn3w.shelf.data.networkPermitted
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -185,6 +195,12 @@ fun SettingsScreen(navigator: Navigator) {
                 }
             }
         }
+
+        SectionHeader(
+            stringResource(R.string.own_sources),
+            stringResource(R.string.own_sources_hint),
+        )
+        SourceRows(language, settings, { refreshes++ }) { refreshes++ }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             SectionHeader(stringResource(R.string.app_language))
@@ -348,7 +364,7 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 modifier = Modifier.weight(1f),
             )
             val pending = packs.filter { it.state != PackState.Installed }
-            if (offline || pending.isEmpty()) {
+            if (offline || pending.sumOf { it.bytes } == 0L) {
                 if (storage > 0) {
                     OutlinedButton(onClick = { app.removeAll(language) }) {
                         Text(stringResource(R.string.delete_all))
@@ -367,6 +383,155 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 )
             }
         }
+    }
+}
+
+private class Source(
+    @StringRes val title: Int,
+    @StringRes val hint: Int,
+    val default: String,
+    val current: (Settings) -> String,
+    val isValid: (String) -> Boolean,
+)
+
+private val CATALOGUE_SOURCE =
+    Source(
+        R.string.catalogue_source,
+        R.string.catalogue_source_hint,
+        REPOSITORY,
+        Settings::catalogueSource,
+        ::isValidSource,
+    )
+
+private val COVER_SOURCE =
+    Source(
+        R.string.cover_source,
+        R.string.cover_source_hint,
+        COVERS,
+        Settings::coverSource,
+    ) {
+        it.isEmpty() || it.startsWith("https://")
+    }
+
+@Composable
+private fun SourceRows(
+    language: String,
+    settings: Settings,
+    onChange: () -> Unit,
+    onImported: (complete: String?) -> Unit,
+) {
+    val app = shelfApp()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var editing by remember { mutableStateOf<Source?>(null) }
+    var status by remember { mutableStateOf<Int?>(null) }
+    val picker =
+        rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
+            if (uris.isEmpty()) return@rememberLauncherForActivityResult
+            scope.launch {
+                val imported = app.importCatalogue(language, uris)
+                val complete = (listOf(language) + LANGUAGES).firstOrNull {
+                    withContext(Dispatchers.IO) { app.packs.isComplete(it) }
+                }
+                status =
+                    when {
+                        !imported -> R.string.import_failed
+                        complete == null -> R.string.catalogue_incomplete
+                        else -> R.string.catalogue_imported
+                    }
+                onImported(complete)
+            }
+        }
+    fun save(source: Source, value: String) = scope.launch {
+        editing = null
+        if (source == COVER_SOURCE) {
+            app.library.updateSettings { it.copy(coverSource = value) }
+            return@launch
+        }
+        app.changeSource(value)
+        if (!settings.isOffline(context)) runCatching { app.packs.refreshManifest() }
+        onChange()
+    }
+
+    listOf(CATALOGUE_SOURCE, COVER_SOURCE).forEach { source ->
+        SourceRow(source, source.current(settings)) { editing = source }
+    }
+    LinkRow(R.string.import_catalogue) { picker.launch(arrayOf("*/*")) }
+    status?.let { AboutText(stringResource(it)) }
+    editing?.let { source ->
+        SourceDialog(source, source.current(settings), onDismiss = { editing = null }) {
+            save(source, it)
+        }
+    }
+}
+
+@Composable
+private fun SourceRow(source: Source, value: String, onClick: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = ScreenPadding, vertical = 12.dp)
+    ) {
+        Text(stringResource(source.title), style = MaterialTheme.typography.bodyLarge)
+        Text(
+            value.ifEmpty { source.default }.removePrefix("https://"),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SourceDialog(
+    source: Source,
+    current: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(current) }
+    val valid = source.isValid(text)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(source.title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(source.hint))
+                OutlinedTextField(
+                    text,
+                    { text = it.trim() },
+                    placeholder = { Text(source.default) },
+                    singleLine = true,
+                    isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = valid, onClick = { onSave(text) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onSave("") }) { Text(stringResource(R.string.reset)) }
+        },
+    )
+}
+
+@Composable
+private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(horizontal = ScreenPadding, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        val icon = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore
+        Icon(icon, contentDescription = null)
     }
 }
 
@@ -392,8 +557,9 @@ private fun PackRow(
                     PackState.Update -> R.string.pack_update
                     PackState.Available -> R.string.pack_available
                 }
+            val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
             Text(
-                "${stringResource(state)} · ${bytes(info.bytes)}",
+                stringResource(state) + size,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -507,7 +673,11 @@ private fun BackupRows() {
 
     suspend fun importFrom(uri: Uri): Boolean {
         if (!app.library.importFrom(uri)) return false
-        app.reload(app.library.settings.first().language)
+        val settings = app.library.settings.first()
+        if (settings.catalogueSource != app.packs.source) {
+            app.changeSource(settings.catalogueSource)
+        }
+        app.reload(settings.language)
         return true
     }
 
@@ -732,17 +902,19 @@ fun OnboardingScreen() {
     val offline = settings.isOffline(LocalContext.current)
     var language by remember { mutableStateOf(app.systemLanguage()) }
     val selected = remember(language) { mutableStateListOf<String>() }
-    val packs = packInfos(language)
+    var refreshes by remember { mutableIntStateOf(0) }
+    val packs = packInfos(language, refreshes)
     val downloads by app.downloads.collectAsStateWithLifecycle()
     val required = !BuildConfig.BUNDLED_CATALOGUE
     val core = packs?.firstOrNull { it.pack == "core" }
     val coreDownload = downloads["$language-core"]
     var started by remember(language) { mutableStateOf(false) }
-    val finish = {
+    var showSources by remember { mutableStateOf(false) }
+    var showPacks by remember { mutableStateOf(false) }
+    fun finish(chosen: String = language) {
+        if (chosen != language) app.reload(chosen)
         val now = System.currentTimeMillis()
-        update {
-            it.copy(onboarded = true, language = language, lastCatalogueCheck = now)
-        }
+        update { it.copy(onboarded = true, language = chosen, lastCatalogueCheck = now) }
     }
 
     LaunchedEffect(started, core?.state) {
@@ -750,87 +922,103 @@ fun OnboardingScreen() {
         finish()
     }
 
-    Column(
-        Modifier.fillMaxSize()
-            .windowInsetsPadding(WindowInsets.systemBars)
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        AppIcon(88)
-        Text(
-            stringResource(R.string.welcome),
-            style = MaterialTheme.typography.displaySmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        AboutText(
-            stringResource(
-                if (required) R.string.welcome_download else R.string.welcome_text
+    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
+        Column(
+            Modifier.weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(top = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AppIcon(72)
+            Text(
+                stringResource(R.string.welcome),
+                style = MaterialTheme.typography.headlineLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
             )
-        )
-        SectionHeader(stringResource(R.string.catalogue_language))
-        CatalogueLanguageChoice(language) {
-            language = it
-            app.reload(it)
+            AboutText(
+                stringResource(
+                    if (required) R.string.welcome_download else R.string.welcome_text
+                )
+            )
+            SectionHeader(stringResource(R.string.catalogue_language))
+            CatalogueLanguageChoice(language) {
+                language = it
+                app.reload(it)
+            }
+            Spacer(Modifier.height(8.dp))
+            OfflineRow(settings, update)
+            if (!offline) {
+                SectionHeader(
+                    stringResource(R.string.catalogue),
+                    stringResource(
+                        if (required) R.string.core_required else R.string.core_offline
+                    ),
+                )
+                if (required) CoreRow(core, coreDownload)
+                ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
+                val skip = if (required) "core" else null
+                if (showPacks) OnboardingPacks(packs, selected, skip)
+            }
+            ExpandRow(R.string.own_sources, showSources) { showSources = !showSources }
+            if (showSources) {
+                SourceRows(language, settings, { refreshes++ }) { complete ->
+                    if (complete != null) finish(complete) else refreshes++
+                }
+            }
         }
-        SectionHeader(stringResource(R.string.privacy))
-        OfflineRow(settings, update)
+        HorizontalDivider()
         if (offline) {
             Button(
                 onClick = { finish() },
-                modifier = Modifier.padding(ScreenPadding),
+                modifier = Modifier.align(Alignment.End).padding(ScreenPadding),
             ) {
                 Text(stringResource(R.string.start_offline))
             }
             return@Column
         }
-        SectionHeader(
-            stringResource(R.string.choose_packs),
-            stringResource(
-                if (required) R.string.core_required else R.string.core_offline
-            ),
-        )
-        if (required) CoreRow(core, coreDownload)
-        OnboardingPacks(packs, selected, skip = if (required) "core" else null)
-        val available = packs.orEmpty().filter { it.state == PackState.Available }
-        Row(
-            Modifier.fillMaxWidth().padding(ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-        ) {
-            if (!required) {
-                TextButton(onClick = { finish() }) {
-                    Text(stringResource(R.string.later))
-                }
-            }
-            val waiting = started && coreDownload !is Download.Failed
-            if (available.isNotEmpty()) {
-                OutlinedButton(
-                    enabled = !waiting,
-                    onClick = {
-                        available.forEach { app.download(language, it.pack) }
-                        started = true
-                    },
-                ) {
-                    Text(
-                        stringResource(
-                            R.string.download_all,
-                            bytes(available.sumOf { it.bytes }),
-                        )
-                    )
-                }
-            }
-            Button(
-                enabled =
-                    !waiting && if (required) core != null else selected.isNotEmpty(),
-                onClick = {
-                    if (required) app.download(language, "core")
-                    selected.forEach { app.download(language, it) }
-                    started = true
-                },
+        OnboardingActions(
+            available = packs.orEmpty().filter { it.state == PackState.Available },
+            selected = if (required) listOf("core") + selected else selected,
+            canSkip = !required || core?.state == PackState.Installed,
+            canDownload = if (required) core != null else selected.isNotEmpty(),
+            waiting = started && coreDownload !is Download.Failed,
+            onSkip = { finish() },
+        ) { chosen ->
+            chosen.forEach { app.download(language, it) }
+            started = true
+        }
+    }
+}
+
+@Composable
+private fun OnboardingActions(
+    available: List<PackInfo>,
+    selected: List<String>,
+    canSkip: Boolean,
+    canDownload: Boolean,
+    waiting: Boolean,
+    onSkip: () -> Unit,
+    onDownload: (List<String>) -> Unit,
+) {
+    val total = available.sumOf { it.bytes }
+    Row(
+        Modifier.fillMaxWidth().padding(ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+    ) {
+        if (canSkip) {
+            TextButton(onClick = onSkip) { Text(stringResource(R.string.later)) }
+        }
+        if (total > 0) {
+            OutlinedButton(
+                enabled = !waiting,
+                onClick = { onDownload(available.map { it.pack }) },
             ) {
-                Text(stringResource(R.string.download))
+                Text(stringResource(R.string.download_all, bytes(total)))
             }
+        }
+        Button(enabled = !waiting && canDownload, onClick = { onDownload(selected) }) {
+            Text(stringResource(R.string.download))
         }
     }
 }
@@ -845,7 +1033,7 @@ private fun CoreRow(info: PackInfo?, download: Download?) {
                 modifier = Modifier.weight(1f),
             )
             Text(
-                if (info != null) bytes(info.bytes) else "–",
+                if (info != null && info.bytes > 0) bytes(info.bytes) else "–",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

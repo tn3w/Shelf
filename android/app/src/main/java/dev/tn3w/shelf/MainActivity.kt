@@ -2,7 +2,9 @@ package dev.tn3w.shelf
 
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -74,6 +77,8 @@ import dev.tn3w.shelf.ui.ShelfTheme
 import dev.tn3w.shelf.ui.TagScreen
 import dev.tn3w.shelf.ui.UpdatePrompt
 import dev.tn3w.shelf.ui.isDark
+import dev.tn3w.shelf.ui.shelfApp
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
@@ -138,10 +143,21 @@ class Navigator(private val controller: NavHostController) {
     }
 }
 
+private fun openedFile(intent: Intent): Uri? =
+    when (intent.action) {
+        Intent.ACTION_VIEW -> intent.data
+        Intent.ACTION_SEND ->
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+        else -> null
+    }
+
 class MainActivity : ComponentActivity() {
+    private val opened = MutableStateFlow<Uri?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Updater.onIntent(this, intent)
+        if (savedInstanceState == null) opened.value = openedFile(intent)
         val app = application as ShelfApp
         setContent {
             val settings by app.library.settings.collectAsStateWithLifecycle(null)
@@ -157,7 +173,7 @@ class MainActivity : ComponentActivity() {
                     Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    if (current.onboarded) ShelfNavigation(current)
+                    if (current.onboarded) ShelfNavigation(current, opened)
                     else OnboardingScreen()
                 }
             }
@@ -167,12 +183,27 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Updater.onIntent(this, intent)
+        openedFile(intent)?.let { opened.value = it }
+    }
+}
+
+@Composable
+private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
+    val app = shelfApp()
+    val uri by opened.collectAsStateWithLifecycle()
+    val unsupported = stringResource(R.string.unsupported_file)
+    LaunchedEffect(uri) {
+        val source = uri ?: return@LaunchedEffect
+        val work = app.library.importFile(source)
+        opened.value = null
+        if (work != null) navigator.reader(work)
+        else Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
-private fun ShelfNavigation(settings: Settings) {
+private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) {
     val controller = rememberNavController()
     val navigator = Navigator(controller)
     val entry by controller.currentBackStackEntryAsState()
@@ -190,6 +221,7 @@ private fun ShelfNavigation(settings: Settings) {
     val hidden = reading || WindowInsets.isImeVisible
 
     UpdatePrompt(settings)
+    OpenFile(opened, navigator)
     NavigationSuiteScaffold(
         layoutType = if (hidden) NavigationSuiteType.None else adaptive,
         navigationSuiteItems = {

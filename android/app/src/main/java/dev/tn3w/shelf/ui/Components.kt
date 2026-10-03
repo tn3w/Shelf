@@ -37,12 +37,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -156,7 +158,7 @@ fun BookCover(
         }
         if (!loaded) CoverPlaceholder(book)
         AsyncImage(
-            model = book.coverUrl("L"),
+            model = book.coverUrl(settings.coverHost, "L"),
             contentDescription = stringResource(R.string.cover_of, book.title),
             contentScale = ContentScale.Crop,
             onSuccess = { loaded = true },
@@ -190,8 +192,9 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
                 )
             }
             if (settings == null || offline || !settings.authorImages) return@Box
+            val photo = if (size < 64.dp) "S" else "M"
             AsyncImage(
-                model = author.photoUrl(if (size < 64.dp) "S" else "M"),
+                model = author.photoUrl(settings.coverHost, photo),
                 contentDescription = author.name,
                 contentScale = ContentScale.Crop,
                 onSuccess = { loaded = true },
@@ -489,6 +492,16 @@ fun EmptyState(icon: ImageVector, text: String, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+@Composable
+fun NoCatalogue(onSettings: () -> Unit) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        EmptyState(Icons.Outlined.CloudOff, stringResource(R.string.no_catalogue))
+        OutlinedButton(onClick = onSettings) {
+            Text(stringResource(R.string.open_settings))
+        }
     }
 }
 

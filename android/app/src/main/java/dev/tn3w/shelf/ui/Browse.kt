@@ -1,5 +1,8 @@
 package dev.tn3w.shelf.ui
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
@@ -27,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +47,7 @@ import dev.tn3w.shelf.data.Author
 import dev.tn3w.shelf.data.Shelf
 import dev.tn3w.shelf.data.Tag
 import dev.tn3w.shelf.data.toBook
+import kotlinx.coroutines.launch
 
 private val SECTIONS =
     listOf(
@@ -67,8 +73,14 @@ fun ExploreScreen(navigator: Navigator) {
             .groupBy { it.category }
     }
 
+    val missing by load { catalogue.workCount == 0 }
+
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { LargeTitle(stringResource(R.string.explore)) }
+        if (missing == true) {
+            item { NoCatalogue(navigator::settings) }
+            return@LazyColumn
+        }
         item {
             BookSection(
                 stringResource(R.string.popular_now),
@@ -180,13 +192,28 @@ private fun AuthorHeader(author: Author, born: Int, count: Int?) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LibraryScreen(navigator: Navigator) {
-    val saved by shelfApp().library.saved.collectAsStateWithLifecycle(null)
+    val app = shelfApp()
+    val saved by app.library.saved.collectAsStateWithLifecycle(null)
     var filter by rememberSaveable { mutableIntStateOf(0) }
     val shelf = FILTERS[filter].second
     val shown = saved?.filter { shelf == null || it.shelf == shelf }?.map { it.toBook() }
+    val scope = rememberCoroutineScope()
+    val unsupported = stringResource(R.string.unsupported_file)
+    val picker =
+        rememberLauncherForActivityResult(OpenDocument()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch {
+                val work = app.library.importFile(uri)
+                if (work != null) return@launch navigator.reader(work)
+                Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+            }
+        }
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        LargeTitle(stringResource(R.string.library))
+        LargeTitle(stringResource(R.string.library)) {
+            val label = stringResource(R.string.import_book)
+            IconAction(Icons.Outlined.FileOpen, label) { picker.launch(arrayOf("*/*")) }
+        }
         FlowRow(
             Modifier.padding(horizontal = ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(8.dp),

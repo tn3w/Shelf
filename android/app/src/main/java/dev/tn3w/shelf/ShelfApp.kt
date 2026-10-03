@@ -1,6 +1,7 @@
 package dev.tn3w.shelf
 
 import android.app.Application
+import android.net.Uri
 import android.os.LocaleList
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -10,9 +11,11 @@ import dev.tn3w.shelf.data.Catalogue
 import dev.tn3w.shelf.data.LANGUAGES
 import dev.tn3w.shelf.data.Library
 import dev.tn3w.shelf.data.Packs
+import dev.tn3w.shelf.data.REPOSITORY
 import dev.tn3w.shelf.data.Recommender
 import dev.tn3w.shelf.data.Searcher
 import dev.tn3w.shelf.data.USER_AGENT
+import dev.tn3w.shelf.data.displayName
 import dev.tn3w.shelf.data.isOffline
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 
@@ -58,6 +62,7 @@ class ShelfApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         scope.launch {
             val settings = library.settings.first()
+            packs.source = settings.catalogueSource
             reload(settings.language.ifEmpty { systemLanguage() })
             if (settings.onboarded) checkCatalogue()
         }
@@ -120,6 +125,29 @@ class ShelfApp : Application(), SingletonImageLoader.Factory {
             packs.removeAll()
             reload(language)
         }
+
+    suspend fun changeSource(source: String) {
+        val custom = if (source == REPOSITORY) "" else source
+        library.updateSettings { it.copy(catalogueSource = custom) }
+        packs.source = custom
+        packs.forgetManifest()
+    }
+
+    suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {
+        val imported =
+            withContext(Dispatchers.IO) {
+                uris.count { uri ->
+                    runCatching {
+                            contentResolver.openInputStream(uri)?.use {
+                                packs.importFile(displayName(uri), it)
+                            } == true
+                        }
+                        .getOrDefault(false)
+                }
+            }
+        reload(language)
+        return imported == uris.size
+    }
 
     private suspend fun checkCatalogue() {
         val settings = library.settings.first()

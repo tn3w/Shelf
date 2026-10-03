@@ -82,6 +82,7 @@ fun HomeScreen(navigator: Navigator) {
         load(saved, dismissed) {
             saved?.let { recommender.rows(it, app.session, dismissed) }
         }
+    val missing by load { catalogue.workCount == 0 }
     fun dismiss(book: Book) = scope.launch { app.library.dismiss(book.work) }
     val genres by load {
         HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
@@ -128,6 +129,10 @@ fun HomeScreen(navigator: Navigator) {
                 )
             }
         }
+        if (missing == true) {
+            item { NoCatalogue(navigator::settings) }
+            return@LazyColumn
+        }
         if (rows == null) {
             item {
                 BookSection(
@@ -139,7 +144,7 @@ fun HomeScreen(navigator: Navigator) {
                 )
             }
         }
-        rows.orEmpty().forEach { row ->
+        rows.orEmpty().filter { it.books.isNotEmpty() }.forEach { row ->
             item(key = row.key) {
                 BookSection(
                     rowTitle(row),

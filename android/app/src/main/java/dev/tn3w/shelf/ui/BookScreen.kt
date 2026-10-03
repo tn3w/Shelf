@@ -23,8 +23,11 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.BookmarkAdded
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +55,7 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Description
 import dev.tn3w.shelf.data.Shelf
+import dev.tn3w.shelf.data.isLocal
 import dev.tn3w.shelf.data.toBook
 import kotlinx.coroutines.launch
 
@@ -174,8 +178,10 @@ private fun BookHeader(
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
     val unsupported = stringResource(R.string.unsupported_file)
+    var confirmDelete by remember { mutableStateOf(false) }
+    val unplaced = if (book.isLocal) Shelf.Reading else null
     fun place(target: Shelf) = scope.launch {
-        app.library.place(book, if (shelf == target) null else target)
+        app.library.place(book, if (shelf == target) unplaced else target)
     }
     val picker =
         rememberLauncherForActivityResult(OpenDocument()) { uri ->
@@ -217,6 +223,13 @@ private fun BookHeader(
                     Text(author.name, style = MaterialTheme.typography.titleMedium)
                 }
             }
+        if (book.isLocal && book.author.isNotBlank()) {
+            Text(
+                book.author,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+        }
         Text(
             facts(book),
             style = MaterialTheme.typography.bodySmall,
@@ -257,8 +270,36 @@ private fun BookHeader(
             ) {
                 if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
             }
+            if (book.isLocal) {
+                FilledTonalIconButton(onClick = { confirmDelete = true }) {
+                    Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
+                }
+            }
         }
     }
+    if (confirmDelete) {
+        DeleteDialog(book, onDismiss = { confirmDelete = false }) {
+            scope.launch {
+                app.library.deleteBook(book.work)
+                navigator.back()
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeleteDialog(book: Book, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.delete_book)) },
+        text = { Text(stringResource(R.string.delete_book_confirm, book.title)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.remove)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
 }
 
 @Composable

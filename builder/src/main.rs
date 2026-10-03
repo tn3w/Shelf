@@ -32,13 +32,15 @@ struct Options {
     translations: Option<PathBuf>,
     requests: Option<PathBuf>,
     translator: Option<String>,
+    base_url: String,
 }
 
 fn usage() -> ! {
     eprintln!(
         "usage: builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
-         [--translations <dir>] [--requests <dir>] [--translator <command>]"
+         [--translations <dir>] [--requests <dir>] [--translator <command>] \
+         [--base-url <url>]"
     );
     std::process::exit(2)
 }
@@ -63,6 +65,7 @@ fn options() -> Options {
     let mut arguments = std::env::args().skip(1);
     let (mut rebase, mut previous, mut month) = (false, None, None);
     let (mut translations, mut requests, mut translator) = (None, None, None);
+    let mut base_url = release::RELEASE_URL.to_string();
     let mut positional = Vec::new();
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -72,6 +75,7 @@ fn options() -> Options {
             "--requests" => requests = Some(directory(arguments.next())),
             "--translator" => translator = Some(arguments.next().unwrap_or_else(|| usage())),
             "--month" => month = Some(release_label(arguments.next())),
+            "--base-url" => base_url = arguments.next().unwrap_or_else(|| usage()),
             _ => positional.push(argument),
         }
     }
@@ -87,6 +91,7 @@ fn options() -> Options {
         translations,
         requests,
         translator,
+        base_url: base_url.trim_end_matches('/').to_string(),
     }
 }
 
@@ -512,5 +517,6 @@ fn main() {
         &month,
         &rebased,
         &published,
+        &options.base_url,
     );
 }

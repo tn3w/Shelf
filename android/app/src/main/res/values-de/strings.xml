@@ -48,7 +48,7 @@
     <string name="larger_text">Größerer Text</string>
     <string name="later">Später</string>
     <string name="library">Bibliothek</string>
-    <string name="library_empty">Begonnene und gemerkte Bücher erscheinen hier.</string>
+    <string name="library_empty">Begonnene, gemerkte und importierte Bücher erscheinen hier.</string>
     <string name="license">Lizenz (MIT)</string>
     <string name="mark_finished">Als gelesen markieren</string>
     <string name="more_by">Mehr von %s</string>
@@ -79,7 +79,7 @@
     <string name="popular_now_subtitle">Was Leser überall aufschlagen.</string>
     <string name="popular_subtitle">Von Lesern geliebt.</string>
     <string name="privacy">Datenschutz</string>
-    <string name="privacy_note">Kein Tracking, keine Werbung, kein Konto, keine Kennungen. Shelf nutzt das Netzwerk nur für das, was du aktivierst oder antippst: Katalogpakete und App-Updates von GitHub, Cover und Autorenfotos von Open Library. Der Offline-Modus stoppt alles davon. Deine Bibliothek bleibt auf dem Gerät.</string>
+    <string name="privacy_note">Kein Tracking, keine Werbung, kein Konto, keine Kennungen. Shelf nutzt das Netzwerk nur für das, was du aktivierst oder antippst: Katalogpakete von GitHub oder deiner eigenen Quelle, App-Updates von GitHub, Cover und Autorenfotos von Open Library. Der Offline-Modus stoppt alles davon. Deine Bibliothek bleibt auf dem Gerät.</string>
     <string name="reading">Lese ich</string>
     <string name="recent">Zuletzt gesucht</string>
     <string name="remove_pack">%s entfernen</string>
@@ -158,4 +158,23 @@
     <string name="offline_mode">Offline-Modus</string>
     <string name="offline_mode_hint">Gar kein Netzwerk: keine Updates, keine Katalogsuche, keine Bilder.</string>
     <string name="start_offline">Offline fortfahren</string>
+    <string name="import_book">Buch importieren</string>
+    <string name="delete_book">Aus Shelf entfernen</string>
+    <string name="delete_book_confirm">%s mit Fortschritt und importierter Kopie entfernen? Die Originaldatei bleibt erhalten.</string>
+    <string name="remove">Entfernen</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="save">Speichern</string>
+    <string name="reset">Zurücksetzen</string>
+    <string name="catalogue_source">Katalogquelle</string>
+    <string name="catalogue_source_hint">Ein GitHub-Repository (owner/name), eine Releases-API (GitHub, Gitea, Forgejo) oder ein Link zu einer manifest.json, nur https. Leer bedeutet Standard. Das Manifest lädt beim Speichern.</string>
+    <string name="import_catalogue">Katalogdateien importieren</string>
+    <string name="catalogue_imported">Katalogdateien importiert.</string>
+    <string name="import_failed">Einige Dateien sind keine Shelf-Katalogdateien.</string>
+    <string name="own_sources">Eigene Server und Dateien</string>
+    <string name="own_sources_hint">Selbst gehosteten Katalog- oder Cover-Server nutzen oder Katalogdateien importieren.</string>
+    <string name="cover_source">Cover-Server</string>
+    <string name="cover_source_hint">Basis-URL eines Open-Library-Cover-Servers, nur https. Leer bedeutet Standard.</string>
+    <string name="catalogue_incomplete">Importiere die Core- und die Ranks-Datei einer Sprache.</string>
+    <string name="no_catalogue">Noch kein Katalog installiert. Lade einen herunter oder importiere Katalogdateien in den Einstellungen, um Bücher zu entdecken. Eigene Dateien importierst du in der Bibliothek.</string>
+    <string name="open_settings">Einstellungen öffnen</string>
 </resources>

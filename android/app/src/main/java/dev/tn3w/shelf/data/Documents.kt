@@ -94,6 +94,37 @@ class ComicDocument(file: File) : PagedDocument {
 fun decodeImage(bytes: ByteArray): Bitmap? =
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 
+data class Metadata(val title: String, val author: String)
+
+fun readMetadata(file: File): Metadata? =
+    runCatching {
+            when (file.extension.lowercase()) {
+                "epub" -> ZipFile(file).use { epubMetadata(Epub(it)) }
+                "fb2" -> fictionBookMetadata(file)
+                else -> null
+            }
+        }
+        .getOrNull()
+        ?.takeIf { it.title.isNotBlank() }
+
+private fun epubMetadata(epub: Epub): Metadata? {
+    val opf = epub.opfPath?.let(epub::xml) ?: return null
+    return Metadata(
+        opf.selectFirst("dc|title")?.text().orEmpty(),
+        opf.selectFirst("dc|creator")?.text().orEmpty(),
+    )
+}
+
+private fun fictionBookMetadata(file: File): Metadata? {
+    val document = Jsoup.parse(file.readText(), "", Parser.xmlParser())
+    val info = document.selectFirst("title-info") ?: return null
+    val author =
+        info.selectFirst("author")?.let { author ->
+            author.select("> first-name, > last-name").joinToString(" ") { it.text() }
+        }
+    return Metadata(info.selectFirst("book-title")?.text().orEmpty(), author.orEmpty())
+}
+
 fun openDocument(file: File): Document =
     when (file.extension.lowercase()) {
         "epub" -> readEpub(file)
@@ -227,6 +258,10 @@ private fun htmlBlocks(root: Element, image: (String) -> ByteArray?): List<Block
 }
 
 private class Epub(private val zip: ZipFile) {
+    val opfPath
+        get() =
+            xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
+
     fun bytes(path: String) =
         zip.getEntry(path)?.let { entry ->
             zip.getInputStream(entry).use { it.readBytes() }
@@ -264,9 +299,7 @@ private class Epub(private val zip: ZipFile) {
 private fun readEpub(file: File): TextDocument =
     ZipFile(file).use { zip ->
         val epub = Epub(zip)
-        val opfPath =
-            epub.xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
-                ?: return assemble(emptyList())
+        val opfPath = epub.opfPath ?: return assemble(emptyList())
         val opf = epub.xml(opfPath) ?: return assemble(emptyList())
         val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
         val titles = epub.titles(manifest.values.toList(), opfPath)
