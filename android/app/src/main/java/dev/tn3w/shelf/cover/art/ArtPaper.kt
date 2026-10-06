@@ -3,30 +3,7 @@ package dev.tn3w.shelf.cover.art
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.glowPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.randomHarmonics
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
-import dev.tn3w.shelf.cover.wobblyRingPath
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -70,20 +47,13 @@ internal fun historyEmblem(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
     canvas.drawCircle(
-        centerX,
-        centerY,
-        radius * random.range(0.18f, 0.30f),
-        fillPaint(sepia),
+        centerX, centerY, radius * random.range(0.18f, 0.30f), fillPaint(sepia),
     )
 
     val rule = strokePaint(sepia, unit(0.002f))
     for (fraction in listOf(0.30f, 0.315f, 0.80f, 0.815f)) {
         canvas.drawLine(
-            width * 0.12f,
-            height * fraction,
-            width * 0.88f,
-            height * fraction,
-            rule,
+            width * 0.12f, height * fraction, width * 0.88f, height * fraction, rule,
         )
     }
 
@@ -126,21 +96,11 @@ internal fun vintageBands(cover: CoverCanvas): Typeset = with(cover) {
     val inset = width * 0.075f
     canvas.drawRect(inset, panelTop, width - inset, panelBottom, fillPaint(shell))
     canvas.drawRect(
-        inset,
-        panelTop,
-        width - inset,
-        panelBottom,
-        strokePaint(ink, unit(0.003f)),
+        inset, panelTop, width - inset, panelBottom, strokePaint(ink, unit(0.003f)),
     )
     val hairline = strokePaint(shell, unit(0.004f))
     for (offset in listOf(0.03f, 0.045f)) {
-        canvas.drawLine(
-            inset,
-            height * offset,
-            width - inset,
-            height * offset,
-            hairline,
-        )
+        canvas.drawLine(inset, height * offset, width - inset, height * offset, hairline)
         canvas.drawLine(
             inset,
             height * (1f - offset),
@@ -247,8 +207,7 @@ internal fun adventureMap(cover: CoverCanvas): Typeset = with(cover) {
     val roseRadius = width * random.range(0.055f, 0.080f)
     canvas.drawCircle(roseX, roseY, roseRadius, strokePaint(ink, unit(0.0025f)))
     canvas.drawPath(
-        starPath(roseX, roseY, roseRadius * 0.92f, roseRadius * 0.20f, 4),
-        fillPaint(ink),
+        starPath(roseX, roseY, roseRadius * 0.92f, roseRadius * 0.20f, 4), fillPaint(ink),
     )
     canvas.drawPath(
         starPath(roseX, roseY, roseRadius * 0.55f, roseRadius * 0.14f, 4, TAU / 8f),
@@ -293,11 +252,7 @@ internal fun poetryWash(cover: CoverCanvas): Typeset = with(cover) {
                 val spotY = centerY + random.range(-0.10f, 0.10f) * height
                 canvas.drawPath(
                     wobblyRingPath(
-                        spotX,
-                        spotY,
-                        radius,
-                        randomHarmonics(random, 3, 0.22f),
-                        120,
+                        spotX, spotY, radius, randomHarmonics(random, 3, 0.22f), 120,
                     ),
                     fillPaint(alpha(accent, random.range(0.11f, 0.23f))),
                 )
@@ -306,20 +261,14 @@ internal fun poetryWash(cover: CoverCanvas): Typeset = with(cover) {
         1 -> {
             val top = height * random.range(0.44f, 0.52f)
             canvas.drawLine(
-                centerX,
-                height * 0.94f,
-                centerX,
-                top,
-                strokePaint(accent, unit(0.004f)),
+                centerX, height * 0.94f, centerX, top, strokePaint(accent, unit(0.004f)),
             )
             val twig = strokePaint(alpha(accent, 0.78f), unit(0.003f))
             for (index in 0 until random.between(5, 9)) {
                 val fraction = index / 9f
                 val side = if (index % 2 == 0) 1f else -1f
-                val length =
-                    width * random.range(0.06f, 0.13f) * (1f - fraction * 0.4f)
-                val anchorY =
-                    height * 0.94f - (height * 0.94f - top) * (fraction + 0.1f)
+                val length = width * random.range(0.06f, 0.13f) * (1f - fraction * 0.4f)
+                val anchorY = height * 0.94f - (height * 0.94f - top) * (fraction + 0.1f)
                 canvas.drawLine(
                     centerX,
                     anchorY,
@@ -387,8 +336,7 @@ internal fun natureContours(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
     canvas.drawPath(
-        wobblyRingPath(centerX, centerY, width * 0.04f, harmonics),
-        fillPaint(deep),
+        wobblyRingPath(centerX, centerY, width * 0.04f, harmonics), fillPaint(deep),
     )
 
     vignette(0.22f, 0.78f)
@@ -410,9 +358,7 @@ internal fun spiritualRays(cover: CoverCanvas): Typeset = with(cover) {
     val hue = random.pick(listOf(0.62f, 0.72f, 0.06f, 0.52f))
     val deep = hsv(hue, random.range(0.55f, 0.80f), random.range(0.08f, 0.14f))
     val gold = hsv(
-        random.range(0.09f, 0.13f),
-        random.range(0.55f, 0.75f),
-        random.range(0.88f, 1f),
+        random.range(0.09f, 0.13f), random.range(0.55f, 0.75f), random.range(0.88f, 1f),
     )
     verticalGradient(deep, shade(deep, 0.45f), 0.8f)
     val centerX = width * 0.5f
@@ -425,20 +371,14 @@ internal fun spiritualRays(cover: CoverCanvas): Typeset = with(cover) {
         val ray = Path()
         ray.moveTo(centerX, centerY)
         ray.lineTo(
-            centerX + cos(angle - 0.02f) * width,
-            centerY + sin(angle - 0.02f) * width,
+            centerX + cos(angle - 0.02f) * width, centerY + sin(angle - 0.02f) * width,
         )
         ray.lineTo(
-            centerX + cos(angle + 0.02f) * width,
-            centerY + sin(angle + 0.02f) * width,
+            centerX + cos(angle + 0.02f) * width, centerY + sin(angle + 0.02f) * width,
         )
         ray.close()
         canvas.drawPath(
-            ray,
-            glowPaint(
-                shade(gold, random.range(0.18f, 0.34f)),
-                unit(0.004f),
-            ),
+            ray, glowPaint(shade(gold, random.range(0.18f, 0.34f)), unit(0.004f)),
         )
     }
 
@@ -446,10 +386,7 @@ internal fun spiritualRays(cover: CoverCanvas): Typeset = with(cover) {
     val mandala = Path()
     for (index in 0 until random.between(3, 5)) {
         mandala.addCircle(
-            centerX,
-            centerY,
-            base * (1f - index * 0.18f),
-            Path.Direction.CW,
+            centerX, centerY, base * (1f - index * 0.18f), Path.Direction.CW,
         )
     }
     val petals = random.pick(listOf(6, 8, 12))
@@ -647,11 +584,7 @@ internal fun technicalBlueprint(cover: CoverCanvas): Typeset = with(cover) {
     for (side in listOf(-1f, 1f)) {
         val tip = centerX + side * radius
         canvas.drawLine(
-            tip,
-            dimensionY - unit(0.02f),
-            tip,
-            dimensionY + unit(0.02f),
-            dashed,
+            tip, dimensionY - unit(0.02f), tip, dimensionY + unit(0.02f), dashed,
         )
     }
 
@@ -684,16 +617,15 @@ private fun gear(centerX: Float, centerY: Float, radius: Float, teeth: Int): Pat
     return path
 }
 
-private val TYPE_PALETTES =
-    listOf(
-        Color.rgb(242, 236, 224) to Color.rgb(28, 26, 24),
-        Color.rgb(28, 40, 64) to Color.rgb(240, 230, 208),
-        Color.rgb(36, 64, 50) to Color.rgb(236, 228, 206),
-        Color.rgb(176, 84, 58) to Color.rgb(250, 238, 222),
-        Color.rgb(214, 170, 76) to Color.rgb(30, 26, 22),
-        Color.rgb(110, 30, 44) to Color.rgb(244, 214, 214),
-        Color.rgb(222, 226, 222) to Color.rgb(40, 60, 90),
-    )
+private val TYPE_PALETTES = listOf(
+    Color.rgb(242, 236, 224) to Color.rgb(28, 26, 24),
+    Color.rgb(28, 40, 64) to Color.rgb(240, 230, 208),
+    Color.rgb(36, 64, 50) to Color.rgb(236, 228, 206),
+    Color.rgb(176, 84, 58) to Color.rgb(250, 238, 222),
+    Color.rgb(214, 170, 76) to Color.rgb(30, 26, 22),
+    Color.rgb(110, 30, 44) to Color.rgb(244, 214, 214),
+    Color.rgb(222, 226, 222) to Color.rgb(40, 60, 90),
+)
 
 internal fun literaryType(cover: CoverCanvas): Typeset = with(cover) {
     val (paper, ink) = random.pick(TYPE_PALETTES)
@@ -720,8 +652,7 @@ internal fun literaryType(cover: CoverCanvas): Typeset = with(cover) {
     )
     val mark = unit(0.02f)
     canvas.drawPath(
-        starPath(width / 2f, height * 0.82f, mark, mark * 0.35f, 4),
-        fillPaint(ink),
+        starPath(width / 2f, height * 0.82f, mark, mark * 0.35f, 4), fillPaint(ink),
     )
 
     grain(0.03f)

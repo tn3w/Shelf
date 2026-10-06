@@ -1,0 +1,5 @@
+• Goodreads- und StoryGraph-CSV-Import mit Abgleichbericht, dazu CSV-Export
+• Reader: Schriftgröße, Zeilenabstand, Ränder, Schriftart, Papier- und Nachtseiten, Blocksatz, Bildschirm anlassen, Lautstärke- und Blättertasten
+• Reines Schwarz, Hintergrundfarben, weniger Bewegung
+• Buchsprache Auto, eigenes Tagesziel
+• Einstellungen in klare Seiten gegliedert

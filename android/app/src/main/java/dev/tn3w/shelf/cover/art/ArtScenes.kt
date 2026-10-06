@@ -4,37 +4,17 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.ridge
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-private val LAKE_SKIES =
-    listOf(
-        hsv(0.60f, 0.35f, 0.95f) to hsv(0.08f, 0.35f, 1f),
-        hsv(0.72f, 0.55f, 0.35f) to hsv(0.03f, 0.55f, 0.95f),
-        hsv(0.55f, 0.45f, 0.85f) to hsv(0.52f, 0.15f, 1f),
-        hsv(0.66f, 0.60f, 0.18f) to hsv(0.60f, 0.40f, 0.55f),
-    )
+private val LAKE_SKIES = listOf(
+    hsv(0.60f, 0.35f, 0.95f) to hsv(0.08f, 0.35f, 1f),
+    hsv(0.72f, 0.55f, 0.35f) to hsv(0.03f, 0.55f, 0.95f),
+    hsv(0.55f, 0.45f, 0.85f) to hsv(0.52f, 0.15f, 1f),
+    hsv(0.66f, 0.60f, 0.18f) to hsv(0.60f, 0.40f, 0.55f),
+)
 
 internal fun natureLake(cover: CoverCanvas): Typeset = with(cover) {
     val (top, low) = random.pick(LAKE_SKIES)
@@ -94,13 +74,12 @@ internal fun natureLake(cover: CoverCanvas): Typeset = with(cover) {
     )
 }
 
-private val SEASONS =
-    listOf(
-        listOf(0.95f, 0.97f, 0.92f),
-        listOf(0.28f, 0.33f, 0.38f),
-        listOf(0.03f, 0.07f, 0.11f),
-        listOf(0.12f, 0.15f, 0.08f),
-    )
+private val SEASONS = listOf(
+    listOf(0.95f, 0.97f, 0.92f),
+    listOf(0.28f, 0.33f, 0.38f),
+    listOf(0.03f, 0.07f, 0.11f),
+    listOf(0.12f, 0.15f, 0.08f),
+)
 
 internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
     val paper = hsv(random.range(0.08f, 0.12f), random.range(0.06f, 0.14f), 0.95f)
@@ -136,9 +115,7 @@ internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
         val angle = random.range(0f, TAU)
         val distance = radius * random.range(0f, 0.8f)
         val tone = hsv(
-            random.pick(hues),
-            random.range(0.45f, 0.75f),
-            random.range(0.60f, 0.90f),
+            random.pick(hues), random.range(0.45f, 0.75f), random.range(0.60f, 0.90f),
         )
         canvas.drawCircle(
             centerX + cos(angle) * distance,
@@ -157,12 +134,7 @@ internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
     canvas.drawOval(
-        RectF(
-            width * 0.1f,
-            ground - unit(0.03f),
-            width * 0.9f,
-            ground + unit(0.05f),
-        ),
+        RectF(width * 0.1f, ground - unit(0.03f), width * 0.9f, ground + unit(0.05f)),
         fillPaint(mix(paper, bark, 0.3f)),
     )
 
@@ -192,12 +164,7 @@ internal fun childrenRainbow(cover: CoverCanvas): Typeset = with(cover) {
     val band = width * 0.045f
     var radius = width * 0.42f
     for (hue in RAINBOW) {
-        val arc = RectF(
-            centerX - radius,
-            base - radius,
-            centerX + radius,
-            base + radius,
-        )
+        val arc = RectF(centerX - radius, base - radius, centerX + radius, base + radius)
         canvas.drawArc(arc, 180f, 180f, false, strokePaint(hsv(hue, 0.6f, 1f), band))
         radius -= band
     }
@@ -242,12 +209,11 @@ internal fun childrenRainbow(cover: CoverCanvas): Typeset = with(cover) {
 internal fun historyTemple(cover: CoverCanvas): Typeset = with(cover) {
     val dark = random.chance(0.5f)
     val stone = if (dark) hsv(0.10f, 0.12f, 0.90f) else hsv(0.07f, 0.55f, 0.35f)
-    val ground =
-        if (dark) {
-            hsv(random.pick(listOf(0.62f, 0.98f, 0.40f)), 0.55f, 0.22f)
-        } else {
-            hsv(0.10f, 0.22f, 0.92f)
-        }
+    val ground = if (dark) {
+        hsv(random.pick(listOf(0.62f, 0.98f, 0.40f)), 0.55f, 0.22f)
+    } else {
+        hsv(0.10f, 0.22f, 0.92f)
+    }
     verticalGradient(shade(ground, 1.1f), shade(ground, 0.85f), 1f)
     texture(0.12f)
     radialGlow(width / 2f, height * 0.55f, width * 0.7f, stone, 0.12f, 2f)
@@ -270,11 +236,7 @@ internal fun historyTemple(cover: CoverCanvas): Typeset = with(cover) {
         val x = left + gap * index
         canvas.drawRect(x - unit(0.03f), capital, x + unit(0.03f), base, paint)
         canvas.drawRect(
-            x - unit(0.045f),
-            capital - unit(0.02f),
-            x + unit(0.045f),
-            capital,
-            paint,
+            x - unit(0.045f), capital - unit(0.02f), x + unit(0.045f), capital, paint,
         )
     }
     canvas.drawRect(
@@ -411,12 +373,7 @@ internal fun poetryRain(cover: CoverCanvas): Typeset = with(cover) {
         for (ring in 1..2) {
             val spread = unit(0.03f * ring)
             canvas.drawOval(
-                RectF(
-                    x - spread,
-                    y - spread * 0.3f,
-                    x + spread,
-                    y + spread * 0.3f,
-                ),
+                RectF(x - spread, y - spread * 0.3f, x + spread, y + spread * 0.3f),
                 ripple,
             )
         }

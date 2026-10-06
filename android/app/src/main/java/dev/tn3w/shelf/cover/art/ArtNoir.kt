@@ -5,30 +5,7 @@ import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Path
 import android.graphics.Shader
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.glowPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.randomHarmonics
-import dev.tn3w.shelf.cover.scanlines
-import dev.tn3w.shelf.cover.scrimBand
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
-import dev.tn3w.shelf.cover.wobblyRingPath
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -108,9 +85,7 @@ internal fun mysteryKeyhole(cover: CoverCanvas): Typeset = with(cover) {
         random.range(0.10f, 0.16f),
     )
     val warm = hsv(
-        random.range(0.09f, 0.13f),
-        random.range(0.35f, 0.60f),
-        random.range(0.92f, 1f),
+        random.range(0.09f, 0.13f), random.range(0.35f, 0.60f), random.range(0.92f, 1f),
     )
     verticalGradient(shade(wall, 1.5f), wall, 1.2f)
     texture(0.18f)
@@ -137,10 +112,7 @@ internal fun mysteryKeyhole(cover: CoverCanvas): Typeset = with(cover) {
         val personHeight = head * random.range(1.0f, 1.5f)
         val inside = fillPaint(Color.rgb(20, 16, 14))
         canvas.drawCircle(
-            centerX,
-            base - personHeight + head * 0.1f,
-            head * 0.22f,
-            inside,
+            centerX, base - personHeight + head * 0.1f, head * 0.22f, inside,
         )
         val body = Path()
         body.moveTo(centerX - head * 0.42f, base)
@@ -201,8 +173,7 @@ internal fun mysteryPrint(cover: CoverCanvas): Typeset = with(cover) {
         gap.moveTo(centerX, centerY)
         gap.lineTo(centerX + cos(angle) * reach, centerY + sin(angle) * reach)
         gap.lineTo(
-            centerX + cos(angle + 1.1f) * reach,
-            centerY + sin(angle + 1.1f) * reach,
+            centerX + cos(angle + 1.1f) * reach, centerY + sin(angle + 1.1f) * reach,
         )
         gap.close()
         canvas.clipOutPath(gap)
@@ -225,14 +196,7 @@ internal fun horrorCracks(cover: CoverCanvas): Typeset = with(cover) {
     verticalGradient(Color.rgb(10, 8, 9), Color.rgb(26, 14, 16), 1f)
     val centerX = width * random.range(0.4f, 0.6f)
     val centerY = height * random.range(0.40f, 0.55f)
-    radialGlow(
-        centerX,
-        centerY,
-        width * random.range(0.55f, 0.8f),
-        blood,
-        0.65f,
-        2.6f,
-    )
+    radialGlow(centerX, centerY, width * random.range(0.55f, 0.8f), blood, 0.65f, 2.6f)
 
     val cracks = Path()
     repeat(random.between(3, 6)) {
@@ -255,15 +219,8 @@ internal fun horrorCracks(cover: CoverCanvas): Typeset = with(cover) {
         val x = random.range(0f, width)
         val y = random.range(0f, height)
         val length = random.range(0.01f, 0.07f) * height
-        val angle =
-            random.range(-0.4f, 0.4f) + if (random.chance(0.5f)) 0f else TAU / 4f
-        canvas.drawLine(
-            x,
-            y,
-            x + cos(angle) * length,
-            y + sin(angle) * length,
-            scratch,
-        )
+        val angle = random.range(-0.4f, 0.4f) + if (random.chance(0.5f)) 0f else TAU / 4f
+        canvas.drawLine(x, y, x + cos(angle) * length, y + sin(angle) * length, scratch)
     }
 
     vignette(0.85f, 0.30f)
@@ -333,17 +290,13 @@ internal fun horrorMoon(cover: CoverCanvas): Typeset = with(cover) {
     val moonRadius = width * random.range(0.20f, 0.27f)
     radialGlow(moonX, moonY, moonRadius * 3.4f, blood, 0.42f, 2.4f)
     canvas.drawCircle(
-        moonX,
-        moonY,
-        moonRadius,
-        fillPaint(mix(blood, Color.rgb(255, 210, 190), 0.30f)),
+        moonX, moonY, moonRadius, fillPaint(mix(blood, Color.rgb(255, 210, 190), 0.30f)),
     )
 
     val branches = Path()
     val roots = random.between(2, 3)
     for (index in 0 until roots) {
-        val baseX =
-            width * (index + 0.5f) / roots + random.range(-0.08f, 0.08f) * width
+        val baseX = width * (index + 0.5f) / roots + random.range(-0.08f, 0.08f) * width
         branch(
             cover,
             branches,
@@ -412,16 +365,9 @@ internal fun horrorDrip(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawPath(path, shadow)
     canvas.restore()
     val paint = fillPaint(blood)
-    paint.shader =
-        LinearGradient(
-            0f,
-            0f,
-            0f,
-            height * 0.6f,
-            shade(blood, 0.45f),
-            blood,
-            Shader.TileMode.CLAMP,
-        )
+    paint.shader = LinearGradient(
+        0f, 0f, 0f, height * 0.6f, shade(blood, 0.45f), blood, Shader.TileMode.CLAMP,
+    )
     canvas.drawPath(path, paint)
 
     val gloss = strokePaint(alpha(Color.WHITE, 0.35f), unit(0.003f))
@@ -447,10 +393,7 @@ internal fun horrorDrip(cover: CoverCanvas): Typeset = with(cover) {
         val size = unit(random.range(0.004f, 0.010f))
         canvas.drawCircle(dropX, dropY, size, fillPaint(blood))
         canvas.drawCircle(
-            dropX + size * 1.8f,
-            dropY + size * 1.2f,
-            size * 0.35f,
-            fillPaint(blood),
+            dropX + size * 1.8f, dropY + size * 1.2f, size * 0.35f, fillPaint(blood),
         )
     }
 

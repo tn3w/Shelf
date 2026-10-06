@@ -5,26 +5,7 @@ import android.graphics.Color
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.scanlines
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -33,20 +14,19 @@ private class Concrete(val top: Int, val low: Int, val alarm: Int)
 private fun concrete(cover: CoverCanvas): Concrete = with(cover) {
     val chill = random.range(0.04f, 0.62f)
     val alarmHue = random.pick(listOf(1.0f, 1.0f, 1.0f, 0.03f, 0.08f))
-    val result =
-        Concrete(
-            hsv(chill, random.range(0.03f, 0.16f), random.range(0.52f, 0.86f)),
-            hsv(
-                chill + random.range(-0.08f, 0.08f),
-                random.range(0.05f, 0.20f),
-                random.range(0.08f, 0.28f),
-            ),
-            hsv(
-                alarmHue + random.range(-0.02f, 0.02f),
-                random.range(0.70f, 0.95f),
-                random.range(0.68f, 0.92f),
-            ),
-        )
+    val result = Concrete(
+        hsv(chill, random.range(0.03f, 0.16f), random.range(0.52f, 0.86f)),
+        hsv(
+            chill + random.range(-0.08f, 0.08f),
+            random.range(0.05f, 0.20f),
+            random.range(0.08f, 0.28f),
+        ),
+        hsv(
+            alarmHue + random.range(-0.02f, 0.02f),
+            random.range(0.70f, 0.95f),
+            random.range(0.68f, 0.92f),
+        ),
+    )
     verticalGradient(result.top, result.low, random.range(0.6f, 1.8f))
     texture(random.range(0.10f, 0.22f))
     result
@@ -128,9 +108,7 @@ internal fun dystopianEye(cover: CoverCanvas): Typeset = with(cover) {
         lid,
         fillPaint(
             hsv(
-                random.range(0f, 1f),
-                random.range(0f, 0.25f),
-                random.range(0.04f, 0.10f),
+                random.range(0f, 1f), random.range(0f, 0.25f), random.range(0.04f, 0.10f),
             ),
         ),
     )
@@ -245,11 +223,7 @@ private fun glitchShape(
         }
 
         else -> canvas.drawRect(
-            x - size * 0.45f,
-            y - size * 1.1f,
-            x + size * 0.45f,
-            y + size * 1.1f,
-            paint,
+            x - size * 0.45f, y - size * 1.1f, x + size * 0.45f, y + size * 1.1f, paint,
         )
     }
 }

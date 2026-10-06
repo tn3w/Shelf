@@ -5,78 +5,31 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
+import androidx.activity.*
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
-import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.adaptive.navigationsuite.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavBackStackEntry
+import androidx.navigation.*
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import dev.tn3w.shelf.data.Author
-import dev.tn3w.shelf.data.Book
-import dev.tn3w.shelf.data.Settings
-import dev.tn3w.shelf.ui.AboutScreen
-import dev.tn3w.shelf.ui.AuthorScreen
-import dev.tn3w.shelf.ui.BookScreen
-import dev.tn3w.shelf.ui.ExploreScreen
-import dev.tn3w.shelf.ui.HomeScreen
-import dev.tn3w.shelf.ui.LibraryScreen
-import dev.tn3w.shelf.ui.LocalAnimatedScope
-import dev.tn3w.shelf.ui.LocalReducedMotion
-import dev.tn3w.shelf.ui.LocalSharedScope
-import dev.tn3w.shelf.ui.OnboardingScreen
-import dev.tn3w.shelf.ui.ReaderScreen
-import dev.tn3w.shelf.ui.SearchScreen
-import dev.tn3w.shelf.ui.SettingsScreen
-import dev.tn3w.shelf.ui.ShelfTheme
-import dev.tn3w.shelf.ui.TagScreen
-import dev.tn3w.shelf.ui.UpdatePrompt
-import dev.tn3w.shelf.ui.isDark
-import dev.tn3w.shelf.ui.shelfApp
+import androidx.navigation.compose.*
+import dev.tn3w.shelf.data.*
+import dev.tn3w.shelf.ui.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 
@@ -96,21 +49,18 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class ReaderRoute(val work: Int)
 
-@Serializable object SettingsRoute
-
-@Serializable object AboutRoute
+@Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
 
 private const val SCREEN_FADE_MILLIS = 220
 
 private data class Tab(@StringRes val label: Int, val icon: ImageVector, val route: Any)
 
-private val tabs =
-    listOf(
-        Tab(R.string.home, Icons.Outlined.Home, HomeRoute),
-        Tab(R.string.library, Icons.AutoMirrored.Outlined.LibraryBooks, LibraryRoute),
-        Tab(R.string.explore, Icons.Outlined.Explore, ExploreRoute),
-        Tab(R.string.search, Icons.Outlined.Search, SearchRoute),
-    )
+private val tabs = listOf(
+    Tab(R.string.home, Icons.Outlined.Home, HomeRoute),
+    Tab(R.string.library, Icons.AutoMirrored.Outlined.LibraryBooks, LibraryRoute),
+    Tab(R.string.explore, Icons.Outlined.Explore, ExploreRoute),
+    Tab(R.string.search, Icons.Outlined.Search, SearchRoute),
+)
 
 class Navigator(private val controller: NavHostController) {
     fun book(book: Book, origin: String) =
@@ -124,9 +74,8 @@ class Navigator(private val controller: NavHostController) {
     fun reader(work: Int) =
         controller.navigate(ReaderRoute(work)) { launchSingleTop = true }
 
-    fun settings() = controller.navigate(SettingsRoute)
-
-    fun about() = controller.navigate(AboutRoute)
+    fun settings(page: SettingsPage = SettingsPage.Main) =
+        controller.navigate(SettingsRoute(page))
 
     fun library() = tab(LibraryRoute, reselected = false)
 
@@ -168,10 +117,9 @@ class MainActivity : ComponentActivity() {
                     SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
                 enableEdgeToEdge(style, style)
             }
-            ShelfTheme(dark) {
+            ShelfTheme(current) {
                 Surface(
-                    Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
+                    Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background,
                 ) {
                     if (current.onboarded) {
                         ShelfNavigation(current, opened)
@@ -199,11 +147,8 @@ private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
         val source = uri ?: return@LaunchedEffect
         val work = app.library.importFile(source)
         opened.value = null
-        if (work != null) {
-            navigator.reader(work)
-        } else {
-            Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
-        }
+        if (work != null) return@LaunchedEffect navigator.reader(work)
+        Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
     }
 }
 
@@ -219,11 +164,16 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     val entry by controller.currentBackStackEntryAsState()
     val selected = remember(entry) { controller.selectedTab() }
     val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true
-    val adaptive =
-        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
-            currentWindowAdaptiveInfoV2(),
-        )
+    val adaptive = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
+        currentWindowAdaptiveInfoV2(),
+    )
     val hidden = reading || WindowInsets.isImeVisible
+    val app = shelfApp()
+    val language = app.bookLanguage(settings)
+    LaunchedEffect(language) {
+        val current = app.loaded.value ?: return@LaunchedEffect
+        if (current.catalogue.language != language) app.reload(language)
+    }
 
     UpdatePrompt(settings)
     OpenFile(opened, navigator)
@@ -280,8 +230,9 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
-        screen<SettingsRoute> { SettingsScreen(navigator) }
-        screen<AboutRoute> { AboutScreen(navigator) }
+        screen<SettingsRoute> {
+            SettingsScreen(it.toRoute<SettingsRoute>().page, navigator)
+        }
     }
 }
 

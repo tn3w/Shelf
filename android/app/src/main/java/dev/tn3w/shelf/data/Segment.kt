@@ -116,11 +116,10 @@ class IntArrayList {
 }
 
 class Cache<K : Any, V : Any>(private val capacity: Int) {
-    private val map =
-        object : LinkedHashMap<K, V>(capacity, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>) =
-                size > capacity
-        }
+    private val map = object : LinkedHashMap<K, V>(capacity, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>) =
+            size > capacity
+    }
 
     fun get(key: K, load: (K) -> V): V {
         synchronized(map) { map[key] }?.let { return it }
@@ -339,11 +338,10 @@ class Segment(buffer: ByteBuffer) {
     private val gramKeys = List(grams.count) { Reader(grams[it]).text() }
     private val descriptions = BlockIndex(section("descriptions"))
     private val tagTable = Table(section("tags"))
-    val tags =
-        List(tagTable.count) {
-            val reader = Reader(tagTable[it])
-            TagRecord(it, reader.text(), reader.text(), reader.text())
-        }
+    val tags = List(tagTable.count) {
+        val reader = Reader(tagTable[it])
+        TagRecord(it, reader.text(), reader.text(), reader.text())
+    }
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
 
@@ -379,12 +377,7 @@ class Segment(buffer: ByteBuffer) {
         val cover = reader.varint()
         val tagIds = IntArray(reader.varint()) { reader.byte() }
         return Facts(
-            authorSlots,
-            year,
-            cover,
-            tagIds,
-            reader.varint() - 1,
-            reader.varint(),
+            authorSlots, year, cover, tagIds, reader.varint() - 1, reader.varint(),
         )
     }
 

@@ -6,23 +6,7 @@ import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.displacedLine
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
+import dev.tn3w.shelf.cover.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -31,22 +15,17 @@ import kotlin.math.sin
 
 private class Palette(val paper: Int, val primary: Int, val secondary: Int)
 
-private val SWISS =
-    listOf(
-        Palette(Color.rgb(241, 237, 228), Color.rgb(226, 58, 40), Color.rgb(22, 22, 24)),
-        Palette(Color.rgb(22, 24, 30), Color.rgb(246, 196, 38), Color.rgb(236, 234, 228)),
-        Palette(
-            Color.rgb(232, 236, 238),
-            Color.rgb(30, 86, 200),
-            Color.rgb(255, 106, 60),
-        ),
-        Palette(
-            Color.rgb(246, 222, 200),
-            Color.rgb(18, 110, 104),
-            Color.rgb(200, 60, 40),
-        ),
-        Palette(Color.rgb(28, 40, 72), Color.rgb(255, 120, 90), Color.rgb(244, 236, 220)),
-    )
+private val SWISS = listOf(
+    Palette(Color.rgb(241, 237, 228), Color.rgb(226, 58, 40), Color.rgb(22, 22, 24)),
+    Palette(Color.rgb(22, 24, 30), Color.rgb(246, 196, 38), Color.rgb(236, 234, 228)),
+    Palette(
+        Color.rgb(232, 236, 238), Color.rgb(30, 86, 200), Color.rgb(255, 106, 60),
+    ),
+    Palette(
+        Color.rgb(246, 222, 200), Color.rgb(18, 110, 104), Color.rgb(200, 60, 40),
+    ),
+    Palette(Color.rgb(28, 40, 72), Color.rgb(255, 120, 90), Color.rgb(244, 236, 220)),
+)
 
 internal fun swissGrid(cover: CoverCanvas): Typeset = with(cover) {
     val palette = random.pick(SWISS)
@@ -108,14 +87,13 @@ internal fun swissGrid(cover: CoverCanvas): Typeset = with(cover) {
     )
 }
 
-private val BAUHAUS =
-    listOf(
-        Color.rgb(214, 52, 42),
-        Color.rgb(244, 190, 40),
-        Color.rgb(34, 76, 160),
-        Color.rgb(24, 24, 26),
-        Color.rgb(238, 232, 218),
-    )
+private val BAUHAUS = listOf(
+    Color.rgb(214, 52, 42),
+    Color.rgb(244, 190, 40),
+    Color.rgb(34, 76, 160),
+    Color.rgb(24, 24, 26),
+    Color.rgb(238, 232, 218),
+)
 
 internal fun bauhausTiles(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawRect(0f, 0f, width, height, fillPaint(Color.rgb(240, 234, 220)))
@@ -182,13 +160,12 @@ private fun bauhausTile(cover: CoverCanvas, box: RectF) = with(cover) {
     canvas.restore()
 }
 
-private val RISO =
-    listOf(
-        Color.rgb(255, 72, 176) to Color.rgb(0, 120, 191),
-        Color.rgb(255, 108, 47) to Color.rgb(0, 131, 138),
-        Color.rgb(0, 169, 92) to Color.rgb(255, 72, 176),
-        Color.rgb(255, 232, 0) to Color.rgb(93, 80, 200),
-    )
+private val RISO = listOf(
+    Color.rgb(255, 72, 176) to Color.rgb(0, 120, 191),
+    Color.rgb(255, 108, 47) to Color.rgb(0, 131, 138),
+    Color.rgb(0, 169, 92) to Color.rgb(255, 72, 176),
+    Color.rgb(255, 232, 0) to Color.rgb(93, 80, 200),
+)
 
 internal fun risoHalftone(cover: CoverCanvas): Typeset = with(cover) {
     val (first, second) = random.pick(RISO)

@@ -6,14 +6,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.InputStream
@@ -49,6 +45,7 @@ data class Saved(
     val title: String = "",
     val author: String = "",
     val cover: Int = 0,
+    val rating: Int = 0,
 )
 
 @Serializable
@@ -71,12 +68,29 @@ enum class ThemeMode {
 }
 
 @Serializable
+enum class PageColor {
+    Theme,
+    Paper,
+    Night,
+}
+
+@Serializable
 data class Settings(
     val onboarded: Boolean = false,
     val language: String = "",
     val theme: ThemeMode = ThemeMode.System,
+    val blackTheme: Boolean = false,
+    val wallpaperColors: Boolean = true,
+    val reduceMotion: Boolean = false,
     val dailyGoal: Int = 10,
     val fontScale: Float = 1f,
+    val lineSpacing: Float = 1.55f,
+    val margin: Int = 28,
+    val serif: Boolean = true,
+    val justify: Boolean = false,
+    val pageColor: PageColor = PageColor.Theme,
+    val keepScreenOn: Boolean = true,
+    val volumeKeys: Boolean = false,
     val offline: Boolean = false,
     val onlineCovers: Boolean = true,
     val authorImages: Boolean = true,
@@ -124,18 +138,13 @@ val Book.isLocal
 private fun localWork(fileName: String) = -1 - (fileName.hashCode() and Int.MAX_VALUE)
 
 fun Context.displayName(uri: Uri): String {
-    val name =
-        contentResolver
-            .query(uri, null, null, null, null)
-            ?.use { cursor ->
-                val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (cursor.moveToFirst() && column >= 0) {
-                    cursor.getString(column)
-                } else {
-                    null
-                }
-            }
-            ?: uri.lastPathSegment.orEmpty()
+    val name = contentResolver
+        .query(uri, null, null, null, null)
+        ?.use { cursor ->
+            val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.takeIf { it.moveToFirst() && column >= 0 }?.getString(column)
+        }
+        ?: uri.lastPathSegment.orEmpty()
     if ('.' in name) return name
     val type = contentResolver.getType(uri) ?: return name
     val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(type)
@@ -151,12 +160,11 @@ private inline fun <reified T> Preferences.decode(
 class Library(private val context: Context) {
     private val store = context.dataStore
 
-    val saved =
-        store.data.map { preferences ->
-            preferences.decode(ENTRIES, emptyList<Saved>()).sortedByDescending {
-                it.updated
-            }
+    val saved = store.data.map { preferences ->
+        preferences.decode(ENTRIES, emptyList<Saved>()).sortedByDescending {
+            it.updated
         }
+    }
 
     val recentSearches = store.data.map { it.decode(RECENT, emptyList<String>()) }
 
@@ -166,23 +174,18 @@ class Library(private val context: Context) {
 
     val settings = store.data.map { it.decode(SETTINGS, Settings()) }
 
-    val habit =
-        store.data.map { preferences ->
-            val activity = preferences.decode(ACTIVITY, emptyMap<String, Int>())
-            habitOf(
-                activity,
-                preferences.decode(SETTINGS, Settings()).dailyGoal,
-                LocalDate.now(),
-            )
-        }
+    val habit = store.data.map {
+        val goal = it.decode(SETTINGS, Settings()).dailyGoal
+        habitOf(it.decode(ACTIVITY, emptyMap()), goal)
+    }
 
-    private fun habitOf(activity: Map<String, Int>, goal: Int, today: LocalDate): Habit {
+    private fun habitOf(activity: Map<String, Int>, goal: Int): Habit {
+        val today = LocalDate.now()
         fun pages(day: LocalDate) = activity[day.toString()] ?: 0
         val start = if (pages(today) >= goal) today else today.minusDays(1)
-        val streak =
-            generateSequence(start) { it.minusDays(1) }
-                .takeWhile { pages(it) >= goal }
-                .count()
+        val streak = generateSequence(start) { it.minusDays(1) }
+            .takeWhile { pages(it) >= goal }
+            .count()
         val week = (6 downTo 0).map { pages(today.minusDays(it.toLong())) }
         return Habit(goal, pages(today), streak, week)
     }
@@ -218,19 +221,25 @@ class Library(private val context: Context) {
         if (extension !in READABLE_EXTENSIONS) return null
         val name = "$work.$extension"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
-        val copied =
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        target.outputStream().use { input.copyTo(it) }
-                    }
-                }
-                    .getOrNull()
-            }
+        val copied = readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
         if (copied != null) return name
         target.delete()
         return null
     }
+
+    private suspend fun <T> readFrom(uri: Uri, read: (InputStream) -> T): T? =
+        withContext(Dispatchers.IO) {
+            runCatching { context.contentResolver.openInputStream(uri)?.use(read) }
+                .getOrNull()
+        }
+
+    private suspend fun writeTo(uri: Uri, write: (OutputStream) -> Unit) =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use(write) != null
+            }
+                .getOrDefault(false)
+        }
 
     suspend fun deleteBook(work: Int) {
         progress.first()[work]?.let { bookFile(it.file).delete() }
@@ -248,9 +257,37 @@ class Library(private val context: Context) {
 
     suspend fun place(book: Book, shelf: Shelf?) =
         update(ENTRIES, emptyList<Saved>()) { entries ->
+            val rating = entries.firstOrNull { it.work == book.work }?.rating ?: 0
             val others = entries.filter { it.work != book.work }
-            shelf?.let { others + book.toSaved(it) } ?: others
+            shelf?.let { others + book.toSaved(it).copy(rating = rating) } ?: others
         }
+
+    suspend fun importCsv(
+        uri: Uri,
+        searcher: Searcher?,
+        onProgress: (Float) -> Unit,
+    ): CsvReport? {
+        val text = readFrom(uri) { it.readBytes().decodeToString() } ?: return null
+        val books = csvBooks(text).ifEmpty { return null }
+        val missing = mutableListOf<String>()
+        val entries = withContext(Dispatchers.Default) {
+            books.mapIndexed { index, row ->
+                onProgress(index.toFloat() / books.size)
+                val match = searcher?.find(row.title, row.author)
+                if (match == null) missing += row.title
+                val local = localWork(row.title + row.author)
+                val book = match ?: bookOf(local, row.title, row.author)
+                book.toSaved(row.shelf).copy(updated = row.date, rating = row.rating)
+            }
+        }
+        update(ENTRIES, emptyList<Saved>()) { newestPerWork(it + entries) }
+        return CsvReport(books.size, missing)
+    }
+
+    suspend fun exportCsv(uri: Uri): Boolean {
+        val entries = saved.first()
+        return writeTo(uri) { it.write(csvOf(entries).toByteArray()) }
+    }
 
     suspend fun saveProgress(work: Int, progress: Progress) =
         update(PROGRESS, emptyMap<Int, Progress>()) { it + (work to progress) }
@@ -275,16 +312,7 @@ class Library(private val context: Context) {
 
     suspend fun exportTo(uri: Uri): Boolean {
         val backup = store.data.first().toBackup()
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val output =
-                    context.contentResolver.openOutputStream(uri)
-                        ?: return@runCatching false
-                output.use { writeArchive(it, backup) }
-                true
-            }
-                .getOrDefault(false)
-        }
+        return writeTo(uri) { writeArchive(it, backup) }
     }
 
     private fun writeArchive(output: OutputStream, backup: Backup) =
@@ -300,34 +328,22 @@ class Library(private val context: Context) {
         }
 
     suspend fun importFrom(uri: Uri): Boolean {
-        val backup =
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(uri)?.use {
-                        readArchive(it)
-                    }
-                }
-                    .getOrNull()
-            } ?: return false
+        val backup = readFrom(uri, ::readArchive) ?: return false
         merge(backup)
         return true
     }
 
-    private fun readArchive(input: InputStream): Backup? {
+    private fun readArchive(input: InputStream) = ZipInputStream(input).use { archive ->
         var backup: Backup? = null
-        ZipInputStream(input).use { archive ->
-            while (true) {
-                val name = (archive.nextEntry ?: break).name
-                when {
-                    name == BACKUP_ENTRY ->
-                        backup =
-                            json.decodeFromString(archive.readBytes().decodeToString())
+        generateSequence { archive.nextEntry }.forEach { entry ->
+            when {
+                entry.name == BACKUP_ENTRY ->
+                    backup = json.decodeFromString(archive.readBytes().decodeToString())
 
-                    name.startsWith(BOOKS_PREFIX) -> extractBook(name, archive)
-                }
+                entry.name.startsWith(BOOKS_PREFIX) -> extractBook(entry.name, archive)
             }
         }
-        return backup
+        backup
     }
 
     private fun extractBook(entry: String, input: InputStream) {

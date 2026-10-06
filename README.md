@@ -28,141 +28,55 @@ Search, explore, track reading streaks, read your own files.
 
 </div>
 
-Shelf browses, tracks and reads books offline. The catalogue is built from
-[Open Library dumps](https://openlibrary.org/developers/dumps) and published as GitHub
-releases; your library never leaves the device.
+## Features
 
-| App | Catalogue | Builder |
-|---|---|---|
-| Kotlin + Jetpack Compose, Android 8+ | English, German, French, Spanish | Rust, deterministic output |
-| GitHub and F-Droid flavors | Packs for genres, audiences and nonfiction | Monthly Open Library import |
+<table>
+<tr><th width="1%">Find</th><th width="1%">Read</th><th width="1%">Track</th></tr>
+<tr><td align="center">Typo-tolerant search</td><td align="center">EPUB · PDF · FB2 · CBZ · TXT · HTML</td><td align="center">Want · Reading · Finished</td></tr>
+<tr><td align="center">Genres, series, authors</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
+<tr><td align="center">Recommendations on device</td><td align="center">Volume and page keys</td><td align="center">Goodreads / StoryGraph import</td></tr>
+</table>
 
-| Browse | Read | Track |
-|---|---|---|
-| Search with typo tolerance, author and tag pages, popular works and genres. | EPUB, PDF, TXT/Markdown, HTML, FB2 and CBZ with progress and chapters. | Want, Reading and Finished shelves, daily goals, streaks and series progress. |
+## How it works
 
-Any book file opens, catalogue or not: Library → import, *Open with* from a file manager
-or *Share* to Shelf. EPUB and FB2 titles and authors come from the file, anything else
-from its name; such books live in the library with a drawn cover and can be removed from
-their book page (the imported copy goes, the original stays).
-
-Home rows and author pages are built locally from your shelves, tags, authors and ratings.
-Settings → Backup writes a zip (`library.json` plus imported book files) through the
-system file picker and merges one back in.
+```mermaid
+flowchart LR
+    A[Open Library dumps] -->|monthly| B[Rust builder]
+    B -->|GitHub release| C[Catalogue packs]
+    C -->|download once| D[Shelf]
+    D --> E[Your library stays on device]
+```
 
 ## Privacy
 
-No account, trackers, Play Services or Firebase, and no background service.
+<table>
+<tr><th width="1%">What</th><th width="1%">Shelf</th></tr>
+<tr><td>Accounts, trackers, ads</td><td><b>none</b></td></tr>
+<tr><td>First launch</td><td><b>no request</b></td></tr>
+<tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
+<tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
+<tr><td>Hosts</td><td>GitHub, Open Library, or <b>your own server</b></td></tr>
+</table>
 
-- Both APKs bundle `manifest.json`, so onboarding lists every pack and size offline.
-  First launch sends no request; nothing downloads until you tap Download, and the
-  monthly catalogue check starts a month after onboarding.
-- Offline mode, on onboarding and in Settings, switches off app updates, catalogue
-  refresh, covers and author photos. Each is also its own switch.
-- Offline mode locks on when the INTERNET permission is denied, read from the permission
-  state, never by probing a URL.
-- Core download = `core` + `ranks` (English 7.7 MB), shown as one size. Parallel pack
-  downloads fetch each file once.
-- Cover and photo requests wait until settings load, so a disabled switch sends nothing,
-  not even DNS. `covers.openlibrary.org` redirects to `archive.org`.
-- Requests are https only and carry no identifiers or cookies, with a fixed `Shelf` user
-  agent in place of the device one.
-- Nothing is tied to one host: Settings → Own servers and files (also folded into
-  onboarding) sets the catalogue source and cover server, or imports catalogue files.
+## Switch from Goodreads or StoryGraph
+
+```
+Export CSV  →  Settings › Your data › Import CSV  →  done
+```
+
+Shelves, ratings and read dates carry over. Books not in the catalogue become your own.
+Export writes the same format back.
 
 ## Catalogue
 
-`core` ships with the GitHub APK and is the first download in the F-Droid build;
-`fantasy`, `scifi`, `mystery`, `romance`, `kids`, `young-adult`, `nonfiction` and
-`general` download on demand, alongside a shared `ranks` file. Each work belongs to one
-pack; small packs merge into `core` for smaller languages. Installed packs are
-memory-mapped, merged with monthly deltas and searched on device.
+<table>
+<tr><th width="1%">Type</th><th width="1%">Contents</th></tr>
+<tr><td>Languages</td><td>English · Deutsch · Français · Español</td></tr>
+<tr><td>Genre packs</td><td>fantasy · scifi · mystery · romance</td></tr>
+<tr><td>More packs</td><td>kids · young-adult · nonfiction · general</td></tr>
+</table>
 
-### Own servers and files
-
-| Setting | Accepts |
-|---|---|
-| Catalogue source | `owner/name` on GitHub, a releases API URL (GitHub, Gitea, Forgejo), or a direct `manifest.json` URL. Empty = `tn3w/Shelf`. The manifest loads on Save, never before. |
-| Cover server | Base URL serving Open Library's `/b/id/…` and `/a/olid/…` paths. Empty = `covers.openlibrary.org`. |
-| Import catalogue files | Segment and ranks files named as released (`en-core-2026-09-18.bin`, `en-ranks-…`), plus an optional `manifest.json`. Each must open as a format-2 segment or ranks file. |
-
-Onboarding closes by itself once one language has both `core` and `ranks`, switching to
-that language if needed; otherwise it says which file is missing. Without any catalogue
-(e.g. *Continue offline* in the F-Droid build), Home and Explore say so and link to Settings. Self-hosting: run the
-builder with `--base-url https://host/path` and serve `catalogue-<label>/<file>` below
-it, or point the source at a releases API carrying the same assets.
-
-The app verifies SHA-256 and swaps files in atomically. Small pack updates download
-quietly, larger rebases appear in Settings. Format 2 is the only format read: anything
-else is refused, and a segment that no longer opens is deleted on the next load.
-
-### Cover selection
-
-One winner per work and language, scored while editions stream in.
-
-| Stage | Rule |
-|---|---|
-| Reject | Non-book formats (audio, CD, DVD, video, ebook, braille, microform, games), audiobook, movie tie-in or disc titles, print-on-demand reprinters. |
-| Reject | Not an upright front cover: aspect outside `0.58–0.72`, or under 250 px wide. |
-| Image points | Upload year (2024+ scores 70, down to 15 for 2013), stored resolution (1000 px scores 45, down to 12 for 320 px), bonus for the common trim (`0.62–0.68`). |
-| Localize | An edition in the shelf language with a latin title; English is the fallback, the work cover the last resort. |
-| Score | Image points plus publisher reach (up to 25), edition year (10 from 1990, 5 from 1960) and a title match. |
-
-Upload date and resolution stand in for design quality, which the dumps never state, so a
-1974 cover scanned at 431 px can beat a 2022 reprint thumbnail.
-
-## Install
-
-[Releases](https://github.com/tn3w/Shelf/releases/latest) carry `shelf.apk` and
-`shelf-fdroid.apk`, both listed in `SHA256SUMS`. The `github` flavor can update itself
-through Android's package installer; F-Droid builds the `fdroid` flavor from source
-without the updater and verifies it against `shelf-fdroid.apk`, so both APKs must stay
-signed with the one keystore, native libraries keep their debug symbols so builds with
-and without an NDK match byte for byte, and every `Builds:` entry pins a full commit
-hash. Recipe in [fdroiddata](https://gitlab.com/fdroid/fdroiddata/-/blob/master/metadata/dev.tn3w.shelf.yml), updated automatically per `v*` tag; store metadata in
-`android/app/fastlane/`.
-
-## Build
-
-```sh
-cd android
-./gradlew assembleGithubDebug assembleFdroidRelease lint
-```
-
-`downloadCatalogue` fetches the bundled files pinned by `catalogueRelease` and verifies
-them against its manifest; the `fdroid` flavor runs `downloadManifest`, taking that same
-manifest and no segments. Release builds are unsigned unless `KEYSTORE_FILE` is set.
-Kotlin is formatted with [ktlint](https://pinterest.github.io/ktlint/) (`intellij_idea`
-style, 90 columns, set in `.editorconfig`): `ktlint -F "android/app/src/**/*.kt"`.
-
-```sh
-cd builder
-cargo build --release
-target/release/builder <dumps-source> <out-dir> [--previous <dir>] [--rebase] \
-  [--month YYYY-MM-DD[-N]] [--translations <dir>] [--requests <dir>] \
-  [--translator <command>] [--base-url <url>]
-```
-
-The builder streams dumps or reads local files and writes one release: segments, ranks,
-state and manifest. Previous state turns monthly builds into small deltas. Manifest URLs
-are `<base-url>/catalogue-<label>/<file>`, by default the GitHub release download path.
-
-`tooling/translate.py` fills missing descriptions in all four languages, which the app
-labels *Machine translated*. Every non-empty description not written in the target
-language is translated. The builder detects the source (en, de, fr, es, pt, it, nl) and
-sends it as `source_language`; descriptions with an undetected language are skipped. The
-default `nllb-200-3.3B` takes the source per sentence; `--model` also accepts Opus-MT
-models, which ignore it. With `--translator "python tooling/translate.py <flags>"` the builder runs it
-per language and rebuilds descriptions in the same pass.
-
-```sh
-python tooling/translate.py requests/requests-de.jsonl out/translations-de.bin \
-  --language de --previous previous/translations-de.bin
-```
-
-The monthly workflow downloads previous state and the newest dumps, runs one builder pass,
-publishes a `catalogue-<label>` release and deletes catalogue releases the new manifest no
-longer points at.
+`core` ships in the APK. Other packs download on demand, verified by SHA-256.
 
 ## Generated covers
 
@@ -170,33 +84,30 @@ longer points at.
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, adventure, science fiction, romance, vintage, fantasy, mystery and spiritual"></picture>
 </p>
 
-Books without a cover get one drawn on device from `Canvas` shaders and system fonts.
-Tags pick one of 19 genres, then a `work|title|author` seed picks one of 72 styles and its
-colours, so a cover never changes. Text is scrimmed until legible; results are cached.
+Books without a cover get one drawn on device. Same book, same cover.
 
-## Project map
+## Build
 
-| Path | Role |
-|---|---|
-| `android/` | App, flavors, UI, reader, local library and catalogue loading. |
-| `builder/` | Rust catalogue builder, scoring, packs, tags, segment encoding and manifests. |
-| `tooling/` | Emulator screenshots, machine translation, `promo/` launch film. |
-| `.github/workflows/` | CI on pull requests, monthly catalogue builds, app releases. |
-| `data/Segment.kt`, `data/Catalogue.kt` | Segment and rank files; merged works, authors, tags and series. |
-| `data/Search.kt`, `data/Recommend.kt` | Search candidates and ranking; home and discovery rows. |
-| `data/Packs.kt`, `data/Library.kt` | Manifest, downloads and pack state; shelves, progress, settings and backup. |
-| `data/Documents.kt`, `ui/*` | Reader document parsing; Compose screens, theme and components. |
-| `cover/`, `cover/art/*` | Seeded cover generator: palette, type, legibility; the art directions. |
+```sh
+cd android && ./gradlew assembleGithubDebug
+```
 
-## Contributing
+```sh
+cd builder && cargo build --release
+target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>]
+```
 
-Issues, translations and pull requests are welcome, and forking is encouraged: MIT, so
-build your own Shelf if you want. Start with [CONTRIBUTING.md](CONTRIBUTING.md); every
-pull request runs the app and builder checks in CI. Vulnerabilities go through
-[SECURITY.md](SECURITY.md), conduct through
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Format with `ktlint -F "android/app/src/**/*.kt"`.
 
-## License
+## Project
 
-MIT, see [LICENSE](LICENSE). Catalogue data comes from
-[Open Library](https://openlibrary.org), dedicated to the public domain.
+<table>
+<tr><th width="1%">Path</th><th width="1%">Role</th></tr>
+<tr><td><code>android/</code></td><td>App</td></tr>
+<tr><td><code>builder/</code></td><td>Catalogue builder</td></tr>
+<tr><td><code>tooling/</code></td><td>Screenshots, translation, promo</td></tr>
+</table>
+
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
+[Code of conduct](CODE_OF_CONDUCT.md) · [MIT License](LICENSE) ·
+Data from [Open Library](https://openlibrary.org)

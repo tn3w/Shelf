@@ -3,33 +3,7 @@ package dev.tn3w.shelf.cover.art
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.glowPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.randomHarmonics
-import dev.tn3w.shelf.cover.ridge
-import dev.tn3w.shelf.cover.scrimBand
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.stars
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
-import dev.tn3w.shelf.cover.wobblyRingPath
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -42,8 +16,7 @@ internal fun fantasyPeaks(cover: CoverCanvas): Typeset = with(cover) {
     )
     val horizon = random.range(0.44f, 0.56f)
     val skyTop = hsv(hue, random.range(0.70f, 0.88f), random.range(0.10f, 0.16f))
-    val skyLow =
-        hsv(hue - 0.09f, random.range(0.45f, 0.65f), random.range(0.38f, 0.55f))
+    val skyLow = hsv(hue - 0.09f, random.range(0.45f, 0.65f), random.range(0.38f, 0.55f))
     verticalGradient(skyTop, skyLow, random.range(2.0f, 3.0f))
     stars((width * 0.55f).toInt(), height * horizon, Color.WHITE, unit(0.003f))
 
@@ -58,19 +31,11 @@ internal fun fantasyPeaks(cover: CoverCanvas): Typeset = with(cover) {
         glowPaint(mix(accent, Color.WHITE, 0.45f), moonRadius * 0.12f),
     )
     canvas.drawCircle(
-        moonX,
-        moonY,
-        moonRadius,
-        fillPaint(mix(accent, Color.WHITE, 0.45f)),
+        moonX, moonY, moonRadius, fillPaint(mix(accent, Color.WHITE, 0.45f)),
     )
 
     radialGlow(
-        moonX,
-        horizon * height,
-        width * 1.1f,
-        mix(accent, skyLow, 0.6f),
-        0.22f,
-        1.6f,
+        moonX, horizon * height, width * 1.1f, mix(accent, skyLow, 0.6f), 0.22f, 1.6f,
     )
 
     val layers = random.between(3, 4)
@@ -79,9 +44,7 @@ internal fun fantasyPeaks(cover: CoverCanvas): Typeset = with(cover) {
         val depth = index / (layers - 1f).coerceAtLeast(1f)
         val base = horizon + depth * random.range(0.10f, 0.16f)
         val tone = mix(
-            mix(skyLow, skyTop, 0.30f + depth * 0.45f),
-            Color.BLACK,
-            depth * 0.38f,
+            mix(skyLow, skyTop, 0.30f + depth * 0.45f), Color.BLACK, depth * 0.38f,
         )
         val shape = ridge(
             base,
@@ -196,12 +159,11 @@ internal fun fantasySigil(cover: CoverCanvas): Typeset = with(cover) {
     }
     val points = random.pick(listOf(5, 6, 7))
     val skip = if (points % 2 == 0) 1 else 2
-    val corners =
-        List(points) {
-            val angle = TAU * it / points - TAU / 4f
-            (centerX + cos(angle) * radius * 0.86f) to
-                (centerY + sin(angle) * radius * 0.86f)
-        }
+    val corners = List(points) {
+        val angle = TAU * it / points - TAU / 4f
+        (centerX + cos(angle) * radius * 0.86f) to
+            (centerY + sin(angle) * radius * 0.86f)
+    }
     for (index in 0 until points) {
         val from = corners[index]
         val to = corners[(index + skip) % points]
@@ -261,12 +223,11 @@ internal fun fantasyForest(cover: CoverCanvas): Typeset = with(cover) {
         random.range(0.30f, 0.50f),
         random.range(0.45f, 0.62f),
     )
-    val glow =
-        hsv(
-            random.pick(listOf(0.12f, 0.16f, 0.45f)),
-            random.range(0.35f, 0.60f),
-            random.range(0.92f, 1f),
-        )
+    val glow = hsv(
+        random.pick(listOf(0.12f, 0.16f, 0.45f)),
+        random.range(0.35f, 0.60f),
+        random.range(0.92f, 1f),
+    )
     verticalGradient(canopy, haze, random.range(2.2f, 3.4f))
 
     repeat(random.between(3, 6)) {
@@ -282,20 +243,16 @@ internal fun fantasyForest(cover: CoverCanvas): Typeset = with(cover) {
         canvas.drawPath(shaft, glowPaint(shade(glow, 0.22f), unit(0.06f)))
     }
 
-    val trunks =
-        List(random.between(6, 9)) {
-            random.range(-0.05f, 1.05f) * width to
-                random.float()
-        }
-            .sortedBy { it.second }
+    val trunks = List(random.between(6, 9)) {
+        random.range(-0.05f, 1.05f) * width to
+            random.float()
+    }
+        .sortedBy { it.second }
     for ((position, depth) in trunks) {
-        val thickness =
-            width * (0.010f + depth * depth * random.range(0.045f, 0.085f))
+        val thickness = width * (0.010f + depth * depth * random.range(0.045f, 0.085f))
         val lean = random.range(-0.04f, 0.04f) * width
         val tone = mix(
-            mix(haze, canopy, 0.45f),
-            Color.rgb(5, 9, 7),
-            0.25f + depth * 0.70f,
+            mix(haze, canopy, 0.45f), Color.rgb(5, 9, 7), 0.25f + depth * 0.70f,
         )
         val trunk = Path()
         trunk.moveTo(position - thickness, height)
@@ -394,13 +351,7 @@ internal fun fantasyDawn(cover: CoverCanvas): Typeset = with(cover) {
         )
         canvas.drawPath(
             shape.fill,
-            fillPaint(
-                mix(
-                    mix(glow, Color.WHITE, 0.3f),
-                    deep,
-                    0.25f + depth * 0.75f,
-                ),
-            ),
+            fillPaint(mix(mix(glow, Color.WHITE, 0.3f), deep, 0.25f + depth * 0.75f)),
         )
     }
 
@@ -525,22 +476,18 @@ internal fun fantasyCrystal(cover: CoverCanvas): Typeset = with(cover) {
     val gem = hsv(hue, random.range(0.60f, 0.80f), random.range(0.80f, 0.95f))
     verticalGradient(hsv(hue + 0.04f, 0.70f, 0.08f), hsv(hue, 0.60f, 0.30f), 1.2f)
     stars(
-        (width * 0.3f).toInt(),
-        height * 0.7f,
-        mix(gem, Color.WHITE, 0.6f),
-        unit(0.002f),
+        (width * 0.3f).toInt(), height * 0.7f, mix(gem, Color.WHITE, 0.6f), unit(0.002f),
     )
 
     val baseY = height * 0.86f
     radialGlow(width * 0.5f, baseY - height * 0.15f, width * 0.8f, gem, 0.45f, 2.2f)
-    val shards =
-        List(random.between(5, 8)) {
-            Triple(
-                width * random.range(0.36f, 0.64f),
-                random.range(-24f, 24f),
-                height * random.range(0.16f, 0.40f),
-            )
-        }.sortedByDescending { it.third }
+    val shards = List(random.between(5, 8)) {
+        Triple(
+            width * random.range(0.36f, 0.64f),
+            random.range(-24f, 24f),
+            height * random.range(0.16f, 0.40f),
+        )
+    }.sortedByDescending { it.third }
     for ((x, tilt, length) in shards) {
         val breadth = width * random.range(0.035f, 0.065f)
         shard(cover, x, baseY, length, breadth, tilt, gem)
@@ -608,22 +555,15 @@ private fun shard(
     right.close()
     canvas.drawPath(left, fillPaint(mix(tone, Color.WHITE, 0.35f)))
     canvas.drawPath(right, fillPaint(shade(tone, 0.55f)))
-    canvas.drawLine(
-        x,
-        baseY,
-        x,
-        tip,
-        strokePaint(alpha(Color.WHITE, 0.7f), unit(0.003f)),
-    )
+    canvas.drawLine(x, baseY, x, tip, strokePaint(alpha(Color.WHITE, 0.7f), unit(0.003f)))
     canvas.restore()
 }
 
-private val SKIES =
-    listOf(
-        Triple(0.98f, 0.07f, 0.12f),
-        Triple(0.75f, 0.03f, 0.10f),
-        Triple(0.60f, 0.52f, 0.14f),
-    )
+private val SKIES = listOf(
+    Triple(0.98f, 0.07f, 0.12f),
+    Triple(0.75f, 0.03f, 0.10f),
+    Triple(0.60f, 0.52f, 0.14f),
+)
 
 internal fun fantasySword(cover: CoverCanvas): Typeset = with(cover) {
     val (topHue, lowHue, sunHue) = random.pick(SKIES)
@@ -693,11 +633,7 @@ private fun sword(cover: CoverCanvas, x: Float, guardY: Float, ink: Int) = with(
     guard.close()
     canvas.drawPath(guard, paint)
     canvas.drawRect(
-        x - unit(0.011f),
-        guardY - unit(0.11f),
-        x + unit(0.011f),
-        guardY,
-        paint,
+        x - unit(0.011f), guardY - unit(0.11f), x + unit(0.011f), guardY, paint,
     )
     canvas.drawCircle(x, guardY - unit(0.12f), unit(0.024f), paint)
 }

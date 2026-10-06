@@ -29,22 +29,21 @@ data class Book(
         if (cover == 0) null else "$host/b/id/$cover-$size.jpg"
 }
 
-private val COMPANION =
-    Regex(
-        "box(ed)? set|collection set|books? collection|\\d ?books? set|gift set|" +
-            "books? bundle|\\buntitled\\b|" +
-            "\\bseries ?(box|set|collection)?\\s*$|" +
-            "\\(series\\)|\\b\\d{1,2}\\s*[-–]\\s*\\d{1,2}\\b|omnibus|slipcase|" +
-            "complete (series|collection|novels|saga|works)|collected (works|novels)|" +
-            "trilogy|tetralogy|trilogie|gesamtausgabe|gesamtwerk|sammelband|" +
-            "coffret|int[ée]grale|estuche|obras completas|colecci[óo]n completa|" +
-            "colou?ring book|activity book|sticker|annual \\d{4}|calendar|planner|" +
-            "study guide|sparknotes|cliffs ?notes|summary of|analysis of|quiz|trivia|" +
-            "unofficial|companion|movie storybook|the making of|selections from|" +
-            "big book|adventure game|lesson plan|workbook|journal\\s*$|notes\\s*$|" +
-            "\\blevel \\d|\\d ?(paperback|hardcover)",
-        RegexOption.IGNORE_CASE,
-    )
+private val COMPANION = Regex(
+    "box(ed)? set|collection set|books? collection|\\d ?books? set|gift set|" +
+        "books? bundle|\\buntitled\\b|" +
+        "\\bseries ?(box|set|collection)?\\s*$|" +
+        "\\(series\\)|\\b\\d{1,2}\\s*[-–]\\s*\\d{1,2}\\b|omnibus|slipcase|" +
+        "complete (series|collection|novels|saga|works)|collected (works|novels)|" +
+        "trilogy|tetralogy|trilogie|gesamtausgabe|gesamtwerk|sammelband|" +
+        "coffret|int[ée]grale|estuche|obras completas|colecci[óo]n completa|" +
+        "colou?ring book|activity book|sticker|annual \\d{4}|calendar|planner|" +
+        "study guide|sparknotes|cliffs ?notes|summary of|analysis of|quiz|trivia|" +
+        "unofficial|companion|movie storybook|the making of|selections from|" +
+        "big book|adventure game|lesson plan|workbook|journal\\s*$|notes\\s*$|" +
+        "\\blevel \\d|\\d ?(paperback|hardcover)",
+    RegexOption.IGNORE_CASE,
+)
 
 val Book.isCompanion
     get() = COMPANION.containsMatchIn("$title $subtitle")
@@ -66,10 +65,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     private val visible = visibility(segments)
     private val order = segments.withIndex().associate { (index, it) -> it to index }
     val workCount = visible.sumOf { it.cardinality() }
-    val tags =
-        segments.firstOrNull()?.tags.orEmpty().map {
-            Tag(it.id, it.slug, it.label, it.category)
-        }
+    val tags = segments.firstOrNull()?.tags.orEmpty().map {
+        Tag(it.id, it.slug, it.label, it.category)
+    }
     val tagBySlug = tags.associateBy { it.slug }
     private val maxScore by lazy {
         segments

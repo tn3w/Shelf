@@ -1,0 +1,5 @@
+• Goodreads and StoryGraph CSV import with match report, plus CSV export
+• Reader: text size, line spacing, margins, typeface, paper and night pages, justify, keep screen on, volume and page keys
+• Pure black theme, wallpaper colours, reduce motion
+• Book language Auto, custom daily goal
+• Settings regrouped into clear pages

@@ -90,13 +90,12 @@ private object CoverFonts {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Typeface.create(base, weight.coerceIn(100, 900), italic)
             } else {
-                val style =
-                    when {
-                        weight >= 600 && italic -> Typeface.BOLD_ITALIC
-                        weight >= 600 -> Typeface.BOLD
-                        italic -> Typeface.ITALIC
-                        else -> Typeface.NORMAL
-                    }
+                val style = when {
+                    weight >= 600 && italic -> Typeface.BOLD_ITALIC
+                    weight >= 600 -> Typeface.BOLD
+                    italic -> Typeface.ITALIC
+                    else -> Typeface.NORMAL
+                }
                 Typeface.create(base, style)
             }
         }
@@ -142,13 +141,12 @@ private fun fitTitle(
     available: Float,
     ceiling: Float,
 ): TitleLayout {
-    val paint =
-        textPaint(
-            typeset.titleFont,
-            typeset.titleWeight,
-            typeset.titleItalic,
-            typeset.titleTracking,
-        )
+    val paint = textPaint(
+        typeset.titleFont,
+        typeset.titleWeight,
+        typeset.titleItalic,
+        typeset.titleTracking,
+    )
     var size = ceiling
     val step = (ceiling / 40f).coerceAtLeast(0.5f)
     while (size > ceiling * 0.25f) {
@@ -258,28 +256,25 @@ private fun CoverCanvas.drawRule(rule: Rule, centerY: Float, ink: Int) {
 
 internal fun CoverCanvas.drawTypography(title: String, author: String, typeset: Typeset) {
     val margin = unit(0.11f)
-    val tracking =
-        if (typeset.titleCase == LetterCase.Upper) {
-            typeset.titleTracking
-        } else {
-            typeset.titleTracking.coerceAtMost(0.03f)
-        }
+    val tracking = if (typeset.titleCase == LetterCase.Upper) {
+        typeset.titleTracking
+    } else {
+        typeset.titleTracking.coerceAtMost(0.03f)
+    }
     val settled = typeset.copy(titleTracking = tracking)
-    val layout =
-        fitTitle(
-            cased(title, settled.titleCase),
-            settled,
-            width - margin * 2,
-            height * 0.30f,
-            height * settled.titleSize * 1.6f,
-        )
+    val layout = fitTitle(
+        cased(title, settled.titleCase),
+        settled,
+        width - margin * 2,
+        height * 0.30f,
+        height * settled.titleSize * 1.6f,
+    )
     val block = layout.lines.size * layout.size * settled.titleLeading
-    val top =
-        when (settled.anchor) {
-            Anchor.Top -> height * 0.085f
-            Anchor.Center -> (height - block) / 2f
-            Anchor.Bottom -> height * 0.86f - block
-        }
+    val top = when (settled.anchor) {
+        Anchor.Top -> height * 0.085f
+        Anchor.Center -> (height - block) / 2f
+        Anchor.Bottom -> height * 0.86f - block
+    }
 
     val bandTop = top - layout.size * 0.5f
     val bandBottom = top + block + layout.size * 0.4f
@@ -291,13 +286,9 @@ internal fun CoverCanvas.drawTypography(title: String, author: String, typeset: 
     authorPaint.textSize = height * settled.authorSize
     val authorY = height * if (settled.anchor == Anchor.Top) 0.895f else 0.075f
     val ruleY = authorY - height * 0.030f
-    val authorInk =
-        legibleInk(
-            ruleY - height * 0.03f,
-            authorY + height * 0.05f,
-            settled.authorInk,
-            0.40f,
-        )
+    val authorInk = legibleInk(
+        ruleY - height * 0.03f, authorY + height * 0.05f, settled.authorInk, 0.40f,
+    )
 
     layout.lines.forEachIndexed { index, line ->
         val baseline = top + layout.size * (index * settled.titleLeading + 0.82f)

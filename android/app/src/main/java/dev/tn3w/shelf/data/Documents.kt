@@ -5,8 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
@@ -77,12 +76,11 @@ class PdfDocument(file: File) : PagedDocument {
 
 class ComicDocument(file: File) : PagedDocument {
     private val zip = ZipFile(file)
-    private val entries =
-        zip.entries()
-            .asSequence()
-            .filter { it.name.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS }
-            .sortedBy { it.name }
-            .toList()
+    private val entries = zip.entries()
+        .asSequence()
+        .filter { it.name.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS }
+        .sortedBy { it.name }
+        .toList()
     override val pageCount = entries.size
 
     override suspend fun render(index: Int, width: Int): Bitmap? =
@@ -117,10 +115,9 @@ private fun epubMetadata(epub: Epub): Metadata? {
 private fun fictionBookMetadata(file: File): Metadata? {
     val document = Jsoup.parse(file.readText(), "", Parser.xmlParser())
     val info = document.selectFirst("title-info") ?: return null
-    val author =
-        info.selectFirst("author")?.let { author ->
-            author.select("> first-name, > last-name").joinToString(" ") { it.text() }
-        }
+    val author = info.selectFirst("author")?.let { author ->
+        author.select("> first-name, > last-name").joinToString(" ") { it.text() }
+    }
     return Metadata(info.selectFirst("book-title")?.text().orEmpty(), author.orEmpty())
 }
 
@@ -188,8 +185,7 @@ private fun plainBlocks(text: String) = text
     .map { it.replace(WHITESPACE, " ").trim() }
     .filter { it.isNotEmpty() }
     .map {
-        val level =
-            it.takeWhile { character -> character == '#' }.length.coerceAtMost(6)
+        val level = it.takeWhile { character -> character == '#' }.length.coerceAtMost(6)
         Block(it.drop(level).trim(), heading = level, centered = level > 0)
     }
 
@@ -236,32 +232,29 @@ private fun imageSource(element: Element) = element.selectFirst("img, image")?.l
 }
 
 private fun htmlBlocks(root: Element, image: (String) -> ByteArray?): List<Block> {
-    val blocks =
-        root.allElements
-            .filter { element ->
-                element.isBlock && element.children().none { it.isBlock }
-            }
-            .mapNotNull { element ->
-                val (text, spans) = inline(element)
-                if (text.isEmpty()) {
-                    return@mapNotNull imageSource(element)?.let(image)?.let {
-                        Block("", image = it)
-                    }
+    val blocks = root.allElements
+        .filter { element ->
+            element.isBlock && element.children().none { it.isBlock }
+        }
+        .mapNotNull { element ->
+            val (text, spans) = inline(element)
+            if (text.isEmpty()) {
+                return@mapNotNull imageSource(element)?.let(image)?.let {
+                    Block("", image = it)
                 }
-                val level =
-                    HEADING.matchEntire(element.tagName().lowercase())
-                        ?.groupValues
-                        ?.get(1)
-                        ?.toInt() ?: 0
-                Block(text, level, level > 0 || isCentered(element), spans)
             }
+            val level = HEADING.matchEntire(element.tagName().lowercase())
+                ?.groupValues
+                ?.get(1)
+                ?.toInt() ?: 0
+            Block(text, level, level > 0 || isCentered(element), spans)
+        }
     return blocks.ifEmpty { plainBlocks(root.wholeText()) }
 }
 
 private class Epub(private val zip: ZipFile) {
     val opfPath
-        get() =
-            xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
+        get() = xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
 
     fun bytes(path: String) = zip.getEntry(path)?.let { entry ->
         zip.getInputStream(entry).use { it.readBytes() }
@@ -302,21 +295,18 @@ private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
     val opf = epub.xml(opfPath) ?: return assemble(emptyList())
     val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
     val titles = epub.titles(manifest.values.toList(), opfPath)
-    val parts =
-        opf.select("spine > itemref").mapNotNull { reference ->
-            val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
-            val path = epub.resolve(opfPath, item.attr("href"))
-            val body =
-                epub.bytes(path)?.let { Jsoup.parse(String(it)).body() }
-                    ?: return@mapNotNull null
-            val hints =
-                "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
-                    .lowercase()
-            val isFrontMatter =
-                FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
-            if (isFrontMatter) return@mapNotNull null
-            titles[path] to htmlBlocks(body) { epub.bytes(epub.resolve(path, it)) }
-        }
+    val parts = opf.select("spine > itemref").mapNotNull { reference ->
+        val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
+        val path = epub.resolve(opfPath, item.attr("href"))
+        val body = epub.bytes(path)?.let { Jsoup.parse(String(it)).body() }
+            ?: return@mapNotNull null
+        val hints = "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
+            .lowercase()
+        val isFrontMatter =
+            FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
+        if (isFrontMatter) return@mapNotNull null
+        titles[path] to htmlBlocks(body) { epub.bytes(epub.resolve(path, it)) }
+    }
     assemble(parts)
 }
 
@@ -328,18 +318,16 @@ private fun readFictionBook(file: File): TextDocument {
     return assemble(
         sections.map { section ->
             val title = section.selectFirst("> title")?.text()
-            val blocks =
-                section.select("p, v, subtitle").mapNotNull { paragraph ->
-                    val (text, spans) = inline(paragraph)
-                    val isTitle = paragraph.parents().any { it.tagName() == "title" }
-                    val level =
-                        when {
-                            isTitle -> 1
-                            paragraph.tagName() == "subtitle" -> 3
-                            else -> 0
-                        }
-                    Block(text, level, level > 0, spans).takeIf { text.isNotEmpty() }
+            val blocks = section.select("p, v, subtitle").mapNotNull { paragraph ->
+                val (text, spans) = inline(paragraph)
+                val isTitle = paragraph.parents().any { it.tagName() == "title" }
+                val level = when {
+                    isTitle -> 1
+                    paragraph.tagName() == "subtitle" -> 3
+                    else -> 0
                 }
+                Block(text, level, level > 0, spans).takeIf { text.isNotEmpty() }
+            }
             title to blocks
         },
     )

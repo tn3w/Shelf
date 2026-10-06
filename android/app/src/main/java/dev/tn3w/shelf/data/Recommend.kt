@@ -81,14 +81,13 @@ class Row(
     val sources: List<Book> = emptyList(),
     val author: Author? = null,
 ) {
-    val key =
-        listOf(
-            kind.name,
-            "${books.firstOrNull()?.work}",
-            sources.joinToString("-") { "${it.work}" },
-            "${author?.number}",
-        )
-            .joinToString("-")
+    val key = listOf(
+        kind.name,
+        "${books.firstOrNull()?.work}",
+        sources.joinToString("-") { "${it.work}" },
+        "${author?.number}",
+    )
+        .joinToString("-")
 }
 
 private fun titleKey(book: Book): TitleKey {
@@ -217,10 +216,9 @@ class Recommender(private val catalogue: Catalogue) {
     }
 
     private fun retrieve(cluster: Cluster): Set<Int> {
-        val tags =
-            cluster.vector.keys
-                .filter { slug[it] !in FORM_TAGS }
-                .sortedByDescending { cluster.vector.getValue(it) }
+        val tags = cluster.vector.keys
+            .filter { slug[it] !in FORM_TAGS }
+            .sortedByDescending { cluster.vector.getValue(it) }
         val works = mutableSetOf<Int>()
         if (tags.isNotEmpty()) {
             val pool = catalogue.tagWorks(tags[0])
@@ -242,11 +240,9 @@ class Recommender(private val catalogue: Catalogue) {
 
     private fun quality(work: Int): Double {
         val popularity = catalogue.ranks?.popularity(work) ?: return 0.0
-        val readers =
-            min(1.0, ln(1.0 + popularity.readers) / ln(1.0 + READERS_REFERENCE))
-        val mean =
-            (RATING_PRIOR * 3.8 + popularity.rating * popularity.ratings) /
-                (RATING_PRIOR + popularity.ratings)
+        val readers = min(1.0, ln(1.0 + popularity.readers) / ln(1.0 + READERS_REFERENCE))
+        val mean = (RATING_PRIOR * 3.8 + popularity.rating * popularity.ratings) /
+            (RATING_PRIOR + popularity.ratings)
         return 0.7 * readers + 0.3 * (mean - 3.0) / 2.0
     }
 
@@ -263,10 +259,9 @@ class Recommender(private val catalogue: Catalogue) {
         if (neighbour <= 0.2) return null
         val general = overlap(vector, profile.tags)
         val specificity = min(1.0, specificTags(cluster.vector) / SPECIFIC_TAGS)
-        val value =
-            0.40 * specificity * neighbour +
-                (0.20 + 0.30 * (1 - specificity)) * general +
-                (0.40 + 0.10 * (1 - specificity)) * quality(work)
+        val value = 0.40 * specificity * neighbour +
+            (0.20 + 0.30 * (1 - specificity)) * general +
+            (0.40 + 0.10 * (1 - specificity)) * quality(work)
         val younger = max(0.0, -gap)
         val older = max(0.0, gap)
         val covered = 0.3 + 0.7 * coverage(vector, cluster.vector)
@@ -322,13 +317,12 @@ class Recommender(private val catalogue: Catalogue) {
         taken: MutableSet<TitleKey>,
         size: Int,
     ): Row? {
-        val books =
-            profile.library
-                .mapNotNull { work -> nextVolume(work, profile) }
-                .distinct()
-                .let(catalogue::books)
-                .filter { taken.add(titleKey(it)) }
-                .take(size)
+        val books = profile.library
+            .mapNotNull { work -> nextVolume(work, profile) }
+            .distinct()
+            .let(catalogue::books)
+            .filter { taken.add(titleKey(it)) }
+            .take(size)
         return if (books.size < MIN_SERIES_ROW) null else Row(RowKind.Series, books)
     }
 
@@ -361,25 +355,23 @@ class Recommender(private val catalogue: Catalogue) {
         taken: MutableSet<TitleKey>,
         size: Int,
     ): List<Row> {
-        val authors =
-            profile.clusters
-                .flatMap { cluster -> cluster.sources.map { it.book to cluster.weight } }
-                .mapNotNull { (book, weight) -> book.authors.firstOrNull()?.to(weight) }
-                .groupBy({ it.first }, { it.second })
-                .mapValues { it.value.sum() }
-                .entries
-                .sortedByDescending { it.value }
-                .map { it.key }
+        val authors = profile.clusters
+            .flatMap { cluster -> cluster.sources.map { it.book to cluster.weight } }
+            .mapNotNull { (book, weight) -> book.authors.firstOrNull()?.to(weight) }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { it.value.sum() }
+            .entries
+            .sortedByDescending { it.value }
+            .map { it.key }
         val rows = mutableListOf<Row>()
         for (author in authors) {
             if (rows.size >= MAX_AUTHOR_ROWS) break
             val picker = picker(profile, taken, authorLimit = size)
-            val books =
-                worksOf(author)
-                    .sortedByDescending(catalogue::score)
-                    .take(size * 4)
-                    .mapNotNull(picker::accept)
-                    .take(size)
+            val books = worksOf(author)
+                .sortedByDescending(catalogue::score)
+                .take(size * 4)
+                .mapNotNull(picker::accept)
+                .take(size)
             if (books.size >= MIN_ROW) rows += Row(RowKind.Author, books, author = author)
         }
         return rows
@@ -399,9 +391,8 @@ class Recommender(private val catalogue: Catalogue) {
         seriesRow(profile, taken, size)?.let { rows += it }
         for (cluster in profile.clusters) {
             val picker = picker(profile, taken)
-            val books =
-                rank(profile, cluster, random, size * 4)
-                    .mapNotNull { picker.accept(it.work) }
+            val books = rank(profile, cluster, random, size * 4)
+                .mapNotNull { picker.accept(it.work) }
             if (books.size >= MIN_ROW) {
                 rows += Row(RowKind.Because, books.take(size), cluster.readBooks)
             }
@@ -413,8 +404,7 @@ class Recommender(private val catalogue: Catalogue) {
     fun similar(book: Book, limit: Int = 12): List<Book> {
         val profile = buildProfile(listOf(book.toSaved(Shelf.Read)), emptySet())
         val cluster = profile.clusters.firstOrNull() ?: return popular(limit)
-        val picker =
-            Picker(setOf(book.work), titles = mutableSetOf(titleKey(book)))
+        val picker = Picker(setOf(book.work), titles = mutableSetOf(titleKey(book)))
         return rank(profile, cluster, Random(book.work.toLong()), limit * 4)
             .mapNotNull { picker.accept(it.work) }
             .take(limit)
@@ -428,13 +418,10 @@ class Recommender(private val catalogue: Catalogue) {
     fun byAuthor(book: Book, limit: Int = 12): List<Book> {
         val author = book.authors.firstOrNull() ?: return emptyList()
         val sameSeries = catalogue.series(book.work)?.members.orEmpty().toSet()
-        val works =
-            worksOf(author).filter { it != book.work && it !in sameSeries }
-                .sortedByDescending(catalogue::score)
+        val works = worksOf(author).filter { it != book.work && it !in sameSeries }
+            .sortedByDescending(catalogue::score)
         return distinct(
-            catalogue.books(works.take(limit * 3)),
-            limit,
-            setOf(titleKey(book)),
+            catalogue.books(works.take(limit * 3)), limit, setOf(titleKey(book)),
         )
     }
 
@@ -450,12 +437,11 @@ class Recommender(private val catalogue: Catalogue) {
             grouped.entries.partition { it.key != null && it.value.size > 1 }
         val standalone = single.flatMap { it.value }
         val byScore = compareByDescending<Book> { catalogue.score(it.work) }
-        val groups =
-            series
-                .map { (name, members) -> AuthorGroup(name, readingOrder(members)) }
-                .sortedByDescending { group ->
-                    group.books.maxOf { catalogue.score(it.work) }
-                }
+        val groups = series
+            .map { (name, members) -> AuthorGroup(name, readingOrder(members)) }
+            .sortedByDescending { group ->
+                group.books.maxOf { catalogue.score(it.work) }
+            }
         if (standalone.isEmpty()) return groups
         return groups + AuthorGroup(null, standalone.sortedWith(byScore))
     }

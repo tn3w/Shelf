@@ -9,30 +9,7 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.glowPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.scanlines
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.stars
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.sin
@@ -93,8 +70,7 @@ private fun note(cover: CoverCanvas, x: Float, y: Float, photo: Boolean) = with(
     val shadow = fillPaint(alpha(Color.BLACK, 0.4f))
     shadow.maskFilter = BlurMaskFilter(unit(0.01f), BlurMaskFilter.Blur.NORMAL)
     canvas.drawRect(RectF(card).apply { offset(unit(0.006f), unit(0.01f)) }, shadow)
-    val paper =
-        random.pick(listOf(Color.rgb(246, 240, 226), Color.rgb(250, 232, 150)))
+    val paper = random.pick(listOf(Color.rgb(246, 240, 226), Color.rgb(250, 232, 150)))
     canvas.drawRect(card, fillPaint(if (photo) Color.rgb(240, 240, 236) else paper))
     if (photo) {
         val image = RectF(card).apply { inset(half * 0.12f, half * 0.12f) }
@@ -169,15 +145,7 @@ internal fun scifiRetro(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
     canvas.drawLine(
-        0f,
-        horizon,
-        width,
-        horizon,
-        glowPaint(
-            magenta,
-            unit(0.01f),
-            unit(0.004f),
-        ),
+        0f, horizon, width, horizon, glowPaint(magenta, unit(0.01f), unit(0.004f)),
     )
 
     scanlines(0.12f, height / 320f)
@@ -201,9 +169,7 @@ internal fun scifiRetro(cover: CoverCanvas): Typeset = with(cover) {
 
 internal fun dystopianBarcode(cover: CoverCanvas): Typeset = with(cover) {
     val base = hsv(
-        random.range(0f, 1f),
-        random.range(0.02f, 0.10f),
-        random.range(0.14f, 0.22f),
+        random.range(0f, 1f), random.range(0.02f, 0.10f), random.range(0.14f, 0.22f),
     )
     val alarm = hsv(random.pick(listOf(1f, 0.03f, 0.08f)), 0.85f, 0.85f)
     verticalGradient(shade(base, 1.3f), base, 1f)
@@ -308,8 +274,7 @@ internal fun romanceLetter(cover: CoverCanvas): Typeset = with(cover) {
         strokePaint(shade(wax, 0.75f), unit(0.004f)),
     )
     canvas.drawPath(
-        heart(envelope.centerX(), flapY, seal * 0.3f),
-        fillPaint(shade(wax, 0.75f)),
+        heart(envelope.centerX(), flapY, seal * 0.3f), fillPaint(shade(wax, 0.75f)),
     )
     canvas.restore()
 
@@ -373,22 +338,12 @@ internal fun humorPop(cover: CoverCanvas): Typeset = with(cover) {
     val outline = strokePaint(Color.rgb(20, 20, 24), unit(0.012f))
     val points = random.between(12, 18)
     val big = starPath(
-        centerX,
-        centerY,
-        width * 0.34f,
-        width * 0.24f,
-        points,
-        random.range(0f, 1f),
+        centerX, centerY, width * 0.34f, width * 0.24f, points, random.range(0f, 1f),
     )
     canvas.drawPath(big, fillPaint(burst))
     canvas.drawPath(big, outline)
     val small = starPath(
-        centerX,
-        centerY,
-        width * 0.20f,
-        width * 0.14f,
-        points,
-        random.range(0f, 1f),
+        centerX, centerY, width * 0.20f, width * 0.14f, points, random.range(0f, 1f),
     )
     canvas.drawPath(small, fillPaint(core))
     canvas.drawPath(small, outline)
@@ -502,11 +457,7 @@ internal fun vintageDeco(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawCircle(centerX, centerY, radius * 0.2f, fillPaint(gold))
     canvas.drawRect(0f, centerY, width, height, fillPaint(night))
     canvas.drawLine(
-        width * 0.08f,
-        centerY,
-        width * 0.92f,
-        centerY,
-        strokePaint(gold, unit(0.005f)),
+        width * 0.08f, centerY, width * 0.92f, centerY, strokePaint(gold, unit(0.005f)),
     )
 
     grain(0.03f)
@@ -577,10 +528,7 @@ internal fun technicalAtom(cover: CoverCanvas): Typeset = with(cover) {
 
     val orbits = random.pick(listOf(3, 4))
     val orbit = RectF(
-        centerX - reach,
-        centerY - reach * 0.3f,
-        centerX + reach,
-        centerY + reach * 0.3f,
+        centerX - reach, centerY - reach * 0.3f, centerX + reach, centerY + reach * 0.3f,
     )
     for (index in 0 until orbits) {
         val degrees = 180f * index / orbits + 20f
@@ -602,8 +550,7 @@ internal fun technicalAtom(cover: CoverCanvas): Typeset = with(cover) {
     for (index in 0 until 9) {
         val angle = TAU * index / 9 * 2.3f
         val distance = nucleus * 0.7f * (index % 3) / 2f
-        val tone =
-            if (index % 2 == 0) hsv(0.02f, 0.7f, 0.9f) else hsv(hue, 0.2f, 0.85f)
+        val tone = if (index % 2 == 0) hsv(0.02f, 0.7f, 0.9f) else hsv(hue, 0.2f, 0.85f)
         canvas.drawCircle(
             centerX + cos(angle) * distance,
             centerY + sin(angle) * distance,
@@ -694,12 +641,7 @@ private fun pin(cover: CoverCanvas, x: Float, y: Float, color: Int) = with(cover
     val drop = Path()
     drop.moveTo(x, y)
     drop.cubicTo(
-        x - size * 1.6f,
-        y - size * 1.4f,
-        x - size,
-        y - size * 2.8f,
-        x,
-        y - size * 2.8f,
+        x - size * 1.6f, y - size * 1.4f, x - size, y - size * 2.8f, x, y - size * 2.8f,
     )
     drop.cubicTo(x + size, y - size * 2.8f, x + size * 1.6f, y - size * 1.4f, x, y)
     drop.close()

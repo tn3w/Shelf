@@ -21,8 +21,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 9
-        versionName = "1.1.7"
+        versionCode = 10
+        versionName = "1.2.0"
     }
 
     flavorDimensions += "distribution"

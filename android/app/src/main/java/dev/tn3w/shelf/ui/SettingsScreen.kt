@@ -6,128 +6,128 @@ import android.os.Build
 import android.os.LocaleList
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
-import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
-import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts.*
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Update
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.tn3w.shelf.AppRelease
-import dev.tn3w.shelf.BuildConfig
-import dev.tn3w.shelf.Download
-import dev.tn3w.shelf.Navigator
+import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.Updater
-import dev.tn3w.shelf.data.COVERS
-import dev.tn3w.shelf.data.LANGUAGES
-import dev.tn3w.shelf.data.PackInfo
-import dev.tn3w.shelf.data.PackState
-import dev.tn3w.shelf.data.REPOSITORY
-import dev.tn3w.shelf.data.Settings
-import dev.tn3w.shelf.data.ThemeMode
-import dev.tn3w.shelf.data.isOffline
-import dev.tn3w.shelf.data.isValidSource
-import dev.tn3w.shelf.data.networkPermitted
-import kotlinx.coroutines.Dispatchers
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private const val BACKUP_FILE = "shelf-library.zip"
 private val BACKUP_TYPES = arrayOf("application/zip", "application/octet-stream")
+private const val CSV_FILE = "shelf-library.csv"
 private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
 private const val OPEN_LIBRARY_URL = "https://openlibrary.org/developers/licensing"
 private val GOALS = listOf(5, 10, 20, 30, 50)
-private val THEMES =
-    listOf(
-        ThemeMode.System to R.string.theme_system,
-        ThemeMode.Light to R.string.theme_light,
-        ThemeMode.Dark to R.string.theme_dark,
-    )
-private val PACK_LABELS =
-    mapOf(
-        "core" to R.string.pack_core,
-        "fantasy" to R.string.pack_fantasy,
-        "scifi" to R.string.pack_scifi,
-        "mystery" to R.string.pack_mystery,
-        "romance" to R.string.pack_romance,
-        "kids" to R.string.pack_kids,
-        "young-adult" to R.string.pack_young_adult,
-        "nonfiction" to R.string.pack_nonfiction,
-        "general" to R.string.pack_general,
-    )
+private const val MAX_GOAL = 500
+private val SPACINGS = mapOf(
+    1.35f to R.string.spacing_compact,
+    1.55f to R.string.normal,
+    1.8f to R.string.spacing_relaxed,
+)
+private val MARGINS =
+    mapOf(16 to R.string.margin_narrow, 28 to R.string.normal, 44 to R.string.margin_wide)
+private val TYPEFACES = mapOf(
+    true to R.string.typeface_serif, false to R.string.typeface_sans,
+)
+private val PAGE_COLORS = mapOf(
+    PageColor.Theme to R.string.page_app,
+    PageColor.Paper to R.string.page_paper,
+    PageColor.Night to R.string.page_night,
+)
+private val THEMES = mapOf(
+    ThemeMode.System to R.string.theme_system,
+    ThemeMode.Light to R.string.theme_light,
+    ThemeMode.Dark to R.string.theme_dark,
+)
+private val PACK_LABELS = mapOf(
+    "core" to R.string.pack_core,
+    "fantasy" to R.string.pack_fantasy,
+    "scifi" to R.string.pack_scifi,
+    "mystery" to R.string.pack_mystery,
+    "romance" to R.string.pack_romance,
+    "kids" to R.string.pack_kids,
+    "young-adult" to R.string.pack_young_adult,
+    "nonfiction" to R.string.pack_nonfiction,
+    "general" to R.string.pack_general,
+)
+
+enum class SettingsPage {
+    Main,
+    Catalogue,
+    General,
+    Reading,
+    Privacy,
+    Data,
+}
+
+private class Category(
+    val page: SettingsPage,
+    val icon: ImageVector,
+    @StringRes val title: Int,
+    @StringRes val summary: Int,
+)
+
+private val CATEGORIES = listOf(
+    Category(
+        SettingsPage.Catalogue,
+        Icons.Outlined.AutoStories,
+        R.string.catalogue,
+        R.string.catalogue_hint,
+    ),
+    Category(
+        SettingsPage.General,
+        Icons.Outlined.Palette,
+        R.string.general,
+        R.string.general_hint,
+    ),
+    Category(
+        SettingsPage.Reading,
+        Icons.AutoMirrored.Outlined.MenuBook,
+        R.string.reading_settings,
+        R.string.reading_hint,
+    ),
+    Category(
+        SettingsPage.Privacy,
+        Icons.Outlined.Shield,
+        R.string.privacy,
+        R.string.privacy_hint,
+    ),
+    Category(
+        SettingsPage.Data,
+        Icons.Outlined.Inventory2,
+        R.string.your_data,
+        R.string.your_data_hint,
+    ),
+)
 
 private fun nativeName(language: String) = Locale.forLanguageTag(language).let {
     it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
@@ -159,188 +159,522 @@ private fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
         .value
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(navigator: Navigator) {
-    val app = shelfApp()
-    val context = LocalContext.current
-    val (settings, update) = rememberSettings()
-    val scope = rememberCoroutineScope()
-    val language = settings.language
-    var refreshes by remember { mutableIntStateOf(0) }
-    val packs = packInfos(language, refreshes)
-    val offline = settings.isOffline(context)
-
+fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
+    val title = CATEGORIES.firstOrNull { it.page == page }?.title ?: R.string.settings
     Column(
         Modifier.windowInsetsPadding(WindowInsets.systemBars)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 24.dp),
     ) {
-        BackBar(navigator::back, stringResource(R.string.settings))
+        BackBar(navigator::back)
+        LargeTitle(stringResource(title))
+        when (page) {
+            SettingsPage.Main -> SettingsOverview(navigator)
+            SettingsPage.Catalogue -> CatalogueSettings()
+            SettingsPage.General -> GeneralSettings(navigator)
+            SettingsPage.Reading -> ReadingSettings()
+            SettingsPage.Privacy -> PrivacySettings()
+            SettingsPage.Data -> DataSettings()
+        }
+    }
+}
 
-        SectionHeader(
-            stringResource(R.string.catalogue),
-            stringResource(R.string.catalogue_hint),
-        )
-        CatalogueLanguageChoice(language) { chosen ->
+@Composable
+private fun SettingsOverview(navigator: Navigator) {
+    LibraryStats(navigator::library)
+    SettingsGroup {
+        CATEGORIES.forEach { category ->
+            LinkRow(
+                stringResource(category.title),
+                stringResource(category.summary),
+                category.icon,
+            ) { navigator.settings(category.page) }
+        }
+    }
+    SettingsGroup(
+        stringResource(R.string.about), stringResource(R.string.settings_footer),
+    ) { AboutRows() }
+}
+
+@Composable
+private fun CatalogueSettings() {
+    val app = shelfApp()
+    val (settings, update) = rememberSettings()
+    val language = app.bookLanguage(settings)
+    var refreshes by remember { mutableIntStateOf(0) }
+    val packs = packInfos(language, refreshes)
+
+    SettingsGroup(
+        stringResource(R.string.catalogue_language),
+        stringResource(R.string.book_language_hint),
+    ) {
+        LanguageChoice(settings.language) { chosen ->
             update { it.copy(language = chosen) }
-            app.reload(chosen)
         }
-        PackList(language, packs, offline)
-        if (!offline) {
-            LinkRow(R.string.check_catalogue) {
-                scope.launch {
-                    runCatching { app.packs.refreshManifest() }
-                    refreshes++
-                }
-            }
-        }
+    }
 
-        SectionHeader(
-            stringResource(R.string.own_sources),
-            stringResource(R.string.own_sources_hint),
-        )
-        SourceRows(language, settings, { refreshes++ }) { refreshes++ }
+    PackList(language, packs, settings.isOffline(LocalContext.current)) { refreshes++ }
+    SettingsGroup(
+        stringResource(R.string.own_sources), stringResource(R.string.own_sources_hint),
+    ) { SourceRows(language, settings, { refreshes++ }) { refreshes++ } }
+}
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            SectionHeader(stringResource(R.string.app_language))
-            AppLanguageChoice()
-        }
-
-        SectionHeader(stringResource(R.string.appearance))
-        SingleChoiceSegmentedButtonRow(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
+@Composable
+private fun LibraryStats(onOpen: () -> Unit) {
+    val app = shelfApp()
+    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
+    val habit by app.library.habit.collectAsStateWithLifecycle(null)
+    val stats = listOf(
+        saved.size to R.string.stat_books,
+        saved.count { it.shelf == Shelf.Read } to R.string.finished,
+        (habit?.streak ?: 0) to R.string.stat_streak,
+    )
+    SettingsGroup {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 16.dp),
         ) {
-            THEMES.forEachIndexed { index, (mode, label) ->
-                SegmentedButton(
-                    selected = settings.theme == mode,
-                    onClick = { update { it.copy(theme = mode) } },
-                    shape = SegmentedButtonDefaults.itemShape(index, THEMES.size),
+            stats.forEach { (value, label) ->
+                Column(
+                    Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(stringResource(label))
+                    Text(
+                        value.toString(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        stringResource(label),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
+    }
+}
 
-        SectionHeader(
-            stringResource(R.string.daily_goal),
-            stringResource(R.string.daily_goal_hint),
-        )
-        FlowRow(
-            Modifier.padding(horizontal = ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            GOALS.forEach { goal ->
-                FilterChip(
-                    selected = settings.dailyGoal == goal,
-                    onClick = { update { it.copy(dailyGoal = goal) } },
-                    label = { Text(stringResource(R.string.goal_pages, goal)) },
-                )
-            }
+@Composable
+private fun GeneralSettings(navigator: Navigator) {
+    val app = shelfApp()
+    val (settings, update) = rememberSettings()
+    SettingsGroup(stringResource(R.string.appearance)) {
+        OptionChoice(THEMES, settings.theme) { mode -> update { it.copy(theme = mode) } }
+        SwitchRow(
+            R.string.black_theme, R.string.black_theme_hint, settings.blackTheme,
+        ) { on -> update { it.copy(blackTheme = on) } }
+        if (wallpaperColorsSupported) {
+            SwitchRow(
+                R.string.wallpaper_colors,
+                R.string.wallpaper_colors_hint,
+                settings.wallpaperColors,
+            ) { on -> update { it.copy(wallpaperColors = on) } }
         }
+        SwitchRow(
+            R.string.reduce_motion, R.string.reduce_motion_hint, settings.reduceMotion,
+        ) { on -> update { it.copy(reduceMotion = on) } }
+    }
+    SettingsGroup(stringResource(R.string.language)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) AppLanguageChoice()
+        val auto = stringResource(R.string.language_auto).takeIf {
+            settings.language.isEmpty()
+        }
+        val book = listOfNotNull(auto, nativeName(app.bookLanguage(settings)))
+        LinkRow(stringResource(R.string.catalogue_language), book.joinToString(" · ")) {
+            navigator.settings(SettingsPage.Catalogue)
+        }
+    }
+}
 
-        SectionHeader(stringResource(R.string.privacy))
+@Composable
+private fun ReadingSettings() {
+    val (settings, update) = rememberSettings()
+    var scale by remember(settings.fontScale) { mutableFloatStateOf(settings.fontScale) }
+    SettingsGroup(
+        stringResource(R.string.daily_goal), stringResource(R.string.daily_goal_hint),
+    ) { GoalChoice(settings.dailyGoal) { goal -> update { it.copy(dailyGoal = goal) } } }
+    SettingsGroup(stringResource(R.string.reader), stringResource(R.string.reader_hint)) {
+        ReaderPreview(settings.copy(fontScale = scale))
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.text_size),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                "${(scale * 100).roundToInt()} %",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Slider(
+            scale,
+            { scale = it },
+            Modifier.padding(horizontal = 16.dp),
+            valueRange = 0.7f..1.8f,
+            steps = 10,
+            onValueChangeFinished = { update { it.copy(fontScale = scale) } },
+        )
+        OptionChoice(SPACINGS, settings.lineSpacing, R.string.line_spacing) { value ->
+            update { it.copy(lineSpacing = value) }
+        }
+        OptionChoice(MARGINS, settings.margin, R.string.margins) { value ->
+            update { it.copy(margin = value) }
+        }
+        OptionChoice(TYPEFACES, settings.serif, R.string.typeface) { value ->
+            update { it.copy(serif = value) }
+        }
+        OptionChoice(PAGE_COLORS, settings.pageColor, R.string.page_color) { value ->
+            update { it.copy(pageColor = value) }
+        }
+        SwitchRow(R.string.justify, R.string.justify_hint, settings.justify) { on ->
+            update { it.copy(justify = on) }
+        }
+    }
+    SettingsGroup {
+        SwitchRow(
+            R.string.keep_screen_on, R.string.keep_screen_on_hint, settings.keepScreenOn,
+        ) { on -> update { it.copy(keepScreenOn = on) } }
+        SwitchRow(
+            R.string.volume_keys, R.string.volume_keys_hint, settings.volumeKeys,
+        ) { on -> update { it.copy(volumeKeys = on) } }
+    }
+}
+
+@Composable
+private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
+    var editing by remember { mutableStateOf(false) }
+    val custom = goal.takeIf { it !in GOALS } ?: 0
+    Choice(GOALS + custom, goal, { if (it == custom) editing = true else onChange(it) }) {
+        if (it == 0) "…" else it.toString()
+    }
+    if (editing) {
+        GoalDialog(goal, onDismiss = { editing = false }) {
+            editing = false
+            onChange(it)
+        }
+    }
+}
+
+@Composable
+private fun GoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+    var text by remember { mutableStateOf(current.toString()) }
+    val goal = text.toIntOrNull()?.takeIf { it in 1..MAX_GOAL }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.daily_goal)) },
+        text = {
+            OutlinedTextField(
+                text,
+                { text = it.filter(Char::isDigit).take(3) },
+                suffix = { Text(stringResource(R.string.pages_suffix)) },
+                singleLine = true,
+                isError = goal == null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        },
+        confirmButton = {
+            TextButton(enabled = goal != null, onClick = { goal?.let(onSave) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun ReaderPreview(settings: Settings) {
+    val palette = pagePalette(settings)
+    val shape = RoundedCornerShape(16.dp)
+    Text(
+        stringResource(R.string.reader_sample),
+        style = readerStyle(settings, palette.text),
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis,
+        modifier =
+        Modifier.fillMaxWidth()
+            .padding(12.dp)
+            .background(palette.background, shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .padding(horizontal = (settings.margin * 0.6f).dp, vertical = 16.dp),
+    )
+}
+
+@Composable
+private fun <T> OptionChoice(
+    options: Map<T, Int>,
+    selected: T,
+    @StringRes title: Int? = null,
+    onSelect: (T) -> Unit,
+) {
+    Choice(options.keys.toList(), selected, onSelect, title) {
+        stringResource(options.getValue(it))
+    }
+}
+
+@Composable
+private fun PrivacySettings() {
+    val context = LocalContext.current
+    val (settings, update) = rememberSettings()
+    val offline = settings.isOffline(context)
+    SettingsGroup(hint = stringResource(R.string.privacy_note)) {
         OfflineRow(settings, update)
+    }
+    SettingsGroup(hint = stringResource(R.string.privacy_requests_hint)) {
         SwitchRow(
             R.string.online_covers,
             R.string.online_covers_hint,
             settings.onlineCovers,
             enabled = !offline,
-        ) { value ->
-            update { it.copy(onlineCovers = value) }
-        }
+        ) { value -> update { it.copy(onlineCovers = value) } }
         SwitchRow(
             R.string.author_images,
             R.string.author_images_hint,
             settings.authorImages,
             enabled = !offline,
-        ) { value ->
-            update { it.copy(authorImages = value) }
-        }
+        ) { value -> update { it.copy(authorImages = value) } }
         SwitchRow(
             R.string.catalogue_updates,
             R.string.catalogue_updates_hint,
             settings.catalogueUpdates,
             enabled = !offline,
-        ) { value ->
-            update { it.copy(catalogueUpdates = value) }
-        }
+        ) { value -> update { it.copy(catalogueUpdates = value) } }
         if (Updater.isEnabled(context)) {
             SwitchRow(
                 R.string.check_updates,
                 R.string.check_updates_hint,
                 settings.checkUpdates,
                 enabled = !offline,
-            ) { value ->
-                update { it.copy(checkUpdates = value) }
-            }
+            ) { value -> update { it.copy(checkUpdates = value) } }
         }
-
-        SectionHeader(
-            stringResource(R.string.backup),
-            stringResource(R.string.backup_hint),
-        )
-        BackupRows()
-
-        LinkRow(R.string.about, navigator::about)
-        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun LanguageChoice(
-    options: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit,
-    label: @Composable (String) -> String,
+private fun DataSettings() {
+    SettingsGroup(stringResource(R.string.backup), stringResource(R.string.backup_hint)) {
+        BackupRows()
+    }
+    SettingsGroup(stringResource(R.string.csv), stringResource(R.string.csv_hint)) {
+        CsvRows()
+    }
+}
+
+@Composable
+private fun SettingsGroup(
+    title: String? = null,
+    hint: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    SingleChoiceSegmentedButtonRow(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).padding(top = 20.dp),
     ) {
-        options.forEachIndexed { index, language ->
+        title?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+            )
+        }
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainer,
+        ) { Column(Modifier.padding(vertical = 4.dp), content = content) }
+        hint?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable () -> Unit = {},
+) {
+    val clickable = onClick?.let { Modifier.clickable(enabled, onClick = it) } ?: Modifier
+    Row(
+        clickable
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        icon?.let { IconBadge(it) }
+        Column(Modifier.weight(1f).alpha(if (enabled) 1f else 0.5f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            summary?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Box(Modifier.widthIn(min = 48.dp), contentAlignment = Alignment.Center) {
+            trailing()
+        }
+    }
+}
+
+@Composable
+private fun IconBadge(icon: ImageVector) {
+    Box(
+        Modifier.size(40.dp)
+            .background(
+                MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun LinkRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+) = SettingRow(title, summary, icon, onClick = onClick) {
+    Icon(
+        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun ActionRow(
+    @StringRes title: Int,
+    icon: ImageVector,
+    status: String? = null,
+    busy: Boolean = false,
+    onClick: () -> Unit,
+) = SettingRow(stringResource(title), status, onClick = { if (!busy) onClick() }) {
+    if (busy) {
+        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+    } else {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun SwitchRow(
+    @StringRes title: Int,
+    @StringRes hint: Int,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onChange: (Boolean) -> Unit,
+) = SettingRow(
+    stringResource(title),
+    stringResource(hint),
+    enabled = enabled,
+    onClick = { onChange(!checked) },
+) { Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) }
+
+@Composable
+private fun <T> Choice(
+    options: List<T>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    @StringRes title: Int? = null,
+    label: @Composable (T) -> String,
+) {
+    title?.let {
+        Text(
+            stringResource(it),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        )
+    }
+    SingleChoiceSegmentedButtonRow(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        options.forEachIndexed { index, option ->
             SegmentedButton(
-                selected = selected == language,
-                onClick = { onSelect(language) },
+                selected = selected == option,
+                onClick = { onSelect(option) },
                 shape = SegmentedButtonDefaults.itemShape(index, options.size),
                 icon = {},
-            ) {
-                Text(label(language), maxLines = 1)
-            }
+            ) { Text(label(option), maxLines = 1) }
         }
     }
 }
 
 @Composable
 private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit) =
-    LanguageChoice(LANGUAGES, selected, onSelect) { nativeName(it) }
+    Choice(LANGUAGES, selected, onSelect) { nativeName(it) }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun AppLanguageChoice() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
     val manager = LocalContext.current.getSystemService(LocaleManager::class.java)
     var current by remember {
         mutableStateOf(manager.applicationLocales.toLanguageTags())
     }
-    val onSelect = { language: String ->
+    LanguageChoice(current, R.string.app_language) { language ->
         current = language
         manager.applicationLocales = LocaleList.forLanguageTags(language)
-    }
-    LanguageChoice(listOf("") + LANGUAGES, current, onSelect) {
-        if (it.isEmpty()) stringResource(R.string.theme_system) else it.uppercase()
     }
 }
 
 @Composable
-private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean) {
+private fun LanguageChoice(
+    selected: String,
+    @StringRes title: Int? = null,
+    onSelect: (String) -> Unit,
+) = Choice(listOf("") + LANGUAGES, selected, onSelect, title) {
+    if (it.isEmpty()) stringResource(R.string.language_auto) else it.uppercase()
+}
+
+@Composable
+private fun PackList(
+    language: String,
+    packs: List<PackInfo>?,
+    offline: Boolean,
+    onChecked: () -> Unit,
+) {
     val app = shelfApp()
     val downloads by app.downloads.collectAsStateWithLifecycle()
-    val storage by
-        produceState(0L, packs) {
-            value = withContext(Dispatchers.IO) { app.packs.storageBytes() }
-        }
-    Column(Modifier.padding(top = 8.dp)) {
+    val storage by produceState(0L, packs) {
+        value = withContext(Dispatchers.IO) { app.packs.storageBytes() }
+    }
+    val release by produceState<String?>(null, packs) {
+        value = withContext(Dispatchers.IO) { app.packs.months()[language] }
+    }
+    val details = listOfNotNull(
+        release?.let { stringResource(R.string.release_date, it) },
+        stringResource(R.string.storage_used, bytes(storage)),
+    )
+    val note = stringResource(R.string.open_library_note)
+    val hint = details.joinToString(" · ") + "\n" + note
+    val title = "${stringResource(R.string.packs)} · ${nativeName(language)}"
+    SettingsGroup(title, hint) {
         if (packs == null) {
-            LinearProgressIndicator(Modifier.fillMaxWidth().padding(ScreenPadding))
-            return
+            LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
+            return@SettingsGroup
         }
         packs.forEach { info ->
             PackRow(
@@ -351,32 +685,50 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 onRemove = { app.remove(language, info.pack) },
             )
         }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.storage_used, bytes(storage)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            val pending = packs.filter { it.state != PackState.Installed }
-            val pendingBytes = pending.sumOf { it.bytes }
-            if (offline || pendingBytes == 0L) {
-                if (storage > 0) {
-                    OutlinedButton(onClick = { app.removeAll(language) }) {
-                        Text(stringResource(R.string.delete_all))
-                    }
-                }
-                return@Row
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        val pending = packs.filter { it.state != PackState.Installed }
+        val pendingBytes = pending.sumOf { it.bytes }
+        if (!offline && pendingBytes > 0) {
+            ActionRow(
+                R.string.download_all_short, Icons.Outlined.Download, bytes(pendingBytes),
+            ) { pending.forEach { app.download(language, it.pack) } }
+        } else if (storage > 0) {
+            ActionRow(R.string.delete_all, Icons.Outlined.Delete) {
+                app.removeAll(language)
             }
-            OutlinedButton(
-                onClick = { pending.forEach { app.download(language, it.pack) } },
-            ) {
-                Text(stringResource(R.string.download_all, bytes(pendingBytes)))
-            }
+        }
+        if (!offline) CatalogueCheck(language, onChecked)
+    }
+}
+
+@Composable
+private fun CatalogueCheck(language: String, onChecked: () -> Unit) {
+    val app = shelfApp()
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<Int?>(null) }
+
+    suspend fun check(): Int {
+        app.packs.refreshManifest()
+        val now = System.currentTimeMillis()
+        app.library.updateSettings { it.copy(lastCatalogueCheck = now) }
+        val updates = withContext(Dispatchers.IO) { app.packs.pendingUpdates(language) }
+        if (updates.isEmpty()) return R.string.catalogue_current
+        return R.string.catalogue_found
+    }
+
+    ActionRow(
+        R.string.check_catalogue,
+        Icons.Outlined.Refresh,
+        status?.let { stringResource(it) },
+        checking,
+    ) {
+        checking = true
+        status = null
+        scope.launch {
+            status = runCatching { check() }.getOrDefault(R.string.catalogue_check_failed)
+            checking = false
+            onChecked()
         }
     }
 }
@@ -389,24 +741,17 @@ private class Source(
     val isValid: (String) -> Boolean,
 )
 
-private val CATALOGUE_SOURCE =
-    Source(
-        R.string.catalogue_source,
-        R.string.catalogue_source_hint,
-        REPOSITORY,
-        Settings::catalogueSource,
-        ::isValidSource,
-    )
+private val CATALOGUE_SOURCE = Source(
+    R.string.catalogue_source,
+    R.string.catalogue_source_hint,
+    REPOSITORY,
+    Settings::catalogueSource,
+    ::isValidSource,
+)
 
-private val COVER_SOURCE =
-    Source(
-        R.string.cover_source,
-        R.string.cover_source_hint,
-        COVERS,
-        Settings::coverSource,
-    ) {
-        it.isEmpty() || it.startsWith("https://")
-    }
+private val COVER_SOURCE = Source(
+    R.string.cover_source, R.string.cover_source_hint, COVERS, Settings::coverSource,
+) { it.isEmpty() || it.startsWith("https://") }
 
 @Composable
 private fun SourceRows(
@@ -420,23 +765,21 @@ private fun SourceRows(
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Source?>(null) }
     var status by remember { mutableStateOf<Int?>(null) }
-    val picker =
-        rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
-            if (uris.isEmpty()) return@rememberLauncherForActivityResult
-            scope.launch {
-                val imported = app.importCatalogue(language, uris)
-                val complete = (listOf(language) + LANGUAGES).firstOrNull {
-                    withContext(Dispatchers.IO) { app.packs.isComplete(it) }
-                }
-                status =
-                    when {
-                        !imported -> R.string.import_failed
-                        complete == null -> R.string.catalogue_incomplete
-                        else -> R.string.catalogue_imported
-                    }
-                onImported(complete)
+    val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        scope.launch {
+            val imported = app.importCatalogue(language, uris)
+            val complete = (listOf(language) + LANGUAGES).firstOrNull {
+                withContext(Dispatchers.IO) { app.packs.isComplete(it) }
             }
+            status = when {
+                !imported -> R.string.import_failed
+                complete == null -> R.string.catalogue_incomplete
+                else -> R.string.catalogue_imported
+            }
+            onImported(complete)
         }
+    }
     fun save(source: Source, value: String) = scope.launch {
         editing = null
         if (source == COVER_SOURCE) {
@@ -449,30 +792,20 @@ private fun SourceRows(
     }
 
     listOf(CATALOGUE_SOURCE, COVER_SOURCE).forEach { source ->
-        SourceRow(source, source.current(settings)) { editing = source }
+        val value = source.current(settings).ifEmpty { source.default }
+        LinkRow(stringResource(source.title), value.removePrefix("https://")) {
+            editing = source
+        }
     }
-    LinkRow(R.string.import_catalogue) { picker.launch(arrayOf("*/*")) }
-    status?.let { AboutText(stringResource(it)) }
+    ActionRow(
+        R.string.import_catalogue,
+        Icons.Outlined.FileOpen,
+        status?.let { stringResource(it) },
+    ) { picker.launch(arrayOf("*/*")) }
     editing?.let { source ->
         SourceDialog(source, source.current(settings), onDismiss = { editing = null }) {
             save(source, it)
         }
-    }
-}
-
-@Composable
-private fun SourceRow(source: Source, value: String, onClick: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 12.dp),
-    ) {
-        Text(stringResource(source.title), style = MaterialTheme.typography.bodyLarge)
-        Text(
-            value.ifEmpty { source.default }.removePrefix("https://"),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -513,24 +846,6 @@ private fun SourceDialog(
 }
 
 @Composable
-private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(horizontal = ScreenPadding, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(title),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        val icon = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore
-        Icon(icon, contentDescription = null)
-    }
-}
-
-@Composable
 private fun PackRow(
     info: PackInfo,
     download: Download?,
@@ -539,30 +854,14 @@ private fun PackRow(
     onRemove: () -> Unit,
 ) {
     val label = stringResource(PACK_LABELS.getValue(info.pack))
-    Row(
-        Modifier.fillMaxWidth()
-            .padding(start = ScreenPadding, end = 8.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            val state =
-                when (info.state) {
-                    PackState.Installed -> R.string.pack_installed
-                    PackState.Update -> R.string.pack_update
-                    PackState.Available -> R.string.pack_available
-                }
-            val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
-            Text(
-                stringResource(state) + size,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            DownloadBar(download)
-        }
-        AnimatedContent(download to info.state, label = "pack") { (running, state) ->
-            PackAction(label, running, state, info.pack, offline, onDownload, onRemove)
-        }
+    val state = when (info.state) {
+        PackState.Installed -> R.string.pack_installed
+        PackState.Update -> R.string.pack_update
+        PackState.Available -> R.string.pack_available
+    }
+    val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
+    SettingRow(label, stringResource(state) + size) {
+        PackAction(label, download, info.state, info.pack, offline, onDownload, onRemove)
     }
 }
 
@@ -571,8 +870,7 @@ private fun DownloadBar(download: Download?) {
     if (download !is Download.Running) return
     val progress by animateFloatAsState(download.progress)
     LinearProgressIndicator(
-        progress = { progress },
-        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
     )
 }
 
@@ -586,27 +884,34 @@ private fun PackAction(
     onDownload: () -> Unit,
     onRemove: () -> Unit,
 ) {
+    if (download is Download.Running) {
+        val progress by animateFloatAsState(download.progress)
+        return Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 3.dp,
+            )
+        }
+    }
     val removable = state != PackState.Available && pack != "core"
     val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
-    val action =
-        when {
-            download is Download.Running -> null
+    val action = when {
+        offline -> remove.takeIf { removable }
 
-            offline -> remove.takeIf { removable }
+        download is Download.Failed ->
+            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
 
-            download is Download.Failed ->
-                PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
+        state == PackState.Available ->
+            PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
 
-            state == PackState.Available ->
-                PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
+        state == PackState.Update ->
+            PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
 
-            state == PackState.Update ->
-                PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
+        removable -> remove
 
-            removable -> remove
-
-            else -> null
-        } ?: return Box(Modifier.size(48.dp))
+        else -> null
+    } ?: return Box(Modifier.size(48.dp))
     IconAction(action.icon, stringResource(action.label, label), action.onClick)
 }
 
@@ -617,37 +922,6 @@ private class PackButton(
 )
 
 @Composable
-private fun SwitchRow(
-    @StringRes title: Int,
-    @StringRes hint: Int,
-    checked: Boolean,
-    enabled: Boolean = true,
-    onChange: (Boolean) -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth()
-            .clickable(enabled = enabled) { onChange(!checked) }
-            .padding(horizontal = ScreenPadding, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val fade = if (enabled) 1f else 0.5f
-        Column(Modifier.weight(1f).padding(end = 16.dp)) {
-            Text(
-                stringResource(title),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = fade),
-            )
-            Text(
-                stringResource(hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = fade),
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
-    }
-}
-
-@Composable
 private fun OfflineRow(settings: Settings, update: SettingsUpdate) {
     val permitted = networkPermitted(LocalContext.current)
     SwitchRow(
@@ -655,60 +929,124 @@ private fun OfflineRow(settings: Settings, update: SettingsUpdate) {
         if (permitted) R.string.offline_mode_hint else R.string.offline_forced,
         checked = settings.offline || !permitted,
         enabled = permitted,
-    ) { value ->
-        update { it.copy(offline = value) }
-    }
+    ) { value -> update { it.copy(offline = value) } }
 }
 
 @Composable
 private fun BackupRows() {
     val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf<Int?>(null) }
-
-    fun report(action: suspend () -> Boolean) = scope.launch {
-        status = if (action()) R.string.backup_done else R.string.backup_failed
+    FileRow(
+        R.string.backup_export,
+        Icons.Outlined.Upload,
+        CreateDocument("application/zip"),
+        BACKUP_FILE,
+        R.string.csv_exported,
+        app.library::exportTo,
+    )
+    FileRow(
+        R.string.backup_import,
+        Icons.Outlined.Download,
+        OpenDocument(),
+        BACKUP_TYPES,
+        R.string.backup_done,
+    ) { uri ->
+        val done = app.library.importFrom(uri)
+        if (done) restoreSource(app)
+        done
     }
+}
 
-    suspend fun importFrom(uri: Uri): Boolean {
-        if (!app.library.importFrom(uri)) return false
-        val settings = app.library.settings.first()
-        if (settings.catalogueSource != app.packs.source) {
-            app.changeSource(settings.catalogueSource)
-        }
-        app.reload(settings.language)
-        return true
+private suspend fun restoreSource(app: ShelfApp) {
+    val settings = app.library.settings.first()
+    if (settings.catalogueSource != app.packs.source) {
+        app.changeSource(settings.catalogueSource)
     }
-
-    val export =
-        rememberLauncherForActivityResult(CreateDocument("application/zip")) { uri ->
-            uri?.let { target -> report { app.library.exportTo(target) } }
-        }
-    val import =
-        rememberLauncherForActivityResult(OpenDocument()) { uri ->
-            uri?.let { source -> report { importFrom(source) } }
-        }
-
-    LinkRow(R.string.backup_export) { export.launch(BACKUP_FILE) }
-    LinkRow(R.string.backup_import) { import.launch(BACKUP_TYPES) }
-    status?.let { AboutText(stringResource(it)) }
+    app.reload(app.bookLanguage(settings))
 }
 
 @Composable
-private fun LinkRow(@StringRes title: Int, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            stringResource(title),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+private fun <I> FileRow(
+    @StringRes title: Int,
+    icon: ImageVector,
+    contract: ActivityResultContract<I, Uri?>,
+    input: I,
+    @StringRes success: Int,
+    action: suspend (Uri) -> Boolean,
+) {
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<Int?>(null) }
+    val launcher = rememberLauncherForActivityResult(contract) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch { status = if (action(uri)) success else R.string.backup_failed }
     }
+    ActionRow(title, icon, status?.let { stringResource(it) }) { launcher.launch(input) }
+}
+
+@Composable
+private fun CsvRows() {
+    val app = shelfApp()
+    val scope = rememberCoroutineScope()
+    var progress by remember { mutableStateOf<Float?>(null) }
+    var report by remember { mutableStateOf<CsvReport?>(null) }
+    var imported by remember { mutableStateOf<Int?>(null) }
+    val import = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        progress = 0f
+        imported = null
+        scope.launch {
+            val searcher = app.loaded.value?.searcher
+            report = app.library.importCsv(uri, searcher) { progress = it }
+            imported = if (report == null) R.string.backup_failed else null
+            progress = null
+        }
+    }
+    val importStatus =
+        progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
+            ?: imported?.let { stringResource(it) }
+    ActionRow(
+        R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
+    ) { import.launch(arrayOf("*/*")) }
+    FileRow(
+        R.string.csv_export,
+        Icons.Outlined.Upload,
+        CreateDocument("text/csv"),
+        CSV_FILE,
+        R.string.csv_exported,
+        app.library::exportCsv,
+    )
+    report?.let { CsvReportDialog(it) { report = null } }
+}
+
+@Composable
+private fun CsvReportDialog(report: CsvReport, onDismiss: () -> Unit) {
+    val found = report.total - report.missing.size
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.csv_imported)) },
+        text = {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(stringResource(R.string.csv_found, found, report.total))
+                if (report.missing.isEmpty()) return@Column
+                Text(
+                    stringResource(R.string.csv_missing),
+                    Modifier.padding(top = 8.dp, bottom = 4.dp),
+                )
+                report.missing.forEach {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) }
+        },
+    )
 }
 
 @Composable
@@ -727,115 +1065,56 @@ private fun AppIcon(size: Int) {
 }
 
 @Composable
-fun AboutScreen(navigator: Navigator) {
-    val app = shelfApp()
-    val uri = LocalUriHandler.current
-    val months by
-        produceState(emptyMap<String, String?>()) {
-            value = withContext(Dispatchers.IO) { app.packs.months() }
-        }
-    var release by remember { mutableStateOf<UpdateCheck?>(null) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val (settings, _) = rememberSettings()
-    val online = Updater.isEnabled(context) && !settings.isOffline(context)
-
-    Column(
-        Modifier.windowInsetsPadding(WindowInsets.systemBars)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BackBar(navigator::back, stringResource(R.string.about))
-        AppIcon(96)
-        Text(
-            stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineMedium,
-        )
-        Text(
-            stringResource(
-                R.string.version,
-                BuildConfig.VERSION_NAME,
-                BuildConfig.FLAVOR,
-            ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (online) {
-            TextButton(
-                onClick = {
-                    release = UpdateCheck.Checking
-                    scope.launch {
-                        release =
-                            runCatching { Updater.latest() }
-                                .fold(
-                                    {
-                                        it?.let(UpdateCheck::Found) ?: UpdateCheck.Current
-                                    },
-                                    { UpdateCheck.Failed },
-                                )
-                    }
-                },
-            ) {
-                Text(stringResource(R.string.check_now))
-            }
-            UpdateStatus(release) { release = null }
-        }
-        SectionHeader(stringResource(R.string.database))
-        LANGUAGES.forEach { language ->
-            AboutLine(nativeName(language), months[language] ?: "–")
-        }
-        SectionHeader(stringResource(R.string.privacy))
-        AboutText(stringResource(R.string.privacy_note))
-        SectionHeader(stringResource(R.string.data_source))
-        AboutText(stringResource(R.string.open_library_note))
-        LinkRow(R.string.open_library_license) { uri.openUri(OPEN_LIBRARY_URL) }
-        LinkRow(R.string.source_code) { uri.openUri(SOURCE_URL) }
-        LinkRow(R.string.license) { uri.openUri(LICENSE_URL) }
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-private fun AboutLine(label: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 4.dp)) {
-        Text(
-            label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
 private fun AboutText(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
     )
 }
 
-private sealed interface UpdateCheck {
-    data object Checking : UpdateCheck
-
-    data object Current : UpdateCheck
-
-    data object Failed : UpdateCheck
-
-    data class Found(val release: AppRelease) : UpdateCheck
-}
-
 @Composable
-private fun UpdateStatus(check: UpdateCheck?, onDismiss: () -> Unit) {
-    when (check) {
-        null -> Unit
-        UpdateCheck.Checking -> LinearProgressIndicator(Modifier.width(120.dp))
-        UpdateCheck.Current -> AboutText(stringResource(R.string.up_to_date))
-        UpdateCheck.Failed -> AboutText(stringResource(R.string.update_failed))
-        is UpdateCheck.Found -> UpdateDialog(check.release, onDismiss)
+private fun AboutRows() {
+    val uri = LocalUriHandler.current
+    val context = LocalContext.current
+    val (settings, _) = rememberSettings()
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf<Int?>(null) }
+    var release by remember { mutableStateOf<AppRelease?>(null) }
+    val version =
+        stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
+    val summary = listOfNotNull(version, status?.let { stringResource(it) })
+
+    if (Updater.isEnabled(context) && !settings.isOffline(context)) {
+        ActionRow(
+            R.string.app_name,
+            Icons.Outlined.Refresh,
+            summary.joinToString(" · "),
+            checking,
+        ) {
+            checking = true
+            scope.launch {
+                runCatching { Updater.latest() }
+                    .onSuccess {
+                        release = it
+                        status = if (it == null) R.string.up_to_date else null
+                    }
+                    .onFailure { status = R.string.update_failed }
+                checking = false
+            }
+        }
+    } else {
+        SettingRow(stringResource(R.string.app_name), version)
     }
+    LinkRow(stringResource(R.string.source_code)) { uri.openUri(SOURCE_URL) }
+    LinkRow(stringResource(R.string.license)) { uri.openUri(LICENSE_URL) }
+    LinkRow(stringResource(R.string.open_library_license)) {
+        uri.openUri(OPEN_LIBRARY_URL)
+    }
+    release?.let { UpdateDialog(it) { release = null } }
 }
 
 @Composable
@@ -876,17 +1155,14 @@ private fun UpdateDialog(release: AppRelease, onDismiss: () -> Unit) {
                 onClick = {
                     progress = 0f
                     scope.launch {
-                        failed =
-                            runCatching {
-                                Updater.install(context, release) { progress = it }
-                            }
-                                .isFailure
+                        failed = runCatching {
+                            Updater.install(context, release) { progress = it }
+                        }
+                            .isFailure
                         progress = null
                     }
                 },
-            ) {
-                Text(stringResource(R.string.install))
-            }
+            ) { Text(stringResource(R.string.install)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.later)) }
@@ -925,7 +1201,7 @@ fun OnboardingScreen() {
         Column(
             Modifier.weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(top = 24.dp),
+                .padding(top = 24.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             AppIcon(72)
@@ -940,29 +1216,30 @@ fun OnboardingScreen() {
                     if (required) R.string.welcome_download else R.string.welcome_text,
                 ),
             )
-            SectionHeader(stringResource(R.string.catalogue_language))
-            CatalogueLanguageChoice(language) {
-                language = it
-                app.reload(it)
+            SettingsGroup(stringResource(R.string.catalogue_language)) {
+                CatalogueLanguageChoice(language) {
+                    language = it
+                    app.reload(it)
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            OfflineRow(settings, update)
+            SettingsGroup { OfflineRow(settings, update) }
             if (!offline) {
-                SectionHeader(
-                    stringResource(R.string.catalogue),
-                    stringResource(
-                        if (required) R.string.core_required else R.string.core_offline,
-                    ),
-                )
-                if (required) CoreRow(core, coreDownload)
-                ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
-                val skip = if (required) "core" else null
-                if (showPacks) OnboardingPacks(packs, selected, skip)
+                val hint = if (required) R.string.core_required else R.string.core_offline
+                SettingsGroup(stringResource(R.string.catalogue), stringResource(hint)) {
+                    if (required) CoreRow(core, coreDownload)
+                    ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
+                    val skip = if (required) "core" else null
+                    if (showPacks) OnboardingPacks(packs, selected, skip)
+                }
             }
-            ExpandRow(R.string.own_sources, showSources) { showSources = !showSources }
-            if (showSources) {
-                SourceRows(language, settings, { refreshes++ }) { complete ->
-                    if (complete != null) finish(complete) else refreshes++
+            SettingsGroup {
+                ExpandRow(R.string.own_sources, showSources) {
+                    showSources = !showSources
+                }
+                if (showSources) {
+                    SourceRows(language, settings, { refreshes++ }) { complete ->
+                        if (complete != null) finish(complete) else refreshes++
+                    }
                 }
             }
         }
@@ -971,9 +1248,7 @@ fun OnboardingScreen() {
             Button(
                 onClick = { finish() },
                 modifier = Modifier.align(Alignment.End).padding(ScreenPadding),
-            ) {
-                Text(stringResource(R.string.start_offline))
-            }
+            ) { Text(stringResource(R.string.start_offline)) }
             return@Column
         }
         OnboardingActions(
@@ -989,6 +1264,13 @@ fun OnboardingScreen() {
         }
     }
 }
+
+@Composable
+private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) =
+    SettingRow(stringResource(title), onClick = onToggle) {
+        val icon = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore
+        Icon(icon, contentDescription = null)
+    }
 
 @Composable
 private fun OnboardingActions(
@@ -1010,11 +1292,8 @@ private fun OnboardingActions(
         }
         if (total > 0) {
             OutlinedButton(
-                enabled = !waiting,
-                onClick = { onDownload(available.map { it.pack }) },
-            ) {
-                Text(stringResource(R.string.download_all, bytes(total)))
-            }
+                enabled = !waiting, onClick = { onDownload(available.map { it.pack }) },
+            ) { Text(stringResource(R.string.download_all, bytes(total))) }
         }
         Button(enabled = !waiting && canDownload, onClick = { onDownload(selected) }) {
             Text(stringResource(R.string.download))
@@ -1024,7 +1303,7 @@ private fun OnboardingActions(
 
 @Composable
 private fun CoreRow(info: PackInfo?, download: Download?) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(PACK_LABELS.getValue("core")),
@@ -1054,41 +1333,20 @@ private fun OnboardingPacks(
     skip: String?,
 ) {
     if (packs == null) {
-        LinearProgressIndicator(Modifier.fillMaxWidth().padding(ScreenPadding))
+        LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
         return
     }
     packs
         .filter { it.state == PackState.Available && it.pack != skip }
         .forEach { info ->
             val checked = info.pack in selected
-            Row(
-                Modifier.fillMaxWidth()
-                    .clickable {
-                        if (checked) {
-                            selected.remove(info.pack)
-                        } else {
-                            selected.add(info.pack)
-                        }
-                    }
-                    .padding(horizontal = ScreenPadding - 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(
-                    checked = checked,
-                    onCheckedChange = null,
-                    Modifier.padding(12.dp),
-                )
-                Text(
-                    stringResource(PACK_LABELS.getValue(info.pack)),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                val size = if (info.bytes > 0) bytes(info.bytes) else "–"
-                Text(
-                    size,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-            }
+            val size = if (info.bytes > 0) bytes(info.bytes) else "–"
+            SettingRow(
+                stringResource(PACK_LABELS.getValue(info.pack)),
+                size,
+                onClick = {
+                    if (checked) selected.remove(info.pack) else selected.add(info.pack)
+                },
+            ) { Checkbox(checked = checked, onCheckedChange = null) }
         }
 }

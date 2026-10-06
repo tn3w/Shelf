@@ -49,11 +49,10 @@ private fun editDistance(left: String, right: String, limit: Int): Int {
             val cost = if (left[i - 1] == right[j - 1]) 0 else 1
             current[j] =
                 minOf(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
-            val swapped =
-                i > 1 &&
-                    j > 1 &&
-                    left[i - 1] == right[j - 2] &&
-                    left[i - 2] == right[j - 1]
+            val swapped = i > 1 &&
+                j > 1 &&
+                left[i - 1] == right[j - 2] &&
+                left[i - 2] == right[j - 1]
             if (swapped && beforePrevious != null) {
                 current[j] = min(current[j], beforePrevious[j - 2] + 1)
             }
@@ -199,18 +198,16 @@ class Searcher(private val catalogue: Catalogue) {
         val query = perToken.map { it.terms[book.work] ?: it.token }
         val confidence = perToken.sumOf { it.scores[book.work] ?: 0.0 } / perToken.size
         val lastToken = perToken.last().token
-        val completing =
-            query.last() != lastToken &&
-                (query.last().startsWith(lastToken) || lastToken.startsWith(query.last()))
+        val completing = query.last() != lastToken &&
+            (query.last().startsWith(lastToken) || lastToken.startsWith(query.last()))
         val joinedQuery = query.joinToString(" ")
-        val bestTitle =
-            listOf(book.title to 1.0, book.alternate to ALTERNATE)
-                .filter { it.first.isNotEmpty() }
-                .maxOfOrNull { (text, discount) ->
-                    titleValue(text, book.subtitle, query, joinedQuery, completing) *
-                        discount
-                }
-                ?.coerceAtLeast(0.0) ?: 0.0
+        val bestTitle = listOf(book.title to 1.0, book.alternate to ALTERNATE)
+            .filter { it.first.isNotEmpty() }
+            .maxOfOrNull { (text, discount) ->
+                titleValue(text, book.subtitle, query, joinedQuery, completing) *
+                    discount
+            }
+            ?.coerceAtLeast(0.0) ?: 0.0
         val words = tokenize("${book.title} ${book.subtitle} ${book.alternate}").toSet()
         val authorTokens = book.authors.flatMap { tokenize(it.name) }.toSet()
         val titleHits = query.count { it in words }
@@ -237,13 +234,12 @@ class Searcher(private val catalogue: Catalogue) {
         val full = tokenize("$title $subtitle").joinToString(" ")
         val main = tokenize(mainTitle(title))
         val titles = setOf(withoutArticle(joined), withoutArticle(main.joinToString(" ")))
-        val value =
-            when {
-                withoutArticle(joinedQuery) in titles && !completing -> EXACT
-                joined.startsWith(joinedQuery) -> PREFIX
-                " $joinedQuery " in " $full " -> PHRASE
-                else -> 0.0
-            }
+        val value = when {
+            withoutArticle(joinedQuery) in titles && !completing -> EXACT
+            joined.startsWith(joinedQuery) -> PREFIX
+            " $joinedQuery " in " $full " -> PHRASE
+            else -> 0.0
+        }
         return value - min(LENGTH * max(0, main.size - query.size), 0.3)
     }
 
@@ -257,10 +253,9 @@ class Searcher(private val catalogue: Catalogue) {
         val popularity = HashMap<Int, Double>()
         fun popularityOf(work: Int) =
             popularity.getOrPut(work) { catalogue.popularity(work) }
-        val head =
-            scored.keys
-                .sortedByDescending { scored.getValue(it) + 0.35 * popularityOf(it) }
-                .take(RERANK_DEPTH)
+        val head = scored.keys
+            .sortedByDescending { scored.getValue(it) + 0.35 * popularityOf(it) }
+            .take(RERANK_DEPTH)
         val joined = tokens.joinToString(" ")
         val ranked = head
             .mapNotNull(catalogue::book)

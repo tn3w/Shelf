@@ -5,58 +5,23 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.BookmarkAdded
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.TaskAlt
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.*
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.data.Book
-import dev.tn3w.shelf.data.Description
-import dev.tn3w.shelf.data.Shelf
-import dev.tn3w.shelf.data.isLocal
-import dev.tn3w.shelf.data.toBook
+import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.launch
 
 private data class Details(
@@ -74,26 +39,23 @@ private data class Related(
 @Composable
 fun BookScreen(work: Int, origin: String, navigator: Navigator) {
     val saved by shelfApp().library.saved.collectAsStateWithLifecycle(emptyList())
-    val details by
-        load(work) {
-            val book = catalogue.book(work) ?: return@load null
-            val tags =
-                book.tags.mapNotNull { id ->
-                    catalogue.tags.getOrNull(id)?.let { id to it.label }
-                }
-            Details(book, catalogue.description(work), tags)
+    val details by load(work) {
+        val book = catalogue.book(work) ?: return@load null
+        val tags = book.tags.mapNotNull { id ->
+            catalogue.tags.getOrNull(id)?.let { id to it.label }
         }
+        Details(book, catalogue.description(work), tags)
+    }
     val entry = saved.firstOrNull { it.work == work }
     val book = details?.book ?: entry?.toBook()
-    val related by
-        load(work) {
-            val found = catalogue.book(work) ?: return@load null
-            Related(
-                recommender.series(found),
-                recommender.byAuthor(found),
-                recommender.similar(found),
-            )
-        }
+    val related by load(work) {
+        val found = catalogue.book(work) ?: return@load null
+        Related(
+            recommender.series(found),
+            recommender.byAuthor(found),
+            recommender.similar(found),
+        )
+    }
 
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { BackBar(navigator::back) }
@@ -102,9 +64,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         details
             ?.tags
             ?.takeIf { it.isNotEmpty() }
-            ?.let { tags ->
-                item { TagFlow(tags, navigator) }
-            }
+            ?.let { tags -> item { TagFlow(tags, navigator) } }
         details
             ?.description
             ?.takeIf { it.text.isNotBlank() }
@@ -124,9 +84,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                         navigator::book,
                         subtitle =
                         pluralStringResource(
-                            R.plurals.books_in_series,
-                            books.size,
-                            books.size,
+                            R.plurals.books_in_series, books.size, books.size,
                         ),
                         shared = false,
                     )
@@ -178,26 +136,22 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     fun place(target: Shelf) = scope.launch {
         app.library.place(book, if (shelf == target) unplaced else target)
     }
-    val picker =
-        rememberLauncherForActivityResult(OpenDocument()) { uri ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            scope.launch {
-                if (app.library.importBook(book, uri)) {
-                    return@launch navigator.reader(book.work)
-                }
-                Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+    val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            if (app.library.importBook(book, uri)) {
+                return@launch navigator.reader(book.work)
             }
+            Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
         }
+    }
 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         BookCover(
-            book,
-            180.dp,
-            Modifier.padding(vertical = 16.dp),
-            "$origin-${book.work}",
+            book, 180.dp, Modifier.padding(vertical = 16.dp), "$origin-${book.work}",
         )
         Text(
             book.title,
@@ -246,26 +200,21 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
                 },
             ) {
                 Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
-                val label =
-                    position?.fraction?.let {
-                        stringResource(R.string.continue_percent, (it * 100).toInt())
-                    }
-                        ?: stringResource(
-                            if (position != null) R.string.resume else R.string.start,
-                        )
+                val label = position?.fraction?.let {
+                    stringResource(R.string.continue_percent, (it * 100).toInt())
+                }
+                    ?: stringResource(
+                        if (position != null) R.string.resume else R.string.start,
+                    )
                 Text(label, Modifier.padding(start = 8.dp))
             }
             ShelfToggle(
-                shelf == Shelf.Want,
-                R.string.want_to_read,
-                { place(Shelf.Want) },
+                shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
                 if (it) Icons.Outlined.BookmarkAdded else Icons.Outlined.BookmarkAdd
             }
             ShelfToggle(
-                shelf == Shelf.Read,
-                R.string.mark_finished,
-                { place(Shelf.Read) },
+                shelf == Shelf.Read, R.string.mark_finished, { place(Shelf.Read) },
             ) {
                 if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
             }

@@ -1,22 +1,31 @@
 #!/usr/bin/env python3
+import argparse
 import datetime
+import io
 import json
 import re
 import subprocess
-import sys
 import tempfile
 import time
 import urllib.request
 from pathlib import Path
 
+from PIL import Image
+
+import tiles
+
 PACKAGE = "dev.tn3w.shelf"
 DATA = f"/data/data/{PACKAGE}/files"
 ROOT = Path(__file__).resolve().parent.parent
-FASTLANE = ROOT / "android/fastlane/metadata/android"
-DARK = ROOT / "android/design/screenshots"
+FASTLANE = ROOT / "android/app/fastlane/metadata/android"
+DARK = ROOT / "android/design/screenshots/dark"
 CACHE = Path(tempfile.gettempdir()) / "shelf-screenshots"
 DAY = 86_400_000
-PALETTE = "FF3C6E71"
+STATUS_BAR = 137
+TOUCH_SLOP = 21
+SCREENS = ("1_home", "2_library", "3_book", "4_series", "5_explore", "6_reader")
+FORMATS = "EPUB · PDF · FB2 · CBZ · TXT"
+DEMO = ["am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command"]
 
 LOCALES = {
     "en": dict(
@@ -24,6 +33,13 @@ LOCALES = {
         tabs=("Home", "Library", "Explore"),
         settings=("Settings", "All ("),
         cover="Cover of",
+        about="About this book",
+        copy=[("Your books, offline", "No account · No ads"),
+              ("Switch from Goodreads", "Import shelves via CSV"),
+              ("Find any book", "Fast offline search"),
+              ("Never lose a series", "Series and authors"),
+              ("Discover your next read", "Picks made on your phone"),
+              ("Read your own files", FORMATS)],
         reader=(138052, "Alice's Adventures in Wonderland", "Lewis Carroll",
                 10527843, 11),
         reading=[(82563, "Harry Potter and the Philosopher's Stone", "J. K. Rowling",
@@ -43,6 +59,13 @@ LOCALES = {
         tabs=("Startseite", "Bibliothek", "Entdecken"),
         settings=("Einstellungen", "Alle ("),
         cover="Cover von",
+        about="Über dieses Buch",
+        copy=[("Deine Bücher, offline", "Kein Konto · Keine Werbung"),
+              ("Wechsel von Goodreads", "Regale per CSV importieren"),
+              ("Finde jedes Buch", "Schnelle Offline-Suche"),
+              ("Keine Reihe verpassen", "Reihen und Autoren"),
+              ("Entdecke neue Bücher", "Tipps direkt auf dem Handy"),
+              ("Lies deine eigenen Dateien", FORMATS)],
         reader=(151411, "Alice im Wunderland", "Lewis Carroll", 8595966, 19778),
         reading=[(82563, "Harry Potter und der Stein der Weisen", "J. K. Rowling",
                   15155833),
@@ -61,6 +84,13 @@ LOCALES = {
         tabs=("Accueil", "Bibliothèque", "Explorer"),
         settings=("Paramètres", "Tout ("),
         cover="Couverture de",
+        about="À propos du livre",
+        copy=[("Vos livres, hors ligne", "Sans compte · Sans pub"),
+              ("Quittez Goodreads", "Import CSV de vos étagères"),
+              ("Trouvez vos livres", "Recherche rapide hors ligne"),
+              ("Suivez vos séries", "Séries et auteurs"),
+              ("Votre prochaine lecture", "Suggestions sur l’appareil"),
+              ("Lisez vos fichiers", FORMATS)],
         reader=(138052, "Alice Au Pays des Merveilles", "Lewis Carroll",
                 10527843, 55456),
         reading=[(82563, "Harry Potter à l'école des sorciers", "J. K. Rowling",
@@ -80,6 +110,13 @@ LOCALES = {
         tabs=("Inicio", "Biblioteca", "Explorar"),
         settings=("Ajustes", "Todo ("),
         cover="Portada de",
+        about="Sobre este libro",
+        copy=[("Tus libros, sin conexión", "Sin cuenta · Sin anuncios"),
+              ("Ven desde Goodreads", "Importa estantes en CSV"),
+              ("Encuentra cualquier libro", "Búsqueda rápida sin red"),
+              ("Sigue tus sagas", "Sagas y autores"),
+              ("Tu próxima lectura", "Sugerencias en tu móvil"),
+              ("Lee tus archivos", FORMATS)],
         reader=(503666, "Don Quijote de la Mancha", "Miguel de Cervantes Saavedra",
                 14428305, 2000),
         reading=[(82563, "Harry Potter y la piedra filosofal", "J. K. Rowling",
@@ -157,8 +194,8 @@ def library(locale, theme):
     activity = {str(today - datetime.timedelta(days)): count
                 for days, count in enumerate(pages)}
     settings = dict(onboarded=True, language=locale["language"], theme=theme,
-                    dailyGoal=20, onlineCovers=True, checkUpdates=False,
-                    lastCatalogueCheck=now, lastAppCheck=now)
+                    wallpaperColors=False, dailyGoal=20, onlineCovers=True,
+                    checkUpdates=False, lastCatalogueCheck=now, lastAppCheck=now)
     values = dict(entries=entries, progress=progress, activity=activity,
                   settings=settings, recent=locale["searches"])
     return preferences({key: json.dumps(value) for key, value in values.items()})
@@ -195,7 +232,7 @@ def wait(condition, timeout=30):
         found = condition(nodes())
         if found:
             return found
-        time.sleep(0.5)
+        time.sleep(0.3)
     raise TimeoutError(condition.__doc__ or "screen")
 
 
@@ -205,6 +242,11 @@ def find(label, exact=True):
                 if (label in node[:2] if exact else label in node[0] + node[1])]
     condition.__doc__ = label
     return condition
+
+
+def center(node):
+    _, _, left, top, right, bottom = node
+    return str((int(left) + int(right)) // 2), str((int(top) + int(bottom)) // 2)
 
 
 def tap(label, exact=True, timeout=30):
@@ -219,12 +261,16 @@ def covers(locale, minimum):
     return condition
 
 
+def screencap():
+    return adb("exec-out", "screencap", "-p")
+
+
 def settled(timeout=20):
-    previous = adb("exec-out", "screencap", "-p")
+    previous = screencap()
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        time.sleep(1.5)
-        current = adb("exec-out", "screencap", "-p")
+        time.sleep(0.8)
+        current = screencap()
         if current == previous:
             return current
         previous = current
@@ -235,14 +281,47 @@ def log(message):
     print(time.strftime("%H:%M:%S"), message, flush=True)
 
 
-def save(image, target):
-    target.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["magick", "png:-", "-resize", "720x", "-strip", "-sampling-factor", "4:2:0",
-         "-quality", "84", str(target)],
-        input=image, check=True,
-    )
-    log(f"{target.relative_to(ROOT)} {target.stat().st_size // 1024} KB")
+def swipe(distance, duration=900):
+    shell("input", "swipe", "540", "1600", "540", str(1600 - distance), str(duration))
+
+
+def scroll_to(label, target):
+    for _ in range(12):
+        found = find(label)(nodes())
+        if not found:
+            swipe(800)
+            continue
+        distance = int(found[0][3]) - target
+        if abs(distance) <= 12:
+            return
+        slop = TOUCH_SLOP if distance > 0 else -TOUCH_SLOP
+        swipe(max(-1000, min(1000, distance)) + slop, 1500)
+    raise TimeoutError(label)
+
+
+def text_height(capture):
+    image = Image.open(io.BytesIO(capture)).convert("L").crop((0, 200, 1080, 2200))
+    paper = image.getpixel((0, 0))
+    ink = image.point(lambda value: 255 if abs(value - paper) > 50 else 0)
+    box = ink.getbbox()
+    return box[3] - box[1] if box else 0
+
+
+def with_status_bar(capture, source):
+    image = Image.open(io.BytesIO(capture))
+    image.paste(Image.open(io.BytesIO(source)).crop((0, 0, image.width, STATUS_BAR)))
+    output = io.BytesIO()
+    image.save(output, "PNG")
+    return output.getvalue()
+
+
+def full_page():
+    for _ in range(20):
+        capture = settled()
+        if text_height(capture) > 1600:
+            return capture
+        shell("input", "tap", "1000", "1200")
+    raise TimeoutError("full reader page")
 
 
 def download_packs(locale):
@@ -255,71 +334,53 @@ def download_packs(locale):
     wait(lambda current: not find(button, exact=False)(current), timeout=900)
 
 
-def center(node):
-    _, _, left, top, right, bottom = node
-    return str((int(left) + int(right)) // 2), str((int(top) + int(bottom)) // 2)
-
-
-def show_series(locale):
-    shell("input", "swipe", "540", "1900", "540", "900", "400")
-    description = max(nodes(), key=lambda node: len(node[0]))
-    if len(description[0]) > 150:
-        shell("input", "tap", *center(description))
-    for _ in range(15):
-        found = covers(locale, 3)(nodes())
-        if found and int(found[0][5]) < 2000:
-            return
-        shell("input", "swipe", "540", "1600", "540", "1100", "400")
-    raise TimeoutError("series row")
-
-
-def text_height(image):
-    result = subprocess.run(
-        ["magick", "png:-", "-crop", "1080x2000+0+200", "-fuzz", "20%", "-trim",
-         "-format", "%h", "info:"],
-        input=image, capture_output=True, check=True,
-    )
-    return int(result.stdout)
-
-
-def full_page():
-    for _ in range(20):
-        image = settled()
-        if text_height(image) > 1600:
-            return image
-        shell("input", "tap", "1000", "1200")
-    raise TimeoutError("full reader page")
-
-
 def capture(locale, folder):
     home, library_tab, explore = locale["tabs"]
     reader = locale["reader"]
     book = locale["reading"][0]
+    folder.mkdir(parents=True, exist_ok=True)
+
+    def save(name, image):
+        (folder / f"{name}.png").write_bytes(image)
+        log(f"{locale['language']}: {name}")
 
     wait(find(reader[1]))
     wait(covers(locale, 3))
-    save(settled(), folder / "1_home.jpg")
+    save("1_home", settled())
 
     tap(library_tab)
     total = 1 + sum(len(locale[shelf]) for shelf in ("reading", "want", "finished"))
     wait(covers(locale, min(9, total)))
-    save(settled(), folder / "2_library.jpg")
+    save("2_library", settled())
 
     tap(book[1])
     wait(find(book[2]))
-    save(settled(), folder / "3_book.jpg")
+    details = settled()
+    save("3_book", details)
 
-    show_series(locale)
-    save(settled(), folder / "4_series.jpg")
+    scroll_to(locale["about"], STATUS_BAR + 20)
+    wait(covers(locale, 4))
+    save("4_series", with_status_bar(settled(), details))
 
     tap(explore)
     wait(covers(locale, 3))
-    save(settled(), folder / "5_explore.jpg")
+    save("5_explore", settled())
 
     tap(home)
     tap(reader[1])
     wait(lambda current: not find(home)(current))
-    save(full_page(), folder / "6_reader.jpg")
+    save("6_reader", full_page())
+
+
+def demo_mode():
+    shell("settings", "put", "global", "sysui_demo_allowed", "1")
+    shell(*DEMO, "enter")
+    shell(*DEMO, "clock", "-e", "hhmm", "1230")
+    shell(*DEMO, "battery", "-e", "level", "100", "-e", "plugged", "false")
+    shell(*DEMO, "network", "-e", "wifi", "show", "-e", "level", "4",
+          "-e", "fully", "true")
+    shell(*DEMO, "network", "-e", "mobile", "hide")
+    shell(*DEMO, "notifications", "-e", "visible", "false")
 
 
 def prepare_device():
@@ -328,45 +389,72 @@ def prepare_device():
     for scale in ("window_animation_scale", "transition_animation_scale",
                   "animator_duration_scale"):
         shell("settings", "put", "global", scale, "0")
-    palette = json.dumps({
-        "android.theme.customization.color_source": "preset",
-        "android.theme.customization.system_palette": PALETTE,
-        "android.theme.customization.accent_color": PALETTE,
-        "android.theme.customization.theme_style": "TONAL_SPOT",
-    })
-    shell("settings", "put", "secure", "theme_customization_overlay_packages",
-          f"'{palette}'")
-    time.sleep(5)
-    shell("settings", "put", "global", "sysui_demo_allowed", "1")
-    demo = ["am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command"]
-    shell(*demo, "enter")
-    shell(*demo, "clock", "-e", "hhmm", "0941")
-    shell(*demo, "battery", "-e", "level", "100", "-e", "plugged", "false")
-    shell(*demo, "network", "-e", "wifi", "show", "-e", "level", "4",
-          "-e", "fully", "true")
-    shell(*demo, "notifications", "-e", "visible", "false")
-    launch()
-    time.sleep(3)
+    demo_mode()
 
 
-def main(languages):
-    CACHE.mkdir(exist_ok=True)
+def raw_folder(language, theme):
+    return CACHE / "raw" / f"{language}-{theme}"
+
+
+def capture_all(plan):
     prepare_device()
-    for language in languages:
-        locale = LOCALES[language] | dict(language=language)
-        log(f"{language}: seed")
-        seed(locale, "Light")
-        launch()
-        log(f"{language}: packs")
-        download_packs(locale)
-        launch()
-        capture(locale, FASTLANE / locale["folder"] / "images/phoneScreenshots")
-        if language == "en":
-            seed(locale, "Dark")
-            launch()
-            capture(locale, DARK / "dark")
-    shell("am", "force-stop", PACKAGE)
+    try:
+        for language, themes in plan:
+            locale = LOCALES[language] | dict(language=language)
+            for theme in themes:
+                log(f"{language}: {theme}")
+                seed(locale, theme)
+                launch()
+                download_packs(locale)
+                launch()
+                capture(locale, raw_folder(language, theme))
+    finally:
+        shell("am", "force-stop", PACKAGE)
+        shell(*DEMO, "exit")
+
+
+def output_folder(locale, theme):
+    if theme == "Dark":
+        return DARK
+    return FASTLANE / locale["folder"] / "images/phoneScreenshots"
+
+
+def compose_all(plan):
+    for language, themes in plan:
+        locale = LOCALES[language]
+        size = tiles.headline_size([headline for headline, _ in locale["copy"]])
+        for theme in themes:
+            target = output_folder(locale, theme)
+            target.mkdir(parents=True, exist_ok=True)
+            screens = zip(SCREENS, locale["copy"])
+            for index, (name, (headline, detail)) in enumerate(screens):
+                screen = Image.open(raw_folder(language, theme) / f"{name}.png")
+                dark = theme == "Dark"
+                tile = tiles.compose(screen, index, headline, detail, size, dark)
+                tile.save(target / f"{name}.jpg", quality=90, optimize=True)
+            log(f"{language}: {theme} → {target.relative_to(ROOT)}")
+
+
+def variants(languages, dark_only):
+    if dark_only:
+        return [("en", ["Dark"])]
+    return [(language, ["Light", "Dark"] if language == "en" else ["Light"])
+            for language in languages]
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Capture and compose store screenshots")
+    parser.add_argument("--locales", nargs="+", choices=LOCALES, default=list(LOCALES))
+    parser.add_argument("--dark", action="store_true", help="only the dark English set")
+    parser.add_argument("--compose-only", action="store_true",
+                        help="reuse cached captures without the emulator")
+    arguments = parser.parse_args()
+    CACHE.mkdir(exist_ok=True)
+    plan = variants(arguments.locales, arguments.dark)
+    if not arguments.compose_only:
+        capture_all(plan)
+    compose_all(plan)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or list(LOCALES))
+    main()

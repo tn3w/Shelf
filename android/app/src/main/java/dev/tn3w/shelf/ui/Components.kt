@@ -1,89 +1,34 @@
 package dev.tn3w.shelf.ui
 
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridScope
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import dev.tn3w.shelf.Loaded
+import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.ShelfApp
-import dev.tn3w.shelf.cover.CoverRequest
-import dev.tn3w.shelf.cover.GeneratedCover
-import dev.tn3w.shelf.data.Author
-import dev.tn3w.shelf.data.AuthorGroup
-import dev.tn3w.shelf.data.Book
-import dev.tn3w.shelf.data.Settings
-import dev.tn3w.shelf.data.isOffline
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import dev.tn3w.shelf.cover.*
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
 
 val ScreenPadding = 20.dp
 private val BackBarPadding = 4.dp
@@ -210,10 +155,9 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
 @Composable
 private fun DrawnCover(book: Book) {
     val catalogue = shelfApp().loaded.collectAsStateWithLifecycle().value?.catalogue
-    val slugs =
-        remember(book.work, catalogue) {
-            book.tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
-        }
+    val slugs = remember(book.work, catalogue) {
+        book.tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+    }
     GeneratedCover(
         CoverRequest(book.work, book.title, book.author, slugs),
         stringResource(R.string.cover_of, book.title),
@@ -387,13 +331,12 @@ fun BookSection(
 @Composable
 private fun skeletonAlpha(): Float {
     if (LocalReducedMotion.current) return 0.6f
-    val alpha by
-        rememberInfiniteTransition()
-            .animateFloat(
-                initialValue = 0.35f,
-                targetValue = 0.8f,
-                animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
-            )
+    val alpha by rememberInfiniteTransition()
+        .animateFloat(
+            initialValue = 0.35f,
+            targetValue = 0.8f,
+            animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+        )
     return alpha
 }
 
@@ -458,10 +401,9 @@ fun ContinueCard(book: Book, progress: Float?, onOpen: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                 )
-                val label =
-                    progress?.let {
-                        stringResource(R.string.percent_read, (it * 100).toInt())
-                    } ?: stringResource(R.string.import_to_start)
+                val label = progress?.let {
+                    stringResource(R.string.percent_read, (it * 100).toInt())
+                } ?: stringResource(R.string.import_to_start)
                 Text(
                     label,
                     style = MaterialTheme.typography.labelMedium,
@@ -522,9 +464,7 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconAction(
-            Icons.AutoMirrored.Filled.ArrowBack,
-            stringResource(R.string.back),
-            onBack,
+            Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), onBack,
         )
         Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
     }

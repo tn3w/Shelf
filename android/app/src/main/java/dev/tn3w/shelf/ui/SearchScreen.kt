@@ -1,44 +1,17 @@
 package dev.tn3w.shelf.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -47,12 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.data.Author
-import dev.tn3w.shelf.data.Book
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
 
 private data class Results(
     val completions: List<String>,
@@ -74,15 +43,14 @@ fun SearchScreen(navigator: Navigator) {
         val current = loaded ?: return@LaunchedEffect
         if (query.isBlank()) return@LaunchedEffect run { results = null }
         delay(150)
-        results =
-            withContext(Dispatchers.Default) {
-                val searcher = current.searcher
-                Results(
-                    searcher.complete(query),
-                    searcher.authors(query),
-                    searcher.search(query),
-                )
-            }
+        results = withContext(Dispatchers.Default) {
+            val searcher = current.searcher
+            Results(
+                searcher.complete(query),
+                searcher.authors(query),
+                searcher.search(query),
+            )
+        }
     }
 
     fun saveQuery() = scope.launch { if (query.isNotBlank()) app.library.remember(query) }
@@ -101,8 +69,7 @@ fun SearchScreen(navigator: Navigator) {
             if (current.authors.isEmpty() && current.books.isEmpty()) {
                 item {
                     EmptyState(
-                        Icons.Outlined.SearchOff,
-                        stringResource(R.string.no_results),
+                        Icons.Outlined.SearchOff, stringResource(R.string.no_results),
                     )
                 }
             }
@@ -121,9 +88,7 @@ fun SearchScreen(navigator: Navigator) {
                         saveQuery()
                         navigator.author(author)
                     },
-                ) {
-                    AuthorAvatar(author, 36.dp)
-                }
+                ) { AuthorAvatar(author, 36.dp) }
             }
             items(current.books, key = { "book-${it.work}" }) { book ->
                 Column(Modifier.animateItem()) {

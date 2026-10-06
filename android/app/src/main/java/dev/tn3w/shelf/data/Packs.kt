@@ -1,10 +1,8 @@
 package dev.tn3w.shelf.data
 
 import android.content.Context
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -19,18 +17,17 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 
 val LANGUAGES = listOf("en", "de", "fr", "es")
-val PACKS =
-    listOf(
-        "core",
-        "fantasy",
-        "scifi",
-        "mystery",
-        "romance",
-        "kids",
-        "young-adult",
-        "nonfiction",
-        "general",
-    )
+val PACKS = listOf(
+    "core",
+    "fantasy",
+    "scifi",
+    "mystery",
+    "romance",
+    "kids",
+    "young-adult",
+    "nonfiction",
+    "general",
+)
 private fun labelParts(label: String) = label.split("-").map { it.toIntOrNull() ?: 0 }
 
 val releaseOrder = Comparator<String> { first, second ->
@@ -175,30 +172,27 @@ class Packs(private val context: Context) {
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
-        val segments =
-            files
-                .filter { it.pack != "ranks" }
-                .distinctBy { it.id }
-                .mapNotNull(::open)
-                .groupBy { it.pack }
-                .flatMap { (_, chain) -> currentChain(chain) }
-                .sortedWith(
-                    compareBy<Segment, String>(releaseOrder) { it.month }
-                        .thenBy { !it.isBase }
-                        .thenBy { PACKS.indexOf(it.pack) },
-                )
-        val ranks =
-            files
-                .filter { it.pack == "ranks" }
-                .maxWithOrNull(compareBy(releaseOrder) { it.month })
-                ?.let { runCatching { Ranks(map(it)) }.getOrNull() }
+        val segments = files
+            .filter { it.pack != "ranks" }
+            .distinctBy { it.id }
+            .mapNotNull(::open)
+            .groupBy { it.pack }
+            .flatMap { (_, chain) -> currentChain(chain) }
+            .sortedWith(
+                compareBy<Segment, String>(releaseOrder) { it.month }
+                    .thenBy { !it.isBase }
+                    .thenBy { PACKS.indexOf(it.pack) },
+            )
+        val ranks = files
+            .filter { it.pack == "ranks" }
+            .maxWithOrNull(compareBy(releaseOrder) { it.month })
+            ?.let { runCatching { Ranks(map(it)) }.getOrNull() }
         return Catalogue(language, segments, ranks)
     }
 
     private fun currentChain(chain: List<Segment>): List<Segment> {
-        val base =
-            chain.filter { it.isBase }.map { it.month }.maxWithOrNull(releaseOrder)
-                ?: return emptyList()
+        val base = chain.filter { it.isBase }.map { it.month }.maxWithOrNull(releaseOrder)
+            ?: return emptyList()
         return chain.filter {
             it.base == base && releaseOrder.compare(it.month, base) >= 0
         }
@@ -216,9 +210,7 @@ class Packs(private val context: Context) {
         val descriptor = context.assets.openFd("${file.id}.bin")
         return FileInputStream(descriptor.fileDescriptor).channel.use {
             it.map(
-                FileChannel.MapMode.READ_ONLY,
-                descriptor.startOffset,
-                descriptor.length,
+                FileChannel.MapMode.READ_ONLY, descriptor.startOffset, descriptor.length,
             )
         }
     }
@@ -271,10 +263,9 @@ class Packs(private val context: Context) {
     private fun manifestUrl(): String {
         val url = releasesUrl(source)
         if (url.substringBefore('?').endsWith(MANIFEST_NAME)) return url
-        val release =
-            json.decodeFromString<List<Release>>(fetchText(url)).first {
-                it.tag_name.startsWith("catalogue-")
-            }
+        val release = json.decodeFromString<List<Release>>(fetchText(url)).first {
+            it.tag_name.startsWith("catalogue-")
+        }
         return release.assets.first { it.name == MANIFEST_NAME }.browser_download_url
     }
 
@@ -283,12 +274,11 @@ class Packs(private val context: Context) {
         val file = parseName(name) ?: return false
         val temporary = directory.resolve("${file.id}.part")
         temporary.outputStream().use { input.copyTo(it) }
-        val valid =
-            runCatching {
-                val buffer = mapFile(temporary)
-                if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
-            }
-                .isSuccess
+        val valid = runCatching {
+            val buffer = mapFile(temporary)
+            if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
+        }
+            .isSuccess
         if (valid && temporary.renameTo(binOf(file.id))) return true
         temporary.delete()
         return false
@@ -317,10 +307,9 @@ class Packs(private val context: Context) {
         withContext(Dispatchers.IO) {
             val manifest = manifest ?: refreshManifest()
             val ids = localIds()
-            val entries =
-                manifest.segments.filter {
-                    it.language == language && (it.pack == pack || it.pack == "ranks")
-                }
+            val entries = manifest.segments.filter {
+                it.language == language && (it.pack == pack || it.pack == "ranks")
+            }
             val missing = entries.filter { it.id !in ids }
             val total = missing.sumOf { it.size }.coerceAtLeast(1)
             var done = 0L

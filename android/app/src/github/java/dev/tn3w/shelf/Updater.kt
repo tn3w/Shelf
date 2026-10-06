@@ -8,28 +8,21 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams
 import android.os.Build
-import dev.tn3w.shelf.data.Asset
-import dev.tn3w.shelf.data.RELEASES
-import dev.tn3w.shelf.data.connect
-import dev.tn3w.shelf.data.copy
-import dev.tn3w.shelf.data.fetchText
-import dev.tn3w.shelf.data.sha256
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
 private const val INSTALL_ACTION = "dev.tn3w.shelf.INSTALL_STATUS"
-private val STORES =
-    setOf(
-        "org.fdroid.fdroid",
-        "org.fdroid.basic",
-        "com.looker.droidify",
-        "com.machiav3lli.fdroid",
-        "com.aurora.store",
-    )
+private val STORES = setOf(
+    "org.fdroid.fdroid",
+    "org.fdroid.basic",
+    "com.looker.droidify",
+    "com.machiav3lli.fdroid",
+    "com.aurora.store",
+)
 private const val APK_NAME = "shelf.apk"
 private val json = Json { ignoreUnknownKeys = true }
 
@@ -47,33 +40,30 @@ private fun numbers(version: String) = version.split(".").map { it.toIntOrNull()
 private fun isNewer(version: String): Boolean {
     val (candidate, installed) = numbers(version) to numbers(BuildConfig.VERSION_NAME)
     val length = maxOf(candidate.size, installed.size)
-    val differing =
-        (0 until length).firstOrNull {
-            candidate.getOrElse(it) { 0 } != installed.getOrElse(it) { 0 }
-        } ?: return false
+    val differing = (0 until length).firstOrNull {
+        candidate.getOrElse(it) { 0 } != installed.getOrElse(it) { 0 }
+    } ?: return false
     return candidate.getOrElse(differing) { 0 } > installed.getOrElse(differing) { 0 }
 }
 
 object Updater {
     fun isEnabled(context: Context): Boolean {
         val manager = context.packageManager
-        val installer =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                manager.getInstallSourceInfo(context.packageName).installingPackageName
-            } else {
-                @Suppress("DEPRECATION")
-                manager.getInstallerPackageName(context.packageName)
-            }
+        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            manager.getInstallSourceInfo(context.packageName).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            manager.getInstallerPackageName(context.packageName)
+        }
         return installer !in STORES
     }
 
     suspend fun latest(): AppRelease? = withContext(Dispatchers.IO) {
-        val release =
-            json
-                .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
-                .firstOrNull {
-                    it.tag_name.startsWith("v") && !it.draft && !it.prerelease
-                }
+        val release = json
+            .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
+            .firstOrNull {
+                it.tag_name.startsWith("v") && !it.draft && !it.prerelease
+            }
         val assets = release?.assets.orEmpty()
         val apk = assets.firstOrNull { it.name == APK_NAME }
         val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
@@ -81,10 +71,7 @@ object Updater {
         val version = release.tag_name.removePrefix("v")
         if (!isNewer(version)) return@withContext null
         AppRelease(
-            version,
-            release.body,
-            apk.browser_download_url,
-            sums.browser_download_url,
+            version, release.body, apk.browser_download_url, sums.browser_download_url,
         )
     }
 
@@ -94,13 +81,12 @@ object Updater {
         onProgress: (Float) -> Unit,
     ) = withContext(Dispatchers.IO) {
         val name = release.apkUrl.substringAfterLast('/')
-        val expected =
-            fetchText(release.checksumsUrl)
-                .lines()
-                .map { it.trim() }
-                .first { it.endsWith(name) }
-                .substringBefore(' ')
-                .lowercase()
+        val expected = fetchText(release.checksumsUrl)
+            .lines()
+            .map { it.trim() }
+            .first { it.endsWith(name) }
+            .substringBefore(' ')
+            .lowercase()
         val installer = context.packageManager.packageInstaller
         val sessionId =
             installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
@@ -121,11 +107,10 @@ object Updater {
         url: String,
         onProgress: (Float) -> Unit,
     ) {
-        val connection =
-            connect(url).apply {
-                setRequestProperty("Accept", "application/octet-stream")
-                setRequestProperty("Accept-Encoding", "identity")
-            }
+        val connection = connect(url).apply {
+            setRequestProperty("Accept", "application/octet-stream")
+            setRequestProperty("Accept-Encoding", "identity")
+        }
         val status = connection.responseCode
         if (status != 200) error("download failed: $status")
         val total = connection.contentLengthLong

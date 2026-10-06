@@ -3,27 +3,7 @@ package dev.tn3w.shelf.cover.art
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.glowPaint
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.scanlines
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.stars
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -38,10 +18,7 @@ internal fun scifiPlanet(cover: CoverCanvas): Typeset = with(cover) {
     val planetRadius = random.range(0.28f, 0.40f) * width
     radialGlow(planetX, planetY, planetRadius * 2f, accent, 0.30f, 2.4f)
     canvas.drawCircle(
-        planetX,
-        planetY,
-        planetRadius,
-        fillPaint(hsv(hue + 0.04f, 0.55f, 0.16f)),
+        planetX, planetY, planetRadius, fillPaint(hsv(hue + 0.04f, 0.55f, 0.16f)),
     )
 
     val bands = random.between(5, 9)
@@ -59,9 +36,7 @@ internal fun scifiPlanet(cover: CoverCanvas): Typeset = with(cover) {
             planetY + offset,
             planetX + planetRadius,
             planetY + offset + thickness,
-            fillPaint(
-                alpha(mix(accent, Color.WHITE, 0.3f), random.range(0.05f, 0.16f)),
-            ),
+            fillPaint(alpha(mix(accent, Color.WHITE, 0.3f), random.range(0.05f, 0.16f))),
         )
         canvas.restore()
     }
@@ -174,20 +149,13 @@ private fun hud(cover: CoverCanvas, accent: Int, second: Int) = with(cover) {
     val centerY = height * random.range(0.56f, 0.66f)
     val radius = width * random.range(0.22f, 0.30f)
     val arcs = listOf(
-        Triple(1f, 0f, 250f),
-        Triple(0.82f, 200f, 300f),
-        Triple(0.6f, 40f, 160f),
+        Triple(1f, 0f, 250f), Triple(0.82f, 200f, 300f), Triple(0.6f, 40f, 160f),
     )
     val rings = Path()
     for ((scale, start, sweep) in arcs) {
         val ring = radius * scale
         rings.addArc(
-            RectF(
-                centerX - ring,
-                centerY - ring,
-                centerX + ring,
-                centerY + ring,
-            ),
+            RectF(centerX - ring, centerY - ring, centerX + ring, centerY + ring),
             start,
             sweep,
         )
@@ -257,11 +225,7 @@ internal fun scifiOrbit(cover: CoverCanvas): Typeset = with(cover) {
 
     val barY = height * random.range(0.38f, 0.44f)
     canvas.drawRect(
-        0f,
-        barY,
-        width,
-        barY + height * 0.004f,
-        fillPaint(alpha(accent, 0.86f)),
+        0f, barY, width, barY + height * 0.004f, fillPaint(alpha(accent, 0.86f)),
     )
 
     vignette(0.40f, 0.66f)

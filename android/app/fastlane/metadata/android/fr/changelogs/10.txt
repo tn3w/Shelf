@@ -1,0 +1,5 @@
+• Import CSV Goodreads et StoryGraph avec rapport, plus export CSV
+• Lecteur : taille du texte, interligne, marges, police, pages papier et nuit, justification, écran allumé, touches de volume et de page
+• Noir pur, couleurs du fond d'écran, animations réduites
+• Langue des livres Auto, objectif quotidien libre
+• Réglages réorganisés en pages claires

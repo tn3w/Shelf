@@ -7,24 +7,9 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import dev.tn3w.shelf.data.Catalogue
-import dev.tn3w.shelf.data.LANGUAGES
-import dev.tn3w.shelf.data.Library
-import dev.tn3w.shelf.data.Packs
-import dev.tn3w.shelf.data.REPOSITORY
-import dev.tn3w.shelf.data.Recommender
-import dev.tn3w.shelf.data.Searcher
-import dev.tn3w.shelf.data.USER_AGENT
-import dev.tn3w.shelf.data.displayName
-import dev.tn3w.shelf.data.isOffline
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 import kotlin.random.Random
@@ -65,7 +50,7 @@ class ShelfApp :
         scope.launch {
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
-            reload(settings.language.ifEmpty { systemLanguage() })
+            reload(bookLanguage(settings))
             if (settings.onboarded) checkCatalogue()
         }
     }
@@ -93,6 +78,8 @@ class ShelfApp :
             .firstOrNull { it in LANGUAGES } ?: "en"
     }
 
+    fun bookLanguage(settings: Settings) = settings.language.ifEmpty { systemLanguage() }
+
     fun reload(language: String) =
         scope.launch(Dispatchers.IO) { loaded.value = Loaded(packs.load(language)) }
 
@@ -109,9 +96,7 @@ class ShelfApp :
                 downloads.update { it - key }
                 if (loaded.value?.catalogue?.language == language) reload(language)
             }
-            .onFailure {
-                downloads.update { it + (key to Download.Failed) }
-            }
+            .onFailure { downloads.update { it + (key to Download.Failed) } }
     }
 
     fun remove(language: String, pack: String) = scope.launch(Dispatchers.IO) {
@@ -132,17 +117,16 @@ class ShelfApp :
     }
 
     suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {
-        val imported =
-            withContext(Dispatchers.IO) {
-                uris.count { uri ->
-                    runCatching {
-                        contentResolver.openInputStream(uri)?.use {
-                            packs.importFile(displayName(uri), it)
-                        } == true
-                    }
-                        .getOrDefault(false)
+        val imported = withContext(Dispatchers.IO) {
+            uris.count { uri ->
+                runCatching {
+                    contentResolver.openInputStream(uri)?.use {
+                        packs.importFile(displayName(uri), it)
+                    } == true
                 }
+                    .getOrDefault(false)
             }
+        }
         reload(language)
         return imported == uris.size
     }
@@ -154,7 +138,7 @@ class ShelfApp :
         if (now - settings.lastCatalogueCheck < MONTH_MILLIS) return
         runCatching { packs.refreshManifest() }.getOrElse { return }
         library.updateSettings { it.copy(lastCatalogueCheck = now) }
-        val language = settings.language
+        val language = bookLanguage(settings)
         val updates = packs.pendingUpdates(language)
         val small = updates.sumOf { it.bytes } <= AUTOMATIC_UPDATE_BYTES
         if (small) updates.forEach { download(language, it.pack) }

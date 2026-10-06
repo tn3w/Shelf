@@ -3,63 +3,36 @@ package dev.tn3w.shelf.ui
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.FileOpen
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.*
+import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.data.Author
-import dev.tn3w.shelf.data.Shelf
-import dev.tn3w.shelf.data.Tag
-import dev.tn3w.shelf.data.toBook
+import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.launch
 
-private val SECTIONS =
-    listOf(
-        "audience" to R.string.audience,
-        "form" to R.string.formats,
-        "topic" to R.string.topics,
-    )
-private val FILTERS =
-    listOf(
-        R.string.all to null,
-        R.string.reading to Shelf.Reading,
-        R.string.want_to_read to Shelf.Want,
-        R.string.finished to Shelf.Read,
-    )
+private val SECTIONS = listOf(
+    "audience" to R.string.audience,
+    "form" to R.string.formats,
+    "topic" to R.string.topics,
+)
+private val FILTERS = listOf(
+    R.string.all to null,
+    R.string.reading to Shelf.Reading,
+    R.string.want_to_read to Shelf.Want,
+    R.string.finished to Shelf.Read,
+)
 
 @Composable
 fun ExploreScreen(navigator: Navigator) {
@@ -76,7 +49,7 @@ fun ExploreScreen(navigator: Navigator) {
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { LargeTitle(stringResource(R.string.explore)) }
         if (missing == true) {
-            item { NoCatalogue(navigator::settings) }
+            item { NoCatalogue { navigator.settings(SettingsPage.Catalogue) } }
             return@LazyColumn
         }
         item {
@@ -134,8 +107,7 @@ private fun TagChips(tags: List<Tag>, navigator: Navigator) {
     ) {
         tags.forEach { tag ->
             SuggestionChip(
-                onClick = { navigator.tag(tag.id) },
-                label = { Text(tag.label) },
+                onClick = { navigator.tag(tag.id) }, label = { Text(tag.label) },
             )
         }
     }
@@ -174,11 +146,10 @@ private fun AuthorHeader(author: Author, born: Int, count: Int?) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp),
         )
-        val details =
-            listOfNotNull(
-                born.takeIf { it > 0 }?.let { stringResource(R.string.born, it) },
-                count?.let { pluralStringResource(R.plurals.books, it, it) },
-            )
+        val details = listOfNotNull(
+            born.takeIf { it > 0 }?.let { stringResource(R.string.born, it) },
+            count?.let { pluralStringResource(R.plurals.books, it, it) },
+        )
         Text(
             details.joinToString(" · "),
             style = MaterialTheme.typography.bodyMedium,
@@ -197,15 +168,14 @@ fun LibraryScreen(navigator: Navigator) {
     val shown = saved?.filter { shelf == null || it.shelf == shelf }?.map { it.toBook() }
     val scope = rememberCoroutineScope()
     val unsupported = stringResource(R.string.unsupported_file)
-    val picker =
-        rememberLauncherForActivityResult(OpenDocument()) { uri ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            scope.launch {
-                val work = app.library.importFile(uri)
-                if (work != null) return@launch navigator.reader(work)
-                Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
-            }
+    val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val work = app.library.importFile(uri)
+            if (work != null) return@launch navigator.reader(work)
+            Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
         }
+    }
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         LargeTitle(stringResource(R.string.library)) {

@@ -4,28 +4,7 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.Anchor
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.stars
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -288,10 +267,7 @@ private fun moonPhase(
     canvas.save()
     canvas.clipPath(Path().apply { addCircle(x, y, radius, Path.Direction.CW) })
     canvas.drawCircle(
-        x + direction * offset,
-        y,
-        radius * 1.02f,
-        fillPaint(mix(night, pale, 0.06f)),
+        x + direction * offset, y, radius * 1.02f, fillPaint(mix(night, pale, 0.06f)),
     )
     canvas.restore()
     canvas.drawCircle(x, y, radius, strokePaint(alpha(pale, 0.4f), unit(0.002f)))
@@ -403,15 +379,14 @@ private fun compassPoint(
 }
 
 internal fun historyLaurel(cover: CoverCanvas): Typeset = with(cover) {
-    val ground =
-        random.pick(
-            listOf(
-                hsv(0.98f, 0.65f, 0.34f),
-                hsv(0.62f, 0.55f, 0.26f),
-                hsv(0.40f, 0.45f, 0.22f),
-                hsv(0.08f, 0.35f, 0.20f),
-            ),
-        )
+    val ground = random.pick(
+        listOf(
+            hsv(0.98f, 0.65f, 0.34f),
+            hsv(0.62f, 0.55f, 0.26f),
+            hsv(0.40f, 0.45f, 0.22f),
+            hsv(0.08f, 0.35f, 0.20f),
+        ),
+    )
     val gold = hsv(
         random.range(0.10f, 0.12f),
         random.range(0.50f, 0.65f),
@@ -547,29 +522,18 @@ private fun silhouette(
     coat.close()
     canvas.drawPath(coat, paint)
     canvas.drawOval(
-        RectF(
-            x - head * 1.6f,
-            headY + head * 1.1f,
-            x + head * 1.6f,
-            headY + head * 2.4f,
-        ),
+        RectF(x - head * 1.6f, headY + head * 1.1f, x + head * 1.6f, headY + head * 2.4f),
         paint,
     )
     canvas.drawCircle(x, headY, head, paint)
     canvas.drawOval(
         RectF(
-            x - head * 1.7f,
-            headY - head * 0.75f,
-            x + head * 1.7f,
-            headY - head * 0.35f,
+            x - head * 1.7f, headY - head * 0.75f, x + head * 1.7f, headY - head * 0.35f,
         ),
         paint,
     )
     val crown = RectF(
-        x - head * 0.95f,
-        headY - head * 1.7f,
-        x + head * 0.95f,
-        headY - head * 0.5f,
+        x - head * 0.95f, headY - head * 1.7f, x + head * 0.95f, headY - head * 0.5f,
     )
     canvas.drawRoundRect(crown, head * 0.3f, head * 0.3f, paint)
 }
@@ -596,19 +560,13 @@ internal fun biographyCameo(cover: CoverCanvas): Typeset = with(cover) {
         centerY + width * 0.34f,
     )
     canvas.drawOval(
-        RectF(oval).apply { inset(-unit(0.03f), -unit(0.03f)) },
-        fillPaint(gold),
+        RectF(oval).apply { inset(-unit(0.03f), -unit(0.03f)) }, fillPaint(gold),
     )
     canvas.drawOval(oval, fillPaint(cream))
     canvas.save()
     canvas.clipPath(Path().apply { addOval(oval, Path.Direction.CW) })
     canvas.drawPath(
-        profile(
-            centerX,
-            centerY + width * 0.02f,
-            width * 0.24f,
-            random.chance(0.5f),
-        ),
+        profile(centerX, centerY + width * 0.02f, width * 0.24f, random.chance(0.5f)),
         fillPaint(shade(ground, 0.6f)),
     )
     canvas.restore()
@@ -636,13 +594,12 @@ internal fun biographyCameo(cover: CoverCanvas): Typeset = with(cover) {
     )
 }
 
-private val PROFILE =
-    listOf(
-        0.42f to -0.35f, 0.46f to -0.27f, 0.60f to -0.03f, 0.48f to 0.04f, 0.51f to 0.12f,
-        0.46f to 0.17f, 0.49f to 0.22f, 0.43f to 0.36f, 0.34f to 0.44f, 0.20f to 0.48f,
-        0.24f to 0.90f, 0.95f to 1.30f, 0.95f to 2f, -0.95f to 2f, -0.95f to 1.30f,
-        -0.36f to 0.90f,
-    )
+private val PROFILE = listOf(
+    0.42f to -0.35f, 0.46f to -0.27f, 0.60f to -0.03f, 0.48f to 0.04f, 0.51f to 0.12f,
+    0.46f to 0.17f, 0.49f to 0.22f, 0.43f to 0.36f, 0.34f to 0.44f, 0.20f to 0.48f,
+    0.24f to 0.90f, 0.95f to 1.30f, 0.95f to 2f, -0.95f to 2f, -0.95f to 1.30f,
+    -0.36f to 0.90f,
+)
 
 private fun profile(
     centerX: Float,

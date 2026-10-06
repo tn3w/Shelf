@@ -1,67 +1,26 @@
 package dev.tn3w.shelf.ui
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.data.Book
-import dev.tn3w.shelf.data.Habit
-import dev.tn3w.shelf.data.Row
-import dev.tn3w.shelf.data.RowKind
-import dev.tn3w.shelf.data.Shelf
-import dev.tn3w.shelf.data.mainTitle
-import dev.tn3w.shelf.data.toBook
+import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -78,10 +37,9 @@ fun HomeScreen(navigator: Navigator) {
     val habit by app.library.habit.collectAsStateWithLifecycle(null)
     val dismissed by app.library.dismissed.collectAsStateWithLifecycle(emptySet())
     val scope = rememberCoroutineScope()
-    val rows by
-        load(saved, dismissed) {
-            saved?.let { recommender.rows(it, app.session, dismissed) }
-        }
+    val rows by load(saved, dismissed) {
+        saved?.let { recommender.rows(it, app.session, dismissed) }
+    }
     val missing by load { catalogue.workCount == 0 }
     fun dismiss(book: Book) = scope.launch { app.library.dismiss(book.work) }
     val genres by load {
@@ -133,7 +91,7 @@ fun HomeScreen(navigator: Navigator) {
             }
         }
         if (missing == true) {
-            item { NoCatalogue(navigator::settings) }
+            item { NoCatalogue { navigator.settings(SettingsPage.Catalogue) } }
             return@LazyColumn
         }
         if (rows == null) {
@@ -202,14 +160,13 @@ private fun rowSubtitle(row: Row) = when (row.kind) {
 
 @Composable
 private fun HabitCard(habit: Habit) {
-    val fraction by
-        animateFloatAsState(
-            (habit.today.toFloat() / habit.goal).coerceIn(0f, 1f),
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow,
-            ),
-        )
+    val fraction by animateFloatAsState(
+        (habit.today.toFloat() / habit.goal).coerceIn(0f, 1f),
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow,
+        ),
+    )
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -217,8 +174,7 @@ private fun HabitCard(habit: Habit) {
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
     ) {
         Column(
-            Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StreakFlame(habit)
@@ -232,8 +188,7 @@ private fun HabitCard(habit: Habit) {
                 }
             }
             GoalBar(
-                fraction,
-                stringResource(R.string.pages_of_goal, habit.today, habit.goal),
+                fraction, stringResource(R.string.pages_of_goal, habit.today, habit.goal),
             )
             WeekRow(habit)
         }
@@ -244,12 +199,10 @@ private fun HabitCard(habit: Habit) {
 private fun habitMessage(habit: Habit) = when {
     habit.done -> stringResource(R.string.goal_reached)
 
-    habit.today > 0 ->
-        pluralStringResource(
-            R.plurals.pages_left,
-            habit.goal - habit.today,
-            habit.goal - habit.today,
-        )
+    habit.today > 0 -> {
+        val left = habit.goal - habit.today
+        pluralStringResource(R.plurals.pages_left, left, left)
+    }
 
     habit.streak > 0 ->
         pluralStringResource(R.plurals.keep_streak, habit.goal, habit.goal)
@@ -260,13 +213,12 @@ private fun habitMessage(habit: Habit) = when {
 @Composable
 private fun StreakFlame(habit: Habit) {
     val pulsing = habit.done && !LocalReducedMotion.current
-    val pulse by
-        rememberInfiniteTransition()
-            .animateFloat(
-                initialValue = 1f,
-                targetValue = if (pulsing) 1.15f else 1f,
-                animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-            )
+    val pulse by rememberInfiniteTransition()
+        .animateFloat(
+            initialValue = 1f,
+            targetValue = if (pulsing) 1.15f else 1f,
+            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        )
     val lit = habit.done || habit.streak > 0
     val tint by
         animateColorAsState(if (lit) Flame else MaterialTheme.colorScheme.outlineVariant)
@@ -336,11 +288,9 @@ private fun WeekRow(habit: Habit) {
 @Composable
 private fun DayDot(label: String, done: Boolean, isToday: Boolean) {
     val ring = if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent
-    val scale by
-        animateFloatAsState(
-            if (done) 1f else 0f,
-            spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        )
+    val scale by animateFloatAsState(
+        if (done) 1f else 0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+    )
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             label,

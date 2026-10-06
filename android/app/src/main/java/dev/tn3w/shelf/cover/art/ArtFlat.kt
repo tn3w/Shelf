@@ -3,27 +3,7 @@ package dev.tn3w.shelf.cover.art
 import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
-import dev.tn3w.shelf.cover.CoverCanvas
-import dev.tn3w.shelf.cover.CoverFont
-import dev.tn3w.shelf.cover.CoverFrame
-import dev.tn3w.shelf.cover.LetterCase
-import dev.tn3w.shelf.cover.Rule
-import dev.tn3w.shelf.cover.TAU
-import dev.tn3w.shelf.cover.Typeset
-import dev.tn3w.shelf.cover.alpha
-import dev.tn3w.shelf.cover.displacedLine
-import dev.tn3w.shelf.cover.fillPaint
-import dev.tn3w.shelf.cover.frame
-import dev.tn3w.shelf.cover.grain
-import dev.tn3w.shelf.cover.hsv
-import dev.tn3w.shelf.cover.mix
-import dev.tn3w.shelf.cover.radialGlow
-import dev.tn3w.shelf.cover.shade
-import dev.tn3w.shelf.cover.starPath
-import dev.tn3w.shelf.cover.strokePaint
-import dev.tn3w.shelf.cover.texture
-import dev.tn3w.shelf.cover.verticalGradient
-import dev.tn3w.shelf.cover.vignette
+import dev.tn3w.shelf.cover.*
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -78,12 +58,7 @@ internal fun technicalGeometry(cover: CoverCanvas): Typeset = with(cover) {
                 for (row in 0 until rows) {
                     val x = width * 0.12f + cellWidth * column
                     val y = bandTop + cellHeight * row
-                    val box = RectF(
-                        x,
-                        y,
-                        x + cellWidth * 0.86f,
-                        y + cellHeight * 0.86f,
-                    )
+                    val box = RectF(x, y, x + cellWidth * 0.86f, y + cellHeight * 0.86f)
                     val choice = random.float()
                     when {
                         choice < 0.35f -> canvas.drawOval(box, fillPaint(accent))
@@ -105,11 +80,7 @@ internal fun technicalGeometry(cover: CoverCanvas): Typeset = with(cover) {
     }
 
     canvas.drawRect(
-        0f,
-        0f,
-        width,
-        height * random.range(0.035f, 0.06f),
-        fillPaint(accent),
+        0f, 0f, width, height * random.range(0.035f, 0.06f), fillPaint(accent),
     )
     grain(0.02f)
     Typeset(
@@ -187,21 +158,12 @@ internal fun businessAscent(cover: CoverCanvas): Typeset = with(cover) {
                     if (random.chance(0.55f)) {
                         canvas.drawRect(
                             box,
-                            fillPaint(
-                                mix(
-                                    accent,
-                                    Color.WHITE,
-                                    random.range(0f, 0.40f),
-                                ),
-                            ),
+                            fillPaint(mix(accent, Color.WHITE, random.range(0f, 0.40f))),
                         )
                     } else {
                         canvas.drawRect(
                             box,
-                            strokePaint(
-                                mix(accent, Color.WHITE, 0.25f),
-                                unit(0.005f),
-                            ),
+                            strokePaint(mix(accent, Color.WHITE, 0.25f), unit(0.005f)),
                         )
                     }
                 }
@@ -302,10 +264,7 @@ internal fun literaryShape(cover: CoverCanvas): Typeset = with(cover) {
                 }
                 canvas.drawPath(
                     wave,
-                    strokePaint(
-                        mix(accent, paper, index / (count * 1.8f)),
-                        unit(0.006f),
-                    ),
+                    strokePaint(mix(accent, paper, index / (count * 1.8f)), unit(0.006f)),
                 )
             }
         }
@@ -330,9 +289,7 @@ internal fun literaryShape(cover: CoverCanvas): Typeset = with(cover) {
 
 internal fun childrenMeadow(cover: CoverCanvas): Typeset = with(cover) {
     val sky = hsv(
-        random.range(0.50f, 0.60f),
-        random.range(0.35f, 0.55f),
-        random.range(0.95f, 1f),
+        random.range(0.50f, 0.60f), random.range(0.35f, 0.55f), random.range(0.95f, 1f),
     )
     val grass = hsv(
         random.range(0.25f, 0.34f),
@@ -413,17 +370,14 @@ internal fun childrenMeadow(cover: CoverCanvas): Typeset = with(cover) {
 }
 
 internal fun humorConfetti(cover: CoverCanvas): Typeset = with(cover) {
-    val base =
-        hsv(random.float(), random.range(0.35f, 0.60f), random.range(0.92f, 1f))
+    val base = hsv(random.float(), random.range(0.35f, 0.60f), random.range(0.92f, 1f))
     val ink = hsv(
         random.range(0.60f, 0.72f),
         random.range(0.40f, 0.60f),
         random.range(0.14f, 0.22f),
     )
     val pop = hsv(
-        random.float() + 0.5f,
-        random.range(0.70f, 0.90f),
-        random.range(0.85f, 1f),
+        random.float() + 0.5f, random.range(0.70f, 0.90f), random.range(0.85f, 1f),
     )
     canvas.drawRect(0f, 0f, width, height, fillPaint(base))
 
@@ -458,10 +412,7 @@ internal fun humorConfetti(cover: CoverCanvas): Typeset = with(cover) {
                     ) {
                         zigzag.moveTo(stepX, stepY)
                     } else {
-                        zigzag.lineTo(
-                            stepX,
-                            stepY,
-                        )
+                        zigzag.lineTo(stepX, stepY)
                     }
                 }
                 canvas.drawPath(zigzag, strokePaint(tone, unit(0.007f)))
@@ -495,29 +446,28 @@ internal fun humorConfetti(cover: CoverCanvas): Typeset = with(cover) {
 }
 
 internal fun travelPoster(cover: CoverCanvas): Typeset = with(cover) {
-    val bands =
-        listOf(
-            hsv(
-                random.range(0.95f, 1.02f),
-                random.range(0.45f, 0.65f),
-                random.range(0.92f, 1f),
-            ),
-            hsv(
-                random.range(0.03f, 0.07f),
-                random.range(0.60f, 0.80f),
-                random.range(0.92f, 1f),
-            ),
-            hsv(
-                random.range(0.08f, 0.12f),
-                random.range(0.70f, 0.90f),
-                random.range(0.88f, 0.98f),
-            ),
-            hsv(
-                random.range(0.11f, 0.14f),
-                random.range(0.55f, 0.75f),
-                random.range(0.80f, 0.92f),
-            ),
-        )
+    val bands = listOf(
+        hsv(
+            random.range(0.95f, 1.02f),
+            random.range(0.45f, 0.65f),
+            random.range(0.92f, 1f),
+        ),
+        hsv(
+            random.range(0.03f, 0.07f),
+            random.range(0.60f, 0.80f),
+            random.range(0.92f, 1f),
+        ),
+        hsv(
+            random.range(0.08f, 0.12f),
+            random.range(0.70f, 0.90f),
+            random.range(0.88f, 0.98f),
+        ),
+        hsv(
+            random.range(0.11f, 0.14f),
+            random.range(0.55f, 0.75f),
+            random.range(0.80f, 0.92f),
+        ),
+    )
     val ink = hsv(
         random.range(0.60f, 0.72f),
         random.range(0.45f, 0.65f),
@@ -552,19 +502,14 @@ internal fun travelPoster(cover: CoverCanvas): Typeset = with(cover) {
     peaks.moveTo(0f, height)
     for (index in profile.indices) {
         peaks.lineTo(
-            index * step,
-            horizon - abs(profile[index]) * height * 1.4f - height * 0.02f,
+            index * step, horizon - abs(profile[index]) * height * 1.4f - height * 0.02f,
         )
     }
     peaks.lineTo(width, height)
     peaks.close()
     canvas.drawPath(peaks, fillPaint(ink))
     canvas.drawRect(
-        0f,
-        horizon + height * 0.16f,
-        width,
-        height,
-        fillPaint(shade(ink, 0.78f)),
+        0f, horizon + height * 0.16f, width, height, fillPaint(shade(ink, 0.78f)),
     )
 
     frame(CoverFrame.Hairline, mix(ink, Color.WHITE, 0.6f))
@@ -586,16 +531,14 @@ internal fun travelPoster(cover: CoverCanvas): Typeset = with(cover) {
 internal fun romanceBotanical(cover: CoverCanvas): Typeset = with(cover) {
     val hue = random.pick(listOf(0.96f, 0.02f, 0.06f, 0.92f, 0.10f))
     val blush = hsv(hue, random.range(0.18f, 0.30f), random.range(0.94f, 0.99f))
-    val deep =
-        hsv(hue - 0.03f, random.range(0.35f, 0.50f), random.range(0.62f, 0.80f))
+    val deep = hsv(hue - 0.03f, random.range(0.35f, 0.50f), random.range(0.62f, 0.80f))
     val gold = hsv(random.range(0.09f, 0.12f), 0.45f, 0.80f)
     verticalGradient(blush, deep, random.range(1.4f, 2.2f))
     texture(0.06f)
 
     val stems = random.between(3, 6)
     for (index in 0 until stems) {
-        val baseX =
-            width * (index + 0.5f) / stems + random.range(-0.05f, 0.05f) * width
+        val baseX = width * (index + 0.5f) / stems + random.range(-0.05f, 0.05f) * width
         val baseY = height * random.range(0.98f, 1.04f)
         val stemHeight = height * random.range(0.28f, 0.48f)
         val curve = random.range(-0.09f, 0.09f) * width
@@ -619,10 +562,7 @@ internal fun romanceBotanical(cover: CoverCanvas): Typeset = with(cover) {
             val right = maxOf(anchor.first, anchor.first + side * leafWidth)
             canvas.drawOval(
                 RectF(
-                    left,
-                    anchor.second - leafHeight,
-                    right,
-                    anchor.second + leafHeight,
+                    left, anchor.second - leafHeight, right, anchor.second + leafHeight,
                 ),
                 fillPaint(line),
             )
@@ -643,12 +583,7 @@ internal fun romanceBotanical(cover: CoverCanvas): Typeset = with(cover) {
     }
 
     radialGlow(
-        width * 0.5f,
-        height * 0.3f,
-        width * 0.9f,
-        Color.rgb(255, 250, 245),
-        0.18f,
-        2f,
+        width * 0.5f, height * 0.3f, width * 0.9f, Color.rgb(255, 250, 245), 0.18f, 2f,
     )
     vignette(0.28f, 0.72f)
     grain(0.025f)
@@ -672,8 +607,7 @@ internal fun romanceBotanical(cover: CoverCanvas): Typeset = with(cover) {
 internal fun romanceDeco(cover: CoverCanvas): Typeset = with(cover) {
     val hue = random.pick(listOf(0.95f, 0.99f, 0.04f, 0.88f, 0.08f))
     val blush = hsv(hue, random.range(0.20f, 0.34f), random.range(0.93f, 0.99f))
-    val deep =
-        hsv(hue - 0.02f, random.range(0.45f, 0.65f), random.range(0.45f, 0.62f))
+    val deep = hsv(hue - 0.02f, random.range(0.45f, 0.65f), random.range(0.45f, 0.62f))
     val gold = hsv(
         random.range(0.08f, 0.11f),
         random.range(0.60f, 0.80f),
@@ -693,10 +627,7 @@ internal fun romanceDeco(cover: CoverCanvas): Typeset = with(cover) {
         val paint = strokePaint(alpha(gold, 0.86f), stroke)
         canvas.drawArc(
             RectF(
-                centerX - spread,
-                centerY - rise,
-                centerX + spread,
-                centerY + rise * 0.6f,
+                centerX - spread, centerY - rise, centerX + spread, centerY + rise * 0.6f,
             ),
             180f,
             180f,
@@ -744,12 +675,7 @@ internal fun romanceDeco(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawCircle(centerX, centerY, roseRadius * 0.18f, fillPaint(deep))
 
     radialGlow(
-        width * 0.5f,
-        height * 0.32f,
-        width * 0.9f,
-        Color.rgb(255, 250, 246),
-        0.16f,
-        2f,
+        width * 0.5f, height * 0.32f, width * 0.9f, Color.rgb(255, 250, 246), 0.16f, 2f,
     )
     vignette(0.30f, 0.70f)
     grain(0.025f)
@@ -806,10 +732,7 @@ internal fun romanceBloom(cover: CoverCanvas): Typeset = with(cover) {
             val y = centerY + sin(angle) * distance
             canvas.drawCircle(x, y, petal, fillPaint(tone))
             canvas.drawCircle(
-                x,
-                y,
-                petal,
-                strokePaint(alpha(shade(deep, 0.7f), 0.35f), unit(0.003f)),
+                x, y, petal, strokePaint(alpha(shade(deep, 0.7f), 0.35f), unit(0.003f)),
             )
         }
     }
@@ -871,10 +794,7 @@ internal fun childrenBalloons(cover: CoverCanvas): Typeset = with(cover) {
         val knot = fillPaint(shade(tone, 0.8f))
         canvas.drawCircle(x, y + radius * 1.22f, radius * 0.12f, knot)
         val shine = RectF(
-            x - radius * 0.55f,
-            y - radius * 0.8f,
-            x - radius * 0.25f,
-            y - radius * 0.3f,
+            x - radius * 0.55f, y - radius * 0.8f, x - radius * 0.25f, y - radius * 0.3f,
         )
         canvas.drawOval(shine, fillPaint(alpha(Color.WHITE, 0.55f)))
     }

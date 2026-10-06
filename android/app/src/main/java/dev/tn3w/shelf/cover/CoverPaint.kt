@@ -38,9 +38,7 @@ internal fun mix(first: Int, second: Int, amount: Float): Int {
     return Color.rgb(
         (Color.red(first) + (Color.red(second) - Color.red(first)) * weight).toInt(),
         (
-            Color.green(
-                first,
-            ) + (Color.green(second) - Color.green(first)) * weight
+            Color.green(first) + (Color.green(second) - Color.green(first)) * weight
             ).toInt(),
         (Color.blue(first) + (Color.blue(second) - Color.blue(first)) * weight).toInt(),
     )
@@ -106,43 +104,32 @@ internal fun CoverCanvas.radialGlow(
 ) {
     val stops = rampStops(10)
     val colors = IntArray(stops.size) {
-        alpha(
-            color,
-            (1f - stops[it]).pow(falloff) * strength,
-        )
+        alpha(color, (1f - stops[it]).pow(falloff) * strength)
     }
     val paint = fillPaint(Color.BLACK)
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
-    paint.shader =
-        RadialGradient(
-            centerX,
-            centerY,
-            radius.coerceAtLeast(1f),
-            colors,
-            stops,
-            Shader.TileMode.CLAMP,
-        )
+    paint.shader = RadialGradient(
+        centerX,
+        centerY,
+        radius.coerceAtLeast(1f),
+        colors,
+        stops,
+        Shader.TileMode.CLAMP,
+    )
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
 internal fun CoverCanvas.vignette(strength: Float, start: Float) {
     val extent = hypot(width, height) / 2f
     val stops = rampStops(9)
-    val colors =
-        IntArray(stops.size) {
-            val ramp = ((stops[it] - start) / (1.05f - start)).coerceIn(0f, 1f).pow(1.5f)
-            Color.argb((ramp * strength * 255).toInt(), 0, 0, 0)
-        }
+    val colors = IntArray(stops.size) {
+        val ramp = ((stops[it] - start) / (1.05f - start)).coerceIn(0f, 1f).pow(1.5f)
+        Color.argb((ramp * strength * 255).toInt(), 0, 0, 0)
+    }
     val paint = fillPaint(Color.BLACK)
-    paint.shader =
-        RadialGradient(
-            width / 2f,
-            height / 2f,
-            extent,
-            colors,
-            stops,
-            Shader.TileMode.CLAMP,
-        )
+    paint.shader = RadialGradient(
+        width / 2f, height / 2f, extent, colors, stops, Shader.TileMode.CLAMP,
+    )
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
@@ -152,12 +139,11 @@ private object CoverNoise {
 
     private fun tile(size: Int, spread: Float): Bitmap {
         val random = CoverRandom(0x5EEDL)
-        val pixels =
-            IntArray(size * size) {
-                val noise = (random.float() - 0.5f) * 255f * spread
-                val value = (128 + noise).toInt().coerceIn(0, 255)
-                Color.rgb(value, value, value)
-            }
+        val pixels = IntArray(size * size) {
+            val noise = (random.float() - 0.5f) * 255f * spread
+            val value = (128 + noise).toInt().coerceIn(0, 255)
+            Color.rgb(value, value, value)
+        }
         return Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888)
     }
 }
@@ -197,12 +183,11 @@ internal fun CoverCanvas.scrimBand(
 ) {
     if (strength <= 0.01f) return
     val stops = floatArrayOf(0f, 0.5f, 1f)
-    val colors =
-        intArrayOf(
-            alpha(toward, 0f),
-            alpha(toward, strength.coerceIn(0f, 1f)),
-            alpha(toward, 0f),
-        )
+    val colors = intArrayOf(
+        alpha(toward, 0f),
+        alpha(toward, strength.coerceIn(0f, 1f)),
+        alpha(toward, 0f),
+    )
     val paint = fillPaint(Color.BLACK)
     paint.shader =
         LinearGradient(0f, top, 0f, bottom, colors, stops, Shader.TileMode.CLAMP)
@@ -255,10 +240,7 @@ internal class Ridge(val fill: Path, val crest: Path)
 
 internal fun CoverCanvas.ridge(baseline: Float, rise: Float, roughness: Float): Ridge {
     val profile = displacedLine(
-        random,
-        baseline + random.range(-0.03f, 0.03f),
-        baseline,
-        roughness,
+        random, baseline + random.range(-0.03f, 0.03f), baseline, roughness,
     )
     val step = width / (profile.size - 1)
     val fill = Path()
@@ -338,9 +320,7 @@ internal fun randomHarmonics(
     return List(count) {
         val frequency = frequencies.removeAt(random.index(frequencies.size))
         Harmonic(
-            random.range(strength * 0.4f, strength),
-            frequency,
-            random.range(0f, TAU),
+            random.range(strength * 0.4f, strength), frequency, random.range(0f, TAU),
         )
     }
 }
