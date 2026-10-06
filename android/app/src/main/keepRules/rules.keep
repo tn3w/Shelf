@@ -1,0 +1,3 @@
+-keep enum dev.tn3w.shelf.ui.SettingsPage {
+    *;
+}

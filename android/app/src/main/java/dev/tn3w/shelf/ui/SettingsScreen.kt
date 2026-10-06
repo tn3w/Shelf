@@ -8,6 +8,7 @@ import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.*
+import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
@@ -80,6 +81,7 @@ private val PACK_LABELS = mapOf(
     "general" to R.string.pack_general,
 )
 
+@Keep
 enum class SettingsPage {
     Main,
     Catalogue,
