@@ -15,13 +15,31 @@ const BLOCK_BYTES: usize = 8 << 20;
 const MAX_RETRIES: u32 = 12;
 const MAX_AUTHORS: usize = 4;
 const MIN_COVER_WIDTH: u16 = 250;
-const NARROWEST_BOOK: f32 = 0.58;
-const WIDEST_BOOK: f32 = 0.72;
-const IDEAL_BOOK: std::ops::RangeInclusive<f32> = 0.62..=0.68;
-const IDEAL_ASPECT_POINTS: u8 = 15;
+const BOOK_SHAPES: std::ops::RangeInclusive<f32> = 0.58..=0.72;
+const MAX_WORK_COVERS: usize = 8;
 
-const UPLOAD_POINTS: [(u16, u8); 4] = [(2024, 70), (2021, 55), (2017, 35), (2013, 15)];
-const RESOLUTION_POINTS: [(u16, u8); 4] = [(1000, 45), (600, 32), (450, 22), (320, 12)];
+const SPECIAL_EDITIONS: &[&str] = &[
+    "illustrated",
+    "ilustrad",
+    "anniversary",
+    "collector",
+    "special edition",
+    "edición especial",
+    "sonderausgabe",
+    "deluxe",
+    "gift edition",
+    "house edition",
+    "large print",
+    "bilingual",
+    "library binding",
+    "tie-in",
+    "facsimile",
+    "study guide",
+    "graphic novel",
+    "pearson",
+    "english readers",
+    "penguin readers",
+];
 
 const NON_BOOK_FORMATS: &[&str] = &[
     "audio",
@@ -79,7 +97,6 @@ const NON_BOOK_TITLES: &[&str] = &[
 struct CoverImage {
     width: u16,
     height: u16,
-    uploaded: u16,
 }
 pub const FLAG_ISBN: u8 = 1;
 pub const FLAG_COVER: u8 = 2;
@@ -486,8 +503,9 @@ pub struct TitleRecord {
     pub position: u16,
     pub year: u16,
     pub cover: u32,
-    pub print_on_demand: bool,
-    pub cover_quality: u8,
+    pub special: bool,
+    pub scanned: bool,
+    pub readers: u16,
     publisher: u32,
     start: u32,
     title_length: u8,
@@ -499,6 +517,7 @@ pub struct Titles {
     records: Vec<TitleRecord>,
     text: String,
     publisher_editions: HashMap<u32, u32>,
+    claimed_covers: Vec<bool>,
 }
 
 impl Titles {
@@ -530,6 +549,13 @@ impl Titles {
             .unwrap_or(0)
     }
 
+    pub fn is_claimed_cover(&self, cover: u32) -> bool {
+        self.claimed_covers
+            .get(cover as usize)
+            .copied()
+            .unwrap_or(false)
+    }
+
     pub fn series(&self, record: &TitleRecord) -> &str {
         let start = record.start as usize + record.title_length as usize;
         &self.text[start..start + record.series_length as usize]
@@ -549,8 +575,9 @@ impl Titles {
             position,
             year: edition.facts.first_year,
             cover: edition.cover,
-            print_on_demand: edition.print_on_demand,
-            cover_quality: edition.cover_quality,
+            special: edition.special,
+            scanned: edition.scanned,
+            readers: edition.readers,
             publisher: edition.publisher,
             start,
             title_length: edition.title.len() as u8,
@@ -563,11 +590,23 @@ struct Edition {
     work: u32,
     facts: Facts,
     cover: u32,
-    cover_quality: u8,
+    special: bool,
+    scanned: bool,
+    readers: u16,
     title: String,
     series: Option<(String, u16)>,
-    print_on_demand: bool,
     publisher: u32,
+    covers: Vec<u32>,
+}
+
+fn edition_readers(source: &str) -> HashMap<u32, u16> {
+    let mut readers = HashMap::new();
+    let edition = |line: &[u8]| ol_id(field(line, 1));
+    scan(source, "reading-log", edition, |id| {
+        let count: &mut u16 = readers.entry(id).or_default();
+        *count = count.saturating_add(1);
+    });
+    readers
 }
 
 #[derive(Default)]
@@ -584,7 +623,6 @@ impl Shapes {
             let image = CoverImage {
                 width: column(1)?.parse().ok()?,
                 height: column(2)?.parse().ok()?,
-                uploaded: year_of(column(3).unwrap_or_default()),
             };
             Some((id, image))
         };
@@ -599,31 +637,13 @@ impl Shapes {
     }
 }
 
-fn banded(value: u16, points: &[(u16, u8)]) -> u8 {
-    points
-        .iter()
-        .find(|(start, _)| value >= *start)
-        .map_or(0, |(_, points)| *points)
-}
-
-fn cover_quality(image: CoverImage) -> u8 {
-    if image.height == 0 || image.width < MIN_COVER_WIDTH {
-        return 0;
-    }
-    let aspect = f32::from(image.width) / f32::from(image.height);
-    if !(NARROWEST_BOOK..=WIDEST_BOOK).contains(&aspect) {
-        return 0;
-    }
-    let ideal = if IDEAL_BOOK.contains(&aspect) {
-        IDEAL_ASPECT_POINTS
-    } else {
-        0
-    };
-    banded(image.uploaded, &UPLOAD_POINTS) + banded(image.width, &RESOLUTION_POINTS) + ideal + 1
+fn is_usable(image: CoverImage) -> bool {
+    let shape = f32::from(image.width) / f32::from(image.height.max(1));
+    image.width >= MIN_COVER_WIDTH && BOOK_SHAPES.contains(&shape)
 }
 
 fn contains_any(text: &str, needles: &[&str]) -> bool {
-    let lowered = text.to_ascii_lowercase();
+    let lowered = text.to_lowercase();
     needles.iter().any(|needle| lowered.contains(needle))
 }
 
@@ -631,21 +651,35 @@ fn is_non_book(format: &str, title: &str) -> bool {
     contains_any(format, NON_BOOK_FORMATS) || contains_any(title, NON_BOOK_TITLES)
 }
 
-fn vetted_cover(edition: &Value, shapes: &Shapes) -> (u32, u8) {
-    let cover = first_cover(edition);
-    let format = text(edition, "physical_format");
-    if cover == 0 || is_non_book(format, text(edition, "title")) {
-        return (0, 0);
-    }
-    match cover_quality(shapes.of(cover)) {
-        0 => (0, 0),
-        quality => (cover, quality),
-    }
+fn is_special(edition: &Value) -> bool {
+    let fields = ["title", "subtitle", "edition_name", "physical_format"];
+    let named = fields.into_iter().map(|name| text(edition, name));
+    let label: Vec<&str> = named.chain(strings(edition, "publishers")).collect();
+    contains_any(&label.join(" "), SPECIAL_EDITIONS)
 }
 
-pub fn work_cover(cover: u32, shapes: &Shapes) -> u32 {
-    let usable = cover > 0 && cover_quality(shapes.of(cover)) > 0;
-    if usable { cover } else { 0 }
+fn vetted_cover(edition: &Value, shapes: &Shapes) -> u32 {
+    let cover = first_cover(edition);
+    let format = text(edition, "physical_format");
+    let reprint = strings(edition, "publishers").any(catalog::is_reprinter);
+    let usable = cover > 0 && is_usable(shapes.of(cover));
+    let book = !is_non_book(format, text(edition, "title"));
+    if usable && book && !reprint { cover } else { 0 }
+}
+
+fn work_covers(work: &Value, shapes: &Shapes) -> Vec<u32> {
+    let covers = array(work, "covers").filter_map(Value::as_i64);
+    covers
+        .take(MAX_WORK_COVERS)
+        .map(|id| u32::try_from(id).unwrap_or(0))
+        .map(|cover| {
+            if is_usable(shapes.of(cover)) {
+                cover
+            } else {
+                0
+            }
+        })
+        .collect()
 }
 
 fn isbns(edition: &Value) -> impl Iterator<Item = &str> {
@@ -698,7 +732,7 @@ fn edition_flags(edition: &Value) -> u8 {
         .fold(0, |all, (_, flag)| all | flag)
 }
 
-fn edition_from(edition: &Value, shapes: &Shapes) -> Option<Edition> {
+fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -> Option<Edition> {
     let work = ol_id(keys(edition, "works").next()?.as_bytes())?;
     let mut facts = Facts {
         editions: 1,
@@ -723,16 +757,25 @@ fn edition_from(edition: &Value, shapes: &Shapes) -> Option<Edition> {
     facts.first_year = year_of(text(edition, "publish_date"));
     facts.classes = tags::classes_of(edition);
     facts.flags = edition_flags(edition);
-    let (cover, cover_quality) = vetted_cover(edition, shapes);
+    let cover = vetted_cover(edition, shapes);
+    let claimed = cover == 0 || facts.language_editions == [0; 4];
+    let covers = array(edition, "covers").filter_map(Value::as_i64);
     Some(Edition {
         work,
         facts,
         cover,
-        cover_quality,
+        special: is_special(edition),
+        scanned: edition.get("ocaid").is_some(),
         title: catalog::edition_title(text(edition, "title"), text(edition, "subtitle")),
         series: release::parse_series(&strings(edition, "series").collect::<Vec<_>>()),
-        print_on_demand: strings(edition, "publishers").any(catalog::is_reprinter),
         publisher: publisher_key(edition),
+        readers: ol_id(text(edition, "key").as_bytes())
+            .and_then(|id| readers.get(&id).copied())
+            .unwrap_or(0),
+        covers: match claimed {
+            true => covers.filter_map(|id| u32::try_from(id).ok()).collect(),
+            false => Vec::new(),
+        },
     })
 }
 
@@ -740,10 +783,11 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
     let shapes = Shapes::load(source);
+    let readers = edition_readers(source);
     scan(
         source,
         "editions",
-        |line| edition_from(&json(line)?, &shapes),
+        |line| edition_from(&json(line)?, &shapes, &readers),
         |edition| {
             slot(&mut facts, edition.work).absorb(&edition.facts);
             if edition.publisher > 0 {
@@ -751,6 +795,9 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
                     .publisher_editions
                     .entry(edition.publisher)
                     .or_default() += 1;
+            }
+            for &cover in &edition.covers {
+                *slot(&mut titles.claimed_covers, cover) = true;
             }
             if edition.title.is_empty() {
                 return;
@@ -778,7 +825,7 @@ pub struct Book {
     pub tags: Vec<u8>,
     pub description: String,
     pub description_language: Option<usize>,
-    pub cover: u32,
+    pub covers: Vec<u32>,
     pub year: u16,
     pub editions: u16,
     pub signal: Signal,
@@ -866,7 +913,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
             String::new()
         },
         authors,
-        cover: work_cover(first_cover(work), context.shapes),
+        covers: work_covers(work, context.shapes),
         year,
         editions: facts.editions,
         signal,

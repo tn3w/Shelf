@@ -118,13 +118,17 @@ struct Placed<'a> {
 }
 
 fn description<'a>(job: &Job<'a>, book: &'a Book) -> (&'a str, bool) {
-    if book.scores[job.language] < DESCRIPTION_MIN_SCORE {
+    if book.description.is_empty() || book.scores[job.language] < DESCRIPTION_MIN_SCORE {
         return ("", false);
     }
     if book.description_language == Some(job.language) {
         return (&book.description, false);
     }
-    match job.translations.get(book.work) {
+    let translated = job.translations.get(book.work);
+    let native = |text: &&str| {
+        catalog::detect_language(text).is_none_or(|language| language == job.language)
+    };
+    match translated.filter(native) {
         Some(text) => (text, true),
         None => ("", false),
     }

@@ -19,9 +19,21 @@ const JUDGED_HEAD_BYTES: usize = 40;
 const MIN_PARAGRAPH_BYTES: usize = 60;
 const SHORT_LEAD_BYTES: usize = 200;
 const MAX_SHOUTED_SHARE: f32 = 0.7;
-const COVER_TITLE_POINTS: i32 = 10;
 const COVER_REACH_POINTS: [(u32, i32); 4] = [(20_000, 25), (5_000, 20), (1_000, 15), (100, 8)];
-const COVER_EDITION_POINTS: [(u16, i32); 2] = [(1990, 10), (1960, 5)];
+const MODERN_EDITION: u16 = 1975;
+const COVER_EDITION_POINTS: [(u16, i32); 5] = [
+    (2010, 15),
+    (2000, 10),
+    (1990, 5),
+    (MODERN_EDITION, 0),
+    (1, -30),
+];
+const COVER_READER_POINTS: [(u16, i32); 4] = [(100, 25), (30, 18), (10, 12), (3, 6)];
+const COVER_CURATED_POINTS: i32 = 40;
+const COVER_TITLE_POINTS: i32 = 20;
+const COVER_SPECIAL_PENALTY: i32 = 25;
+const COVER_SCAN_PENALTY: i32 = 20;
+const COVER_LISTED_POINTS: i32 = 10;
 
 const TAIL_MARKERS: &[&str] = &[
     "-- back cover",
@@ -48,12 +60,87 @@ const JUNK_MARKERS: &[&str] = &[
     "source:",
     "wikipedia entry",
 ];
+const SHORT_COMMENT_BYTES: usize = 300;
+const TERSE_COMMENT_BYTES: usize = 100;
+const QUOTE_MARKS: [char; 6] = ['"', '\u{201c}', '\u{201d}', '\u{201e}', '«', '»'];
+
+const READER_OPENINGS: &[&str] = &[
+    " this book is about ",
+    " this book was about ",
+    " the book is about ",
+    " this story is about ",
+    " this is about ",
+    " it is about ",
+    " its about ",
+    " it s about ",
+];
+
+const READER_VERDICTS: &[&str] = &[
+    " must read ",
+    " must have ",
+    " recommend it ",
+    " recommend this ",
+    " i recommend ",
+    " i highly recommend ",
+    " i would recommend ",
+    " favorite book ",
+    " favourite book ",
+    " best book ",
+    " great read ",
+    " good read ",
+    " great book ",
+    " good book ",
+    " nice book ",
+    " awesome book ",
+    " amazing book ",
+    " five stars ",
+    " 5 stars ",
+    " i love ",
+    " i loved ",
+    " i like ",
+    " i liked ",
+    " i enjoyed ",
+    " i hated ",
+    " i really ",
+    " i want to ",
+    " i need ",
+    " i wish ",
+    " i hope ",
+    " i read ",
+    " i just ",
+    " i think ",
+    " my copy ",
+    " loved it ",
+    " worth reading ",
+    " in my opinion ",
+    " page turner ",
+    " well written ",
+    " this book is amazing ",
+    " this book is great ",
+    " this book is good ",
+    " this book is awesome ",
+    " this book is the best ",
+    " this is a good ",
+    " this is a great ",
+    " this is an amazing ",
+    " it is a good ",
+    " it is a great ",
+    " very good ",
+    " so good ",
+    " very boring ",
+    " very funny ",
+    " so funny ",
+    " is cool ",
+    " is awesome ",
+    " verry ",
+];
+
 const JUDGED_WORDS: usize = 25;
 const MIN_STOP_WORD_SHARE: f32 = 0.05;
 const MAX_TOKEN_BYTES: usize = 24;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-pub const SOURCE_LANGUAGES: [&str; 7] = ["en", "de", "fr", "es", "pt", "it", "nl"];
+pub const SOURCE_LANGUAGES: [&str; 9] = ["en", "de", "fr", "es", "pt", "it", "nl", "sv", "da"];
 
 const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "the and of to in is that it was for with as his her he she on but not you this \
@@ -73,6 +160,9 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
      questa anche suo suoi sue hanno molto tra fra dopo essere stato stata",
     "het een van dat zijn niet wordt naar voor ook maar deze wij zij hun werd waren \
      heeft hebben geen door met bij uit over zich ik",
+    "och är inte till av ett från efter vid när hennes hade hon säger blev skulle \
+     mot jag",
+    "og af ikke til på ved når hendes havde bliver mod ikkje frå eit jeg hvad hvor",
 ];
 
 const BAD_TITLE_PREFIXES: &[&str] = &[
@@ -146,6 +236,31 @@ const PRINT_ON_DEMAND: &[&str] = &[
     "dodo press",
     "hansebooks",
     "hardpress",
+    "hard press",
+    "indypublish",
+    "book jungle",
+    "filiquarian",
+    "creative media partners",
+    "simon & brown",
+    "icon classics",
+    "icon group",
+    "librivox",
+    "blurb",
+    "ad classic",
+    "xist publishing",
+    "readhowyouwant",
+    "engage books",
+    "start publishing",
+    "ebookslib",
+    "floating press",
+    "wilder publications",
+    "prakash book depot",
+    "editorium",
+    "standard publications",
+    "benediction classics",
+    "bibliotech press",
+    "mizzou publishing",
+    "fredonia",
     "forgotten books",
     "franklin classics",
     "wentworth press",
@@ -612,7 +727,67 @@ pub fn clean_description(text: &str) -> String {
         kept.push_str(paragraph);
     }
     let kept = without_tail(truncate(kept));
-    without_wrapping_quotes(&kept).to_string()
+    let kept = without_wrapping_quotes(&kept);
+    if is_reader_comment(kept) {
+        return String::new();
+    }
+    kept.to_string()
+}
+
+fn without_quotations(text: &str) -> String {
+    let mut quoted = false;
+    let mut kept = String::with_capacity(text.len());
+    for character in text.chars() {
+        if QUOTE_MARKS.contains(&character) {
+            quoted = !quoted;
+            continue;
+        }
+        if !quoted {
+            kept.push(character);
+        }
+    }
+    kept
+}
+
+fn spoken_words(text: &str) -> String {
+    let lowered = without_quotations(text).to_lowercase();
+    let words = lowered
+        .split(|character: char| !character.is_alphanumeric())
+        .filter(|word| !word.is_empty());
+    format!(" {} ", words.collect::<Vec<&str>>().join(" "))
+}
+
+fn is_reader_comment(text: &str) -> bool {
+    let Some(first) = text.chars().next() else {
+        return false;
+    };
+    let words = spoken_words(text);
+    let has = |phrases: &[&str]| phrases.iter().any(|phrase| words.contains(phrase));
+    let opens = |phrases: &[&str]| phrases.iter().any(|phrase| words.starts_with(phrase));
+    let lowercase_i = without_quotations(text).contains(" i ");
+    let noise = ["!!", "??", "...."].iter().any(|mark| text.contains(mark));
+    let verdict_points = if text.len() < SHORT_COMMENT_BYTES {
+        2
+    } else {
+        1
+    };
+    let points = [
+        (first.is_lowercase(), 2),
+        (has(READER_VERDICTS), verdict_points),
+        (lowercase_i, 2),
+        (opens(READER_OPENINGS), 1),
+        (
+            noise || has(&[" u ", " ur ", " lol ", " lmao ", " idk "]),
+            1,
+        ),
+        (text.len() < TERSE_COMMENT_BYTES, 1),
+    ];
+    let total: u8 = points
+        .iter()
+        .filter(|(earned, _)| *earned)
+        .map(|(_, points)| points)
+        .sum();
+    total >= 2
 }
 
 fn stop_word_language(word: &str) -> Option<usize> {
@@ -799,6 +974,24 @@ fn banded<T: PartialOrd>(value: T, points: &[(T, i32)]) -> i32 {
         .map_or(0, |(_, points)| *points)
 }
 
+type RankedCover = (i32, u16, u32);
+
+fn curated_points(book: &Book, cover: u32, edition_year: u16) -> i32 {
+    let year = if edition_year > 0 {
+        edition_year
+    } else {
+        book.year
+    };
+    if year < MODERN_EDITION {
+        return 0;
+    }
+    match book.covers.iter().position(|&curated| curated == cover) {
+        Some(0) => COVER_CURATED_POINTS,
+        Some(_) => COVER_LISTED_POINTS,
+        None => 0,
+    }
+}
+
 pub struct Entry {
     pub book: usize,
     pub title: String,
@@ -888,24 +1081,49 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    fn cover_score(&self, record: &TitleRecord, wanted: &str) -> i32 {
-        let matching = title_key(self.title(record), &[]) == wanted;
-        i32::from(record.cover_quality)
-            + banded(self.titles.publisher_editions(record), &COVER_REACH_POINTS)
-            + banded(record.year, &COVER_EDITION_POINTS)
+    fn cover_score(&self, record: &TitleRecord, title: &str, book: &Book) -> i32 {
+        let matching = title_key(self.title(record), &[]) == title;
+        banded(record.readers, &COVER_READER_POINTS)
             + award(matching, COVER_TITLE_POINTS)
+            + banded(record.year, &COVER_EDITION_POINTS)
+            + banded(self.titles.publisher_editions(record), &COVER_REACH_POINTS)
+            + curated_points(book, record.cover, record.year)
+            - award(record.special, COVER_SPECIAL_PENALTY)
+            - award(record.scanned, COVER_SCAN_PENALTY)
     }
 
-    fn best_cover(&self, records: &[&TitleRecord], key: &str, language: usize) -> u32 {
+    fn best_cover(
+        &self,
+        records: &[&TitleRecord],
+        title: &str,
+        language: usize,
+        book: &Book,
+    ) -> Option<RankedCover> {
         let usable = records
             .iter()
-            .filter(|record| record.cover > 0 && !record.print_on_demand)
+            .filter(|record| record.cover > 0)
             .filter(|record| record.language as usize == language)
             .filter(|record| is_mostly_latin(self.title(record)))
             .filter(|record| !is_foreign_title(self.title(record), language));
         usable
-            .max_by_key(|record| (self.cover_score(record, key), record.year, record.cover))
-            .map_or(0, |record| record.cover)
+            .map(|record| {
+                (
+                    self.cover_score(record, title, book),
+                    record.year,
+                    record.cover,
+                )
+            })
+            .max()
+    }
+
+    fn unclaimed_cover(&self, records: &[&TitleRecord], book: &Book) -> Option<RankedCover> {
+        let usable = book.covers.iter().filter(|&&cover| {
+            let held = records.iter().any(|record| record.cover == cover);
+            cover > 0 && !held && !self.titles.is_claimed_cover(cover)
+        });
+        usable
+            .map(|&cover| (curated_points(book, cover, 0), 0, cover))
+            .max()
     }
 
     fn resolve(&self, index: usize, book: &Book) -> Entry {
@@ -934,14 +1152,22 @@ impl<'a> Resolver<'a> {
         if title_key(&alternate, &[]) == key || alternate.to_lowercase() == title.to_lowercase() {
             alternate.clear();
         }
-        let cover = [
-            self.best_cover(&records, &key, self.language),
-            self.best_cover(&records, &key, 0),
-            book.cover,
-        ];
+        let unclaimed = self.unclaimed_cover(&records, book);
+        let english = self.best_cover(&records, &key, 0, book).max(unclaimed);
+        let native = match self.language {
+            0 => english,
+            language => self.best_cover(&records, &key, language, book),
+        };
+        let weak = native.is_some_and(|(_, year, _)| (1..MODERN_EDITION).contains(&year));
+        let preferred = if weak { native.max(english) } else { native };
+        let fallback = book.covers.iter().copied().find(|&cover| cover > 0);
+        let cover = preferred
+            .or(english)
+            .map(|(_, _, cover)| cover)
+            .or(fallback);
         Entry {
             book: index,
-            cover: cover.into_iter().find(|&cover| cover > 0).unwrap_or(0),
+            cover: cover.unwrap_or(0),
             title,
             alternate,
             series,
@@ -1054,6 +1280,32 @@ mod tests {
     }
 
     #[test]
+    fn reader_comments_dropped() {
+        for comment in [
+            "It is verry funny to read and it is cool",
+            "this is the only truly psychedelic book I've ever read.",
+            "This book is the best! I loved it and I wanted to read more!",
+            "This is a very good book I read in the past. I hope to read it again.",
+            "Great book about all the facets of sound. The book is a must read.",
+            "xix, 442 p., p. of plates : 26 cm",
+        ] {
+            assert!(clean_description(comment).is_empty(), "{comment}");
+        }
+        for blurb in [
+            "Four teenaged friends go out for a practice drive one night when the driver \
+             hits and possibly kills a pedestrian.",
+            "I'd always dreamed of my wedding day. But not like this. Not looking \
+             into the eyes of the man who betrayed me.",
+            "\"I think you have something to say to me, Papa,\" Salena said tautly, and \
+             the train pulled out of the Monte Carlo station into the night.",
+            "Franklin's favorite blanket is missing. He searches everywhere because he \
+             can't sleep without it.",
+        ] {
+            assert!(!clean_description(blurb).is_empty(), "{blurb}");
+        }
+    }
+
+    #[test]
     fn source_languages_detected() {
         for (language, text) in [
             (
@@ -1075,6 +1327,15 @@ mod tests {
             (
                 "nl",
                 "Het verhaal van een meisje dat niet werd gevonden door haar vader.",
+            ),
+            (
+                "sv",
+                "Två väninnor är ute och vandrar när en av dem inte kommer hem till byn.",
+            ),
+            (
+                "da",
+                "Hans Thomas og faren rejser til Grækenland, \
+                 og han har ikke fortalt hvor.",
             ),
         ] {
             let detected = detect_language(text).map(|index| SOURCE_LANGUAGES[index]);

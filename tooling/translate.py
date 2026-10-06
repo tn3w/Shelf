@@ -22,6 +22,8 @@ NLLB_CODES = {
     "pt": "por_Latn",
     "it": "ita_Latn",
     "nl": "nld_Latn",
+    "sv": "swe_Latn",
+    "da": "dan_Latn",
 }
 OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
