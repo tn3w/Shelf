@@ -57,14 +57,14 @@ import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Book
 import dev.tn3w.shelf.data.Habit
-import dev.tn3w.shelf.data.mainTitle
 import dev.tn3w.shelf.data.Row
 import dev.tn3w.shelf.data.RowKind
 import dev.tn3w.shelf.data.Shelf
+import dev.tn3w.shelf.data.mainTitle
 import dev.tn3w.shelf.data.toBook
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.TextStyle
-import kotlinx.coroutines.launch
 
 private val HOME_TAGS =
     listOf("fantasy", "mystery", "classics", "science-fiction", "romance")
@@ -110,8 +110,11 @@ fun HomeScreen(navigator: Navigator) {
                         val book = entry.toBook()
                         val position = progress[entry.work]
                         ContinueCard(book, position?.fraction) {
-                            if (position != null) navigator.reader(entry.work)
-                            else navigator.book(book, "continue")
+                            if (position != null) {
+                                navigator.reader(entry.work)
+                            } else {
+                                navigator.book(book, "continue")
+                            }
                         }
                     }
                 }
@@ -172,26 +175,30 @@ fun HomeScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun rowTitle(row: Row) =
-    when (row.kind) {
-        RowKind.Series -> stringResource(R.string.next_in_series)
-        RowKind.Author -> stringResource(R.string.more_by, row.author?.name.orEmpty())
-        RowKind.Popular -> stringResource(R.string.popular)
-        RowKind.Because ->
-            row.sources.firstOrNull()?.let {
-                stringResource(R.string.because_you_read, mainTitle(it.title))
-            } ?: stringResource(R.string.for_you)
-    }
+private fun rowTitle(row: Row) = when (row.kind) {
+    RowKind.Series -> stringResource(R.string.next_in_series)
+
+    RowKind.Author -> stringResource(R.string.more_by, row.author?.name.orEmpty())
+
+    RowKind.Popular -> stringResource(R.string.popular)
+
+    RowKind.Because ->
+        row.sources.firstOrNull()?.let {
+            stringResource(R.string.because_you_read, mainTitle(it.title))
+        } ?: stringResource(R.string.for_you)
+}
 
 @Composable
-private fun rowSubtitle(row: Row) =
-    when (row.kind) {
-        RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
-        RowKind.Popular -> stringResource(R.string.popular_subtitle)
-        RowKind.Because ->
-            if (row.sources.isEmpty()) stringResource(R.string.for_you_subtitle) else null
-        else -> null
-    }
+private fun rowSubtitle(row: Row) = when (row.kind) {
+    RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
+
+    RowKind.Popular -> stringResource(R.string.popular_subtitle)
+
+    RowKind.Because ->
+        if (row.sources.isEmpty()) stringResource(R.string.for_you_subtitle) else null
+
+    else -> null
+}
 
 @Composable
 private fun HabitCard(habit: Habit) {
@@ -207,7 +214,7 @@ private fun HabitCard(habit: Habit) {
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier =
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
     ) {
         Column(
             Modifier.padding(20.dp),
@@ -234,19 +241,21 @@ private fun HabitCard(habit: Habit) {
 }
 
 @Composable
-private fun habitMessage(habit: Habit) =
-    when {
-        habit.done -> stringResource(R.string.goal_reached)
-        habit.today > 0 ->
-            pluralStringResource(
-                R.plurals.pages_left,
-                habit.goal - habit.today,
-                habit.goal - habit.today,
-            )
-        habit.streak > 0 ->
-            pluralStringResource(R.plurals.keep_streak, habit.goal, habit.goal)
-        else -> pluralStringResource(R.plurals.start_streak, habit.goal, habit.goal)
-    }
+private fun habitMessage(habit: Habit) = when {
+    habit.done -> stringResource(R.string.goal_reached)
+
+    habit.today > 0 ->
+        pluralStringResource(
+            R.plurals.pages_left,
+            habit.goal - habit.today,
+            habit.goal - habit.today,
+        )
+
+    habit.streak > 0 ->
+        pluralStringResource(R.plurals.keep_streak, habit.goal, habit.goal)
+
+    else -> pluralStringResource(R.plurals.start_streak, habit.goal, habit.goal)
+}
 
 @Composable
 private fun StreakFlame(habit: Habit) {
@@ -291,13 +300,13 @@ private fun GoalBar(fraction: Float, label: String) {
             Modifier.fillMaxWidth()
                 .height(14.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             Box(
                 Modifier.fillMaxHeight()
                     .fillMaxWidth(fraction)
                     .clip(CircleShape)
-                    .background(Flame)
+                    .background(Flame),
             )
         }
         Text(

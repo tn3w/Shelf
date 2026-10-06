@@ -10,18 +10,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import java.io.InputStream
-import java.io.OutputStream
-import java.time.LocalDate
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.InputStream
+import java.io.OutputStream
+import java.time.LocalDate
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 private const val RECENT_LIMIT = 8
 private val Context.dataStore by preferencesDataStore("library")
@@ -129,8 +129,11 @@ fun Context.displayName(uri: Uri): String {
             .query(uri, null, null, null, null)
             ?.use { cursor ->
                 val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (cursor.moveToFirst() && column >= 0) cursor.getString(column)
-                else null
+                if (cursor.moveToFirst() && column >= 0) {
+                    cursor.getString(column)
+                } else {
+                    null
+                }
             }
             ?: uri.lastPathSegment.orEmpty()
     if ('.' in name) return name
@@ -142,9 +145,8 @@ fun Context.displayName(uri: Uri): String {
 private inline fun <reified T> Preferences.decode(
     key: Preferences.Key<String>,
     fallback: T,
-): T =
-    this[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() }
-        ?: fallback
+): T = this[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() }
+    ?: fallback
 
 class Library(private val context: Context) {
     private val store = context.dataStore
@@ -219,10 +221,10 @@ class Library(private val context: Context) {
         val copied =
             withContext(Dispatchers.IO) {
                 runCatching {
-                        context.contentResolver.openInputStream(uri)?.use { input ->
-                            target.outputStream().use { input.copyTo(it) }
-                        }
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { input.copyTo(it) }
                     }
+                }
                     .getOrNull()
             }
         if (copied != null) return name
@@ -262,11 +264,10 @@ class Library(private val context: Context) {
     suspend fun updateSettings(change: (Settings) -> Settings) =
         update(SETTINGS, Settings(), change)
 
-    suspend fun remember(query: String) =
-        update(RECENT, emptyList<String>()) { recent ->
-            val trimmed = query.trim()
-            (listOf(trimmed) + recent.filter { it != trimmed }).take(RECENT_LIMIT)
-        }
+    suspend fun remember(query: String) = update(RECENT, emptyList<String>()) { recent ->
+        val trimmed = query.trim()
+        (listOf(trimmed) + recent.filter { it != trimmed }).take(RECENT_LIMIT)
+    }
 
     suspend fun clearSearches() = store.edit { it.remove(RECENT) }
 
@@ -276,12 +277,12 @@ class Library(private val context: Context) {
         val backup = store.data.first().toBackup()
         return withContext(Dispatchers.IO) {
             runCatching {
-                    val output =
-                        context.contentResolver.openOutputStream(uri)
-                            ?: return@runCatching false
-                    output.use { writeArchive(it, backup) }
-                    true
-                }
+                val output =
+                    context.contentResolver.openOutputStream(uri)
+                        ?: return@runCatching false
+                output.use { writeArchive(it, backup) }
+                true
+            }
                 .getOrDefault(false)
         }
     }
@@ -302,10 +303,10 @@ class Library(private val context: Context) {
         val backup =
             withContext(Dispatchers.IO) {
                 runCatching {
-                        context.contentResolver.openInputStream(uri)?.use {
-                            readArchive(it)
-                        }
+                    context.contentResolver.openInputStream(uri)?.use {
+                        readArchive(it)
                     }
+                }
                     .getOrNull()
             } ?: return false
         merge(backup)
@@ -321,6 +322,7 @@ class Library(private val context: Context) {
                     name == BACKUP_ENTRY ->
                         backup =
                             json.decodeFromString(archive.readBytes().decodeToString())
+
                     name.startsWith(BOOKS_PREFIX) -> extractBook(name, archive)
                 }
             }
@@ -336,34 +338,31 @@ class Library(private val context: Context) {
         target.outputStream().use { input.copyTo(it) }
     }
 
-    private suspend fun merge(backup: Backup) =
-        store.edit { preferences ->
-            val merged = preferences.toBackup().mergedWith(backup)
-            preferences[ENTRIES] = json.encodeToString(merged.entries)
-            preferences[PROGRESS] = json.encodeToString(merged.progress)
-            preferences[ACTIVITY] = json.encodeToString(merged.activity)
-            preferences[DISMISSED] = json.encodeToString(merged.dismissed)
-            preferences[SETTINGS] = json.encodeToString(merged.settings)
-        }
+    private suspend fun merge(backup: Backup) = store.edit { preferences ->
+        val merged = preferences.toBackup().mergedWith(backup)
+        preferences[ENTRIES] = json.encodeToString(merged.entries)
+        preferences[PROGRESS] = json.encodeToString(merged.progress)
+        preferences[ACTIVITY] = json.encodeToString(merged.activity)
+        preferences[DISMISSED] = json.encodeToString(merged.dismissed)
+        preferences[SETTINGS] = json.encodeToString(merged.settings)
+    }
 }
 
-private fun Preferences.toBackup() =
-    Backup(
-        decode(ENTRIES, emptyList()),
-        decode(PROGRESS, emptyMap()),
-        decode(ACTIVITY, emptyMap()),
-        decode(DISMISSED, emptySet()),
-        decode(SETTINGS, Settings()),
-    )
+private fun Preferences.toBackup() = Backup(
+    decode(ENTRIES, emptyList()),
+    decode(PROGRESS, emptyMap()),
+    decode(ACTIVITY, emptyMap()),
+    decode(DISMISSED, emptySet()),
+    decode(SETTINGS, Settings()),
+)
 
-private fun Backup.mergedWith(imported: Backup) =
-    Backup(
-        entries = newestPerWork(entries + imported.entries),
-        progress = imported.progress + progress,
-        activity = maxPerDay(imported.activity, activity),
-        dismissed = dismissed + imported.dismissed,
-        settings = imported.settings.copy(onboarded = settings.onboarded),
-    )
+private fun Backup.mergedWith(imported: Backup) = Backup(
+    entries = newestPerWork(entries + imported.entries),
+    progress = imported.progress + progress,
+    activity = maxPerDay(imported.activity, activity),
+    dismissed = dismissed + imported.dismissed,
+    settings = imported.settings.copy(onboarded = settings.onboarded),
+)
 
 private fun newestPerWork(entries: List<Saved>) =
     entries.groupBy { it.work }.map { (_, saved) -> saved.maxBy { it.updated } }

@@ -123,11 +123,11 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                         "series",
                         navigator::book,
                         subtitle =
-                            pluralStringResource(
-                                R.plurals.books_in_series,
-                                books.size,
-                                books.size,
-                            ),
+                        pluralStringResource(
+                            R.plurals.books_in_series,
+                            books.size,
+                            books.size,
+                        ),
                         shared = false,
                     )
                 }
@@ -167,12 +167,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
 }
 
 @Composable
-private fun BookHeader(
-    book: Book,
-    shelf: Shelf?,
-    origin: String,
-    navigator: Navigator,
-) {
+private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Navigator) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
@@ -187,8 +182,9 @@ private fun BookHeader(
         rememberLauncherForActivityResult(OpenDocument()) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
             scope.launch {
-                if (app.library.importBook(book, uri))
+                if (app.library.importBook(book, uri)) {
                     return@launch navigator.reader(book.work)
+                }
                 Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
             }
         }
@@ -242,9 +238,12 @@ private fun BookHeader(
         ) {
             Button(
                 onClick = {
-                    if (position != null) navigator.reader(book.work)
-                    else picker.launch(arrayOf("*/*"))
-                }
+                    if (position != null) {
+                        navigator.reader(book.work)
+                    } else {
+                        picker.launch(arrayOf("*/*"))
+                    }
+                },
             ) {
                 Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
                 val label =
@@ -252,7 +251,7 @@ private fun BookHeader(
                         stringResource(R.string.continue_percent, (it * 100).toInt())
                     }
                         ?: stringResource(
-                            if (position != null) R.string.resume else R.string.start
+                            if (position != null) R.string.resume else R.string.start,
                         )
                 Text(label, Modifier.padding(start = 8.dp))
             }
@@ -319,19 +318,19 @@ private fun facts(book: Book): String {
     val popularity = book.popularity
     val locale = LocalConfiguration.current.locales[0]
     return listOfNotNull(
-            book.year.takeIf { it > 0 }?.toString(),
-            popularity
-                ?.takeIf { it.ratings > 0 }
-                ?.let { "★ " + String.format(locale, "%.1f", it.rating) },
-            popularity
-                ?.readers
-                ?.takeIf { it > 0 }
-                ?.let { pluralStringResource(R.plurals.readers, it, it) },
-            popularity
-                ?.editions
-                ?.takeIf { it > 1 }
-                ?.let { pluralStringResource(R.plurals.editions, it, it) },
-        )
+        book.year.takeIf { it > 0 }?.toString(),
+        popularity
+            ?.takeIf { it.ratings > 0 }
+            ?.let { "★ ${String.format(locale, "%.1f", it.rating)}" },
+        popularity
+            ?.readers
+            ?.takeIf { it > 0 }
+            ?.let { pluralStringResource(R.plurals.readers, it, it) },
+        popularity
+            ?.editions
+            ?.takeIf { it > 1 }
+            ?.let { pluralStringResource(R.plurals.editions, it, it) },
+    )
         .joinToString("  ·  ")
 }
 

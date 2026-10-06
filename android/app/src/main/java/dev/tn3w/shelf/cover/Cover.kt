@@ -81,58 +81,101 @@ import java.io.File
 
 internal typealias ArtDirection = (CoverCanvas) -> Typeset
 
-internal fun directions(genre: CoverGenre): List<ArtDirection> =
-    when (genre) {
-        CoverGenre.Fantasy ->
-            listOf(::fantasyPeaks, ::fantasySigil, ::fantasyForest, ::fantasyDawn,
-                ::fantasyIlluminated, ::fantasyCrystal, ::fantasySword)
-        CoverGenre.Dystopian ->
-            listOf(::dystopianMonolith, ::dystopianEye, ::dystopianBlocks,
-                ::dystopianPropaganda, ::dystopianBarcode)
-        CoverGenre.ScienceFiction ->
-            listOf(::scifiPlanet, ::scifiOrbit, ::scifiCircuit, ::scifiTunnel,
-                ::scifiRetro, ::dystopianGlitch)
-        CoverGenre.Mystery ->
-            listOf(::mysteryStreet, ::mysteryKeyhole, ::mysteryPrint, ::mysteryBlinds,
-                ::mysteryRedThread)
-        CoverGenre.Horror ->
-            listOf(::horrorMoon, ::horrorCracks, ::horrorDrip, ::horrorFog)
-        CoverGenre.Romance ->
-            listOf(::romanceBotanical, ::romanceDeco, ::romanceBloom, ::romanceLetter)
-        CoverGenre.Adventure ->
-            listOf(::adventureMap, ::adventureCompass, ::travelRoute, ::seigaihaWaves)
-        CoverGenre.Children ->
-            listOf(::childrenMeadow, ::childrenBalloons, ::childrenRainbow, ::natureTree)
-        CoverGenre.Poetry ->
-            listOf(::poetryWash, ::poetryMoons, ::poetryRain, ::literaryFields)
-        CoverGenre.Nature ->
-            listOf(::natureContours, ::natureLeaves, ::natureLake, ::natureTree)
-        CoverGenre.Travel ->
-            listOf(::travelPoster, ::travelStamp, ::travelRoute, ::natureLake)
-        CoverGenre.Spiritual ->
-            listOf(::spiritualRays, ::spiritualMandala, ::spiritualEnso, ::spiritualLotus)
-        CoverGenre.Business ->
-            listOf(::businessAscent, ::businessGraph, ::swissGrid, ::technicalBlueprint)
-        CoverGenre.Humor ->
-            listOf(::humorConfetti, ::humorPop, ::risoHalftone, ::childrenBalloons)
-        CoverGenre.Vintage ->
-            listOf(::vintageBands, ::penguinBands, ::vintageDeco, ::bauhausTiles)
-        CoverGenre.Biography ->
-            listOf(::biographyPortrait, ::biographyCameo, ::historyLaurel, ::penguinBands)
-        CoverGenre.History ->
-            listOf(::historyEmblem, ::historyLaurel, ::historyTemple,
-                ::fantasyIlluminated)
-        CoverGenre.Technical ->
-            listOf(::technicalGeometry, ::technicalBlueprint, ::technicalAtom,
-                ::bauhausTiles)
-        CoverGenre.Literary ->
-            listOf(::literaryType, ::literaryShape, ::penguinBands, ::literaryFields)
-    }
+internal fun directions(genre: CoverGenre): List<ArtDirection> = when (genre) {
+    CoverGenre.Fantasy ->
+        listOf(
+            ::fantasyPeaks,
+            ::fantasySigil,
+            ::fantasyForest,
+            ::fantasyDawn,
+            ::fantasyIlluminated,
+            ::fantasyCrystal,
+            ::fantasySword,
+        )
 
-internal fun allDirections(): List<Pair<String, ArtDirection>> =
-    CoverGenre.entries.flatMap { genre ->
-        directions(genre).mapIndexed { index, direction -> "$genre-$index" to direction }
-    }
+    CoverGenre.Dystopian ->
+        listOf(
+            ::dystopianMonolith,
+            ::dystopianEye,
+            ::dystopianBlocks,
+            ::dystopianPropaganda,
+            ::dystopianBarcode,
+        )
+
+    CoverGenre.ScienceFiction ->
+        listOf(
+            ::scifiPlanet,
+            ::scifiOrbit,
+            ::scifiCircuit,
+            ::scifiTunnel,
+            ::scifiRetro,
+            ::dystopianGlitch,
+        )
+
+    CoverGenre.Mystery ->
+        listOf(
+            ::mysteryStreet,
+            ::mysteryKeyhole,
+            ::mysteryPrint,
+            ::mysteryBlinds,
+            ::mysteryRedThread,
+        )
+
+    CoverGenre.Horror ->
+        listOf(::horrorMoon, ::horrorCracks, ::horrorDrip, ::horrorFog)
+
+    CoverGenre.Romance ->
+        listOf(::romanceBotanical, ::romanceDeco, ::romanceBloom, ::romanceLetter)
+
+    CoverGenre.Adventure ->
+        listOf(::adventureMap, ::adventureCompass, ::travelRoute, ::seigaihaWaves)
+
+    CoverGenre.Children ->
+        listOf(::childrenMeadow, ::childrenBalloons, ::childrenRainbow, ::natureTree)
+
+    CoverGenre.Poetry ->
+        listOf(::poetryWash, ::poetryMoons, ::poetryRain, ::literaryFields)
+
+    CoverGenre.Nature ->
+        listOf(::natureContours, ::natureLeaves, ::natureLake, ::natureTree)
+
+    CoverGenre.Travel ->
+        listOf(::travelPoster, ::travelStamp, ::travelRoute, ::natureLake)
+
+    CoverGenre.Spiritual ->
+        listOf(::spiritualRays, ::spiritualMandala, ::spiritualEnso, ::spiritualLotus)
+
+    CoverGenre.Business ->
+        listOf(::businessAscent, ::businessGraph, ::swissGrid, ::technicalBlueprint)
+
+    CoverGenre.Humor ->
+        listOf(::humorConfetti, ::humorPop, ::risoHalftone, ::childrenBalloons)
+
+    CoverGenre.Vintage ->
+        listOf(::vintageBands, ::penguinBands, ::vintageDeco, ::bauhausTiles)
+
+    CoverGenre.Biography ->
+        listOf(::biographyPortrait, ::biographyCameo, ::historyLaurel, ::penguinBands)
+
+    CoverGenre.History ->
+        listOf(
+            ::historyEmblem,
+            ::historyLaurel,
+            ::historyTemple,
+            ::fantasyIlluminated,
+        )
+
+    CoverGenre.Technical ->
+        listOf(
+            ::technicalGeometry,
+            ::technicalBlueprint,
+            ::technicalAtom,
+            ::bauhausTiles,
+        )
+
+    CoverGenre.Literary ->
+        listOf(::literaryType, ::literaryShape, ::penguinBands, ::literaryFields)
+}
 
 data class CoverRequest(
     val work: Int,
@@ -143,36 +186,18 @@ data class CoverRequest(
 
 fun renderCover(request: CoverRequest, widthPixels: Int): Bitmap {
     val random = CoverRandom(coverSeed(request.work, request.title, request.author))
-    val choices = directions(classify(request.slugs))
-    return paint(request, widthPixels, random, choices[random.index(choices.size)])
-}
-
-internal fun renderDirection(
-    request: CoverRequest,
-    widthPixels: Int,
-    direction: ArtDirection,
-): Bitmap =
-    paint(request, widthPixels,
-        CoverRandom(coverSeed(request.work, request.title, request.author)), direction)
-
-private fun paint(
-    request: CoverRequest,
-    widthPixels: Int,
-    random: CoverRandom,
-    direction: ArtDirection,
-): Bitmap {
+    val direction = random.pick(directions(classify(request.slugs)))
     val width = widthPixels.coerceIn(48, 2048)
     val bitmap = Bitmap.createBitmap(width, width * 3 / 2, Bitmap.Config.ARGB_8888)
     val cover = CoverCanvas(bitmap, random)
-    val typeset = direction(cover)
-    cover.drawTypography(request.title, request.author, typeset)
+    cover.drawTypography(request.title, request.author, direction(cover))
     return bitmap
 }
 
 object Covers {
     private val memory =
         object : LruCache<String, Bitmap>(
-            (Runtime.getRuntime().maxMemory() / 8192).toInt().coerceIn(2048, 32768)
+            (Runtime.getRuntime().maxMemory() / 8192).toInt().coerceIn(2048, 32768),
         ) {
             override fun sizeOf(key: String, value: Bitmap) = value.byteCount / 1024
         }
@@ -207,13 +232,21 @@ object Covers {
     private fun directory(context: Context) =
         File(context.cacheDir, "covers").apply { mkdirs() }
 
-    private fun decode(file: File): Bitmap? =
-        if (!file.exists()) null else runCatching { BitmapFactory.decodeFile(file.path) }
+    private fun decode(file: File): Bitmap? = if (!file.exists()) {
+        null
+    } else {
+        runCatching { BitmapFactory.decodeFile(file.path) }
             .getOrNull()
+    }
 
     private val compressFormat =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) Bitmap.CompressFormat.WEBP_LOSSY
-        else Bitmap.CompressFormat.JPEG
+        if (Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.R
+        ) {
+            Bitmap.CompressFormat.WEBP_LOSSY
+        } else {
+            Bitmap.CompressFormat.JPEG
+        }
 
     private fun store(file: File, bitmap: Bitmap) {
         runCatching {

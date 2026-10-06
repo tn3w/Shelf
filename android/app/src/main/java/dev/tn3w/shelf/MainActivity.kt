@@ -98,7 +98,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable object AboutRoute
 
-private const val ScreenFadeMillis = 220
+private const val SCREEN_FADE_MILLIS = 220
 
 private data class Tab(@StringRes val label: Int, val icon: ImageVector, val route: Any)
 
@@ -140,13 +140,14 @@ class Navigator(private val controller: NavHostController) {
     }
 }
 
-private fun openedFile(intent: Intent): Uri? =
-    when (intent.action) {
-        Intent.ACTION_VIEW -> intent.data
-        Intent.ACTION_SEND ->
-            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-        else -> null
-    }
+private fun openedFile(intent: Intent): Uri? = when (intent.action) {
+    Intent.ACTION_VIEW -> intent.data
+
+    Intent.ACTION_SEND ->
+        IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+
+    else -> null
+}
 
 class MainActivity : ComponentActivity() {
     private val opened = MutableStateFlow<Uri?>(null)
@@ -170,8 +171,11 @@ class MainActivity : ComponentActivity() {
                     Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    if (current.onboarded) ShelfNavigation(current, opened)
-                    else OnboardingScreen()
+                    if (current.onboarded) {
+                        ShelfNavigation(current, opened)
+                    } else {
+                        OnboardingScreen()
+                    }
                 }
             }
         }
@@ -193,8 +197,11 @@ private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
         val source = uri ?: return@LaunchedEffect
         val work = app.library.importFile(source)
         opened.value = null
-        if (work != null) navigator.reader(work)
-        else Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+        if (work != null) {
+            navigator.reader(work)
+        } else {
+            Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+        }
     }
 }
 
@@ -212,7 +219,7 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true
     val adaptive =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
-            currentWindowAdaptiveInfoV2()
+            currentWindowAdaptiveInfoV2(),
         )
     val hidden = reading || WindowInsets.isImeVisible
 
@@ -244,14 +251,16 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
 @Composable
 private fun Routes(controller: NavHostController, navigator: Navigator) {
     val reduced = LocalReducedMotion.current
-    val fade = tween<Float>(ScreenFadeMillis)
+    val fade = tween<Float>(SCREEN_FADE_MILLIS)
+    val enter = if (reduced) EnterTransition.None else fadeIn(fade)
+    val exit = if (reduced) ExitTransition.None else fadeOut(fade)
     NavHost(
         controller,
         startDestination = HomeRoute,
-        enterTransition = { if (reduced) EnterTransition.None else fadeIn(fade) },
-        exitTransition = { if (reduced) ExitTransition.None else fadeOut(fade) },
-        popEnterTransition = { if (reduced) EnterTransition.None else fadeIn(fade) },
-        popExitTransition = { if (reduced) ExitTransition.None else fadeOut(fade) },
+        enterTransition = { enter },
+        exitTransition = { exit },
+        popEnterTransition = { enter },
+        popExitTransition = { exit },
     ) {
         screen<HomeRoute> { HomeScreen(navigator) }
         screen<LibraryRoute> { LibraryScreen(navigator) }
@@ -273,8 +282,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
 }
 
 private inline fun <reified T : Any> NavGraphBuilder.screen(
-    noinline content: @Composable (NavBackStackEntry) -> Unit
-) =
-    composable<T> { entry ->
-        CompositionLocalProvider(LocalAnimatedScope provides this) { content(entry) }
-    }
+    noinline content: @Composable (NavBackStackEntry) -> Unit,
+) = composable<T> { entry ->
+    CompositionLocalProvider(LocalAnimatedScope provides this) { content(entry) }
+}

@@ -65,17 +65,15 @@ private fun editDistance(left: String, right: String, limit: Int): Int {
     return previous.last()
 }
 
-private fun allowedTypos(token: String) =
-    when {
-        token.length <= 3 -> 0
-        token.length <= 6 -> 1
-        else -> 2
-    }
+private fun allowedTypos(token: String) = when {
+    token.length <= 3 -> 0
+    token.length <= 6 -> 1
+    else -> 2
+}
 
-private fun transpositions(token: String) =
-    (0 until token.length - 1).map {
-        token.substring(0, it) + token[it + 1] + token[it] + token.substring(it + 2)
-    }
+private fun transpositions(token: String) = (0 until token.length - 1).map {
+    token.substring(0, it) + token[it + 1] + token[it] + token.substring(it + 2)
+}
 
 private fun trigrams(term: String) = "$$term$".windowed(3)
 
@@ -112,18 +110,16 @@ class Searcher(private val catalogue: Catalogue) {
         }
     }
 
-    private fun frequency(text: String) =
-        catalogue.ranks?.frequency(text)
-            ?: segments.sumOf { it.term(text)?.frequency ?: 0 }
+    private fun frequency(text: String) = catalogue.ranks?.frequency(text)
+        ?: segments.sumOf { it.term(text)?.frequency ?: 0 }
 
-    private fun completions(prefix: String) =
-        segments
-            .flatMap { segment ->
-                segment.completions(prefix, PREFIX_EXPANSIONS).map { it.text }
-            }
-            .distinct()
-            .sortedByDescending(::frequency)
-            .take(PREFIX_EXPANSIONS)
+    private fun completions(prefix: String) = segments
+        .flatMap { segment ->
+            segment.completions(prefix, PREFIX_EXPANSIONS).map { it.text }
+        }
+        .distinct()
+        .sortedByDescending(::frequency)
+        .take(PREFIX_EXPANSIONS)
 
     private fun termMatches(token: String, isLast: Boolean): List<TermMatch> {
         val matches = mutableListOf<TermMatch>()
@@ -224,8 +220,9 @@ class Searcher(private val catalogue: Catalogue) {
         if (titleHits in 1 until query.size && query.size <= titleHits + authorHits) {
             bonus += COMBO
         }
-        if (authorHits == query.size && titleHits < query.size)
+        if (authorHits == query.size && titleHits < query.size) {
             bonus += AUTHOR * confidence
+        }
         return bonus
     }
 

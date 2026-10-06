@@ -77,7 +77,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Block
-import dev.tn3w.shelf.data.Chapter
 import dev.tn3w.shelf.data.Document
 import dev.tn3w.shelf.data.PagedDocument
 import dev.tn3w.shelf.data.Progress
@@ -85,11 +84,11 @@ import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.TextDocument
 import dev.tn3w.shelf.data.decodeImage
 import dev.tn3w.shelf.data.openDocument
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 private val PAGE_PADDING = 28.dp
 private val HEADING_SCALE = mapOf(1 to 1.6f, 2 to 1.4f, 3 to 1.25f, 4 to 1.1f)
@@ -126,12 +125,12 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
             value =
                 withContext(Dispatchers.IO) {
                     runCatching {
-                            val progress = app.library.progress.first().getValue(work)
-                            Opened.Ready(
-                                progress,
-                                openDocument(app.library.bookFile(progress.file)),
-                            )
-                        }
+                        val progress = app.library.progress.first().getValue(work)
+                        Opened.Ready(
+                            progress,
+                            openDocument(app.library.bookFile(progress.file)),
+                        )
+                    }
                         .getOrDefault(Opened.Failed)
                 }
         }
@@ -147,6 +146,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         when (val current = opened) {
             null -> Loading()
+
             Opened.Failed ->
                 Column(Modifier.windowInsetsPadding(WindowInsets.systemBars)) {
                     BackBar(navigator::back)
@@ -155,6 +155,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
                         stringResource(R.string.open_failed),
                     )
                 }
+
             is Opened.Ready ->
                 when (val document = current.document) {
                     is TextDocument ->
@@ -164,6 +165,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
                             current.progress,
                             settings,
                         )
+
                     is PagedDocument ->
                         PagedReader(
                             ReaderState(work, title, navigator, null),
@@ -190,8 +192,11 @@ private fun AnnotatedString.Builder.appendBlock(block: Block, fontSize: Float) {
             HEADING_SCALE[block.heading]?.let {
                 SpanStyle(fontSize = (fontSize * it).sp, fontWeight = FontWeight.Bold)
             }
-        if (heading != null) withStyle(heading) { append(block.text) }
-        else append(block.text)
+        if (heading != null) {
+            withStyle(heading) { append(block.text) }
+        } else {
+            append(block.text)
+        }
         block.spans.forEach { span ->
             val style =
                 SpanStyle(
@@ -227,8 +232,10 @@ private fun textPages(section: Int, blocks: List<Block>, offset: Int, layout: La
             var last = line
             while (
                 last + 1 < measured.lineCount &&
-                    measured.getLineBottom(last + 1) - top <= layout.height
-            ) last++
+                measured.getLineBottom(last + 1) - top <= layout.height
+            ) {
+                last++
+            }
             val start = measured.getLineStart(line)
             val end = measured.getLineEnd(last)
             if (text.substring(start, end).isNotBlank()) {
@@ -281,7 +288,7 @@ private fun TextReader(
     var position by remember { mutableStateOf(progress) }
 
     BoxWithConstraints(
-        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)
+        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
         val padding = with(LocalDensity.current) { PAGE_PADDING.roundToPx() }
         val width = constraints.maxWidth - 2 * padding
@@ -299,13 +306,15 @@ private fun TextReader(
                 current
                     .indexOfLast {
                         it.section < position.section ||
-                            (it.section == position.section &&
-                                it.start <= position.offset)
+                            (
+                                it.section == position.section &&
+                                    it.start <= position.offset
+                                )
                     }
                     .coerceAtLeast(0)
             }
         val chapters =
-            document.chapters.map { chapter: Chapter ->
+            document.chapters.map { chapter ->
                 chapter.title to current.indexOfFirst { it.section >= chapter.section }
             }
         key(current) {
@@ -352,7 +361,7 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
     val pager =
         rememberPagerState(progress.page.coerceIn(0, maxOf(0, count - 1))) { count }
     BoxWithConstraints(
-        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)
+        Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
         val width = constraints.maxWidth
         Pages(
@@ -401,8 +410,11 @@ private fun Pages(
     }
 
     Box(Modifier.fillMaxSize()) {
-        HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1) {
-            index ->
+        HorizontalPager(
+            pager,
+            Modifier.fillMaxSize(),
+            beyondViewportPageCount = 1,
+        ) { index ->
             Box(
                 Modifier.fillMaxSize().pointerInput(Unit) {
                     detectTapGestures { offset ->
@@ -410,14 +422,16 @@ private fun Pages(
                         when {
                             offset.x < third ->
                                 scope.launch { pager.animateScrollToPage(index - 1) }
+
                             offset.x > 2 * third ->
                                 scope.launch {
                                     pager.animateScrollToPage(index + 1)
                                 }
+
                             else -> chrome = !chrome
                         }
                     }
-                }
+                },
             ) {
                 page(index)
             }
@@ -442,8 +456,11 @@ private fun Pages(
             }
         }
         if (showChapters) {
-            ChapterSheet(chapters, chapter, onDismiss = { showChapters = false }) { target
-                ->
+            ChapterSheet(
+                chapters,
+                chapter,
+                onDismiss = { showChapters = false },
+            ) { target ->
                 showChapters = false
                 chrome = false
                 scope.launch { pager.scrollToPage(target) }
@@ -544,17 +561,12 @@ private fun ChapterSheet(
         )
         LazyColumn {
             items(chapters.filter { it.second >= 0 }) { chapter ->
-                val selected = chapter == current
-                val color =
-                    if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
+                val colors = MaterialTheme.colorScheme
+                val color = if (chapter == current) colors.primary else colors.onSurface
                 Row(
                     Modifier.fillMaxWidth()
                         .clickable { onSelect(chapter.second) }
-                        .padding(horizontal = ScreenPadding, vertical = 14.dp)
+                        .padding(horizontal = ScreenPadding, vertical = 14.dp),
                 ) {
                     Text(
                         chapter.first,

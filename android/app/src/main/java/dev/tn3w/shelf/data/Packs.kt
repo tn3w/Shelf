@@ -1,6 +1,12 @@
 package dev.tn3w.shelf.data
 
 import android.content.Context
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
@@ -11,12 +17,6 @@ import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 val LANGUAGES = listOf("en", "de", "fr", "es")
 val PACKS =
@@ -147,12 +147,11 @@ class Packs(private val context: Context) {
         return null
     }
 
-    private fun bundledManifest() =
-        runCatching {
-                context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
-            }
-            .getOrNull()
-            ?.let(::parseManifest)
+    private fun bundledManifest() = runCatching {
+        context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
+    }
+        .getOrNull()
+        ?.let(::parseManifest)
 
     private fun parseManifest(text: String) =
         runCatching { json.decodeFromString<Manifest>(text) }
@@ -169,6 +168,9 @@ class Packs(private val context: Context) {
 
     private fun localIds() = (bundled + downloaded()).map { it.id }.toSet()
 
+    private fun installed(language: String) =
+        (bundled + downloaded()).filter { it.language == language }
+
     fun storageBytes() = downloaded().sumOf { binOf(it.id).length() }
 
     fun load(language: String): Catalogue {
@@ -183,7 +185,7 @@ class Packs(private val context: Context) {
                 .sortedWith(
                     compareBy<Segment, String>(releaseOrder) { it.month }
                         .thenBy { !it.isBase }
-                        .thenBy { PACKS.indexOf(it.pack) }
+                        .thenBy { PACKS.indexOf(it.pack) },
                 )
         val ranks =
             files
@@ -223,7 +225,7 @@ class Packs(private val context: Context) {
 
     fun packs(language: String): List<PackInfo> {
         val ids = localIds()
-        val installed = (bundled + downloaded()).filter { it.language == language }
+        val files = installed(language)
         val entries = manifest?.segments.orEmpty().filter { it.language == language }
         val offered = entries.map { it.pack }.toSet()
         val missingRanks =
@@ -231,13 +233,15 @@ class Packs(private val context: Context) {
         val listed = if (manifest == null) PACKS else PACKS.filter { it in offered }
         return listed.map { pack ->
             val needed = entries.filter { it.pack == pack }
-            val present = installed.filter { it.pack == pack }
+            val present = files.filter { it.pack == pack }
             val missing = needed.filter { it.id !in ids }.sumOf { it.size }
             val extra = if (pack == "core") missingRanks else 0
             when {
                 present.isEmpty() ->
                     PackInfo(pack, PackState.Available, needed.sumOf { it.size } + extra)
+
                 missing > 0 -> PackInfo(pack, PackState.Update, missing)
+
                 else -> PackInfo(pack, PackState.Installed, present.sumOf(::sizeOf))
             }
         }
@@ -250,23 +254,19 @@ class Packs(private val context: Context) {
     }
 
     fun months() = LANGUAGES.associateWith { language ->
-        (bundled + downloaded())
-            .filter { it.language == language }
-            .map { it.month }
-            .maxWithOrNull(releaseOrder)
+        installed(language).map { it.month }.maxWithOrNull(releaseOrder)
     }
 
-    suspend fun refreshManifest(): Manifest =
-        withContext(Dispatchers.IO) {
-            val text = fetchText(manifestUrl())
-            val manifest = json.decodeFromString<Manifest>(text)
-            check(manifest.format == CATALOGUE_FORMAT) {
-                "catalogue format ${manifest.format} is no longer supported"
-            }
-            writeAtomically(manifestFile, text.toByteArray())
-            removeObsolete(manifest)
-            manifest
+    suspend fun refreshManifest(): Manifest = withContext(Dispatchers.IO) {
+        val text = fetchText(manifestUrl())
+        val manifest = json.decodeFromString<Manifest>(text)
+        check(manifest.format == CATALOGUE_FORMAT) {
+            "catalogue format ${manifest.format} is no longer supported"
         }
+        writeAtomically(manifestFile, text.toByteArray())
+        removeObsolete(manifest)
+        manifest
+    }
 
     private fun manifestUrl(): String {
         val url = releasesUrl(source)
@@ -285,9 +285,9 @@ class Packs(private val context: Context) {
         temporary.outputStream().use { input.copyTo(it) }
         val valid =
             runCatching {
-                    val buffer = mapFile(temporary)
-                    if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
-                }
+                val buffer = mapFile(temporary)
+                if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
+            }
                 .isSuccess
         if (valid && temporary.renameTo(binOf(file.id))) return true
         temporary.delete()
@@ -306,18 +306,14 @@ class Packs(private val context: Context) {
     }
 
     fun isComplete(language: String): Boolean {
-        val packs = (bundled + downloaded()).filter { it.language == language }
+        val packs = installed(language)
         return packs.any { it.pack == "core" } && packs.any { it.pack == "ranks" }
     }
 
     fun pendingUpdates(language: String) =
         packs(language).filter { it.state == PackState.Update }
 
-    suspend fun download(
-        language: String,
-        pack: String,
-        onProgress: (Float) -> Unit,
-    ) =
+    suspend fun download(language: String, pack: String, onProgress: (Float) -> Unit) =
         withContext(Dispatchers.IO) {
             val manifest = manifest ?: refreshManifest()
             val ids = localIds()
@@ -346,7 +342,7 @@ class Packs(private val context: Context) {
         deleteAll(
             downloaded().filter {
                 it.language == language && it.pack in packs && it.id !in keep
-            }
+            },
         )
     }
 

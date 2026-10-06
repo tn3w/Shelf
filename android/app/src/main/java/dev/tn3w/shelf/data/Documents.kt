@@ -5,9 +5,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import java.io.File
-import java.net.URI
-import java.util.zip.ZipFile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jsoup.Jsoup
@@ -15,6 +12,9 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.parser.Parser
+import java.io.File
+import java.net.URI
+import java.util.zip.ZipFile
 
 private const val SECTION_CHARACTERS = 40_000
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
@@ -96,16 +96,15 @@ fun decodeImage(bytes: ByteArray): Bitmap? =
 
 data class Metadata(val title: String, val author: String)
 
-fun readMetadata(file: File): Metadata? =
-    runCatching {
-            when (file.extension.lowercase()) {
-                "epub" -> ZipFile(file).use { epubMetadata(Epub(it)) }
-                "fb2" -> fictionBookMetadata(file)
-                else -> null
-            }
-        }
-        .getOrNull()
-        ?.takeIf { it.title.isNotBlank() }
+fun readMetadata(file: File): Metadata? = runCatching {
+    when (file.extension.lowercase()) {
+        "epub" -> ZipFile(file).use { epubMetadata(Epub(it)) }
+        "fb2" -> fictionBookMetadata(file)
+        else -> null
+    }
+}
+    .getOrNull()
+    ?.takeIf { it.title.isNotBlank() }
 
 private fun epubMetadata(epub: Epub): Metadata? {
     val opf = epub.opfPath?.let(epub::xml) ?: return null
@@ -125,17 +124,22 @@ private fun fictionBookMetadata(file: File): Metadata? {
     return Metadata(info.selectFirst("book-title")?.text().orEmpty(), author.orEmpty())
 }
 
-fun openDocument(file: File): Document =
-    when (file.extension.lowercase()) {
-        "epub" -> readEpub(file)
-        "pdf" -> PdfDocument(file)
-        "cbz" -> ComicDocument(file)
-        "fb2" -> readFictionBook(file)
-        "html",
-        "htm",
-        "xhtml" -> byHeadings(htmlBlocks(Jsoup.parse(file).body()) { null })
-        else -> byHeadings(plainBlocks(file.readText()))
-    }
+fun openDocument(file: File): Document = when (file.extension.lowercase()) {
+    "epub" -> readEpub(file)
+
+    "pdf" -> PdfDocument(file)
+
+    "cbz" -> ComicDocument(file)
+
+    "fb2" -> readFictionBook(file)
+
+    "html",
+    "htm",
+    "xhtml",
+    -> byHeadings(htmlBlocks(Jsoup.parse(file).body()) { null })
+
+    else -> byHeadings(plainBlocks(file.readText()))
+}
 
 private fun assemble(parts: List<Pair<String?, List<Block>>>): TextDocument {
     val sections = mutableListOf<List<Block>>()
@@ -179,16 +183,15 @@ private fun byHeadings(blocks: List<Block>): TextDocument {
     return assemble(parts)
 }
 
-private fun plainBlocks(text: String) =
-    text
-        .split(Regex("\\n\\s*\\n"))
-        .map { it.replace(WHITESPACE, " ").trim() }
-        .filter { it.isNotEmpty() }
-        .map {
-            val level =
-                it.takeWhile { character -> character == '#' }.length.coerceAtMost(6)
-            Block(it.drop(level).trim(), heading = level, centered = level > 0)
-        }
+private fun plainBlocks(text: String) = text
+    .split(Regex("\\n\\s*\\n"))
+    .map { it.replace(WHITESPACE, " ").trim() }
+    .filter { it.isNotEmpty() }
+    .map {
+        val level =
+            it.takeWhile { character -> character == '#' }.length.coerceAtMost(6)
+        Block(it.drop(level).trim(), heading = level, centered = level > 0)
+    }
 
 private fun inline(element: Element): Pair<String, List<Span>> {
     val text = StringBuilder()
@@ -221,18 +224,16 @@ private fun inline(element: Element): Pair<String, List<Span>> {
     return trimmed to shifted
 }
 
-private fun isCentered(element: Element) =
-    generateSequence(element) { it.parent() }
-        .take(3)
-        .any {
-            "center" in it.className() ||
-                "text-align:center" in it.attr("style").replace(" ", "")
-        }
-
-private fun imageSource(element: Element) =
-    element.selectFirst("img, image")?.let {
-        it.attr("src").ifEmpty { it.attr("xlink:href").ifEmpty { it.attr("href") } }
+private fun isCentered(element: Element) = generateSequence(element) { it.parent() }
+    .take(3)
+    .any {
+        "center" in it.className() ||
+            "text-align:center" in it.attr("style").replace(" ", "")
     }
+
+private fun imageSource(element: Element) = element.selectFirst("img, image")?.let {
+    it.attr("src").ifEmpty { it.attr("xlink:href").ifEmpty { it.attr("href") } }
+}
 
 private fun htmlBlocks(root: Element, image: (String) -> ByteArray?): List<Block> {
     val blocks =
@@ -262,10 +263,9 @@ private class Epub(private val zip: ZipFile) {
         get() =
             xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
 
-    fun bytes(path: String) =
-        zip.getEntry(path)?.let { entry ->
-            zip.getInputStream(entry).use { it.readBytes() }
-        }
+    fun bytes(path: String) = zip.getEntry(path)?.let { entry ->
+        zip.getInputStream(entry).use { it.readBytes() }
+    }
 
     fun xml(path: String) =
         bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }
@@ -296,30 +296,29 @@ private class Epub(private val zip: ZipFile) {
     }
 }
 
-private fun readEpub(file: File): TextDocument =
-    ZipFile(file).use { zip ->
-        val epub = Epub(zip)
-        val opfPath = epub.opfPath ?: return assemble(emptyList())
-        val opf = epub.xml(opfPath) ?: return assemble(emptyList())
-        val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
-        val titles = epub.titles(manifest.values.toList(), opfPath)
-        val parts =
-            opf.select("spine > itemref").mapNotNull { reference ->
-                val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
-                val path = epub.resolve(opfPath, item.attr("href"))
-                val body =
-                    epub.bytes(path)?.let { Jsoup.parse(String(it)).body() }
-                        ?: return@mapNotNull null
-                val hints =
-                    "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
-                        .lowercase()
-                val isFrontMatter =
-                    FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
-                if (isFrontMatter) return@mapNotNull null
-                titles[path] to htmlBlocks(body) { epub.bytes(epub.resolve(path, it)) }
-            }
-        assemble(parts)
-    }
+private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
+    val epub = Epub(zip)
+    val opfPath = epub.opfPath ?: return assemble(emptyList())
+    val opf = epub.xml(opfPath) ?: return assemble(emptyList())
+    val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
+    val titles = epub.titles(manifest.values.toList(), opfPath)
+    val parts =
+        opf.select("spine > itemref").mapNotNull { reference ->
+            val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
+            val path = epub.resolve(opfPath, item.attr("href"))
+            val body =
+                epub.bytes(path)?.let { Jsoup.parse(String(it)).body() }
+                    ?: return@mapNotNull null
+            val hints =
+                "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
+                    .lowercase()
+            val isFrontMatter =
+                FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
+            if (isFrontMatter) return@mapNotNull null
+            titles[path] to htmlBlocks(body) { epub.bytes(epub.resolve(path, it)) }
+        }
+    assemble(parts)
+}
 
 private fun readFictionBook(file: File): TextDocument {
     val document = Jsoup.parse(file.readText(), "", Parser.xmlParser())
@@ -334,11 +333,14 @@ private fun readFictionBook(file: File): TextDocument {
                     val (text, spans) = inline(paragraph)
                     val isTitle = paragraph.parents().any { it.tagName() == "title" }
                     val level =
-                        if (isTitle) 1
-                        else if (paragraph.tagName() == "subtitle") 3 else 0
+                        when {
+                            isTitle -> 1
+                            paragraph.tagName() == "subtitle" -> 3
+                            else -> 0
+                        }
                     Block(text, level, level > 0, spans).takeIf { text.isNotEmpty() }
                 }
             title to blocks
-        }
+        },
     )
 }

@@ -50,7 +50,7 @@ private class Cluster(val sources: List<Source>) {
     val weight = sources.sumOf { it.weight }
     val vector = blend(sources)
     val audience = sources.sumOf { it.weight * it.audience } / weight
-    val fiction = sources.sumOf { it.weight * if (it.fiction) 1.0 else 0.0 } >= weight / 2
+    val fiction = sources.filter { it.fiction }.sumOf { it.weight } >= weight / 2
     val books = sources.map { it.book }
     val readBooks = sources.filter { it.read }.map { it.book }
 }
@@ -83,11 +83,11 @@ class Row(
 ) {
     val key =
         listOf(
-                kind.name,
-                "${books.firstOrNull()?.work}",
-                sources.joinToString("-") { "${it.work}" },
-                "${author?.number}",
-            )
+            kind.name,
+            "${books.firstOrNull()?.work}",
+            sources.joinToString("-") { "${it.work}" },
+            "${author?.number}",
+        )
             .joinToString("-")
 }
 
@@ -139,27 +139,25 @@ class Recommender(private val catalogue: Catalogue) {
         return tagVector(tags) { slug[it] in AUDIENCE_TAGS }.normalized()
     }
 
-    private fun tagVector(tags: List<Int>, keep: (Int) -> Boolean): Vector =
-        tags
-            .filter(keep)
-            .withIndex()
-            .associate { (index, tag) ->
-                val confidence = 1.0 / (1.0 + 0.15 * index)
-                val weight = if (slug[tag] in FORM_TAGS) 0.25 else 1.0
-                tag to (idf[tag] ?: 0.0) * confidence * weight
-            }
+    private fun tagVector(tags: List<Int>, keep: (Int) -> Boolean): Vector = tags
+        .filter(keep)
+        .withIndex()
+        .associate { (index, tag) ->
+            val confidence = 1.0 / (1.0 + 0.15 * index)
+            val weight = if (slug[tag] in FORM_TAGS) 0.25 else 1.0
+            tag to (idf[tag] ?: 0.0) * confidence * weight
+        }
 
     private fun specificTags(vector: Vector) =
         vector.keys.count { slug[it] !in BROAD_TAGS }
 
-    private fun audienceOf(slugs: Set<String>) =
-        when {
-            "picture-book" in slugs -> 0
-            "young-adult" in slugs -> 3
-            "middle-grade" in slugs -> 2
-            "childrens" in slugs -> 1
-            else -> ADULT
-        }
+    private fun audienceOf(slugs: Set<String>) = when {
+        "picture-book" in slugs -> 0
+        "young-adult" in slugs -> 3
+        "middle-grade" in slugs -> 2
+        "childrens" in slugs -> 1
+        else -> ADULT
+    }
 
     private fun sourceOf(entry: Saved): Source? {
         val book = catalogue.book(entry.work) ?: return null
@@ -178,15 +176,9 @@ class Recommender(private val catalogue: Catalogue) {
 
     private fun buildProfile(entries: List<Saved>, hidden: Set<Int>): Profile {
         val sources = entries.mapNotNull(::sourceOf).take(MAX_SOURCES)
-        val tags = mutableMapOf<Int, Double>()
-        sources.forEach { source ->
-            source.vector.forEach { (tag, value) ->
-                tags.merge(tag, source.weight * value, Double::plus)
-            }
-        }
         val saved = entries.map { it.work }.toSet()
         return Profile(
-            tags = tags.normalized(),
+            tags = blend(sources),
             seen = sources.map { titleKey(it.book) }.toSet(),
             library = saved,
             hidden = hidden,
@@ -220,10 +212,9 @@ class Recommender(private val catalogue: Catalogue) {
             ?.first
     }
 
-    private fun worksOf(author: Author) =
-        catalogue.authorWorks(author).filter {
-            catalogue.book(it)?.authors?.firstOrNull()?.number == author.number
-        }
+    private fun worksOf(author: Author) = catalogue.authorWorks(author).filter {
+        catalogue.book(it)?.authors?.firstOrNull()?.number == author.number
+    }
 
     private fun retrieve(cluster: Cluster): Set<Int> {
         val tags =
@@ -287,12 +278,11 @@ class Recommender(private val catalogue: Catalogue) {
         cluster: Cluster,
         random: Random,
         limit: Int,
-    ): List<Scored> =
-        retrieve(cluster)
-            .mapNotNull { score(profile, cluster, it) }
-            .map { Scored(it.score * random.nextDouble(1 - JITTER, 1 + JITTER), it.work) }
-            .sortedByDescending { it.score }
-            .take(limit)
+    ): List<Scored> = retrieve(cluster)
+        .mapNotNull { score(profile, cluster, it) }
+        .map { Scored(it.score * random.nextDouble(1 - JITTER, 1 + JITTER), it.work) }
+        .sortedByDescending { it.score }
+        .take(limit)
 
     private inner class Picker(
         private val library: Set<Int> = emptySet(),
@@ -307,15 +297,14 @@ class Recommender(private val catalogue: Catalogue) {
 
         private fun firstUnread(work: Int): Int {
             val members = catalogue.series(work)?.members ?: return work
-            return members.firstOrNull {
-                it !in library && it !in hidden && catalogue.locate(it) != null
-            } ?: work
+            return firstAvailable(members, library, hidden) ?: work
         }
 
         fun accept(work: Int): Book? {
             val book = catalogue.book(firstUnread(work)) ?: return null
-            if (book.isCompanion || book.work in library || book.work in hidden)
+            if (book.isCompanion || book.work in library || book.work in hidden) {
                 return null
+            }
             val name = catalogue.series(book.work)?.name
             if (name != null && (name in series || name in blockedSeries)) return null
             val key = titleKey(book)
@@ -346,26 +335,26 @@ class Recommender(private val catalogue: Catalogue) {
     private fun nextVolume(work: Int, profile: Profile): Int? {
         val members = catalogue.series(work)?.members ?: return null
         if (work !in members) return null
-        return members.firstOrNull {
-            it !in profile.library &&
-                it !in profile.hidden &&
-                catalogue.locate(it) != null
-        }
+        return firstAvailable(members, profile.library, profile.hidden)
     }
+
+    private fun firstAvailable(members: List<Int>, library: Set<Int>, hidden: Set<Int>) =
+        members.firstOrNull {
+            it !in library && it !in hidden && catalogue.locate(it) != null
+        }
 
     private fun picker(
         profile: Profile,
         taken: MutableSet<TitleKey>,
         authorLimit: Int = MAX_PER_AUTHOR,
-    ) =
-        Picker(
-            profile.library,
-            profile.hidden,
-            profile.librarySeries,
-            taken,
-            authorLimit,
-            profile.seen.map { it.key }.toSet(),
-        )
+    ) = Picker(
+        profile.library,
+        profile.hidden,
+        profile.librarySeries,
+        taken,
+        authorLimit,
+        profile.seen.map { it.key }.toSet(),
+    )
 
     private fun authorRows(
         profile: Profile,
@@ -403,9 +392,7 @@ class Recommender(private val catalogue: Catalogue) {
         size: Int = 12,
     ): List<Row> {
         val profile = buildProfile(entries, hidden)
-        if (profile.clusters.isEmpty()) {
-            return listOf(Row(RowKind.Popular, popular(size)))
-        }
+        if (profile.clusters.isEmpty()) return listOf(Row(RowKind.Popular, popular(size)))
         val random = Random(seed)
         val taken = profile.seen.toMutableSet()
         val rows = mutableListOf<Row>()
@@ -493,9 +480,8 @@ class Recommender(private val catalogue: Catalogue) {
         books: List<Book>,
         limit: Int,
         seen: Set<TitleKey> = emptySet(),
-    ) =
-        books
-            .filter { titleKey(it) !in seen && !it.isCompanion }
-            .distinctBy(::titleKey)
-            .take(limit)
+    ) = books
+        .filter { titleKey(it) !in seen && !it.isCompanion }
+        .distinctBy(::titleKey)
+        .take(limit)
 }

@@ -17,7 +17,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-fun GeneratedCover(request: CoverRequest, description: String, modifier: Modifier = Modifier) {
+fun GeneratedCover(
+    request: CoverRequest,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current.applicationContext
     BoxWithConstraints(modifier.fillMaxSize()) {
         val widthPixels =
@@ -32,7 +36,12 @@ fun GeneratedCover(request: CoverRequest, description: String, modifier: Modifie
                     }
             }
         bitmap?.let {
-            Image(it, description, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(
+                it,
+                description,
+                Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
         }
     }
 }

@@ -37,29 +37,33 @@ internal fun mix(first: Int, second: Int, amount: Float): Int {
     val weight = amount.coerceIn(0f, 1f)
     return Color.rgb(
         (Color.red(first) + (Color.red(second) - Color.red(first)) * weight).toInt(),
-        (Color.green(first) + (Color.green(second) - Color.green(first)) * weight).toInt(),
+        (
+            Color.green(
+                first,
+            ) + (Color.green(second) - Color.green(first)) * weight
+            ).toInt(),
         (Color.blue(first) + (Color.blue(second) - Color.blue(first)) * weight).toInt(),
     )
 }
 
-internal fun shade(color: Int, factor: Float) =
-    Color.rgb(
-        (Color.red(color) * factor).toInt().coerceIn(0, 255),
-        (Color.green(color) * factor).toInt().coerceIn(0, 255),
-        (Color.blue(color) * factor).toInt().coerceIn(0, 255),
-    )
+internal fun shade(color: Int, factor: Float) = Color.rgb(
+    (Color.red(color) * factor).toInt().coerceIn(0, 255),
+    (Color.green(color) * factor).toInt().coerceIn(0, 255),
+    (Color.blue(color) * factor).toInt().coerceIn(0, 255),
+)
 
-internal fun luminance(color: Int) =
-    (0.2126f * Color.red(color) + 0.7152f * Color.green(color) + 0.0722f * Color.blue(color)) /
-        255f
+internal fun luminance(color: Int) = (
+    0.2126f * Color.red(color) + 0.7152f * Color.green(color) +
+        0.0722f * Color.blue(color)
+    ) /
+    255f
 
-internal fun alpha(color: Int, amount: Float) =
-    Color.argb(
-        (amount.coerceIn(0f, 1f) * 255).toInt(),
-        Color.red(color),
-        Color.green(color),
-        Color.blue(color),
-    )
+internal fun alpha(color: Int, amount: Float) = Color.argb(
+    (amount.coerceIn(0f, 1f) * 255).toInt(),
+    Color.red(color),
+    Color.green(color),
+    Color.blue(color),
+)
 
 internal fun fillPaint(color: Int) =
     Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
@@ -75,7 +79,8 @@ internal fun strokePaint(color: Int, thickness: Float) =
 
 internal fun glowPaint(color: Int, blur: Float, thickness: Float = 0f): Paint {
     val paint = if (thickness > 0f) strokePaint(color, thickness) else fillPaint(color)
-    paint.maskFilter = BlurMaskFilter(blur.coerceAtLeast(0.5f), BlurMaskFilter.Blur.NORMAL)
+    paint.maskFilter =
+        BlurMaskFilter(blur.coerceAtLeast(0.5f), BlurMaskFilter.Blur.NORMAL)
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
     return paint
 }
@@ -86,7 +91,8 @@ internal fun CoverCanvas.verticalGradient(top: Int, bottom: Int, gamma: Float = 
     val stops = rampStops(12)
     val colors = IntArray(stops.size) { mix(top, bottom, stops[it].pow(gamma)) }
     val paint = fillPaint(Color.BLACK)
-    paint.shader = LinearGradient(0f, 0f, 0f, height, colors, stops, Shader.TileMode.CLAMP)
+    paint.shader =
+        LinearGradient(0f, 0f, 0f, height, colors, stops, Shader.TileMode.CLAMP)
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
@@ -99,12 +105,23 @@ internal fun CoverCanvas.radialGlow(
     falloff: Float = 2.2f,
 ) {
     val stops = rampStops(10)
-    val colors = IntArray(stops.size) { alpha(color, (1f - stops[it]).pow(falloff) * strength) }
+    val colors = IntArray(stops.size) {
+        alpha(
+            color,
+            (1f - stops[it]).pow(falloff) * strength,
+        )
+    }
     val paint = fillPaint(Color.BLACK)
     paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SCREEN)
     paint.shader =
-        RadialGradient(centerX, centerY, radius.coerceAtLeast(1f), colors, stops,
-            Shader.TileMode.CLAMP)
+        RadialGradient(
+            centerX,
+            centerY,
+            radius.coerceAtLeast(1f),
+            colors,
+            stops,
+            Shader.TileMode.CLAMP,
+        )
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
@@ -118,7 +135,14 @@ internal fun CoverCanvas.vignette(strength: Float, start: Float) {
         }
     val paint = fillPaint(Color.BLACK)
     paint.shader =
-        RadialGradient(width / 2f, height / 2f, extent, colors, stops, Shader.TileMode.CLAMP)
+        RadialGradient(
+            width / 2f,
+            height / 2f,
+            extent,
+            colors,
+            stops,
+            Shader.TileMode.CLAMP,
+        )
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
@@ -128,22 +152,28 @@ private object CoverNoise {
 
     private fun tile(size: Int, spread: Float): Bitmap {
         val random = CoverRandom(0x5EEDL)
-        val pixels = IntArray(size * size)
-        for (index in pixels.indices) {
-            val value = (128 + (random.float() - 0.5f) * 255f * spread).toInt().coerceIn(0, 255)
-            pixels[index] = Color.rgb(value, value, value)
-        }
+        val pixels =
+            IntArray(size * size) {
+                val noise = (random.float() - 0.5f) * 255f * spread
+                val value = (128 + noise).toInt().coerceIn(0, 255)
+                Color.rgb(value, value, value)
+            }
         return Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888)
     }
 }
 
-private fun CoverCanvas.noise(tile: Bitmap, strength: Float, scale: Float, filter: Boolean) {
+private fun CoverCanvas.noise(
+    tile: Bitmap,
+    strength: Float,
+    scale: Float,
+    filter: Boolean,
+) {
     val shader = BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
     shader.setLocalMatrix(
         Matrix().apply {
             setScale(scale, scale)
             postTranslate(random.range(0f, 512f), random.range(0f, 512f))
-        }
+        },
     )
     val paint = fillPaint(Color.BLACK)
     paint.shader = shader
@@ -153,19 +183,29 @@ private fun CoverCanvas.noise(tile: Bitmap, strength: Float, scale: Float, filte
     canvas.drawRect(0f, 0f, width, height, paint)
 }
 
-internal fun CoverCanvas.grain(strength: Float) = noise(CoverNoise.sharp, strength, 1f, false)
+internal fun CoverCanvas.grain(strength: Float) =
+    noise(CoverNoise.sharp, strength, 1f, false)
 
 internal fun CoverCanvas.texture(strength: Float, scale: Float = 12f) =
     noise(CoverNoise.smooth, strength, scale, true)
 
-internal fun CoverCanvas.scrimBand(top: Float, bottom: Float, toward: Int, strength: Float) {
+internal fun CoverCanvas.scrimBand(
+    top: Float,
+    bottom: Float,
+    toward: Int,
+    strength: Float,
+) {
     if (strength <= 0.01f) return
     val stops = floatArrayOf(0f, 0.5f, 1f)
     val colors =
-        intArrayOf(alpha(toward, 0f), alpha(toward, strength.coerceIn(0f, 1f)),
-            alpha(toward, 0f))
+        intArrayOf(
+            alpha(toward, 0f),
+            alpha(toward, strength.coerceIn(0f, 1f)),
+            alpha(toward, 0f),
+        )
     val paint = fillPaint(Color.BLACK)
-    paint.shader = LinearGradient(0f, top, 0f, bottom, colors, stops, Shader.TileMode.CLAMP)
+    paint.shader =
+        LinearGradient(0f, top, 0f, bottom, colors, stops, Shader.TileMode.CLAMP)
     canvas.drawRect(0f, top, width, bottom, paint)
 }
 
@@ -180,7 +220,7 @@ internal fun CoverCanvas.scanlines(strength: Float, period: Float) {
 
 internal fun CoverCanvas.stars(count: Int, until: Float, color: Int, largest: Float) {
     val paint = fillPaint(color)
-    for (index in 0 until count) {
+    repeat(count) {
         val y = random.range(0f, until)
         val radius = random.range(largest * 0.25f, largest)
         paint.alpha = random.between(60, 255)
@@ -197,7 +237,7 @@ internal fun displacedLine(
 ): FloatArray {
     var points = floatArrayOf(start, end)
     var scale = roughness
-    for (round in 0 until depth) {
+    repeat(depth) {
         val stepped = FloatArray(points.size * 2 - 1)
         for (index in 0 until points.size - 1) {
             val middle = (points[index] + points[index + 1]) / 2f
@@ -214,8 +254,12 @@ internal fun displacedLine(
 internal class Ridge(val fill: Path, val crest: Path)
 
 internal fun CoverCanvas.ridge(baseline: Float, rise: Float, roughness: Float): Ridge {
-    val profile = displacedLine(random, baseline + random.range(-0.03f, 0.03f), baseline,
-        roughness)
+    val profile = displacedLine(
+        random,
+        baseline + random.range(-0.03f, 0.03f),
+        baseline,
+        roughness,
+    )
     val step = width / (profile.size - 1)
     val fill = Path()
     val crest = Path()
@@ -247,6 +291,7 @@ internal fun CoverCanvas.frame(style: CoverFrame, accent: Int) {
     val thin = unit(0.0025f)
     val right = width - inset
     val bottom = height - inset
+    val corners = listOf(inset to inset, right to inset, inset to bottom, right to bottom)
     if (style == CoverFrame.Rule) {
         canvas.drawRect(inset, inset, right, inset + thin * 2f, fillPaint(tint))
         canvas.drawRect(inset, bottom, right, bottom + thin * 2f, fillPaint(tint))
@@ -255,39 +300,48 @@ internal fun CoverCanvas.frame(style: CoverFrame, accent: Int) {
     if (style == CoverFrame.Corners) {
         val arm = unit(0.06f)
         val paint = strokePaint(tint, thin)
-        for (corner in listOf(inset to inset, right to inset, inset to bottom, right to bottom)) {
-            val stepX = if (corner.first == inset) arm else -arm
-            val stepY = if (corner.second == inset) arm else -arm
-            canvas.drawLine(corner.first, corner.second, corner.first + stepX, corner.second,
-                paint)
-            canvas.drawLine(corner.first, corner.second, corner.first, corner.second + stepY,
-                paint)
+        for ((x, y) in corners) {
+            val stepX = if (x == inset) arm else -arm
+            val stepY = if (y == inset) arm else -arm
+            canvas.drawLine(x, y, x + stepX, y, paint)
+            canvas.drawLine(x, y, x, y + stepY, paint)
         }
         return
     }
     canvas.drawRect(inset, inset, right, bottom, strokePaint(tint, thin))
     if (style == CoverFrame.Double) {
         val gap = unit(0.012f)
-        canvas.drawRect(inset + gap, inset + gap, right - gap, bottom - gap,
-            strokePaint(tint, thin * 0.5f))
+        canvas.drawRect(
+            inset + gap,
+            inset + gap,
+            right - gap,
+            bottom - gap,
+            strokePaint(tint, thin * 0.5f),
+        )
     }
     if (style != CoverFrame.Ornate) return
     val mark = unit(0.016f)
-    for (corner in listOf(inset to inset, right to inset, inset to bottom, right to bottom)) {
-        canvas.drawPath(
-            starPath(corner.first, corner.second, mark, mark * 0.35f, 4, 0f),
-            fillPaint(alpha(accent, 0.86f)),
-        )
+    for ((x, y) in corners) {
+        val star = starPath(x, y, mark, mark * 0.35f, 4)
+        canvas.drawPath(star, fillPaint(alpha(accent, 0.86f)))
     }
 }
 
 internal class Harmonic(val amplitude: Float, val frequency: Int, val phase: Float)
 
-internal fun randomHarmonics(random: CoverRandom, count: Int, strength: Float): List<Harmonic> {
+internal fun randomHarmonics(
+    random: CoverRandom,
+    count: Int,
+    strength: Float,
+): List<Harmonic> {
     val frequencies = mutableListOf(2, 3, 4, 5, 7)
     return List(count) {
         val frequency = frequencies.removeAt(random.index(frequencies.size))
-        Harmonic(random.range(strength * 0.4f, strength), frequency, random.range(0f, TAU))
+        Harmonic(
+            random.range(strength * 0.4f, strength),
+            frequency,
+            random.range(0f, TAU),
+        )
     }
 }
 
@@ -304,7 +358,8 @@ internal fun wobblyRingPath(
         val angle = TAU * index / points
         var offset = 0f
         for (harmonic in harmonics) {
-            offset += harmonic.amplitude * sin(harmonic.frequency * angle + harmonic.phase)
+            offset +=
+                harmonic.amplitude * sin(harmonic.frequency * angle + harmonic.phase)
         }
         val distance = radius * (1f + offset)
         val x = centerX + cos(angle) * distance

@@ -97,11 +97,11 @@ import dev.tn3w.shelf.data.ThemeMode
 import dev.tn3w.shelf.data.isOffline
 import dev.tn3w.shelf.data.isValidSource
 import dev.tn3w.shelf.data.networkPermitted
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 private const val BACKUP_FILE = "shelf-library.zip"
 private val BACKUP_TYPES = arrayOf("application/zip", "application/octet-stream")
@@ -129,10 +129,9 @@ private val PACK_LABELS =
         "general" to R.string.pack_general,
     )
 
-private fun nativeName(language: String) =
-    Locale.forLanguageTag(language).let {
-        it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
-    }
+private fun nativeName(language: String) = Locale.forLanguageTag(language).let {
+    it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
+}
 
 @Composable
 private fun bytes(value: Long) =
@@ -155,8 +154,8 @@ private fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
     val downloads by app.downloads.collectAsStateWithLifecycle()
     val keys = arrayOf(language, loaded, downloads.size, refreshes)
     return produceState<List<PackInfo>?>(null, *keys) {
-            value = withContext(Dispatchers.IO) { app.packs.packs(language) }
-        }
+        value = withContext(Dispatchers.IO) { app.packs.packs(language) }
+    }
         .value
 }
 
@@ -174,7 +173,7 @@ fun SettingsScreen(navigator: Navigator) {
 
     Column(
         Modifier.windowInsetsPadding(WindowInsets.systemBars)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
         BackBar(navigator::back, stringResource(R.string.settings))
 
@@ -209,7 +208,7 @@ fun SettingsScreen(navigator: Navigator) {
 
         SectionHeader(stringResource(R.string.appearance))
         SingleChoiceSegmentedButtonRow(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)
+            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
         ) {
             THEMES.forEachIndexed { index, (mode, label) ->
                 SegmentedButton(
@@ -295,7 +294,7 @@ private fun LanguageChoice(
     label: @Composable (String) -> String,
 ) {
     SingleChoiceSegmentedButtonRow(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding)
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
     ) {
         options.forEachIndexed { index, language ->
             SegmentedButton(
@@ -364,7 +363,8 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 modifier = Modifier.weight(1f),
             )
             val pending = packs.filter { it.state != PackState.Installed }
-            if (offline || pending.sumOf { it.bytes } == 0L) {
+            val pendingBytes = pending.sumOf { it.bytes }
+            if (offline || pendingBytes == 0L) {
                 if (storage > 0) {
                     OutlinedButton(onClick = { app.removeAll(language) }) {
                         Text(stringResource(R.string.delete_all))
@@ -373,14 +373,9 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 return@Row
             }
             OutlinedButton(
-                onClick = { pending.forEach { app.download(language, it.pack) } }
+                onClick = { pending.forEach { app.download(language, it.pack) } },
             ) {
-                Text(
-                    stringResource(
-                        R.string.download_all,
-                        bytes(pending.sumOf { it.bytes }),
-                    )
-                )
+                Text(stringResource(R.string.download_all, bytes(pendingBytes)))
             }
         }
     }
@@ -470,7 +465,7 @@ private fun SourceRow(source: Source, value: String, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 12.dp)
+            .padding(horizontal = ScreenPadding, vertical = 12.dp),
     ) {
         Text(stringResource(source.title), style = MaterialTheme.typography.bodyLarge)
         Text(
@@ -596,14 +591,20 @@ private fun PackAction(
     val action =
         when {
             download is Download.Running -> null
+
             offline -> remove.takeIf { removable }
+
             download is Download.Failed ->
                 PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
+
             state == PackState.Available ->
                 PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
+
             state == PackState.Update ->
                 PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
+
             removable -> remove
+
             else -> null
         } ?: return Box(Modifier.size(48.dp))
     IconAction(action.icon, stringResource(action.label, label), action.onClick)
@@ -665,10 +666,8 @@ private fun BackupRows() {
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<Int?>(null) }
 
-    fun report(action: suspend () -> Boolean) {
-        scope.launch {
-            status = if (action()) R.string.backup_done else R.string.backup_failed
-        }
+    fun report(action: suspend () -> Boolean) = scope.launch {
+        status = if (action()) R.string.backup_done else R.string.backup_failed
     }
 
     suspend fun importFrom(uri: Uri): Boolean {
@@ -775,7 +774,7 @@ fun AboutScreen(navigator: Navigator) {
                                     { UpdateCheck.Failed },
                                 )
                     }
-                }
+                },
             ) {
                 Text(stringResource(R.string.check_now))
             }
@@ -938,8 +937,8 @@ fun OnboardingScreen() {
             )
             AboutText(
                 stringResource(
-                    if (required) R.string.welcome_download else R.string.welcome_text
-                )
+                    if (required) R.string.welcome_download else R.string.welcome_text,
+                ),
             )
             SectionHeader(stringResource(R.string.catalogue_language))
             CatalogueLanguageChoice(language) {
@@ -952,7 +951,7 @@ fun OnboardingScreen() {
                 SectionHeader(
                     stringResource(R.string.catalogue),
                     stringResource(
-                        if (required) R.string.core_required else R.string.core_offline
+                        if (required) R.string.core_required else R.string.core_offline,
                     ),
                 )
                 if (required) CoreRow(core, coreDownload)
@@ -1065,8 +1064,11 @@ private fun OnboardingPacks(
             Row(
                 Modifier.fillMaxWidth()
                     .clickable {
-                        if (checked) selected.remove(info.pack)
-                        else selected.add(info.pack)
+                        if (checked) {
+                            selected.remove(info.pack)
+                        } else {
+                            selected.add(info.pack)
+                        }
                     }
                     .padding(horizontal = ScreenPadding - 12.dp),
                 verticalAlignment = Alignment.CenterVertically,

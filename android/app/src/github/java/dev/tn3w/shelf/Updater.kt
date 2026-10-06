@@ -2,6 +2,7 @@ package dev.tn3w.shelf
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_MUTABLE
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -13,12 +14,12 @@ import dev.tn3w.shelf.data.connect
 import dev.tn3w.shelf.data.copy
 import dev.tn3w.shelf.data.fetchText
 import dev.tn3w.shelf.data.sha256
-import java.security.DigestInputStream
-import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.security.DigestInputStream
+import java.security.MessageDigest
 
 private const val INSTALL_ACTION = "dev.tn3w.shelf.INSTALL_STATUS"
 private val STORES =
@@ -66,55 +67,53 @@ object Updater {
         return installer !in STORES
     }
 
-    suspend fun latest(): AppRelease? =
-        withContext(Dispatchers.IO) {
-            val release =
-                json
-                    .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
-                    .firstOrNull {
-                        it.tag_name.startsWith("v") && !it.draft && !it.prerelease
-                    }
-            val assets = release?.assets.orEmpty()
-            val apk = assets.firstOrNull { it.name == APK_NAME }
-            val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
-            if (release == null || apk == null || sums == null) return@withContext null
-            val version = release.tag_name.removePrefix("v")
-            if (!isNewer(version)) return@withContext null
-            AppRelease(
-                version,
-                release.body,
-                apk.browser_download_url,
-                sums.browser_download_url,
-            )
-        }
+    suspend fun latest(): AppRelease? = withContext(Dispatchers.IO) {
+        val release =
+            json
+                .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
+                .firstOrNull {
+                    it.tag_name.startsWith("v") && !it.draft && !it.prerelease
+                }
+        val assets = release?.assets.orEmpty()
+        val apk = assets.firstOrNull { it.name == APK_NAME }
+        val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
+        if (release == null || apk == null || sums == null) return@withContext null
+        val version = release.tag_name.removePrefix("v")
+        if (!isNewer(version)) return@withContext null
+        AppRelease(
+            version,
+            release.body,
+            apk.browser_download_url,
+            sums.browser_download_url,
+        )
+    }
 
     suspend fun install(
         context: Context,
         release: AppRelease,
         onProgress: (Float) -> Unit,
-    ) =
-        withContext(Dispatchers.IO) {
-            val name = release.apkUrl.substringAfterLast('/')
-            val expected =
-                fetchText(release.checksumsUrl)
-                    .lines()
-                    .map { it.trim() }
-                    .first { it.endsWith(name) }
-                    .substringBefore(' ')
-                    .lowercase()
-            val installer = context.packageManager.packageInstaller
-            val sessionId =
-                installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
-            installer.openSession(sessionId).use { session ->
-                val digest = MessageDigest.getInstance("SHA-256")
-                write(session, digest, release.apkUrl, onProgress)
-                if (sha256(digest) != expected) {
-                    session.abandon()
-                    error("checksum mismatch")
-                }
-                session.commit(statusReceiver(context, sessionId).intentSender)
+    ) = withContext(Dispatchers.IO) {
+        val name = release.apkUrl.substringAfterLast('/')
+        val expected =
+            fetchText(release.checksumsUrl)
+                .lines()
+                .map { it.trim() }
+                .first { it.endsWith(name) }
+                .substringBefore(' ')
+                .lowercase()
+        val installer = context.packageManager.packageInstaller
+        val sessionId =
+            installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
+        installer.openSession(sessionId).use { session ->
+            val digest = MessageDigest.getInstance("SHA-256")
+            write(session, digest, release.apkUrl, onProgress)
+            if (sha256(digest) != expected) {
+                session.abandon()
+                error("checksum mismatch")
             }
+            session.commit(statusReceiver(context, sessionId).intentSender)
         }
+    }
 
     private fun write(
         session: PackageInstaller.Session,
@@ -140,12 +139,13 @@ object Updater {
 
     private fun statusReceiver(context: Context, sessionId: Int): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).setAction(INSTALL_ACTION)
-        val mutable =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_MUTABLE
-            } else {
-                0
-            }
+        val mutable = if (Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.S
+        ) {
+            FLAG_MUTABLE
+        } else {
+            0
+        }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or mutable
         return PendingIntent.getActivity(context, sessionId, intent, flags)
     }

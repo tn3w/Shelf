@@ -132,6 +132,8 @@ cd android
 `downloadCatalogue` fetches the bundled files pinned by `catalogueRelease` and verifies
 them against its manifest; the `fdroid` flavor runs `downloadManifest`, taking that same
 manifest and no segments. Release builds are unsigned unless `KEYSTORE_FILE` is set.
+Kotlin is formatted with [ktlint](https://pinterest.github.io/ktlint/) (`intellij_idea`
+style, 90 columns, set in `.editorconfig`): `ktlint -F "android/app/src/**/*.kt"`.
 
 ```sh
 cd builder

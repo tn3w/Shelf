@@ -65,15 +65,16 @@ private object CoverFonts {
     private val weighted = HashMap<String, Typeface>()
     private val probe = Paint()
 
-    private fun family(font: CoverFont): Typeface =
-        resolved.getOrPut(font.family) {
-            val candidate = Typeface.create(font.family, Typeface.NORMAL)
-            if (font.family == font.fallback || measures(candidate) != measures(DEFAULT)) {
-                candidate
-            } else {
-                Typeface.create(font.fallback, Typeface.NORMAL)
-            }
+    private fun family(font: CoverFont): Typeface = resolved.getOrPut(font.family) {
+        val candidate = Typeface.create(font.family, Typeface.NORMAL)
+        if (font.family == font.fallback ||
+            measures(candidate) != measures(DEFAULT)
+        ) {
+            candidate
+        } else {
+            Typeface.create(font.fallback, Typeface.NORMAL)
         }
+    }
 
     private fun measures(typeface: Typeface): Float {
         probe.typeface = typeface
@@ -101,12 +102,11 @@ private object CoverFonts {
         }
 }
 
-private fun cased(text: String, letterCase: LetterCase) =
-    when (letterCase) {
-        LetterCase.Upper -> text.uppercase()
-        LetterCase.Title -> text
-        LetterCase.Plain -> text.lowercase()
-    }
+private fun cased(text: String, letterCase: LetterCase) = when (letterCase) {
+    LetterCase.Upper -> text.uppercase()
+    LetterCase.Title -> text
+    LetterCase.Plain -> text.lowercase()
+}
 
 private fun textPaint(font: CoverFont, weight: Int, italic: Boolean, tracking: Float) =
     Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -143,15 +143,21 @@ private fun fitTitle(
     ceiling: Float,
 ): TitleLayout {
     val paint =
-        textPaint(typeset.titleFont, typeset.titleWeight, typeset.titleItalic,
-            typeset.titleTracking)
+        textPaint(
+            typeset.titleFont,
+            typeset.titleWeight,
+            typeset.titleItalic,
+            typeset.titleTracking,
+        )
     var size = ceiling
     val step = (ceiling / 40f).coerceAtLeast(0.5f)
     while (size > ceiling * 0.25f) {
         paint.textSize = size
         val lines = wrap(text, paint, limit)
-        if (lines != null && lines.size <= 4 && lines.size * size * typeset.titleLeading <=
-            available) {
+        if (lines != null && lines.size <= 4 &&
+            lines.size * size * typeset.titleLeading <=
+            available
+        ) {
             return TitleLayout(lines, paint, size)
         }
         size -= step
@@ -168,19 +174,22 @@ private fun bandStats(bitmap: Bitmap, top: Float, bottom: Float): FloatArray {
     var sum = 0f
     var squares = 0f
     var count = 0
-    var index = 0
-    while (index < pixels.size) {
+    for (index in pixels.indices step 7) {
         val value = luminance(pixels[index])
         sum += value
         squares += value * value
         count++
-        index += 7
     }
     val mean = sum / count
     return floatArrayOf(mean, sqrt((squares / count - mean * mean).coerceAtLeast(0f)))
 }
 
-private fun CoverCanvas.legibleInk(top: Float, bottom: Float, ink: Int, target: Float): Int {
+private fun CoverCanvas.legibleInk(
+    top: Float,
+    bottom: Float,
+    ink: Int,
+    target: Float,
+): Int {
     val stats = bandStats(bitmap, top, bottom)
     val textLight = luminance(ink) > stats[0]
     val toward = if (textLight) Color.BLACK else Color.WHITE
@@ -195,8 +204,13 @@ private fun CoverCanvas.legibleInk(top: Float, bottom: Float, ink: Int, target: 
     return mix(ink, pull, ((target * 0.8f - gap) * 2.2f).coerceAtMost(0.85f))
 }
 
-private fun CoverCanvas.drawLine(text: String, centerY: Float, paint: Paint, ink: Int,
-    shadow: Float) {
+private fun CoverCanvas.drawLine(
+    text: String,
+    centerY: Float,
+    paint: Paint,
+    ink: Int,
+    shadow: Float,
+) {
     val offset = paint.letterSpacing * paint.textSize / 2f
     if (shadow > 0f) {
         val shade = Paint(paint)
@@ -211,12 +225,25 @@ private fun CoverCanvas.drawLine(text: String, centerY: Float, paint: Paint, ink
 private fun CoverCanvas.drawRule(rule: Rule, centerY: Float, ink: Int) {
     when (rule) {
         Rule.None -> return
+
         Rule.Line ->
-            canvas.drawRect(width / 2f - unit(0.10f), centerY, width / 2f + unit(0.10f),
-                centerY + unit(0.003f), fillPaint(ink))
+            canvas.drawRect(
+                width / 2f - unit(0.10f),
+                centerY,
+                width / 2f + unit(0.10f),
+                centerY + unit(0.003f),
+                fillPaint(ink),
+            )
+
         Rule.Bar ->
-            canvas.drawRect(width / 2f - unit(0.14f), centerY, width / 2f + unit(0.14f),
-                centerY + unit(0.009f), fillPaint(ink))
+            canvas.drawRect(
+                width / 2f - unit(0.14f),
+                centerY,
+                width / 2f + unit(0.14f),
+                centerY + unit(0.009f),
+                fillPaint(ink),
+            )
+
         Rule.Ornament -> {
             val mark = unit(0.010f)
             for (offset in listOf(-unit(0.055f), 0f, unit(0.055f))) {
@@ -232,8 +259,11 @@ private fun CoverCanvas.drawRule(rule: Rule, centerY: Float, ink: Int) {
 internal fun CoverCanvas.drawTypography(title: String, author: String, typeset: Typeset) {
     val margin = unit(0.11f)
     val tracking =
-        if (typeset.titleCase == LetterCase.Upper) typeset.titleTracking
-        else typeset.titleTracking.coerceAtMost(0.03f)
+        if (typeset.titleCase == LetterCase.Upper) {
+            typeset.titleTracking
+        } else {
+            typeset.titleTracking.coerceAtMost(0.03f)
+        }
     val settled = typeset.copy(titleTracking = tracking)
     val layout =
         fitTitle(
@@ -251,10 +281,10 @@ internal fun CoverCanvas.drawTypography(title: String, author: String, typeset: 
             Anchor.Bottom -> height * 0.86f - block
         }
 
-    scrimBand(top - layout.size * 0.5f, top + block + layout.size * 0.4f, Color.BLACK,
-        settled.scrim)
-    val titleInk =
-        legibleInk(top - layout.size * 0.5f, top + block + layout.size * 0.4f, settled.ink, 0.45f)
+    val bandTop = top - layout.size * 0.5f
+    val bandBottom = top + block + layout.size * 0.4f
+    scrimBand(bandTop, bandBottom, Color.BLACK, settled.scrim)
+    val titleInk = legibleInk(bandTop, bandBottom, settled.ink, 0.45f)
 
     val authorPaint =
         textPaint(settled.authorFont, settled.authorWeight, false, settled.authorTracking)
@@ -262,12 +292,18 @@ internal fun CoverCanvas.drawTypography(title: String, author: String, typeset: 
     val authorY = height * if (settled.anchor == Anchor.Top) 0.895f else 0.075f
     val ruleY = authorY - height * 0.030f
     val authorInk =
-        legibleInk(ruleY - height * 0.03f, authorY + height * 0.05f, settled.authorInk, 0.40f)
+        legibleInk(
+            ruleY - height * 0.03f,
+            authorY + height * 0.05f,
+            settled.authorInk,
+            0.40f,
+        )
 
-    for (index in layout.lines.indices) {
+    layout.lines.forEachIndexed { index, line ->
         val baseline = top + layout.size * (index * settled.titleLeading + 0.82f)
-        drawLine(layout.lines[index], baseline, layout.paint, titleInk, settled.shadow)
+        drawLine(line, baseline, layout.paint, titleInk, settled.shadow)
     }
     drawRule(settled.rule, ruleY, authorInk)
-    drawLine(cased(author, settled.authorCase), authorY, authorPaint, authorInk, settled.shadow)
+    val authorText = cased(author, settled.authorCase)
+    drawLine(authorText, authorY, authorPaint, authorInk, settled.shadow)
 }

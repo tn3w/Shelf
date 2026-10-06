@@ -17,7 +17,6 @@ import dev.tn3w.shelf.data.Searcher
 import dev.tn3w.shelf.data.USER_AGENT
 import dev.tn3w.shelf.data.displayName
 import dev.tn3w.shelf.data.isOffline
-import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
+import kotlin.random.Random
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
 private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
@@ -50,7 +50,9 @@ sealed interface Download {
     data object Failed : Download
 }
 
-class ShelfApp : Application(), SingletonImageLoader.Factory {
+class ShelfApp :
+    Application(),
+    SingletonImageLoader.Factory {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val session = Random.nextLong()
     val library by lazy { Library(this) }
@@ -69,10 +71,9 @@ class ShelfApp : Application(), SingletonImageLoader.Factory {
     }
 
     // Coil type-checks the Application for this; dropping it restores its default client.
-    override fun newImageLoader(context: PlatformContext) =
-        ImageLoader.Builder(context)
-            .components { add(OkHttpNetworkFetcherFactory({ anonymousClient })) }
-            .build()
+    override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(context)
+        .components { add(OkHttpNetworkFetcherFactory({ anonymousClient })) }
+        .build()
 
     private val anonymousClient by lazy {
         OkHttpClient.Builder()
@@ -95,36 +96,33 @@ class ShelfApp : Application(), SingletonImageLoader.Factory {
     fun reload(language: String) =
         scope.launch(Dispatchers.IO) { loaded.value = Loaded(packs.load(language)) }
 
-    fun download(language: String, pack: String) =
-        scope.launch(Dispatchers.IO) {
-            val key = "$language-$pack"
-            if (downloads.value[key] is Download.Running) return@launch
-            downloads.update { it + (key to Download.Running(0f)) }
-            runCatching {
-                packs.download(language, pack) { progress ->
-                    downloads.update { it + (key to Download.Running(progress)) }
-                }
+    fun download(language: String, pack: String) = scope.launch(Dispatchers.IO) {
+        val key = "$language-$pack"
+        if (downloads.value[key] is Download.Running) return@launch
+        downloads.update { it + (key to Download.Running(0f)) }
+        runCatching {
+            packs.download(language, pack) { progress ->
+                downloads.update { it + (key to Download.Running(progress)) }
             }
-                .onSuccess {
-                    downloads.update { it - key }
-                    if (loaded.value?.catalogue?.language == language) reload(language)
-                }
-                .onFailure {
-                    downloads.update { it + (key to Download.Failed) }
-                }
         }
+            .onSuccess {
+                downloads.update { it - key }
+                if (loaded.value?.catalogue?.language == language) reload(language)
+            }
+            .onFailure {
+                downloads.update { it + (key to Download.Failed) }
+            }
+    }
 
-    fun remove(language: String, pack: String) =
-        scope.launch(Dispatchers.IO) {
-            packs.remove(language, pack)
-            reload(language)
-        }
+    fun remove(language: String, pack: String) = scope.launch(Dispatchers.IO) {
+        packs.remove(language, pack)
+        reload(language)
+    }
 
-    fun removeAll(language: String) =
-        scope.launch(Dispatchers.IO) {
-            packs.removeAll()
-            reload(language)
-        }
+    fun removeAll(language: String) = scope.launch(Dispatchers.IO) {
+        packs.removeAll()
+        reload(language)
+    }
 
     suspend fun changeSource(source: String) {
         val custom = if (source == REPOSITORY) "" else source
@@ -138,10 +136,10 @@ class ShelfApp : Application(), SingletonImageLoader.Factory {
             withContext(Dispatchers.IO) {
                 uris.count { uri ->
                     runCatching {
-                            contentResolver.openInputStream(uri)?.use {
-                                packs.importFile(displayName(uri), it)
-                            } == true
-                        }
+                        contentResolver.openInputStream(uri)?.use {
+                            packs.importFile(displayName(uri), it)
+                        } == true
+                    }
                         .getOrDefault(false)
                 }
             }

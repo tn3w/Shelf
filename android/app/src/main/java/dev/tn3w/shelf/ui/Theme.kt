@@ -54,12 +54,11 @@ private val DarkColors =
     )
 
 @OptIn(ExperimentalTextApi::class)
-private fun inter(weight: Int) =
-    Font(
-        R.font.inter,
-        FontWeight(weight),
-        variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
-    )
+private fun inter(weight: Int) = Font(
+    R.font.inter,
+    FontWeight(weight),
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
+)
 
 private val Inter = FontFamily(listOf(400, 500, 600, 700, 800).map(::inter))
 
@@ -85,12 +84,11 @@ private val InterTypography =
     }
 
 @Composable
-fun isDark(mode: ThemeMode) =
-    when (mode) {
-        ThemeMode.System -> isSystemInDarkTheme()
-        ThemeMode.Light -> false
-        ThemeMode.Dark -> true
-    }
+fun isDark(mode: ThemeMode) = when (mode) {
+    ThemeMode.System -> isSystemInDarkTheme()
+    ThemeMode.Light -> false
+    ThemeMode.Dark -> true
+}
 
 @Composable
 fun ShelfTheme(dark: Boolean, content: @Composable () -> Unit) {

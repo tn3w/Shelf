@@ -8,8 +8,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -73,10 +73,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Loaded
-import dev.tn3w.shelf.cover.CoverRequest
-import dev.tn3w.shelf.cover.GeneratedCover
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
+import dev.tn3w.shelf.cover.CoverRequest
+import dev.tn3w.shelf.cover.GeneratedCover
 import dev.tn3w.shelf.data.Author
 import dev.tn3w.shelf.data.AuthorGroup
 import dev.tn3w.shelf.data.Book
@@ -118,11 +118,11 @@ private fun Modifier.sharedCover(key: String?): Modifier {
     }
 }
 
-private fun placeholderColor(work: Int): Color {
-    val hues =
-        listOf(0xFF8C4A2F, 0xFF3F5B73, 0xFF5E6B3A, 0xFF7A3E5C, 0xFF4B4E6D, 0xFF9A6B2F)
-    return Color(hues[Math.floorMod(work, hues.size)])
-}
+private val PlaceholderHues =
+    listOf(0xFF8C4A2F, 0xFF3F5B73, 0xFF5E6B3A, 0xFF7A3E5C, 0xFF4B4E6D, 0xFF9A6B2F)
+
+private fun placeholderColor(work: Int) =
+    Color(PlaceholderHues[Math.floorMod(work, PlaceholderHues.size)])
 
 @Composable
 private fun loadedSettings(): Settings? {
@@ -149,7 +149,7 @@ fun BookCover(
             .width(width)
             .aspectRatio(2f / 3f)
             .clip(shape)
-            .background(placeholderColor(book.work))
+            .background(placeholderColor(book.work)),
     ) {
         if (settings == null) return@Box
         if (offline || !settings.onlineCovers || book.cover == 0 || failed) {
@@ -186,8 +186,11 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
                 Text(
                     initials(author.name),
                     style =
-                        if (size < 64.dp) MaterialTheme.typography.titleMedium
-                        else MaterialTheme.typography.headlineMedium,
+                    if (size < 64.dp) {
+                        MaterialTheme.typography.titleMedium
+                    } else {
+                        MaterialTheme.typography.headlineMedium
+                    },
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
@@ -222,7 +225,9 @@ private fun CoverPlaceholder(book: Book) {
     Column(
         Modifier.fillMaxSize()
             .background(
-                Brush.verticalGradient(listOf(Color.White.copy(0.12f), Color.Transparent))
+                Brush.verticalGradient(
+                    listOf(Color.White.copy(0.12f), Color.Transparent),
+                ),
             )
             .padding(10.dp),
         verticalArrangement = Arrangement.SpaceBetween,
@@ -267,7 +272,7 @@ fun SectionHeader(title: String, subtitle: String? = null, onMore: (() -> Unit)?
         Modifier.fillMaxWidth()
             .then(clickable)
             .padding(horizontal = ScreenPadding)
-            .padding(top = 28.dp, bottom = 12.dp)
+            .padding(top = 28.dp, bottom = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.headlineSmall)
@@ -304,7 +309,7 @@ fun BookTile(
         modifier.combinedClickable(
             onClick = { onOpen(book, origin) },
             onLongClick = onDismiss?.let { { menu = true } },
-        )
+        ),
     ) {
         BookCover(
             book,
@@ -400,7 +405,7 @@ fun SkeletonTile(modifier: Modifier = Modifier.width(TileWidth)) {
             Modifier.fillMaxWidth()
                 .aspectRatio(2f / 3f)
                 .clip(RoundedCornerShape(6.dp))
-                .background(color)
+                .background(color),
         )
         Spacer(Modifier.size(8.dp))
         Box(Modifier.fillMaxWidth(0.8f).height(12.dp).background(color))
@@ -555,10 +560,9 @@ fun BookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) =
-    TileGrid(header) {
-        if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
-    }
+) = TileGrid(header) {
+    if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
+}
 
 @Composable
 fun GroupedBookGrid(
@@ -566,23 +570,22 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) =
-    TileGrid(header) {
-        if (groups == null) return@TileGrid skeletonTiles()
-        val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
-        groups.forEach { group ->
-            if (labelled) {
-                fullWidth {
-                    Text(
-                        group.series ?: stringResource(R.string.other_books),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
-                    )
-                }
+) = TileGrid(header) {
+    if (groups == null) return@TileGrid skeletonTiles()
+    val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
+    groups.forEach { group ->
+        if (labelled) {
+            fullWidth {
+                Text(
+                    group.series ?: stringResource(R.string.other_books),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 4.dp),
+                )
             }
-            bookTiles(group.books, origin, onOpen)
         }
+        bookTiles(group.books, origin, onOpen)
     }
+}
 
 fun LazyGridScope.fullWidth(content: @Composable () -> Unit) =
     item(span = { GridItemSpan(maxLineSpan) }) { content() }

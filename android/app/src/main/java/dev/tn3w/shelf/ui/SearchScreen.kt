@@ -153,14 +153,14 @@ private fun SearchField(query: String, onChange: (String) -> Unit, onSubmit: () 
         singleLine = true,
         shape = CircleShape,
         colors =
-            TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
+        TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+        ),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
         modifier =
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
     )
 }
 

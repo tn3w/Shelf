@@ -25,7 +25,8 @@ Open `android/` in Android Studio for the app; the repo root works for everythin
 ## Style
 
 Follow the surrounding code. Self-documenting names, early returns, shallow nesting, no
-commentary that the code already states. Kotlin official style, `cargo fmt` for Rust.
+commentary that the code already states. `ktlint -F "android/app/src/**/*.kt"` for
+Kotlin (configured in `.editorconfig`), `cargo fmt` for Rust.
 
 ## Translations
 

@@ -18,16 +18,16 @@ private val COMPLETION_LENGTHS = 2..4
 
 private val FOLD = buildMap {
     listOf(
-            "áàâäãåÁÀÂÄÃÅ" to 'a',
-            "éèêëÉÈÊË" to 'e',
-            "íìîïÍÌÎÏ" to 'i',
-            "óòôöõøÓÒÔÖÕØ" to 'o',
-            "úùûüÚÙÛÜ" to 'u',
-            "ñÑ" to 'n',
-            "çÇ" to 'c',
-            "ýÿÝ" to 'y',
-            "ß" to 's',
-        )
+        "áàâäãåÁÀÂÄÃÅ" to 'a',
+        "éèêëÉÈÊË" to 'e',
+        "íìîïÍÌÎÏ" to 'i',
+        "óòôöõøÓÒÔÖÕØ" to 'o',
+        "úùûüÚÙÛÜ" to 'u',
+        "ñÑ" to 'n',
+        "çÇ" to 'c',
+        "ýÿÝ" to 'y',
+        "ß" to 's',
+    )
         .forEach { (characters, replacement) ->
             characters.forEach { put(it, replacement) }
         }
@@ -43,8 +43,9 @@ fun tokenize(text: String): List<String> {
     val tokens = mutableListOf<String>()
     val current = StringBuilder()
     for (character in text) {
-        if (character == '\'' || character == '’' || character in '\u0300'..'\u036f')
+        if (character == '\'' || character == '’' || character in '\u0300'..'\u036f') {
             continue
+        }
         val folded = foldCharacter(character)
         if (folded != null) current.append(folded)
         if (
@@ -122,30 +123,24 @@ class Cache<K : Any, V : Any>(private val capacity: Int) {
         }
 
     fun get(key: K, load: (K) -> V): V {
-        synchronized(map) {
-            map[key]?.let {
-                return it
-            }
-        }
+        synchronized(map) { map[key] }?.let { return it }
         val value = load(key)
         synchronized(map) { map[key] = value }
         return value
     }
 }
 
-fun mapFile(file: File): ByteBuffer =
-    RandomAccessFile(file, "r").use {
-        it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
-    }
+fun mapFile(file: File): ByteBuffer = RandomAccessFile(file, "r").use {
+    it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
+}
 
-private fun ByteBuffer.region(offset: Int, length: Int): ByteBuffer =
-    duplicate()
-        .apply {
-            position(offset)
-            limit(offset + length)
-        }
-        .slice()
-        .order(ByteOrder.LITTLE_ENDIAN)
+private fun ByteBuffer.region(offset: Int, length: Int): ByteBuffer = duplicate()
+    .apply {
+        position(offset)
+        limit(offset + length)
+    }
+    .slice()
+    .order(ByteOrder.LITTLE_ENDIAN)
 
 private fun ByteBuffer.bytes(offset: Int, length: Int) =
     ByteArray(length).also { region(offset, length).get(it) }
@@ -161,6 +156,13 @@ private class Table(private val buffer: ByteBuffer) {
         val end = buffer.getInt(8 + 4 * index)
         return buffer.bytes(data + start, end - start)
     }
+}
+
+private class BlockIndex(buffer: ByteBuffer) {
+    private val count = buffer.getInt(0)
+    private val start = 4 + 4 * count
+    val firsts = List(count) { buffer.getInt(4 + 4 * it) }
+    val blocks = Table(buffer.region(start, buffer.limit() - start))
 }
 
 private fun inflate(
@@ -209,11 +211,10 @@ private fun readSections(buffer: ByteBuffer): Map<String, ByteBuffer> {
     }
 }
 
-private fun readMeta(buffer: ByteBuffer) =
-    String(buffer.all())
-        .lines()
-        .filter { '=' in it }
-        .associate { it.substringBefore('=') to it.substringAfter('=') }
+private fun readMeta(buffer: ByteBuffer) = String(buffer.all())
+    .lines()
+    .filter { '=' in it }
+    .associate { it.substringBefore('=') to it.substringAfter('=') }
 
 data class Facts(
     val authors: IntArray,
@@ -267,18 +268,17 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
     private val firstTerms = List(count) { Reader(table[it], 1).text() }
     private val cache = Cache<Int, List<Term>>(512)
 
-    fun block(index: Int) =
-        cache.get(index) {
-            val reader = Reader(table[index])
-            var previous = ""
-            buildList {
-                while (reader.hasMore) {
-                    val text = previous.take(reader.varint()) + reader.text()
-                    add(readTerm(reader, text))
-                    previous = text
-                }
+    fun block(index: Int) = cache.get(index) {
+        val reader = Reader(table[index])
+        var previous = ""
+        buildList {
+            while (reader.hasMore) {
+                val text = previous.take(reader.varint()) + reader.text()
+                add(readTerm(reader, text))
+                previous = text
             }
         }
+    }
 
     private fun readTerm(reader: Reader, text: String): Term {
         val titleCount = reader.varint()
@@ -337,8 +337,7 @@ class Segment(buffer: ByteBuffer) {
         List(completions.count) { Reader(completions[it]).text() }
     private val grams = Table(section("grams"))
     private val gramKeys = List(grams.count) { Reader(grams[it]).text() }
-    private val descriptionFirsts: List<Int>
-    private val descriptions: Table
+    private val descriptions = BlockIndex(section("descriptions"))
     private val tagTable = Table(section("tags"))
     val tags =
         List(tagTable.count) {
@@ -347,14 +346,6 @@ class Segment(buffer: ByteBuffer) {
         }
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
-
-    init {
-        val section = section("descriptions")
-        val count = section.getInt(0)
-        descriptionFirsts = List(count) { section.getInt(4 + 4 * it) }
-        val start = 4 + 4 * count
-        descriptions = Table(section.region(start, section.limit() - start))
-    }
 
     private fun section(name: String) = sections.getValue(name)
 
@@ -432,12 +423,12 @@ class Segment(buffer: ByteBuffer) {
     fun tagCount(tag: Int) = afterTagLabels(tag)?.varint() ?: 0
 
     fun description(local: Int): Description {
-        val block = descriptionFirsts.lastAtMost(local)
+        val block = descriptions.firsts.lastAtMost(local)
         if (block < 0) return Description("", false)
         return descriptionBlocks
             .get(block) {
-                val reader = Reader(inflate(descriptions[it], textDictionary))
-                val first = descriptionFirsts[it]
+                val reader = Reader(inflate(descriptions.blocks[it], textDictionary))
+                val first = descriptions.firsts[it]
                 buildMap {
                     while (reader.hasMore) {
                         val marked = reader.varint()
@@ -483,31 +474,19 @@ data class Popularity(
     val editions: Int,
 )
 
-private class PopularityBlock(
-    val works: IntArray,
-    val rows: Array<Popularity>,
-)
+private class PopularityBlock(val works: IntArray, val rows: Array<Popularity>)
 
 class Ranks(buffer: ByteBuffer) {
     private val sections = readSections(buffer)
     val works = readMeta(sections.getValue("meta")).getValue("works").toInt()
     private val terms = TermBlocks(sections.getValue("terms"), withPostings = false)
-    private val firstWorks: List<Int>
-    private val blocks: Table
+    private val popularityIndex = BlockIndex(sections.getValue("popularity"))
     private val cache = Cache<Int, PopularityBlock>(64)
-
-    init {
-        val section = sections.getValue("popularity")
-        val count = section.getInt(0)
-        firstWorks = List(count) { section.getInt(4 + 4 * it) }
-        val start = 4 + 4 * count
-        blocks = Table(section.region(start, section.limit() - start))
-    }
 
     fun frequency(text: String) = terms.find(text)?.frequency ?: 0
 
     fun popularity(work: Int): Popularity? {
-        val index = firstWorks.lastAtMost(work)
+        val index = popularityIndex.firsts.lastAtMost(work)
         if (index < 0) return null
         val block = cache.get(index, ::decode)
         val position = block.works.binarySearch(work)
@@ -515,10 +494,10 @@ class Ranks(buffer: ByteBuffer) {
     }
 
     private fun decode(index: Int): PopularityBlock {
-        val reader = Reader(inflate(blocks[index]))
+        val reader = Reader(inflate(popularityIndex.blocks[index]))
         val works = IntArrayList()
         val rows = mutableListOf<Popularity>()
-        var work = firstWorks[index]
+        var work = popularityIndex.firsts[index]
         while (reader.hasMore) {
             work += reader.varint()
             works.add(work)
