@@ -1,0 +1,1 @@
+Geste de retour corrigé : la page du livre disparaît proprement au lieu de laisser son texte sur l'accueil.

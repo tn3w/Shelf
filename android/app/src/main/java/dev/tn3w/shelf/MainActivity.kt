@@ -17,6 +17,8 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -261,6 +263,8 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         exitTransition = { exit },
         popEnterTransition = { enter },
         popExitTransition = { exit },
+        predictivePopEnterTransition = { enter },
+        predictivePopExitTransition = { exit },
     ) {
         screen<HomeRoute> { HomeScreen(navigator) }
         screen<LibraryRoute> { LibraryScreen(navigator) }
@@ -284,5 +288,9 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
 private inline fun <reified T : Any> NavGraphBuilder.screen(
     noinline content: @Composable (NavBackStackEntry) -> Unit,
 ) = composable<T> { entry ->
-    CompositionLocalProvider(LocalAnimatedScope provides this) { content(entry) }
+    CompositionLocalProvider(LocalAnimatedScope provides this) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            content(entry)
+        }
+    }
 }

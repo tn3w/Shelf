@@ -1,1 +1,0 @@
-Fix. During the back gesture, the book page and Home are both partly visible at once, because the page's fade-out and Android's default scale animation run over a transparent background, so the book's text stay's on screen over Home.

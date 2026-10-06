@@ -1,0 +1,1 @@
+Zurück-Geste korrigiert: Die Buchseite blendet sauber aus, statt dass ihr Text über der Startseite stehen bleibt.

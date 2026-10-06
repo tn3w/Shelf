@@ -1,0 +1,1 @@
+Back gesture fix: the book page now fades out cleanly instead of its text staying over Home.
