@@ -687,9 +687,11 @@ private fun PackList(
                 onRemove = { app.remove(language, info.pack) },
             )
         }
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
         val pending = packs.filter { it.state != PackState.Installed }
         val pendingBytes = pending.sumOf { it.bytes }
+        if (!offline || storage > 0) {
+            HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        }
         if (!offline && pendingBytes > 0) {
             ActionRow(
                 R.string.download_all_short, Icons.Outlined.Download, bytes(pendingBytes),
