@@ -123,7 +123,8 @@ object Covers {
     fun cached(context: Context, request: CoverRequest, widthPixels: Int): Bitmap {
         val width = snap(widthPixels)
         val seed = coverSeed(request.work, request.title, request.author)
-        val key = "v3-$seed-$width"
+        val genre = classify(request.slugs)
+        val key = "v4-$seed-${genre.name}-$width"
         memory.get(key)?.let { return it }
 
         val file = File(directory(context), "$key.webp")

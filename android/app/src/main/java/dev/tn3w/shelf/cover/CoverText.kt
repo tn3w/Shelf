@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -61,9 +62,8 @@ internal data class Typeset(
 )
 
 private object CoverFonts {
-    private val resolved = HashMap<String, Typeface>()
-    private val weighted = HashMap<String, Typeface>()
-    private val probe = Paint()
+    private val resolved = ConcurrentHashMap<String, Typeface>()
+    private val weighted = ConcurrentHashMap<String, Typeface>()
 
     private fun family(font: CoverFont): Typeface = resolved.getOrPut(font.family) {
         val candidate = Typeface.create(font.family, Typeface.NORMAL)
@@ -77,6 +77,7 @@ private object CoverFonts {
     }
 
     private fun measures(typeface: Typeface): Float {
+        val probe = Paint()
         probe.typeface = typeface
         probe.textSize = 64f
         return probe.measureText("Hamburgefonstiv 123")

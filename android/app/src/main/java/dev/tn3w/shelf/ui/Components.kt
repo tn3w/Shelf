@@ -155,8 +155,11 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
 @Composable
 private fun DrawnCover(book: Book) {
     val catalogue = shelfApp().loaded.collectAsStateWithLifecycle().value?.catalogue
-    val slugs = remember(book.work, catalogue) {
-        book.tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+    val slugs = remember(book.work, book.tags, catalogue) {
+        val tags = book.tags.ifEmpty {
+            catalogue?.facts(book.work)?.tags?.toList().orEmpty()
+        }
+        tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
     }
     GeneratedCover(
         CoverRequest(book.work, book.title, book.author, slugs),

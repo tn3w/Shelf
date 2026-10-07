@@ -84,7 +84,8 @@ Export writes the same format back.
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, adventure, science fiction, romance, vintage, fantasy, mystery and spiritual"></picture>
 </p>
 
-Books without a cover get one drawn on device. Same book, same cover.
+Books without a cover get one drawn on device. Same book, same cover. Art style follows
+genre from catalogue tags, also for saved books.
 
 ## Build
 

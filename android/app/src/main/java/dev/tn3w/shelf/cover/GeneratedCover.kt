@@ -22,7 +22,7 @@ fun GeneratedCover(
             (if (maxWidth > 0.dp) maxWidth else 160.dp).roundToPx()
         }
         val bitmap: ImageBitmap? by
-            produceState(null, request.work, request.title, widthPixels) {
+            produceState(null, request, widthPixels) {
                 value = withContext(Dispatchers.Default) {
                     Covers.cached(context, request, widthPixels).asImageBitmap()
                 }
