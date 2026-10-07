@@ -124,7 +124,10 @@ fun fetchText(url: String) =
     connect(url).inputStream.use { it.readBytes().decodeToString() }
 
 class Packs(private val context: Context) {
-    private val directory = context.filesDir.resolve("catalogue").apply { mkdirs() }
+    private val directory = context.filesDir.resolve("catalogue").apply {
+        mkdirs()
+        listFiles { file -> file.extension == "part" }?.forEach { it.delete() }
+    }
     private val manifestFile = directory.resolve(MANIFEST_NAME)
     private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
@@ -275,16 +278,14 @@ class Packs(private val context: Context) {
     fun importFile(name: String, input: InputStream): Boolean {
         if (name == MANIFEST_NAME) return importManifest(input.readBytes())
         val file = parseName(name) ?: return false
-        val temporary = directory.resolve("${file.id}.part")
-        temporary.outputStream().use { input.copyTo(it) }
-        val valid = runCatching {
-            val buffer = mapFile(temporary)
-            if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
+        return runCatching {
+            replace(binOf(file.id)) { temporary ->
+                temporary.outputStream().use { input.copyTo(it) }
+                val buffer = mapFile(temporary)
+                if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
+            }
         }
             .isSuccess
-        if (valid && temporary.renameTo(binOf(file.id))) return true
-        temporary.delete()
-        return false
     }
 
     private fun importManifest(bytes: ByteArray): Boolean {
@@ -343,22 +344,25 @@ class Packs(private val context: Context) {
 
     fun removeAll() = deleteAll(downloaded())
 
-    private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) {
-        val temporary = directory.resolve("${entry.id}.part")
-        val digest = MessageDigest.getInstance("SHA-256")
-        DigestInputStream(connect(entry.url).inputStream, digest).use { input ->
-            temporary.outputStream().use { copy(input, it, onBytes) }
+    private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
+        replace(binOf(entry.id)) { temporary ->
+            val digest = MessageDigest.getInstance("SHA-256")
+            DigestInputStream(connect(entry.url).inputStream, digest).use { input ->
+                temporary.outputStream().use { copy(input, it, onBytes) }
+            }
+            check(sha256(digest) == entry.sha256) { "checksum mismatch for ${entry.id}" }
         }
-        if (sha256(digest) != entry.sha256) {
-            temporary.delete()
-            error("checksum mismatch for ${entry.id}")
-        }
-        check(temporary.renameTo(binOf(entry.id)))
-    }
 
-    private fun writeAtomically(target: File, bytes: ByteArray) {
+    private fun writeAtomically(target: File, bytes: ByteArray) =
+        replace(target) { it.writeBytes(bytes) }
+
+    private fun replace(target: File, write: (File) -> Unit) {
         val temporary = File(target.path + ".part")
-        temporary.writeBytes(bytes)
-        check(temporary.renameTo(target))
+        try {
+            write(temporary)
+            check(temporary.renameTo(target)) { "cannot replace ${target.name}" }
+        } finally {
+            temporary.delete()
+        }
     }
 }
