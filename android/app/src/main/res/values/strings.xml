@@ -54,6 +54,7 @@
     <string name="online_covers">Load covers</string>
     <string name="online_covers_hint">Fetch cover images from Open Library.</string>
     <string name="open_failed">This file could not be opened.</string>
+    <string name="page_failed">This page could not be displayed.</string>
     <string name="open_library_license">Open Library data license</string>
     <string name="open_library_note">Book data from Open Library, built monthly from its public dumps.</string>
     <string name="pack_available">Not installed</string>

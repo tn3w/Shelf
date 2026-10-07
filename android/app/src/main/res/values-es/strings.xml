@@ -53,6 +53,7 @@
     <string name="online_covers">Cargar portadas</string>
     <string name="online_covers_hint">Descargar portadas de Open Library.</string>
     <string name="open_failed">No se pudo abrir el archivo.</string>
+    <string name="page_failed">No se pudo mostrar esta página.</string>
     <string name="open_library_license">Licencia de datos de Open Library</string>
     <string name="open_library_note">Datos de Open Library, generados cada mes a partir de sus volcados públicos.</string>
     <string name="pack_available">No instalado</string>

@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -14,6 +15,7 @@ import org.jsoup.parser.Parser
 import java.io.File
 import java.net.URI
 import java.util.zip.ZipFile
+import kotlin.math.roundToInt
 
 private const val SECTION_CHARACTERS = 40_000
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
@@ -48,7 +50,7 @@ class TextDocument(val sections: List<List<Block>>, val chapters: List<Chapter>)
 interface PagedDocument : Document {
     val pageCount: Int
 
-    suspend fun render(index: Int, width: Int): Bitmap?
+    suspend fun render(index: Int, width: Int, height: Int): Bitmap
 }
 
 class PdfDocument(file: File) : PagedDocument {
@@ -58,19 +60,22 @@ class PdfDocument(file: File) : PagedDocument {
     private val mutex = Mutex()
     override val pageCount = renderer.pageCount
 
-    override suspend fun render(index: Int, width: Int): Bitmap = mutex.withLock {
-        renderer.openPage(index).use { page ->
-            val height = width * page.height / page.width
-            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
-                it.eraseColor(Color.WHITE)
-                page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+    override suspend fun render(index: Int, width: Int, height: Int): Bitmap =
+        mutex.withLock {
+            renderer.openPage(index).use { page ->
+                val (fitWidth, fitHeight) = fit(page.width, page.height, width, height)
+                Bitmap.createBitmap(fitWidth, fitHeight, Bitmap.Config.ARGB_8888).also {
+                    it.eraseColor(Color.WHITE)
+                    page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                }
             }
         }
-    }
 
-    override fun close() {
-        renderer.close()
-        descriptor.close()
+    override fun close() = runBlocking {
+        mutex.withLock {
+            renderer.close()
+            descriptor.close()
+        }
     }
 }
 
@@ -83,10 +88,34 @@ class ComicDocument(file: File) : PagedDocument {
         .toList()
     override val pageCount = entries.size
 
-    override suspend fun render(index: Int, width: Int): Bitmap? =
-        zip.getInputStream(entries[index]).use(BitmapFactory::decodeStream)
+    override suspend fun render(index: Int, width: Int, height: Int): Bitmap {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        decode(index, bounds)
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, width, height)
+        }
+        return decode(index, options) ?: error("Unreadable image ${entries[index].name}")
+    }
+
+    private fun decode(index: Int, options: BitmapFactory.Options) =
+        zip.getInputStream(entries[index]).use {
+            BitmapFactory.decodeStream(it, null, options)
+        }
 
     override fun close() = zip.close()
+}
+
+private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<Int, Int> {
+    require(width > 0 && height > 0) { "Empty page" }
+    val scale = minOf(maxWidth.toFloat() / width, maxHeight.toFloat() / height)
+    return (width * scale).roundToInt().coerceAtLeast(1) to
+        (height * scale).roundToInt().coerceAtLeast(1)
+}
+
+private fun sampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Int {
+    var size = 1
+    while (width / (size * 2) >= maxWidth || height / (size * 2) >= maxHeight) size *= 2
+    return size
 }
 
 fun decodeImage(bytes: ByteArray): Bitmap? =

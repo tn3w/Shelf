@@ -53,6 +53,7 @@
     <string name="online_covers">Cover laden</string>
     <string name="online_covers_hint">Coverbilder von Open Library laden.</string>
     <string name="open_failed">Datei konnte nicht geöffnet werden.</string>
+    <string name="page_failed">Diese Seite konnte nicht angezeigt werden.</string>
     <string name="open_library_license">Open-Library-Datenlizenz</string>
     <string name="open_library_note">Buchdaten von Open Library, monatlich aus den öffentlichen Dumps erstellt.</string>
     <string name="pack_available">Nicht installiert</string>

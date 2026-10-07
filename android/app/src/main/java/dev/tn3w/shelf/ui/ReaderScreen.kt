@@ -106,8 +106,9 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
                 .getOrDefault(Opened.Failed)
         }
     }
-    DisposableEffect(opened) {
-        onDispose { (opened as? Opened.Ready)?.document?.close() }
+    val document = (opened as? Opened.Ready)?.document
+    DisposableEffect(document) {
+        onDispose { document?.close() }
     }
     val view = LocalView.current
     DisposableEffect(settings.keepScreenOn) {
@@ -318,17 +319,23 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
         val width = constraints.maxWidth
+        val height = constraints.maxHeight
         Pages(
             pager,
             state.copy(onFontScale = null),
             emptyList(),
             save = { progress.copy(page = it, pages = count) },
         ) {
-            val bitmap by produceState<Bitmap?>(null, it) {
-                value = withContext(Dispatchers.IO) { document.render(it, width) }
+            val rendered by produceState<Result<Bitmap>?>(null, it) {
+                value = withContext(Dispatchers.IO) {
+                    runCatching { document.render(it, width, height) }
+                }
             }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                val image = bitmap ?: return@Box CircularProgressIndicator()
+                val result = rendered ?: return@Box CircularProgressIndicator()
+                val image = result.getOrNull() ?: return@Box EmptyState(
+                    Icons.Outlined.BrokenImage, stringResource(R.string.page_failed),
+                )
                 Image(
                     image.asImageBitmap(),
                     contentDescription = stringResource(R.string.page_of, it + 1, count),
