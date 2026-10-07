@@ -78,10 +78,15 @@ jobs:
 
       - name: Publish release
         run: |
-          gh release create "catalogue-$RELEASE" --latest=false \
-            --title "Catalogue $RELEASE" \
-            --notes "Open Library catalogue segments, ranks and state for $RELEASE." \
-            out/*
+          for attempt in 1 2 3 4 5; do
+            gh release create "catalogue-$RELEASE" --latest=false \
+              --title "Catalogue $RELEASE" \
+              --notes "Open Library catalogue segments, ranks and state for $RELEASE." \
+              out/* && exit 0
+            gh release delete "catalogue-$RELEASE" --cleanup-tag --yes || true
+            sleep $((attempt * 30))
+          done
+          exit 1
 
       - name: Prune unreferenced releases
         run: |
