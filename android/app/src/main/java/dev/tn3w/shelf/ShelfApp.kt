@@ -80,8 +80,17 @@ class ShelfApp :
 
     fun bookLanguage(settings: Settings) = settings.language.ifEmpty { systemLanguage() }
 
-    fun reload(language: String) =
-        scope.launch(Dispatchers.IO) { loaded.value = Loaded(packs.load(language)) }
+    private var reloadJob: Job? = null
+
+    @Synchronized
+    fun reload(language: String) {
+        reloadJob?.cancel()
+        reloadJob = scope.launch(Dispatchers.IO) {
+            val next = Loaded(packs.load(language))
+            ensureActive()
+            loaded.value = next
+        }
+    }
 
     fun download(language: String, pack: String) = scope.launch(Dispatchers.IO) {
         val key = "$language-$pack"
