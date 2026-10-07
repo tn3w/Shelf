@@ -1,26 +1,35 @@
 package dev.tn3w.shelf.ui
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
-import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.*
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 private val SECTIONS = listOf(
     "audience" to R.string.audience,
@@ -176,11 +185,16 @@ fun LibraryScreen(navigator: Navigator) {
             Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
         }
     }
+    var addingOwn by rememberSaveable { mutableStateOf(false) }
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         LargeTitle(stringResource(R.string.library)) {
-            val label = stringResource(R.string.import_book)
-            IconAction(Icons.Outlined.FileOpen, label) { picker.launch(arrayOf("*/*")) }
+            IconAction(Icons.Outlined.Add, stringResource(R.string.own_book)) {
+                addingOwn = true
+            }
+            IconAction(Icons.Outlined.FileOpen, stringResource(R.string.import_book)) {
+                picker.launch(arrayOf("*/*"))
+            }
         }
         FlowRow(
             Modifier.padding(horizontal = ScreenPadding),
@@ -201,5 +215,117 @@ fun LibraryScreen(navigator: Navigator) {
             )
         }
         BookGrid(shown, "library", navigator::book)
+    }
+    if (addingOwn) OwnBookSheet("", navigator) { addingOwn = false }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
+    val library = shelfApp().library
+    val scope = rememberCoroutineScope()
+    val title = rememberTextFieldState(query.trim())
+    val author = rememberTextFieldState()
+    var shelf by rememberSaveable { mutableStateOf(Shelf.Reading) }
+    var image by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val titleFocus = remember { FocusRequester() }
+    val authorFocus = remember { FocusRequester() }
+    val book = ownBook(title.text.trim().toString(), author.text.trim().toString())
+    val shownTitle = book.title.ifEmpty { stringResource(R.string.title) }
+    val shownAuthor = book.author.ifEmpty { stringResource(R.string.author) }
+    val placeholder =
+        book.copy(title = shownTitle, authors = listOf(Author(0, shownAuthor)))
+    var preview by remember { mutableStateOf(placeholder) }
+    LaunchedEffect(placeholder) {
+        delay(300)
+        preview = placeholder
+    }
+    LaunchedEffect(Unit) {
+        if (query.isBlank()) titleFocus.requestFocus() else authorFocus.requestFocus()
+    }
+
+    fun add() {
+        if (book.title.isEmpty()) return
+        scope.launch {
+            val cover = image?.let { library.saveCover(book.work, it) } ?: 0
+            library.place(book.copy(cover = cover), shelf)
+            onDismiss()
+            navigator.book(book, "own")
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    ) {
+        Column(
+            Modifier.imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = ScreenPadding)
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                stringResource(R.string.own_book),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            EditableCover({ image = it }, Modifier.padding(bottom = 8.dp)) {
+                if (image == null) return@EditableCover BookCover(preview, 112.dp)
+                AsyncImage(
+                    model = image,
+                    contentDescription = stringResource(R.string.cover_of, preview.title),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.width(112.dp).aspectRatio(2f / 3f),
+                )
+            }
+            OwnBookField(title, R.string.title, Modifier.focusRequester(titleFocus)) {
+                authorFocus.requestFocus()
+            }
+            OwnBookField(author, R.string.author, Modifier.focusRequester(authorFocus)) {
+                add()
+            }
+            ShelfPicker(shelf) { shelf = it }
+            Button(
+                onClick = ::add,
+                enabled = book.title.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) { Text(stringResource(R.string.add)) }
+        }
+    }
+}
+
+@Composable
+private fun OwnBookField(
+    state: TextFieldState,
+    label: Int,
+    modifier: Modifier,
+    onNext: () -> Unit,
+) {
+    OutlinedTextField(
+        state = state,
+        label = { Text(stringResource(label)) },
+        lineLimits = TextFieldLineLimits.SingleLine,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            imeAction = ImeAction.Next,
+        ),
+        onKeyboardAction = { onNext() },
+        modifier = modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun ShelfPicker(selected: Shelf, onSelect: (Shelf) -> Unit) {
+    val shelves = FILTERS.mapNotNull { (label, shelf) -> shelf?.let { label to it } }
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        shelves.forEachIndexed { index, (label, shelf) ->
+            SegmentedButton(
+                selected = shelf == selected,
+                onClick = { onSelect(shelf) },
+                shape = SegmentedButtonDefaults.itemShape(index, shelves.size),
+                label = { Text(stringResource(label), maxLines = 1) },
+            )
+        }
     }
 }

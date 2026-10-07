@@ -1,5 +1,9 @@
 package dev.tn3w.shelf.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -9,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -97,6 +102,15 @@ fun BookCover(
             .background(placeholderColor(book.work)),
     ) {
         if (settings == null) return@Box
+        if (book.isLocal && book.cover != 0) {
+            AsyncImage(
+                model = shelfApp().library.coverFile(book),
+                contentDescription = stringResource(R.string.cover_of, book.title),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            return@Box
+        }
         if (offline || !settings.onlineCovers || book.cover == 0 || failed) {
             DrawnCover(book)
             return@Box
@@ -451,6 +465,33 @@ fun NoCatalogue(onSettings: () -> Unit) {
         EmptyState(Icons.Outlined.CloudOff, stringResource(R.string.no_catalogue))
         OutlinedButton(onClick = onSettings) {
             Text(stringResource(R.string.open_settings))
+        }
+    }
+}
+
+@Composable
+fun EditableCover(
+    onPicked: (Uri) -> Unit,
+    modifier: Modifier = Modifier,
+    cover: @Composable () -> Unit,
+) {
+    val picker = rememberLauncherForActivityResult(PickVisualMedia()) { picked ->
+        picked?.let(onPicked)
+    }
+    Box(
+        modifier
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClickLabel = stringResource(R.string.choose_cover)) {
+                picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+            },
+    ) {
+        cover()
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(32.dp),
+        ) {
+            Icon(Icons.Outlined.AddPhotoAlternate, null, Modifier.padding(6.dp))
         }
     }
 }

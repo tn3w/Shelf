@@ -226,6 +226,12 @@
     <string name="offline_mode_hint">Aucun réseau : pas de mises à jour, pas de catalogue, pas d\'images.</string>
     <string name="start_offline">Continuer hors ligne</string>
     <string name="import_book">Importer un livre</string>
+    <string name="own_book">Ajouter un livre</string>
+    <string name="add_own_book">Ajouter « %s » comme livre</string>
+    <string name="title">Titre</string>
+    <string name="author">Auteur</string>
+    <string name="add">Ajouter</string>
+    <string name="choose_cover">Choisir la couverture</string>
     <string name="delete_book">Retirer de Shelf</string>
     <string name="delete_book_confirm">Retirer %s, sa progression et sa copie importée ? Le fichier d\'origine reste en place.</string>
     <string name="remove">Retirer</string>

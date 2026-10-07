@@ -58,6 +58,13 @@ flowchart LR
 <tr><td>Hosts</td><td>GitHub, Open Library, or <b>your own server</b></td></tr>
 </table>
 
+## Own books
+
+Book missing from the catalogue? Library › **+**, or search it and tap
+**Add "…" as own book**. Title, author and shelf stay on device. Cover drawn on device,
+or tap it, in the sheet or on the book page, to pick your own image (kept in backups).
+Library › file icon imports an EPUB, PDF, FB2, CBZ, TXT or HTML file instead.
+
 ## Switch from Goodreads or StoryGraph
 
 ```

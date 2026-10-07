@@ -38,6 +38,7 @@ fun SearchScreen(navigator: Navigator) {
     var results by remember { mutableStateOf<Results?>(null) }
     val recent by app.library.recentSearches.collectAsStateWithLifecycle(emptyList())
     val trending by load { recommender.popular(8) }
+    var addingOwn by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(query, loaded) {
         val current = loaded ?: return@LaunchedEffect
@@ -98,8 +99,16 @@ fun SearchScreen(navigator: Navigator) {
                     }
                 }
             }
+            item(key = "own") {
+                SuggestionRow(
+                    Icons.Outlined.LibraryAdd,
+                    stringResource(R.string.add_own_book, query.trim()),
+                    Modifier.animateItem(),
+                ) { addingOwn = true }
+            }
         }
     }
+    if (addingOwn) OwnBookSheet(query, navigator) { addingOwn = false }
 }
 
 @Composable

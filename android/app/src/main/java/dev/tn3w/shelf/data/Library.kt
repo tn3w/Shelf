@@ -135,7 +135,10 @@ private fun bookOf(work: Int, title: String, author: String, cover: Int = 0) =
 val Book.isLocal
     get() = work < 0
 
-private fun localWork(fileName: String) = -1 - (fileName.hashCode() and Int.MAX_VALUE)
+private fun localWork(key: String) = -1 - (key.hashCode() and Int.MAX_VALUE)
+
+fun ownBook(title: String, author: String) =
+    bookOf(localWork(title + author), title, author)
 
 fun Context.displayName(uri: Uri): String {
     val name = contentResolver
@@ -211,8 +214,9 @@ class Library(private val context: Context) {
         update(PROGRESS, emptyMap<Int, Progress>()) {
             if (work in it) it else it + (work to Progress(name))
         }
-        val shelf = saved.first().firstOrNull { it.work == work }?.shelf ?: Shelf.Reading
-        place(bookOf(work, title, metadata?.author.orEmpty()), shelf)
+        val existing = saved.first().firstOrNull { it.work == work }
+        val book = bookOf(work, title, metadata?.author.orEmpty(), existing?.cover ?: 0)
+        place(book, existing?.shelf ?: Shelf.Reading)
         return work
     }
 
@@ -226,6 +230,25 @@ class Library(private val context: Context) {
         target.delete()
         return null
     }
+
+    fun coverFile(book: Book) = bookFile("${book.work}-cover-${book.cover}")
+
+    suspend fun saveCover(work: Int, uri: Uri): Int? {
+        val cover = (System.currentTimeMillis() / 1000).toInt()
+        val name = "$work-cover-$cover"
+        val target = bookFile(name).apply { parentFile?.mkdirs() }
+        if (readFrom(uri) { input -> target.outputStream().use(input::copyTo) } == null) {
+            target.delete()
+            return null
+        }
+        deleteCovers(work, keep = name)
+        return cover
+    }
+
+    private fun deleteCovers(work: Int, keep: String = "") = booksDir
+        .listFiles { file -> file.name.startsWith("$work-cover-") && file.name != keep }
+        .orEmpty()
+        .forEach { it.delete() }
 
     private suspend fun <T> readFrom(uri: Uri, read: (InputStream) -> T): T? =
         withContext(Dispatchers.IO) {
@@ -243,6 +266,7 @@ class Library(private val context: Context) {
 
     suspend fun deleteBook(work: Int) {
         progress.first()[work]?.let { bookFile(it.file).delete() }
+        deleteCovers(work)
         update(PROGRESS, emptyMap<Int, Progress>()) { it - work }
         update(ENTRIES, emptyList<Saved>()) { entries ->
             entries.filter { it.work != work }
@@ -275,8 +299,7 @@ class Library(private val context: Context) {
                 onProgress(index.toFloat() / books.size)
                 val match = searcher?.find(row.title, row.author)
                 if (match == null) missing += row.title
-                val local = localWork(row.title + row.author)
-                val book = match ?: bookOf(local, row.title, row.author)
+                val book = match ?: ownBook(row.title, row.author)
                 book.toSaved(row.shelf).copy(updated = row.date, rating = row.rating)
             }
         }

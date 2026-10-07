@@ -218,6 +218,12 @@
     <string name="offline_mode_hint">Gar kein Netzwerk: keine Updates, keine Katalogsuche, keine Bilder.</string>
     <string name="start_offline">Offline fortfahren</string>
     <string name="import_book">Buch importieren</string>
+    <string name="own_book">Eigenes Buch hinzufügen</string>
+    <string name="add_own_book">„%s“ als eigenes Buch hinzufügen</string>
+    <string name="title">Titel</string>
+    <string name="author">Autor</string>
+    <string name="add">Hinzufügen</string>
+    <string name="choose_cover">Cover wählen</string>
     <string name="delete_book">Aus Shelf entfernen</string>
     <string name="delete_book_confirm">%s mit Fortschritt und importierter Kopie entfernen? Die Originaldatei bleibt erhalten.</string>
     <string name="remove">Entfernen</string>

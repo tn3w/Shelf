@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -136,6 +137,10 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     fun place(target: Shelf) = scope.launch {
         app.library.place(book, if (shelf == target) unplaced else target)
     }
+    fun changeCover(image: Uri) = scope.launch {
+        val cover = app.library.saveCover(book.work, image) ?: return@launch
+        app.library.place(book.copy(cover = cover), shelf ?: Shelf.Reading)
+    }
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
@@ -150,9 +155,14 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BookCover(
-            book, 180.dp, Modifier.padding(vertical = 16.dp), "$origin-${book.work}",
-        )
+        val sharedKey = "$origin-${book.work}"
+        if (book.isLocal) {
+            EditableCover(::changeCover, Modifier.padding(vertical = 16.dp)) {
+                BookCover(book, 180.dp, sharedKey = sharedKey)
+            }
+        } else {
+            BookCover(book, 180.dp, Modifier.padding(vertical = 16.dp), sharedKey)
+        }
         Text(
             book.title,
             style = MaterialTheme.typography.headlineMedium,
