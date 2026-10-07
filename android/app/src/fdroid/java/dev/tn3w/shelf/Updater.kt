@@ -1,8 +1,6 @@
 package dev.tn3w.shelf
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 
 object Updater {
     fun isEnabled(context: Context) = false
@@ -14,6 +12,4 @@ object Updater {
         release: AppRelease,
         onProgress: (Float) -> Unit,
     ) {}
-
-    fun onIntent(activity: Activity, intent: Intent) {}
 }

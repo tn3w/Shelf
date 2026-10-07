@@ -1,8 +1,8 @@
 package dev.tn3w.shelf
 
-import android.app.Activity
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_MUTABLE
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -15,7 +15,6 @@ import kotlinx.serialization.json.Json
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
-private const val INSTALL_ACTION = "dev.tn3w.shelf.INSTALL_STATUS"
 private val STORES = setOf(
     "org.fdroid.fdroid",
     "org.fdroid.basic",
@@ -123,7 +122,7 @@ object Updater {
     }
 
     private fun statusReceiver(context: Context, sessionId: Int): PendingIntent {
-        val intent = Intent(context, MainActivity::class.java).setAction(INSTALL_ACTION)
+        val intent = Intent(context, InstallReceiver::class.java)
         val mutable = if (Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.S
         ) {
@@ -132,15 +131,16 @@ object Updater {
             0
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or mutable
-        return PendingIntent.getActivity(context, sessionId, intent, flags)
+        return PendingIntent.getBroadcast(context, sessionId, intent, flags)
     }
+}
 
-    fun onIntent(activity: Activity, intent: Intent) {
-        if (intent.action != INSTALL_ACTION) return
+class InstallReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
         if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) return
         @Suppress("DEPRECATION")
         val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
-        activity.startActivity(confirm)
+        context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

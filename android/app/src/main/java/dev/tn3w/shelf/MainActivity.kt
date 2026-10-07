@@ -105,7 +105,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Updater.onIntent(this, intent)
         if (savedInstanceState == null) opened.value = openedFile(intent)
         val app = application as ShelfApp
         setContent {
@@ -133,7 +132,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Updater.onIntent(this, intent)
         openedFile(intent)?.let { opened.value = it }
     }
 }
