@@ -14,6 +14,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.time.LocalDate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -135,10 +137,18 @@ private fun bookOf(work: Int, title: String, author: String, cover: Int = 0) =
 val Book.isLocal
     get() = work < 0
 
-private fun localWork(key: String) = -1 - (key.hashCode() and Int.MAX_VALUE)
+private fun localWork(hash: Int) = -1 - (hash and Int.MAX_VALUE)
 
 fun ownBook(title: String, author: String) =
-    bookOf(localWork(title + author), title, author)
+    bookOf(localWork((title + author).hashCode()), title, author)
+
+private fun contentWork(input: InputStream): Int {
+    val digest = MessageDigest.getInstance("SHA-256")
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    generateSequence { input.read(buffer).takeIf { it >= 0 } }
+        .forEach { digest.update(buffer, 0, it) }
+    return localWork(ByteBuffer.wrap(digest.digest()).int)
+}
 
 fun Context.displayName(uri: Uri): String {
     val name = contentResolver
@@ -207,7 +217,7 @@ class Library(private val context: Context) {
 
     suspend fun importFile(uri: Uri): Int? {
         val fileName = context.displayName(uri)
-        val work = localWork(fileName)
+        val work = readFrom(uri, ::contentWork) ?: return null
         val name = copyBook(uri, fileName, work) ?: return null
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
