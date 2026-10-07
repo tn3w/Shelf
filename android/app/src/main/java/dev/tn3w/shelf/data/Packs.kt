@@ -207,11 +207,14 @@ class Packs(private val context: Context) {
     private fun map(file: LocalFile): ByteBuffer {
         val local = binOf(file.id)
         if (local.exists()) return mapFile(local)
-        val descriptor = context.assets.openFd("${file.id}.bin")
-        return FileInputStream(descriptor.fileDescriptor).channel.use {
-            it.map(
-                FileChannel.MapMode.READ_ONLY, descriptor.startOffset, descriptor.length,
-            )
+        return context.assets.openFd("${file.id}.bin").use { descriptor ->
+            FileInputStream(descriptor.fileDescriptor).channel.use {
+                it.map(
+                    FileChannel.MapMode.READ_ONLY,
+                    descriptor.startOffset,
+                    descriptor.length,
+                )
+            }
         }
     }
 
