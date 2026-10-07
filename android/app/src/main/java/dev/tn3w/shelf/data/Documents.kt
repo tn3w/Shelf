@@ -13,7 +13,10 @@ import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.parser.Parser
 import java.io.File
+import java.io.RandomAccessFile
 import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.util.zip.ZipFile
 import kotlin.math.roundToInt
 
@@ -22,6 +25,11 @@ private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
 private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER = Regex("copyright|colophon|imprint|toc|contents|titlepage")
 private val WHITESPACE = Regex("\\s+")
+private const val JP2_SIGNATURE = "\u0000\u0000\u0000\u000CjP  \r\n\u0087\n"
+private const val CHUNK_SIZE = 1 shl 22
+private const val ICC_PROFILE_METHOD: Byte = 2
+private const val SRGB = 16
+private const val GREYSCALE = 17
 private val BOLD_TAGS = setOf("b", "strong")
 private val ITALIC_TAGS = setOf("i", "em", "cite")
 
@@ -78,6 +86,50 @@ class PdfDocument(file: File) : PagedDocument {
         }
     }
 }
+
+private class Box(val type: String, val start: Int, val end: Int)
+
+private fun replaceJpegIccProfiles(file: File) = runCatching {
+    RandomAccessFile(file, "rw").use { access ->
+        val mode = FileChannel.MapMode.READ_WRITE
+        val buffer = access.channel.map(mode, 0, access.length())
+        val chunk = ByteArray(CHUNK_SIZE)
+        for (offset in 0 until buffer.limit() step CHUNK_SIZE - JP2_SIGNATURE.length) {
+            val size = minOf(CHUNK_SIZE, buffer.limit() - offset)
+            buffer.position(offset)
+            buffer.get(chunk, 0, size)
+            val text = String(chunk, 0, size, Charsets.ISO_8859_1)
+            var index = text.indexOf(JP2_SIGNATURE)
+            while (index >= 0) {
+                replaceIccProfile(buffer, offset + index + JP2_SIGNATURE.length)
+                index = text.indexOf(JP2_SIGNATURE, index + 1)
+            }
+        }
+    }
+}
+
+private fun replaceIccProfile(buffer: ByteBuffer, start: Int) {
+    val header = boxes(buffer, start, buffer.limit()).firstOrNull { it.type == "jp2h" }
+        ?: return
+    val children = boxes(buffer, header.start + 8, header.end).toList()
+    val image = children.firstOrNull { it.type == "ihdr" } ?: return
+    val color = children.firstOrNull { it.type == "colr" } ?: return
+    val isIccProfile = buffer.get(color.start + 8) == ICC_PROFILE_METHOD
+    if (!isIccProfile || color.end - color.start < 23) return
+    val colorSpace = if (buffer.getShort(image.start + 16) >= 3) SRGB else GREYSCALE
+    buffer.position(color.start)
+    buffer.putInt(15).put("colr".toByteArray())
+    buffer.put(byteArrayOf(1, 0, 0)).putInt(colorSpace)
+    buffer.putInt(color.end - buffer.position()).put("free".toByteArray())
+}
+
+private fun boxes(buffer: ByteBuffer, start: Int, end: Int) =
+    generateSequence(start) { it + buffer.getInt(it) }
+        .takeWhile { it + 8 <= end && buffer.getInt(it) in 8..end - it }
+        .map {
+            val type = ByteArray(4) { index -> buffer.get(it + 4 + index) }
+            Box(String(type), it, it + buffer.getInt(it))
+        }
 
 class ComicDocument(file: File) : PagedDocument {
     private val zip = ZipFile(file)
@@ -153,7 +205,7 @@ private fun fictionBookMetadata(file: File): Metadata? {
 fun openDocument(file: File): Document = when (file.extension.lowercase()) {
     "epub" -> readEpub(file)
 
-    "pdf" -> PdfDocument(file)
+    "pdf" -> PdfDocument(file.also(::replaceJpegIccProfiles))
 
     "cbz" -> ComicDocument(file)
 
