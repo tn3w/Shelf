@@ -91,7 +91,7 @@ fun BookCover(
     val settings = loadedSettings()
     val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(book.work) { mutableStateOf(false) }
-    var failed by remember(book.work) { mutableStateOf(false) }
+    var failed by remember(book.work, book.cover) { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
@@ -102,11 +102,12 @@ fun BookCover(
             .background(placeholderColor(book.work)),
     ) {
         if (settings == null) return@Box
-        if (book.isLocal && book.cover != 0) {
+        if (book.isLocal && book.cover != 0 && !failed) {
             AsyncImage(
                 model = shelfApp().library.coverFile(book),
                 contentDescription = stringResource(R.string.cover_of, book.title),
                 contentScale = ContentScale.Crop,
+                onError = { failed = true },
                 modifier = Modifier.fillMaxSize(),
             )
             return@Box

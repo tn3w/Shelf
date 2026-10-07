@@ -1,0 +1,6 @@
+• Eigene Bücher hinzufügen: Titel, Autor, Regal und optional ein Coverbild
+• Reader: PDF-Absturz und leere Seiten behoben, schnellere Comics und EPUB-Bilder, richtige CBZ-Seitenfolge
+• Dieselbe Datei zweimal importiert bleibt ein Buch; importierte Dateien ziehen beim Gerätewechsel mit
+• Importierte Kopien von Katalogbüchern lassen sich entfernen
+• Cover-Cache wird aufgeräumt, Downloads räumen nach Fehlern auf
+• Eingebauter Katalog aktualisiert, Übersetzungen korrigiert

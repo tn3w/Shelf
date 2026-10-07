@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-09-18"
+val catalogueRelease = "catalogue-2026-10-07"
 val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 
@@ -21,8 +21,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 10
-        versionName = "1.2.0"
+        versionCode = 11
+        versionName = "1.2.1"
     }
 
     flavorDimensions += "distribution"

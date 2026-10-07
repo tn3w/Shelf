@@ -1,0 +1,6 @@
+• Añade tus propios libros: título, autor, estante e imagen de portada opcional
+• Lector: cierre con PDF y páginas en blanco corregidos, cómics e imágenes EPUB más rápidos, orden de páginas CBZ correcto
+• El mismo archivo importado dos veces sigue siendo un libro; los archivos importados pasan al nuevo dispositivo
+• Las copias importadas de libros del catálogo se pueden quitar
+• Caché de portadas depurada, limpieza tras fallos
+• Catálogo integrado actualizado, traducciones corregidas

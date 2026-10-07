@@ -1,6 +1,6 @@
 <div align="center">
 
-https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
+<img src="android/design/shelf-icon.svg" width="96" alt="Shelf icon">
 
 # Shelf
 
@@ -25,6 +25,8 @@ Search, explore, track reading streaks, read your own files.
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_explore.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/5_explore.jpg" width="15%" alt="explore"></picture>
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_reader.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/6_reader.jpg" width="15%" alt="reader"></picture>
 </p>
+
+https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 </div>
 
@@ -62,8 +64,10 @@ flowchart LR
 
 Book missing from the catalogue? Library › **+**, or search it and tap
 **Add "…" as own book**. Title, author and shelf stay on device. Cover drawn on device,
-or tap it, in the sheet or on the book page, to pick your own image (kept in backups).
-Library › file icon imports an EPUB, PDF, FB2, CBZ, TXT or HTML file instead.
+or tap it, in the sheet or on the book page, to pick your own image.
+Library › file icon imports an EPUB, PDF, FB2, CBZ, TXT or HTML file instead. Same file
+twice → same book. Imported files and own covers move along on device transfer; cloud
+backup keeps the library only, so re-import files there.
 
 ## Switch from Goodreads or StoryGraph
 

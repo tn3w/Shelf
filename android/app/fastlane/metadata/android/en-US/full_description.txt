@@ -3,6 +3,7 @@ Shelf is an offline book catalogue built from Open Library.
 * Typo-tolerant search with completions
 * Explore genres, series and authors
 * Library with want-to-read, reading and finished shelves
+* Add your own books missing from the catalogue, with your own cover
 * Goodreads and StoryGraph CSV import and export
 * Daily reading goal and streaks
 * Personal recommendations computed on the device

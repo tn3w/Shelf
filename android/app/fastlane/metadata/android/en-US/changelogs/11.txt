@@ -1,0 +1,6 @@
+• Add your own books: title, author, shelf and optional cover image
+• Reader: PDF crash and blank pages fixed, faster comics and EPUB images, correct CBZ page order
+• Same file imported twice stays one book; imported files move along on device transfer
+• Imported copies of catalogue books can be removed
+• Cover cache pruned, downloads clean up after failures
+• Built-in catalogue updated, fixed translations

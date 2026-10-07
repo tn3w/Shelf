@@ -1,0 +1,6 @@
+• Ajoutez vos propres livres : titre, auteur, étagère et image de couverture facultative
+• Lecteur : plantage PDF et pages blanches corrigés, BD et images EPUB plus rapides, ordre des pages CBZ correct
+• Un même fichier importé deux fois reste un seul livre ; les fichiers importés suivent lors du transfert d'appareil
+• Les copies importées des livres du catalogue peuvent être supprimées
+• Cache des couvertures allégé, nettoyage après échec
+• Catalogue intégré mis à jour, traductions corrigées

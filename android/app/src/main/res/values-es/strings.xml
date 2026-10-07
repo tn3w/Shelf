@@ -37,7 +37,6 @@
     <string name="for_you_subtitle">Según tu biblioteca.</string>
     <string name="formats">Tipos de libro</string>
     <string name="genres">Géneros</string>
-    <string name="goal_pages">%d páginas</string>
     <string name="goal_reached">Meta cumplida. ¡Hasta mañana!</string>
     <string name="home">Inicio</string>
     <string name="import_to_start">Importa un archivo</string>
