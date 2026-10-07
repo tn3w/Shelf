@@ -108,7 +108,9 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     }
     val document = (opened as? Opened.Ready)?.document
     DisposableEffect(document) {
-        onDispose { document?.close() }
+        onDispose {
+            if (document != null) app.scope.launch(Dispatchers.IO) { document.close() }
+        }
     }
     val view = LocalView.current
     DisposableEffect(settings.keepScreenOn) {
