@@ -32,6 +32,7 @@ private const val SRGB = 16
 private const val GREYSCALE = 17
 private val BOLD_TAGS = setOf("b", "strong")
 private val ITALIC_TAGS = setOf("i", "em", "cite")
+private val IMAGE_TAGS = setOf("img", "image")
 
 val READABLE_EXTENSIONS =
     setOf("epub", "pdf", "txt", "md", "html", "htm", "xhtml", "fb2", "cbz")
@@ -286,35 +287,80 @@ private fun plainBlocks(text: String) = text
         Block(it.drop(level).trim(), heading = level, centered = level > 0)
     }
 
-private fun inline(element: Element): Pair<String, List<Span>> {
-    val text = StringBuilder()
-    val spans = mutableListOf<Span>()
-    fun walk(node: Node, bold: Boolean, italic: Boolean) {
-        if (node is TextNode) {
-            val words = node.wholeText.replace(WHITESPACE, " ")
-            val start = text.length
-            text.append(if (text.endsWith(" ")) words.trimStart() else words)
-            if ((bold || italic) && text.length > start) {
-                spans += Span(start, text.length, bold, italic)
-            }
-            return
-        }
+private class HtmlReader(private val image: (String) -> ByteArray?) {
+    val blocks = mutableListOf<Block>()
+    private val text = StringBuilder()
+    private val spans = mutableListOf<Span>()
+
+    fun read(block: Element, bold: Boolean = false, italic: Boolean = false) {
+        block.childNodes().forEach { visit(it, block, bold, italic) }
+        flush(block)
+    }
+
+    fun inline(element: Element): Pair<String, List<Span>> {
+        element.childNodes().forEach { visit(it, element, bold = false, italic = false) }
+        return take()
+    }
+
+    private fun visit(node: Node, block: Element, bold: Boolean, italic: Boolean) {
+        if (node is TextNode) return append(node.wholeText, bold, italic)
         if (node !is Element) return
         val tag = node.tagName().lowercase()
-        if (tag == "br") text.append(" ")
-        node.childNodes().forEach {
-            walk(it, bold || tag in BOLD_TAGS, italic || tag in ITALIC_TAGS)
+        when {
+            tag == "br" -> append(" ", bold = false, italic = false)
+
+            tag in IMAGE_TAGS -> addImage(node, block)
+
+            node.isBlock -> {
+                flush(block)
+                read(node, bold, italic)
+            }
+
+            else -> node.childNodes().forEach {
+                visit(it, block, bold || tag in BOLD_TAGS, italic || tag in ITALIC_TAGS)
+            }
         }
     }
-    walk(element, bold = false, italic = false)
-    val leading = text.length - text.trimStart().length
-    val trimmed = text.trim().toString()
-    val shifted = spans.mapNotNull { span ->
-        val start = (span.start - leading).coerceIn(0, trimmed.length)
-        val end = (span.end - leading).coerceIn(0, trimmed.length)
-        if (end > start) span.copy(start = start, end = end) else null
+
+    private fun append(words: String, bold: Boolean, italic: Boolean) {
+        val normalized = words.replace(WHITESPACE, " ")
+        val start = text.length
+        text.append(if (text.endsWith(" ")) normalized.trimStart() else normalized)
+        if ((bold || italic) && text.length > start) {
+            spans += Span(start, text.length, bold, italic)
+        }
     }
-    return trimmed to shifted
+
+    private fun addImage(element: Element, block: Element) {
+        val source = element.attr("src")
+            .ifEmpty { element.attr("xlink:href").ifEmpty { element.attr("href") } }
+        val bytes = image(source) ?: return
+        flush(block)
+        blocks += Block("", image = bytes)
+    }
+
+    private fun flush(block: Element) {
+        val (content, styles) = take()
+        if (content.isEmpty()) return
+        val level = HEADING.matchEntire(block.tagName().lowercase())
+            ?.groupValues
+            ?.get(1)
+            ?.toInt() ?: 0
+        blocks += Block(content, level, level > 0 || isCentered(block), styles)
+    }
+
+    private fun take(): Pair<String, List<Span>> {
+        val leading = text.length - text.trimStart().length
+        val trimmed = text.trim().toString()
+        val shifted = spans.mapNotNull { span ->
+            val start = (span.start - leading).coerceIn(0, trimmed.length)
+            val end = (span.end - leading).coerceIn(0, trimmed.length)
+            if (end > start) span.copy(start = start, end = end) else null
+        }
+        text.clear()
+        spans.clear()
+        return trimmed to shifted
+    }
 }
 
 private fun isCentered(element: Element) = generateSequence(element) { it.parent() }
@@ -324,30 +370,10 @@ private fun isCentered(element: Element) = generateSequence(element) { it.parent
             "text-align:center" in it.attr("style").replace(" ", "")
     }
 
-private fun imageSource(element: Element) = element.selectFirst("img, image")?.let {
-    it.attr("src").ifEmpty { it.attr("xlink:href").ifEmpty { it.attr("href") } }
-}
-
-private fun htmlBlocks(root: Element, image: (String) -> ByteArray?): List<Block> {
-    val blocks = root.allElements
-        .filter { element ->
-            element.isBlock && element.children().none { it.isBlock }
-        }
-        .mapNotNull { element ->
-            val (text, spans) = inline(element)
-            if (text.isEmpty()) {
-                return@mapNotNull imageSource(element)?.let(image)?.let {
-                    Block("", image = it)
-                }
-            }
-            val level = HEADING.matchEntire(element.tagName().lowercase())
-                ?.groupValues
-                ?.get(1)
-                ?.toInt() ?: 0
-            Block(text, level, level > 0 || isCentered(element), spans)
-        }
-    return blocks.ifEmpty { plainBlocks(root.wholeText()) }
-}
+private fun htmlBlocks(root: Element, image: (String) -> ByteArray?) =
+    HtmlReader(image).apply {
+        read(root)
+    }.blocks.ifEmpty { plainBlocks(root.wholeText()) }
 
 private class Epub(private val zip: ZipFile) {
     val opfPath
@@ -416,7 +442,7 @@ private fun readFictionBook(file: File): TextDocument {
         sections.map { section ->
             val title = section.selectFirst("> title")?.text()
             val blocks = section.select("p, v, subtitle").mapNotNull { paragraph ->
-                val (text, spans) = inline(paragraph)
+                val (text, spans) = HtmlReader { null }.inline(paragraph)
                 val isTitle = paragraph.parents().any { it.tagName() == "title" }
                 val level = when {
                     isTitle -> 1
