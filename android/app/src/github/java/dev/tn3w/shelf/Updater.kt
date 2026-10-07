@@ -80,25 +80,30 @@ object Updater {
         onProgress: (Float) -> Unit,
     ) = withContext(Dispatchers.IO) {
         val name = release.apkUrl.substringAfterLast('/')
-        val expected = fetchText(release.checksumsUrl)
-            .lines()
-            .map { it.trim() }
-            .first { it.endsWith(name) }
-            .substringBefore(' ')
-            .lowercase()
+        val expected = checksum(fetchText(release.checksumsUrl), name)
         val installer = context.packageManager.packageInstaller
         val sessionId =
             installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
         installer.openSession(sessionId).use { session ->
-            val digest = MessageDigest.getInstance("SHA-256")
-            write(session, digest, release.apkUrl, onProgress)
-            if (sha256(digest) != expected) {
+            try {
+                val digest = MessageDigest.getInstance("SHA-256")
+                write(session, digest, release.apkUrl, onProgress)
+                check(sha256(digest) == expected) { "checksum mismatch" }
+            } catch (exception: Throwable) {
                 session.abandon()
-                error("checksum mismatch")
+                throw exception
             }
             session.commit(statusReceiver(context, sessionId).intentSender)
         }
     }
+
+    private fun checksum(sums: String, name: String): String = sums
+        .lines()
+        .map { it.trim().split(Regex("\\s+"), limit = 2) }
+        .firstOrNull { it.size == 2 && it[1].removePrefix("*") == name }
+        ?.first()
+        ?.lowercase()
+        ?: error("no checksum for $name")
 
     private fun write(
         session: PackageInstaller.Session,
