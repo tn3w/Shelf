@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.nextDown
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -319,11 +320,11 @@ internal class CoverRandom(seed: Long) {
         return value xor (value ushr 31)
     }
 
-    fun float() = (next() ushr 11).toFloat() / (1L shl 53).toFloat()
+    fun float() = minOf((next() ushr 11).toFloat() / (1L shl 53).toFloat(), 1f.nextDown())
 
     fun range(from: Float, until: Float) = from + float() * (until - from)
 
-    fun index(count: Int) = (float() * count).toInt().coerceIn(0, count - 1)
+    fun index(count: Int) = (float() * count).toInt()
 
     fun between(from: Int, to: Int) = from + index(to - from + 1)
 
