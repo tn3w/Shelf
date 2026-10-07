@@ -170,8 +170,15 @@ private fun sampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): 
     return size
 }
 
-fun decodeImage(bytes: ByteArray): Bitmap? =
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+fun decodeImage(bytes: ByteArray, width: Int, height: Int): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, width, height)
+    }
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+}
 
 data class Metadata(val title: String, val author: String)
 

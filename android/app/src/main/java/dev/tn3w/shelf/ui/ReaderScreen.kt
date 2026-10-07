@@ -303,13 +303,21 @@ private fun TextReader(
 
 @Composable
 private fun PageImage(bytes: ByteArray) {
-    val bitmap = remember(bytes) { decodeImage(bytes)?.asImageBitmap() } ?: return
-    Image(
-        bitmap,
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier.fillMaxSize().padding(PAGE_PADDING),
-    )
+    BoxWithConstraints(Modifier.fillMaxSize().padding(PAGE_PADDING)) {
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val bitmap by produceState<ImageBitmap?>(null, bytes, width, height) {
+            value = withContext(Dispatchers.Default) {
+                decodeImage(bytes, width, height)?.asImageBitmap()
+            }
+        }
+        Image(
+            bitmap ?: return@BoxWithConstraints,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 @Composable
