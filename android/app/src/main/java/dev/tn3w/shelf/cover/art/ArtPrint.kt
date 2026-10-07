@@ -31,25 +31,11 @@ internal fun swissGrid(cover: CoverCanvas): Typeset = with(cover) {
     val palette = random.pick(SWISS)
     canvas.drawRect(0f, 0f, width, height, fillPaint(palette.paper))
     val cell = width / 6f
-    val grid = strokePaint(alpha(palette.secondary, 0.14f), unit(0.002f))
-    for (column in 1 until 6) {
-        canvas.drawLine(column * cell, 0f, column * cell, height, grid)
-    }
 
-    val centerX = cell * random.between(1, 5)
+    val centerX = cell * random.between(2, 4)
     val centerY = height * random.range(0.60f, 0.66f)
     val radius = cell * random.range(1.5f, 2.1f)
     canvas.drawCircle(centerX, centerY, radius, fillPaint(palette.primary))
-
-    val barTop = height * random.range(0.45f, 0.50f)
-    val barLeft = cell * random.between(0, 2)
-    canvas.drawRect(
-        barLeft,
-        barTop,
-        barLeft + cell * random.between(2, 4),
-        barTop + cell * 0.32f,
-        fillPaint(palette.secondary),
-    )
 
     canvas.save()
     canvas.rotate(random.pick(listOf(-30f, -45f, -60f, 30f)), centerX, centerY)
@@ -61,29 +47,9 @@ internal fun swissGrid(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(palette.secondary),
     )
     canvas.restore()
-
-    val ringY = height * random.range(0.80f, 0.84f)
-    canvas.drawCircle(
-        cell * random.between(1, 5),
-        ringY,
-        cell * 0.28f,
-        strokePaint(palette.secondary, unit(0.008f)),
-    )
-    grain(0.03f)
     Typeset(
         ink = palette.secondary,
-        titleFont = CoverFont.Sans,
-        titleWeight = 700,
-        titleCase = LetterCase.Plain,
-        titleTracking = -0.02f,
-        titleLeading = 0.98f,
-        titleSize = random.range(0.11f, 0.14f),
-        authorFont = CoverFont.Sans,
-        authorWeight = 500,
-        authorCase = LetterCase.Plain,
-        authorTracking = 0.02f,
-        authorSize = 0.03f,
-        rule = Rule.None,
+        font = CoverFont.Sans,
     )
 }
 
@@ -97,10 +63,10 @@ private val BAUHAUS = listOf(
 
 internal fun bauhausTiles(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawRect(0f, 0f, width, height, fillPaint(Color.rgb(240, 234, 220)))
-    val columns = random.between(3, 4)
-    val cell = width * 0.84f / columns
-    val rows = (height * 0.46f / cell).toInt().coerceAtLeast(2)
-    val left = width * 0.08f
+    val columns = random.between(2, 3)
+    val cell = width * 0.76f / columns
+    val rows = (height * 0.44f / cell).toInt().coerceIn(1, 2)
+    val left = width * 0.12f
     val top = height * 0.84f - rows * cell
     for (column in 0 until columns) {
         for (row in 0 until rows) {
@@ -109,20 +75,11 @@ internal fun bauhausTiles(cover: CoverCanvas): Typeset = with(cover) {
             bauhausTile(cover, RectF(x, y, x + cell, y + cell))
         }
     }
-    texture(0.08f)
-    grain(0.03f)
     Typeset(
         ink = BAUHAUS[3],
         authorInk = BAUHAUS[0],
-        titleFont = CoverFont.Sans,
-        titleWeight = 900,
-        titleTracking = 0.02f,
-        titleLeading = 0.98f,
-        titleSize = random.range(0.10f, 0.125f),
-        authorFont = CoverFont.Sans,
-        authorWeight = 700,
-        authorTracking = 0.30f,
-        rule = Rule.Bar,
+        font = CoverFont.Sans,
+        upper = true,
     )
 }
 
@@ -173,44 +130,23 @@ internal fun risoHalftone(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawRect(0f, 0f, width, height, fillPaint(paper))
     halftone(
         first,
-        width * random.range(0.1f, 0.5f),
-        height * random.range(0.95f, 1.05f),
-        width * random.range(0.8f, 1.0f),
+        width * random.range(0.3f, 0.7f),
+        height * 0.62f,
+        width * random.range(0.50f, 0.56f),
         15f,
     )
-    halftone(
-        second,
-        width * random.range(0.5f, 0.9f),
-        height * random.range(0.62f, 0.72f),
-        width * random.range(0.45f, 0.6f),
-        75f,
+    canvas.drawCircle(
+        width * random.range(0.40f, 0.60f),
+        height * random.range(0.58f, 0.64f),
+        width * random.range(0.18f, 0.24f),
+        darken(second),
     )
-    canvas.drawRect(0f, height * 0.86f, width, height, fillPaint(paper))
-    canvas.drawRect(0f, height * 0.86f, width, height * 0.866f, fillPaint(first))
 
-    val centerX = width * random.range(0.32f, 0.68f)
-    val centerY = height * random.range(0.56f, 0.68f)
-    val radius = width * random.range(0.15f, 0.22f)
-    canvas.drawCircle(centerX, centerY, radius, darken(first))
-    val ring = darken(second)
-    ring.style = Paint.Style.STROKE
-    ring.strokeWidth = unit(0.018f)
-    canvas.drawCircle(centerX + unit(0.014f), centerY - unit(0.010f), radius, ring)
-
-    texture(0.10f)
-    grain(0.05f)
     Typeset(
         ink = mix(second, Color.BLACK, 0.55f),
         authorInk = mix(second, Color.BLACK, 0.4f),
-        titleFont = random.pick(listOf(CoverFont.Sans, CoverFont.Casual)),
-        titleWeight = 900,
-        titleTracking = 0f,
-        titleLeading = 0.95f,
-        titleSize = random.range(0.11f, 0.14f),
-        authorFont = CoverFont.Mono,
-        authorWeight = 500,
-        authorTracking = 0.14f,
-        rule = Rule.None,
+        font = CoverFont.Sans,
+        upper = true,
     )
 }
 
@@ -224,7 +160,7 @@ private fun CoverCanvas.halftone(
     reach: Float,
     degrees: Float,
 ) {
-    val pitch = width / 34f
+    val pitch = width / 24f
     val paint = darken(color)
     val angle = Math.toRadians(degrees.toDouble()).toFloat()
     val span = (hypot(width, height) / pitch / 2f).toInt() + 1
@@ -255,50 +191,12 @@ internal fun penguinBands(cover: CoverCanvas): Typeset = with(cover) {
     val top = height * 0.32f
     val bottom = height * 0.68f
     canvas.drawRect(0f, top, width, bottom, fillPaint(cream))
-    val hairline = strokePaint(band, unit(0.003f))
-    for (y in listOf(top + unit(0.035f), bottom - unit(0.035f))) {
-        canvas.drawLine(width * 0.08f, y, width * 0.92f, y, hairline)
-    }
 
-    val badgeY = height * 0.83f
-    val badge = RectF(
-        width * 0.5f - unit(0.075f),
-        badgeY - unit(0.095f),
-        width * 0.5f + unit(0.075f),
-        badgeY + unit(0.095f),
-    )
-    canvas.drawOval(badge, fillPaint(cream))
-    badge.inset(unit(0.012f), unit(0.012f))
-    canvas.drawOval(badge, strokePaint(band, unit(0.004f)))
-    canvas.drawPath(
-        starPath(
-            badge.centerX(),
-            badge.centerY(),
-            unit(0.035f),
-            unit(0.013f),
-            random.pick(listOf(4, 5, 6)),
-        ),
-        fillPaint(band),
-    )
-
-    texture(0.07f)
-    grain(0.03f)
     Typeset(
         ink = Color.rgb(28, 26, 24),
         authorInk = cream,
-        titleFont = CoverFont.Sans,
-        titleWeight = 500,
-        titleCase = LetterCase.Title,
-        titleTracking = 0.01f,
-        titleLeading = 1.1f,
-        titleSize = random.range(0.085f, 0.10f),
-        authorFont = CoverFont.Sans,
-        authorWeight = 500,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.06f,
-        authorSize = 0.03f,
+        font = CoverFont.Sans,
         anchor = Anchor.Center,
-        rule = Rule.None,
     )
 }
 
@@ -306,14 +204,9 @@ internal fun travelStamp(cover: CoverCanvas): Typeset = with(cover) {
     val hue = random.pick(listOf(0.02f, 0.08f, 0.52f, 0.58f, 0.95f))
     val ground = hsv(hue, random.range(0.40f, 0.60f), random.range(0.50f, 0.68f))
     val paper = Color.rgb(248, 244, 234)
-    val ink = shade(ground, 0.45f)
     canvas.drawRect(0f, 0f, width, height, fillPaint(ground))
 
     val stamp = RectF(width * 0.17f, height * 0.37f, width * 0.83f, height * 0.83f)
-    canvas.drawRect(
-        RectF(stamp).apply { offset(unit(0.015f), unit(0.02f)) },
-        fillPaint(alpha(Color.BLACK, 0.25f)),
-    )
     perforate(cover, stamp, paper, ground)
     val window = RectF(
         stamp.left + unit(0.05f),
@@ -322,23 +215,11 @@ internal fun travelStamp(cover: CoverCanvas): Typeset = with(cover) {
         stamp.bottom - unit(0.12f),
     )
     stampScene(cover, window, hue)
-    canvas.drawRect(window, strokePaint(ink, unit(0.003f)))
-    postmark(cover, stamp.right - unit(0.04f), stamp.top + unit(0.07f), ink)
 
-    texture(0.09f)
-    grain(0.03f)
     Typeset(
         ink = paper,
-        titleFont = CoverFont.Condensed,
-        titleWeight = 700,
-        titleTracking = 0.06f,
-        titleLeading = 1f,
-        titleSize = random.range(0.095f, 0.115f),
-        authorFont = CoverFont.Sans,
-        authorWeight = 500,
-        authorTracking = 0.28f,
-        rule = Rule.Bar,
-        shadow = 0.3f,
+        font = CoverFont.Condensed,
+        upper = true,
     )
 }
 
@@ -389,33 +270,8 @@ private fun stampScene(cover: CoverCanvas, window: RectF, hue: Float) = with(cov
 
     val sea = hsv(random.range(0.50f, 0.60f), 0.50f, 0.50f)
     canvas.drawRect(window.left, horizon, window.right, window.bottom, fillPaint(sea))
-    val swell = strokePaint(mix(sea, Color.WHITE, 0.35f), unit(0.003f))
-    for (index in 1..3) {
-        val y = horizon + (window.bottom - horizon) * index / 4f
-        val start = window.left + unit(0.04f * index)
-        canvas.drawLine(start, y, window.right - unit(0.03f), y, swell)
-    }
     canvas.restore()
 }
-
-private fun postmark(cover: CoverCanvas, centerX: Float, centerY: Float, ink: Int) =
-    with(cover) {
-        val radius = unit(0.10f)
-        val paint = strokePaint(alpha(ink, 0.7f), unit(0.004f))
-        canvas.drawCircle(centerX, centerY, radius, paint)
-        canvas.drawCircle(centerX, centerY, radius * 0.72f, paint)
-        for (line in -2..2) {
-            val wave = Path()
-            val y = centerY + line * radius * 0.35f
-            var x = centerX - radius * 1.2f
-            wave.moveTo(x, y)
-            while (x > centerX - radius * 5f) {
-                x -= radius * 0.1f
-                wave.lineTo(x, y + sin(x / radius * TAU * 0.5f) * radius * 0.12f)
-            }
-            canvas.drawPath(wave, paint)
-        }
-    }
 
 internal fun seigaihaWaves(cover: CoverCanvas): Typeset = with(cover) {
     val indigo = hsv(
@@ -435,7 +291,7 @@ internal fun seigaihaWaves(cover: CoverCanvas): Typeset = with(cover) {
     val red = hsv(random.range(0f, 0.03f), 0.78f, 0.86f)
     canvas.drawCircle(width * random.range(0.25f, 0.75f), sunY, sun, fillPaint(red))
 
-    val radius = width / random.between(5, 8)
+    val radius = width / random.between(4, 5)
     var row = 0
     while (y < height + radius) {
         var x = if (row % 2 == 0) 0f else radius
@@ -448,18 +304,10 @@ internal fun seigaihaWaves(cover: CoverCanvas): Typeset = with(cover) {
     }
     canvas.drawRect(0f, height * 0.85f, width, height, fillPaint(indigo))
 
-    texture(0.10f)
-    grain(0.03f)
     Typeset(
         ink = indigo,
         authorInk = paper,
-        titleFont = CoverFont.Serif,
-        titleWeight = 600,
-        titleTracking = random.range(0.08f, 0.14f),
-        titleSize = random.range(0.07f, 0.09f),
-        authorFont = CoverFont.SmallCaps,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.20f,
+        upper = true,
     )
 }
 
@@ -473,8 +321,7 @@ private fun scallop(
 ) = with(cover) {
     canvas.drawCircle(centerX, centerY, radius, fillPaint(paper))
     val paint = strokePaint(indigo, radius * 0.07f)
-    for (ring in 0 until 4) {
-        canvas.drawCircle(centerX, centerY, radius * (0.93f - ring * 0.22f), paint)
+    for (ring in 0 until 3) {
+        canvas.drawCircle(centerX, centerY, radius * (0.9f - ring * 0.28f), paint)
     }
-    canvas.drawCircle(centerX, centerY, radius * 0.1f, fillPaint(indigo))
 }

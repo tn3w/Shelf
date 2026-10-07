@@ -5,7 +5,6 @@ import android.graphics.Color
 import android.graphics.Path
 import android.graphics.RectF
 import dev.tn3w.shelf.cover.*
-import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -20,23 +19,15 @@ internal fun natureLake(cover: CoverCanvas): Typeset = with(cover) {
     val (top, low) = random.pick(LAKE_SKIES)
     val horizon = random.range(0.60f, 0.64f)
     verticalGradient(top, low, 1.2f)
-    radialGlow(
-        width * random.range(0.3f, 0.7f),
-        height * horizon,
-        width * 0.8f,
-        Color.WHITE,
-        0.3f,
-        2f,
-    )
     val far = mix(top, low, 0.5f)
     val near = shade(mix(top, Color.rgb(20, 30, 40), 0.6f), 0.8f)
-    for (index in 0 until 3) {
+    for (index in 0 until 2) {
         val shape = ridge(
             horizon,
-            random.range(0.06f, 0.22f) * (1f - index * 0.3f),
-            random.range(0.04f, 0.09f),
+            random.range(0.08f, 0.20f) * (1f - index * 0.4f),
+            random.range(0.04f, 0.07f),
         )
-        canvas.drawPath(shape.fill, fillPaint(mix(far, near, index / 2f)))
+        canvas.drawPath(shape, fillPaint(mix(far, near, index.toFloat())))
     }
 
     val waterline = (height * horizon).toInt()
@@ -50,27 +41,12 @@ internal fun natureLake(cover: CoverCanvas): Typeset = with(cover) {
     val water = mix(top, Color.rgb(10, 30, 50), 0.4f)
     val surface = fillPaint(alpha(water, 0.45f))
     canvas.drawRect(0f, waterline.toFloat(), width, height, surface)
-    val ripple = strokePaint(alpha(Color.WHITE, 0.25f), unit(0.003f))
-    repeat(random.between(10, 16)) {
-        val y = waterline + (height - waterline) * random.range(0.05f, 1f)
-        val x = random.range(0f, width)
-        canvas.drawLine(x, y, x + unit(random.range(0.05f, 0.2f)), y, ripple)
-    }
 
-    vignette(0.35f, 0.65f)
-    grain(0.03f)
     Typeset(
         ink = Color.WHITE,
         authorInk = Color.rgb(236, 240, 244),
-        titleFont = random.pick(listOf(CoverFont.Serif, CoverFont.Sans)),
-        titleWeight = random.pick(listOf(300, 600)),
-        titleTracking = random.range(0.10f, 0.20f),
-        titleSize = random.range(0.075f, 0.09f),
-        authorFont = CoverFont.Sans,
-        authorWeight = 500,
-        authorTracking = 0.28f,
-        rule = Rule.Line,
-        shadow = 0.6f,
+        font = random.pick(listOf(CoverFont.Serif, CoverFont.Sans)),
+        upper = true,
     )
 }
 
@@ -86,7 +62,6 @@ internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
     val hues = random.pick(SEASONS)
     val bark = hsv(0.07f, 0.45f, 0.30f)
     canvas.drawRect(0f, 0f, width, height, fillPaint(paper))
-    texture(0.08f)
 
     val centerX = width * random.range(0.44f, 0.56f)
     val crown = height * random.range(0.58f, 0.62f)
@@ -99,58 +74,33 @@ internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
     trunk.quadTo(centerX + unit(0.015f), bend, centerX + unit(0.05f), ground)
     trunk.close()
     canvas.drawPath(trunk, fillPaint(bark))
-    val limb = strokePaint(bark, unit(0.012f))
-    for (side in listOf(-1f, 1f)) {
-        canvas.drawLine(
-            centerX,
-            crown + unit(0.06f),
-            centerX + side * unit(0.14f),
-            crown - unit(0.06f),
-            limb,
-        )
-    }
 
     val radius = width * random.range(0.24f, 0.28f)
-    repeat(26) {
-        val angle = random.range(0f, TAU)
-        val distance = radius * random.range(0f, 0.8f)
+    repeat(7) { index ->
+        val angle = TAU * index / 7 + random.range(-0.3f, 0.3f)
+        val distance = if (index == 0) 0f else radius * 0.55f
         val tone = hsv(
-            random.pick(hues), random.range(0.45f, 0.75f), random.range(0.60f, 0.90f),
+            random.pick(hues), random.range(0.45f, 0.65f), random.range(0.70f, 0.88f),
         )
         canvas.drawCircle(
             centerX + cos(angle) * distance,
-            crown - radius * 0.35f + sin(angle) * distance * 0.8f,
-            radius * random.range(0.22f, 0.36f),
-            fillPaint(alpha(tone, 0.85f)),
-        )
-    }
-    repeat(random.between(5, 10)) {
-        val tone = hsv(random.pick(hues), 0.6f, 0.8f)
-        canvas.drawCircle(
-            centerX + random.range(-0.4f, 0.4f) * width,
-            random.range(crown + radius * 0.4f, ground),
-            unit(0.01f),
+            crown - radius * 0.45f + sin(angle) * distance * 0.75f,
+            radius * random.range(0.40f, 0.48f),
             fillPaint(tone),
         )
     }
-    canvas.drawOval(
-        RectF(width * 0.1f, ground - unit(0.03f), width * 0.9f, ground + unit(0.05f)),
-        fillPaint(mix(paper, bark, 0.3f)),
+    canvas.drawRect(
+        width * 0.2f,
+        ground,
+        width * 0.8f,
+        ground + unit(0.006f),
+        fillPaint(bark),
     )
 
-    grain(0.025f)
     Typeset(
         ink = shade(bark, 0.6f),
         authorInk = bark,
-        titleFont = CoverFont.Serif,
-        titleWeight = random.pick(listOf(500, 700)),
-        titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
-        titleTracking = random.range(0.04f, 0.10f),
-        titleSize = random.range(0.08f, 0.10f),
-        authorFont = CoverFont.SmallCaps,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.2f,
-        rule = Rule.None,
+        upper = random.chance(0.5f),
     )
 }
 
@@ -158,7 +108,7 @@ private val RAINBOW = listOf(0.0f, 0.07f, 0.14f, 0.33f, 0.56f, 0.75f)
 
 internal fun childrenRainbow(cover: CoverCanvas): Typeset = with(cover) {
     val sky = hsv(random.range(0.52f, 0.58f), random.range(0.20f, 0.35f), 1f)
-    verticalGradient(mix(sky, Color.WHITE, 0.6f), sky, 1f)
+    canvas.drawColor(sky)
     val centerX = width * 0.5f
     val base = height * 0.82f
     val band = width * 0.045f
@@ -167,19 +117,6 @@ internal fun childrenRainbow(cover: CoverCanvas): Typeset = with(cover) {
         val arc = RectF(centerX - radius, base - radius, centerX + radius, base + radius)
         canvas.drawArc(arc, 180f, 180f, false, strokePaint(hsv(hue, 0.6f, 1f), band))
         radius -= band
-    }
-    val white = fillPaint(Color.WHITE)
-    for (side in listOf(-1f, 1f)) {
-        val cloudX = centerX + side * width * 0.37f
-        val puff = width * 0.07f
-        for (offset in listOf(-1f, -0.35f, 0.35f, 1f)) {
-            canvas.drawCircle(
-                cloudX + offset * puff,
-                base - unit(0.01f),
-                puff * if (abs(offset) > 0.6f) 0.62f else 1f,
-                white,
-            )
-        }
     }
     canvas.drawRect(
         0f,
@@ -192,17 +129,7 @@ internal fun childrenRainbow(cover: CoverCanvas): Typeset = with(cover) {
     Typeset(
         ink = hsv(random.range(0.62f, 0.72f), 0.60f, 0.35f),
         authorInk = Color.WHITE,
-        titleFont = CoverFont.Casual,
-        titleCase = LetterCase.Title,
-        titleTracking = 0f,
-        titleLeading = 1.05f,
-        titleSize = random.range(0.105f, 0.13f),
-        authorFont = CoverFont.Casual,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.06f,
-        authorSize = 0.030f,
-        rule = Rule.None,
-        shadow = 0.3f,
+        font = CoverFont.Sans,
     )
 }
 
@@ -214,9 +141,7 @@ internal fun historyTemple(cover: CoverCanvas): Typeset = with(cover) {
     } else {
         hsv(0.10f, 0.22f, 0.92f)
     }
-    verticalGradient(shade(ground, 1.1f), shade(ground, 0.85f), 1f)
-    texture(0.12f)
-    radialGlow(width / 2f, height * 0.55f, width * 0.7f, stone, 0.12f, 2f)
+    canvas.drawColor(ground)
 
     val paint = fillPaint(stone)
     val left = width * 0.18f
@@ -253,20 +178,9 @@ internal fun historyTemple(cover: CoverCanvas): Typeset = with(cover) {
     pediment.close()
     canvas.drawPath(pediment, paint)
 
-    vignette(0.4f, 0.6f)
-    grain(0.035f)
-    frame(CoverFrame.Double, stone)
     Typeset(
         ink = stone,
-        titleFont = CoverFont.Serif,
-        titleWeight = 600,
-        titleTracking = random.range(0.10f, 0.18f),
-        titleLeading = 1.12f,
-        titleSize = random.range(0.07f, 0.09f),
-        authorFont = CoverFont.SmallCaps,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.24f,
-        shadow = if (dark) 0.4f else 0f,
+        upper = true,
     )
 }
 
@@ -278,24 +192,10 @@ internal fun spiritualLotus(cover: CoverCanvas): Typeset = with(cover) {
     )
     val petal = hsv(random.pick(listOf(0.95f, 0.92f, 0.12f, 0.0f)), 0.35f, 0.98f)
     val gold = hsv(0.12f, 0.55f, 0.95f)
-    verticalGradient(shade(water, 0.6f), water, 1f)
+    canvas.drawColor(water)
     val centerX = width / 2f
-    val centerY = height * random.range(0.66f, 0.70f)
-    radialGlow(centerX, centerY - unit(0.1f), width * 0.7f, gold, 0.35f, 2.2f)
+    val centerY = height * random.range(0.70f, 0.74f)
 
-    val ripple = strokePaint(alpha(Color.WHITE, 0.18f), unit(0.003f))
-    for (index in 1..4) {
-        val spread = width * 0.14f * index
-        canvas.drawOval(
-            RectF(
-                centerX - spread,
-                centerY - spread * 0.12f,
-                centerX + spread,
-                centerY + spread * 0.12f,
-            ),
-            ripple,
-        )
-    }
     val size = width * random.range(0.24f, 0.28f)
     for ((count, reach, tone) in listOf(
         Triple(7, 1f, shade(petal, 0.8f)),
@@ -307,23 +207,11 @@ internal fun spiritualLotus(cover: CoverCanvas): Typeset = with(cover) {
             lotusPetal(cover, centerX, centerY, size * reach, angle, tone)
         }
     }
-    canvas.drawCircle(centerX, centerY - size * 0.15f, unit(0.02f), fillPaint(gold))
 
-    vignette(0.5f, 0.55f)
-    grain(0.03f)
     Typeset(
         ink = mix(gold, Color.WHITE, 0.4f),
         authorInk = mix(petal, Color.WHITE, 0.3f),
-        titleFont = CoverFont.Serif,
-        titleWeight = 400,
-        titleCase = random.pick(listOf(LetterCase.Upper, LetterCase.Title)),
-        titleTracking = random.range(0.08f, 0.16f),
-        titleSize = random.range(0.07f, 0.09f),
-        authorFont = CoverFont.SmallCaps,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.22f,
-        rule = Rule.Ornament,
-        shadow = 0.4f,
+        upper = random.chance(0.5f),
     )
 }
 
@@ -343,7 +231,6 @@ private fun lotusPetal(
     shape.quadTo(x + length * 0.32f, y - length * 0.55f, x, y)
     shape.close()
     canvas.drawPath(shape, fillPaint(tone))
-    canvas.drawPath(shape, strokePaint(shade(tone, 0.8f), unit(0.003f)))
     canvas.restore()
 }
 
@@ -355,31 +242,15 @@ internal fun poetryRain(cover: CoverCanvas): Typeset = with(cover) {
     )
     val pale = hsv(0.6f, 0.08f, 0.95f)
     val umbrella = hsv(random.pick(listOf(0.0f, 0.12f, 0.95f)), 0.8f, 0.9f)
-    verticalGradient(shade(dusk, 0.6f), dusk, 1f)
-    val slant = random.range(0.05f, 0.18f)
-    val rain = strokePaint(alpha(pale, 0.35f), unit(0.0025f))
-    repeat(160) {
-        val x = random.range(-0.1f, 1f) * width
-        val y = random.range(0f, 0.9f) * height
-        val length = height * random.range(0.02f, 0.05f)
-        canvas.drawLine(x, y, x + length * slant, y + length, rain)
-    }
-    val water = height * 0.80f
-    canvas.drawRect(0f, water, width, height, fillPaint(shade(dusk, 0.7f)))
-    val ripple = strokePaint(alpha(pale, 0.35f), unit(0.003f))
-    repeat(random.between(6, 11)) {
-        val x = random.range(0.05f, 0.95f) * width
-        val y = random.range(water + unit(0.03f), height)
-        for (ring in 1..2) {
-            val spread = unit(0.03f * ring)
-            canvas.drawOval(
-                RectF(x - spread, y - spread * 0.3f, x + spread, y + spread * 0.3f),
-                ripple,
-            )
-        }
+    canvas.drawColor(shade(dusk, 0.7f))
+    val rain = strokePaint(alpha(pale, 0.3f), unit(0.003f))
+    repeat(36) {
+        val x = random.range(0f, 1f) * width
+        val y = random.range(0.30f, 0.86f) * height
+        canvas.drawLine(x, y, x, y + height * 0.05f, rain)
     }
 
-    val umbrellaX = width * random.range(0.35f, 0.65f)
+    val umbrellaX = width * 0.5f
     val umbrellaY = height * random.range(0.60f, 0.64f)
     val span = width * 0.13f
     canvas.drawArc(
@@ -410,20 +281,8 @@ internal fun poetryRain(cover: CoverCanvas): Typeset = with(cover) {
         handle,
     )
 
-    vignette(0.4f, 0.6f)
-    grain(0.04f)
     Typeset(
         ink = pale,
-        titleFont = CoverFont.Serif,
-        titleWeight = 400,
-        titleItalic = true,
-        titleCase = LetterCase.Title,
-        titleTracking = 0.01f,
-        titleLeading = 1.1f,
-        titleSize = random.range(0.085f, 0.105f),
-        authorFont = CoverFont.SmallCaps,
-        authorCase = LetterCase.Title,
-        authorTracking = 0.24f,
-        rule = Rule.None,
+        italic = true,
     )
 }

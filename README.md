@@ -94,6 +94,9 @@ Export writes the same format back.
 Books without a cover get one drawn on device. Same book, same cover. Art style follows
 genre from catalogue tags, also for saved books.
 
+Every design follows one minimal system: flat colors, one motif, no textures or frames.
+Title on top in serif, sans or condensed. Author in small caps at the bottom.
+
 ## Build
 
 ```sh
