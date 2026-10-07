@@ -135,8 +135,8 @@ class ComicDocument(file: File) : PagedDocument {
     private val zip = ZipFile(file)
     private val entries = zip.entries()
         .asSequence()
-        .filter { it.name.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS }
-        .sortedBy { it.name }
+        .filter { isComicPage(it.name) }
+        .sortedBy { naturalSortKey(it.name) }
         .toList()
     override val pageCount = entries.size
 
@@ -156,6 +156,15 @@ class ComicDocument(file: File) : PagedDocument {
 
     override fun close() = zip.close()
 }
+
+private fun isComicPage(name: String): Boolean {
+    val fileName = name.substringAfterLast('/')
+    if (name.startsWith("__MACOSX/") || fileName.startsWith(".")) return false
+    return fileName.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS
+}
+
+private fun naturalSortKey(name: String) =
+    name.lowercase().replace(Regex("\\d+")) { it.value.padStart(20, '0') }
 
 private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<Int, Int> {
     require(width > 0 && height > 0) { "Empty page" }
