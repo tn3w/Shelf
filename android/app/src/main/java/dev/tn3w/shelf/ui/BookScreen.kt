@@ -202,7 +202,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
         ) {
             Button(
                 onClick = {
-                    if (position != null) {
+                    if (app.library.hasFile(position)) {
                         navigator.reader(book.work)
                     } else {
                         picker.launch(arrayOf("*/*"))
@@ -228,7 +228,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             ) {
                 if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
             }
-            if (book.isLocal) {
+            if (book.isLocal || position != null) {
                 FilledTonalIconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
                 }

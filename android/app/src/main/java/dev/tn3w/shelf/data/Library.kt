@@ -208,9 +208,13 @@ class Library(private val context: Context) {
 
     fun bookFile(name: String) = booksDir.resolve(name)
 
+    fun hasFile(progress: Progress?) =
+        progress != null && bookFile(progress.file).exists()
+
     suspend fun importBook(book: Book, uri: Uri): Boolean {
         val name = copyBook(uri, context.displayName(uri), book.work) ?: return false
-        saveProgress(book.work, Progress(name))
+        val previous = progress.first()[book.work]?.takeIf { it.file == name }
+        saveProgress(book.work, previous ?: Progress(name))
         place(book, Shelf.Reading)
         return true
     }
