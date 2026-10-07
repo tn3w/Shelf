@@ -265,7 +265,7 @@ private class Epub(private val zip: ZipFile) {
 
     fun resolve(base: String, href: String): String {
         val clean = href.substringBefore('#').replace(" ", "%20")
-        return URI("/$base").resolve(clean).path.removePrefix("/")
+        return URI(null, null, "/$base", null).resolve(clean).path.removePrefix("/")
     }
 
     fun titles(items: List<Element>, opfPath: String): Map<String, String> {
