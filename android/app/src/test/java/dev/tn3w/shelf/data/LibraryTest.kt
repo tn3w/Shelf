@@ -42,6 +42,29 @@ class LibraryTest {
     }
 
     @Test
+    fun mergeDropsProgressOutsideBooks() {
+        val progress = stringPreferencesKey("progress")
+        val preferences = mutablePreferencesOf()
+        val imported = mapOf(
+            1 to Progress("../datastore/library"),
+            2 to Progress("-2.epub"),
+        )
+        preferences.merge(Backup(progress = imported))
+        val merged = json.decodeFromString<Map<Int, Progress>>(preferences[progress]!!)
+        assertEquals(mapOf(2 to Progress("-2.epub")), merged)
+    }
+
+    @Test
+    fun mergeKeepsSourcesWhenImportedInvalid() {
+        val current = Settings(catalogueSource = "owner/repo", coverSource = "https://a")
+        val preferences = mutablePreferencesOf(settings to json.encodeToString(current))
+        val imported = Settings(catalogueSource = "http://evil", coverSource = "ftp://b")
+        preferences.merge(Backup(settings = imported.copy(margin = 12)))
+        val merged = json.decodeFromString<Settings>(preferences[settings]!!)
+        assertEquals(current.copy(margin = 12), merged)
+    }
+
+    @Test
     fun unknownEnumFallsBackToDefault() {
         val decoded = json.decodeFromString<Settings>("""{"theme":"Sepia","margin":12}""")
         assertEquals(Settings(margin = 12), decoded)

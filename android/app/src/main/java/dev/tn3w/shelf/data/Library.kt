@@ -35,6 +35,7 @@ private val SETTINGS = stringPreferencesKey("settings")
 private val DISMISSED = stringPreferencesKey("dismissed")
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
+private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
 
 enum class Shelf {
     Reading,
@@ -402,8 +403,8 @@ class Library(private val context: Context) {
     }
 
     private fun extractBook(entry: String, input: InputStream) {
-        val name = entry.substringAfterLast('/')
-        if (name.isEmpty()) return
+        val name = entry.removePrefix(BOOKS_PREFIX)
+        if (!BOOK_FILE.matches(name)) return
         val target = bookFile(name).apply { parentFile?.mkdirs() }
         if (target.exists()) return
         target.outputStream().use { input.copyTo(it) }
@@ -422,10 +423,21 @@ private fun Preferences.toBackup() = Backup(
 
 internal fun MutablePreferences.merge(imported: Backup) {
     updateJson(ENTRIES, emptyList<Saved>()) { newestPerWork(it + imported.entries) }
-    updateJson(PROGRESS, emptyMap<Int, Progress>()) { imported.progress + it }
+    val progress = imported.progress.filterValues { BOOK_FILE.matches(it.file) }
+    updateJson(PROGRESS, emptyMap<Int, Progress>()) { progress + it }
     updateJson(ACTIVITY, emptyMap<String, Int>()) { maxPerDay(imported.activity, it) }
     updateJson(DISMISSED, emptySet<Int>()) { it + imported.dismissed }
-    updateJson(SETTINGS, Settings()) { imported.settings.copy(onboarded = it.onboarded) }
+    updateJson(SETTINGS, Settings()) { restoredSettings(imported.settings, it) }
+}
+
+private fun restoredSettings(imported: Settings, current: Settings): Settings {
+    val catalogue = imported.catalogueSource.takeIf(::isValidSource)
+    val covers = imported.coverSource.takeIf(::isValidCoverSource)
+    return imported.copy(
+        onboarded = current.onboarded,
+        catalogueSource = catalogue ?: current.catalogueSource,
+        coverSource = covers ?: current.coverSource,
+    )
 }
 
 private fun newestPerWork(entries: List<Saved>) =

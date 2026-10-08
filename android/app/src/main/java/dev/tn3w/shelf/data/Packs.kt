@@ -48,6 +48,8 @@ val RELEASES = releasesUrl(REPOSITORY)
 fun isValidSource(source: String) =
     source.isEmpty() || GITHUB_REPOSITORY.matches(source) || source.startsWith("https://")
 
+fun isValidCoverSource(source: String) = source.isEmpty() || source.startsWith("https://")
+
 private const val MANIFEST_NAME = "manifest.json"
 
 @Serializable

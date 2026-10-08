@@ -181,7 +181,7 @@ private val COVER_SOURCE = SourceField(
     R.string.cover_source_hint,
     COVERS,
     Settings::coverSource,
-    { it.isEmpty() || it.startsWith("https://") },
+    ::isValidCoverSource,
 ) { source -> library.updateSettings { it.copy(coverSource = source) } }
 
 @Composable
