@@ -180,41 +180,45 @@ private fun AnnotatedString.Builder.appendBlock(block: Block, fontSize: Float) {
     }
 }
 
-private class Layout(
+private class PageLayout(
     val measurer: TextMeasurer,
     val style: TextStyle,
     val width: Int,
     val height: Int,
 )
 
-private fun textPages(section: Int, blocks: List<Block>, offset: Int, layout: Layout) =
-    buildList {
-        val text = buildAnnotatedString {
-            blocks.forEach { appendBlock(it, layout.style.fontSize.value) }
-        }
-        val measured = layout.measurer.measure(
-            text, layout.style, constraints = Constraints(maxWidth = layout.width),
-        )
-        var line = 0
-        while (line < measured.lineCount) {
-            val top = measured.getLineTop(line)
-            var last = line
-            while (
-                last + 1 < measured.lineCount &&
-                measured.getLineBottom(last + 1) - top <= layout.height
-            ) {
-                last++
-            }
-            val start = measured.getLineStart(line)
-            val end = measured.getLineEnd(last)
-            if (text.substring(start, end).isNotBlank()) {
-                add(TextPage(section, offset + start, text.subSequence(start, end)))
-            }
-            line = last + 1
-        }
+private fun textPages(
+    section: Int,
+    blocks: List<Block>,
+    offset: Int,
+    layout: PageLayout,
+) = buildList {
+    val text = buildAnnotatedString {
+        blocks.forEach { appendBlock(it, layout.style.fontSize.value) }
     }
+    val measured = layout.measurer.measure(
+        text, layout.style, constraints = Constraints(maxWidth = layout.width),
+    )
+    var line = 0
+    while (line < measured.lineCount) {
+        val top = measured.getLineTop(line)
+        var last = line
+        while (
+            last + 1 < measured.lineCount &&
+            measured.getLineBottom(last + 1) - top <= layout.height
+        ) {
+            last++
+        }
+        val start = measured.getLineStart(line)
+        val end = measured.getLineEnd(last)
+        if (text.substring(start, end).isNotBlank()) {
+            add(TextPage(section, offset + start, text.subSequence(start, end)))
+        }
+        line = last + 1
+    }
+}
 
-private fun paginate(document: TextDocument, layout: Layout): List<TextPage> =
+private fun paginate(document: TextDocument, layout: PageLayout): List<TextPage> =
     document.sections.flatMapIndexed { section, blocks ->
         val pages = mutableListOf<TextPage>()
         var offset = 0
@@ -258,7 +262,7 @@ private fun TextReader(
         val height = constraints.maxHeight - 2 * padding
         val pages by produceState<List<TextPage>?>(null, document, width, height, style) {
             value = withContext(Dispatchers.Default) {
-                paginate(document, Layout(measurer, style, width, height))
+                paginate(document, PageLayout(measurer, style, width, height))
             }
         }
         val current = pages ?: return@BoxWithConstraints Loading()

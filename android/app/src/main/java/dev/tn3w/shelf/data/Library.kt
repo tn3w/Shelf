@@ -11,7 +11,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -31,7 +30,6 @@ private val SETTINGS = stringPreferencesKey("settings")
 private val DISMISSED = stringPreferencesKey("dismissed")
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
-private val json = Json { ignoreUnknownKeys = true }
 
 enum class Shelf {
     Reading,
@@ -62,14 +60,12 @@ data class Progress(
         get() = if (pages > 0) (page + 1f) / pages else null
 }
 
-@Serializable
 enum class ThemeMode {
     System,
     Light,
     Dark,
 }
 
-@Serializable
 enum class PageColor {
     Theme,
     Paper,
@@ -142,7 +138,7 @@ private fun localWork(hash: Int) = -1 - (hash and Int.MAX_VALUE)
 fun ownBook(title: String, author: String) =
     bookOf(localWork((title + author).hashCode()), title, author)
 
-private fun contentWork(input: InputStream): Int {
+internal fun contentWork(input: InputStream): Int {
     val digest = MessageDigest.getInstance("SHA-256")
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
     generateSequence { input.read(buffer).takeIf { it >= 0 } }

@@ -104,7 +104,9 @@ Title on top in serif, sans or condensed. Author in small caps at the bottom.
 ## Build
 
 ```sh
-cd android && ./gradlew assembleGithubDebug
+cd android
+./gradlew assembleGithubDebug
+./gradlew testGithubDebugUnitTest testFdroidDebugUnitTest
 ```
 
 ```sh

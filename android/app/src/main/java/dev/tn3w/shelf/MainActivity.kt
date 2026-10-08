@@ -1,5 +1,6 @@
 package dev.tn3w.shelf
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -81,6 +82,11 @@ class Navigator(private val controller: NavHostController) {
 
     fun back() = controller.popBackStack()
 
+    fun openImported(work: Int?, context: Context) {
+        if (work != null) return reader(work)
+        Toast.makeText(context, R.string.unsupported_file, Toast.LENGTH_LONG).show()
+    }
+
     fun tab(route: Any, reselected: Boolean) {
         if (reselected && controller.popBackStack(route, inclusive = false)) return
         controller.navigate(route) {
@@ -140,13 +146,11 @@ class MainActivity : ComponentActivity() {
 private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
     val app = shelfApp()
     val uri by opened.collectAsStateWithLifecycle()
-    val unsupported = stringResource(R.string.unsupported_file)
     LaunchedEffect(uri) {
         val source = uri ?: return@LaunchedEffect
         val work = app.library.importFile(source)
         opened.value = null
-        if (work != null) return@LaunchedEffect navigator.reader(work)
-        Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+        navigator.openImported(work, app)
     }
 }
 

@@ -28,7 +28,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
-      - run: ./gradlew assembleGithubDebug lintGithubDebug testGithubDebugUnitTest
+      - name: ktlint
+        env:
+          KTLINT: https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
+          KTLINT_SHA256: a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75
+        run: |
+          curl -sSLo ktlint "$KTLINT"
+          echo "$KTLINT_SHA256  ktlint" | sha256sum -c -
+          chmod +x ktlint
+          ./ktlint "app/src/**/*.kt"
+
+      - run: >
+          ./gradlew assembleGithubDebug lintGithubDebug lintFdroidRelease
+          testGithubDebugUnitTest testFdroidDebugUnitTest
 
   builder:
     runs-on: ubuntu-latest

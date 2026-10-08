@@ -1,7 +1,7 @@
 package dev.tn3w.shelf.ui
 
 import android.os.Build
-import android.provider.Settings
+import android.provider.Settings.Global
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,8 +11,8 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.em
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.ThemeMode
-import dev.tn3w.shelf.data.Settings as ShelfSettings
 
 val LocalReducedMotion = staticCompositionLocalOf { false }
 
@@ -89,7 +89,7 @@ private fun ColorScheme.black() = copy(
 )
 
 @Composable
-fun ShelfTheme(settings: ShelfSettings, content: @Composable () -> Unit) {
+fun ShelfTheme(settings: Settings, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val dark = isDark(settings.theme)
     val dynamic = wallpaperColorsSupported && settings.wallpaperColors
@@ -100,8 +100,8 @@ fun ShelfTheme(settings: ShelfSettings, content: @Composable () -> Unit) {
         else -> LightColors
     }
     val systemReducedMotion = remember {
-        val scale = Settings.Global.ANIMATOR_DURATION_SCALE
-        Settings.Global.getFloat(context.contentResolver, scale, 1f) == 0f
+        val scale = Global.ANIMATOR_DURATION_SCALE
+        Global.getFloat(context.contentResolver, scale, 1f) == 0f
     }
     val reducedMotion = systemReducedMotion || settings.reduceMotion
     CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {

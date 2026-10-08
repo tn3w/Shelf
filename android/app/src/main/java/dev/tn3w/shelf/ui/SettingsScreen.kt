@@ -1,17 +1,12 @@
 package dev.tn3w.shelf.ui
 
 import android.app.LocaleManager
-import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
 import android.text.format.Formatter
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContract
-import androidx.activity.result.contract.ActivityResultContracts.*
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -19,7 +14,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,14 +30,9 @@ import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private const val BACKUP_FILE = "shelf-library.zip"
-private val BACKUP_TYPES = arrayOf("application/zip", "application/octet-stream")
-private const val CSV_FILE = "shelf-library.csv"
-private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
 private const val OPEN_LIBRARY_URL = "https://openlibrary.org/developers/licensing"
@@ -68,17 +57,6 @@ private val THEMES = mapOf(
     ThemeMode.System to R.string.theme_system,
     ThemeMode.Light to R.string.theme_light,
     ThemeMode.Dark to R.string.theme_dark,
-)
-private val PACK_LABELS = mapOf(
-    "core" to R.string.pack_core,
-    "fantasy" to R.string.pack_fantasy,
-    "scifi" to R.string.pack_scifi,
-    "mystery" to R.string.pack_mystery,
-    "romance" to R.string.pack_romance,
-    "kids" to R.string.pack_kids,
-    "young-adult" to R.string.pack_young_adult,
-    "nonfiction" to R.string.pack_nonfiction,
-    "general" to R.string.pack_general,
 )
 
 @Keep
@@ -131,34 +109,21 @@ private val CATEGORIES = listOf(
     ),
 )
 
-private fun nativeName(language: String) = Locale.forLanguageTag(language).let {
+fun nativeName(language: String) = Locale.forLanguageTag(language).let {
     it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
 }
 
 @Composable
-private fun bytes(value: Long) =
-    Formatter.formatShortFileSize(LocalContext.current, value)
+fun bytes(value: Long) = Formatter.formatShortFileSize(LocalContext.current, value)
 
-private typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
+typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
 
 @Composable
-private fun rememberSettings(): Pair<Settings, SettingsUpdate> {
+fun rememberSettings(): Pair<Settings, SettingsUpdate> {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
     val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
     return settings to { change -> scope.launch { app.library.updateSettings(change) } }
-}
-
-@Composable
-private fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
-    val app = shelfApp()
-    val loaded by app.loaded.collectAsStateWithLifecycle()
-    val downloads by app.downloads.collectAsStateWithLifecycle()
-    val keys = arrayOf(language, loaded, downloads.size, refreshes)
-    return produceState<List<PackInfo>?>(null, *keys) {
-        value = withContext(Dispatchers.IO) { app.packs.packs(language) }
-    }
-        .value
 }
 
 @Composable
@@ -197,29 +162,6 @@ private fun SettingsOverview(navigator: Navigator) {
     SettingsGroup(
         stringResource(R.string.about), stringResource(R.string.settings_footer),
     ) { AboutRows() }
-}
-
-@Composable
-private fun CatalogueSettings() {
-    val app = shelfApp()
-    val (settings, update) = rememberSettings()
-    val language = app.bookLanguage(settings)
-    var refreshes by remember { mutableIntStateOf(0) }
-    val packs = packInfos(language, refreshes)
-
-    SettingsGroup(
-        stringResource(R.string.catalogue_language),
-        stringResource(R.string.book_language_hint),
-    ) {
-        LanguageChoice(settings.language) { chosen ->
-            update { it.copy(language = chosen) }
-        }
-    }
-
-    PackList(language, packs, settings.isOffline(LocalContext.current)) { refreshes++ }
-    SettingsGroup(
-        stringResource(R.string.own_sources), stringResource(R.string.own_sources_hint),
-    ) { SourceRows(language, settings, { refreshes++ }) { refreshes++ } }
 }
 
 @Composable
@@ -350,10 +292,11 @@ private fun ReadingSettings() {
 @Composable
 private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
     var editing by remember { mutableStateOf(false) }
-    val custom = goal.takeIf { it !in GOALS } ?: 0
-    Choice(GOALS + custom, goal, { if (it == custom) editing = true else onChange(it) }) {
-        if (it == 0) "…" else it.toString()
+    val custom = goal.takeIf { it !in GOALS }
+    fun select(option: Int?) {
+        if (option == null || option == custom) editing = true else onChange(option)
     }
+    Choice(GOALS + custom, goal, ::select) { it?.toString() ?: "…" }
     if (editing) {
         GoalDialog(goal, onDismiss = { editing = false }) {
             editing = false
@@ -459,17 +402,7 @@ private fun PrivacySettings() {
 }
 
 @Composable
-private fun DataSettings() {
-    SettingsGroup(stringResource(R.string.backup), stringResource(R.string.backup_hint)) {
-        BackupRows()
-    }
-    SettingsGroup(stringResource(R.string.csv), stringResource(R.string.csv_hint)) {
-        CsvRows()
-    }
-}
-
-@Composable
-private fun SettingsGroup(
+fun SettingsGroup(
     title: String? = null,
     hint: String? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -501,7 +434,7 @@ private fun SettingsGroup(
 }
 
 @Composable
-private fun SettingRow(
+fun SettingRow(
     title: String,
     summary: String? = null,
     icon: ImageVector? = null,
@@ -554,7 +487,7 @@ private fun IconBadge(icon: ImageVector) {
 }
 
 @Composable
-private fun LinkRow(
+fun LinkRow(
     title: String,
     summary: String? = null,
     icon: ImageVector? = null,
@@ -568,7 +501,7 @@ private fun LinkRow(
 }
 
 @Composable
-private fun ActionRow(
+fun ActionRow(
     @StringRes title: Int,
     icon: ImageVector,
     status: String? = null,
@@ -583,7 +516,7 @@ private fun ActionRow(
 }
 
 @Composable
-private fun SwitchRow(
+fun SwitchRow(
     @StringRes title: Int,
     @StringRes hint: Int,
     checked: Boolean,
@@ -597,7 +530,7 @@ private fun SwitchRow(
 ) { Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) }
 
 @Composable
-private fun <T> Choice(
+fun <T> Choice(
     options: List<T>,
     selected: T,
     onSelect: (T) -> Unit,
@@ -625,10 +558,6 @@ private fun <T> Choice(
     }
 }
 
-@Composable
-private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit) =
-    Choice(LANGUAGES, selected, onSelect) { nativeName(it) }
-
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun AppLanguageChoice() {
@@ -643,7 +572,7 @@ private fun AppLanguageChoice() {
 }
 
 @Composable
-private fun LanguageChoice(
+fun LanguageChoice(
     selected: String,
     @StringRes title: Int? = null,
     onSelect: (String) -> Unit,
@@ -652,281 +581,7 @@ private fun LanguageChoice(
 }
 
 @Composable
-private fun PackList(
-    language: String,
-    packs: List<PackInfo>?,
-    offline: Boolean,
-    onChecked: () -> Unit,
-) {
-    val app = shelfApp()
-    val downloads by app.downloads.collectAsStateWithLifecycle()
-    val storage by produceState(0L, packs) {
-        value = withContext(Dispatchers.IO) { app.packs.storageBytes() }
-    }
-    val release by produceState<String?>(null, packs) {
-        value = withContext(Dispatchers.IO) { app.packs.months()[language] }
-    }
-    val details = listOfNotNull(
-        release?.let { stringResource(R.string.release_date, it) },
-        stringResource(R.string.storage_used, bytes(storage)),
-    )
-    val note = stringResource(R.string.open_library_note)
-    val hint = details.joinToString(" · ") + "\n" + note
-    val title = "${stringResource(R.string.packs)} · ${nativeName(language)}"
-    SettingsGroup(title, hint) {
-        if (packs == null) {
-            LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
-            return@SettingsGroup
-        }
-        packs.forEach { info ->
-            PackRow(
-                info,
-                downloads["$language-${info.pack}"],
-                offline,
-                onDownload = { app.download(language, info.pack) },
-                onRemove = { app.remove(language, info.pack) },
-            )
-        }
-        val pending = packs.filter { it.state != PackState.Installed }
-        val pendingBytes = pending.sumOf { it.bytes }
-        if (!offline || storage > 0) {
-            HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-        }
-        if (!offline && pendingBytes > 0) {
-            ActionRow(
-                R.string.download_all_short, Icons.Outlined.Download, bytes(pendingBytes),
-            ) { pending.forEach { app.download(language, it.pack) } }
-        } else if (storage > 0) {
-            ActionRow(R.string.delete_all, Icons.Outlined.Delete) {
-                app.removeAll(language)
-            }
-        }
-        if (!offline) CatalogueCheck(language, onChecked)
-    }
-}
-
-@Composable
-private fun CatalogueCheck(language: String, onChecked: () -> Unit) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    var checking by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<Int?>(null) }
-
-    suspend fun check(): Int {
-        app.packs.refreshManifest()
-        val now = System.currentTimeMillis()
-        app.library.updateSettings { it.copy(lastCatalogueCheck = now) }
-        val updates = withContext(Dispatchers.IO) { app.packs.pendingUpdates(language) }
-        if (updates.isEmpty()) return R.string.catalogue_current
-        return R.string.catalogue_found
-    }
-
-    ActionRow(
-        R.string.check_catalogue,
-        Icons.Outlined.Refresh,
-        status?.let { stringResource(it) },
-        checking,
-    ) {
-        checking = true
-        status = null
-        scope.launch {
-            status = runCatching { check() }.getOrDefault(R.string.catalogue_check_failed)
-            checking = false
-            onChecked()
-        }
-    }
-}
-
-private class Source(
-    @StringRes val title: Int,
-    @StringRes val hint: Int,
-    val default: String,
-    val current: (Settings) -> String,
-    val isValid: (String) -> Boolean,
-)
-
-private val CATALOGUE_SOURCE = Source(
-    R.string.catalogue_source,
-    R.string.catalogue_source_hint,
-    REPOSITORY,
-    Settings::catalogueSource,
-    ::isValidSource,
-)
-
-private val COVER_SOURCE = Source(
-    R.string.cover_source, R.string.cover_source_hint, COVERS, Settings::coverSource,
-) { it.isEmpty() || it.startsWith("https://") }
-
-@Composable
-private fun SourceRows(
-    language: String,
-    settings: Settings,
-    onChange: () -> Unit,
-    onImported: (complete: String?) -> Unit,
-) {
-    val app = shelfApp()
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var editing by remember { mutableStateOf<Source?>(null) }
-    var status by remember { mutableStateOf<Int?>(null) }
-    val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
-        if (uris.isEmpty()) return@rememberLauncherForActivityResult
-        scope.launch {
-            val imported = app.importCatalogue(language, uris)
-            val complete = (listOf(language) + LANGUAGES).firstOrNull {
-                withContext(Dispatchers.IO) { app.packs.isComplete(it) }
-            }
-            status = when {
-                !imported -> R.string.import_failed
-                complete == null -> R.string.catalogue_incomplete
-                else -> R.string.catalogue_imported
-            }
-            onImported(complete)
-        }
-    }
-    fun save(source: Source, value: String) = scope.launch {
-        editing = null
-        if (source == COVER_SOURCE) {
-            app.library.updateSettings { it.copy(coverSource = value) }
-            return@launch
-        }
-        app.changeSource(value)
-        if (!settings.isOffline(context)) runCatching { app.packs.refreshManifest() }
-        onChange()
-    }
-
-    listOf(CATALOGUE_SOURCE, COVER_SOURCE).forEach { source ->
-        val value = source.current(settings).ifEmpty { source.default }
-        LinkRow(stringResource(source.title), value.removePrefix("https://")) {
-            editing = source
-        }
-    }
-    ActionRow(
-        R.string.import_catalogue,
-        Icons.Outlined.FileOpen,
-        status?.let { stringResource(it) },
-    ) { picker.launch(arrayOf("*/*")) }
-    editing?.let { source ->
-        SourceDialog(source, source.current(settings), onDismiss = { editing = null }) {
-            save(source, it)
-        }
-    }
-}
-
-@Composable
-private fun SourceDialog(
-    source: Source,
-    current: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var text by remember { mutableStateOf(current) }
-    val valid = source.isValid(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(source.title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(source.hint))
-                OutlinedTextField(
-                    text,
-                    { text = it.trim() },
-                    placeholder = { Text(source.default) },
-                    singleLine = true,
-                    isError = !valid,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(text) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onSave("") }) { Text(stringResource(R.string.reset)) }
-        },
-    )
-}
-
-@Composable
-private fun PackRow(
-    info: PackInfo,
-    download: Download?,
-    offline: Boolean,
-    onDownload: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    val label = stringResource(PACK_LABELS.getValue(info.pack))
-    val state = when (info.state) {
-        PackState.Installed -> R.string.pack_installed
-        PackState.Update -> R.string.pack_update
-        PackState.Available -> R.string.pack_available
-    }
-    val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
-    SettingRow(label, stringResource(state) + size) {
-        PackAction(label, download, info.state, info.pack, offline, onDownload, onRemove)
-    }
-}
-
-@Composable
-private fun DownloadBar(download: Download?) {
-    if (download !is Download.Running) return
-    val progress by animateFloatAsState(download.progress)
-    LinearProgressIndicator(
-        progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-    )
-}
-
-@Composable
-private fun PackAction(
-    label: String,
-    download: Download?,
-    state: PackState,
-    pack: String,
-    offline: Boolean,
-    onDownload: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    if (download is Download.Running) {
-        val progress by animateFloatAsState(download.progress)
-        return Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 3.dp,
-            )
-        }
-    }
-    val removable = state != PackState.Available && pack != "core"
-    val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
-    val action = when {
-        offline -> remove.takeIf { removable }
-
-        download is Download.Failed ->
-            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
-
-        state == PackState.Available ->
-            PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
-
-        state == PackState.Update ->
-            PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
-
-        removable -> remove
-
-        else -> null
-    } ?: return Box(Modifier.size(48.dp))
-    IconAction(action.icon, stringResource(action.label, label), action.onClick)
-}
-
-private class PackButton(
-    val icon: ImageVector,
-    @StringRes val label: Int,
-    val onClick: () -> Unit,
-)
-
-@Composable
-private fun OfflineRow(settings: Settings, update: SettingsUpdate) {
+fun OfflineRow(settings: Settings, update: SettingsUpdate) {
     val permitted = networkPermitted(LocalContext.current)
     SwitchRow(
         R.string.offline_mode,
@@ -937,149 +592,6 @@ private fun OfflineRow(settings: Settings, update: SettingsUpdate) {
 }
 
 @Composable
-private fun BackupRows() {
-    val app = shelfApp()
-    FileRow(
-        R.string.backup_export,
-        Icons.Outlined.Upload,
-        CreateDocument("application/zip"),
-        BACKUP_FILE,
-        R.string.csv_exported,
-        app.library::exportTo,
-    )
-    FileRow(
-        R.string.backup_import,
-        Icons.Outlined.Download,
-        OpenDocument(),
-        BACKUP_TYPES,
-        R.string.backup_done,
-    ) { uri ->
-        val done = app.library.importFrom(uri)
-        if (done) restoreSource(app)
-        done
-    }
-}
-
-private suspend fun restoreSource(app: ShelfApp) {
-    val settings = app.library.settings.first()
-    if (settings.catalogueSource != app.packs.source) {
-        app.changeSource(settings.catalogueSource)
-    }
-    app.reload(app.bookLanguage(settings))
-}
-
-@Composable
-private fun <I> FileRow(
-    @StringRes title: Int,
-    icon: ImageVector,
-    contract: ActivityResultContract<I, Uri?>,
-    input: I,
-    @StringRes success: Int,
-    action: suspend (Uri) -> Boolean,
-) {
-    val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf<Int?>(null) }
-    val launcher = rememberLauncherForActivityResult(contract) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch { status = if (action(uri)) success else R.string.backup_failed }
-    }
-    ActionRow(title, icon, status?.let { stringResource(it) }) { launcher.launch(input) }
-}
-
-@Composable
-private fun CsvRows() {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    var progress by remember { mutableStateOf<Float?>(null) }
-    var report by remember { mutableStateOf<CsvReport?>(null) }
-    var imported by remember { mutableStateOf<Int?>(null) }
-    val import = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        progress = 0f
-        imported = null
-        scope.launch {
-            val searcher = app.loaded.value?.searcher
-            report = app.library.importCsv(uri, searcher) { progress = it }
-            imported = if (report == null) R.string.backup_failed else null
-            progress = null
-        }
-    }
-    val importStatus =
-        progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
-            ?: imported?.let { stringResource(it) }
-    ActionRow(
-        R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
-    ) { import.launch(arrayOf("*/*")) }
-    FileRow(
-        R.string.csv_export,
-        Icons.Outlined.Upload,
-        CreateDocument("text/csv"),
-        CSV_FILE,
-        R.string.csv_exported,
-        app.library::exportCsv,
-    )
-    report?.let { CsvReportDialog(it) { report = null } }
-}
-
-@Composable
-private fun CsvReportDialog(report: CsvReport, onDismiss: () -> Unit) {
-    val found = report.total - report.missing.size
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.csv_imported)) },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(stringResource(R.string.csv_found, found, report.total))
-                if (report.missing.isEmpty()) return@Column
-                Text(
-                    stringResource(R.string.csv_missing),
-                    Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
-                report.missing.forEach {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) }
-        },
-    )
-}
-
-@Composable
-private fun AppIcon(size: Int) {
-    Box(
-        Modifier.size(size.dp)
-            .background(colorResource(R.color.launcher_background), CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painterResource(R.drawable.ic_launcher_foreground),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-}
-
-@Composable
-private fun AboutText(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
-    )
-}
-
-@Composable
 private fun AboutRows() {
     val uri = LocalUriHandler.current
     val context = LocalContext.current
@@ -1087,7 +599,7 @@ private fun AboutRows() {
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }
-    var release by remember { mutableStateOf<AppRelease?>(null) }
+    var release by remember { mutableStateOf<Release?>(null) }
     val version =
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
     val summary = listOfNotNull(version, status?.let { stringResource(it) })
@@ -1119,238 +631,4 @@ private fun AboutRows() {
         uri.openUri(OPEN_LIBRARY_URL)
     }
     release?.let { UpdateDialog(it) { release = null } }
-}
-
-@Composable
-fun UpdatePrompt(settings: Settings) {
-    val app = shelfApp()
-    val context = LocalContext.current
-    var release by remember { mutableStateOf<AppRelease?>(null) }
-    LaunchedEffect(Unit) {
-        val now = System.currentTimeMillis()
-        val due = now - settings.lastAppCheck > DAY_MILLIS
-        val allowed = settings.checkUpdates && !settings.isOffline(context)
-        if (!allowed || !due || !Updater.isEnabled(context)) return@LaunchedEffect
-        app.library.updateSettings { it.copy(lastAppCheck = now) }
-        release = runCatching { Updater.latest() }.getOrNull()
-    }
-    release?.let { UpdateDialog(it) { release = null } }
-}
-
-@Composable
-private fun UpdateDialog(release: AppRelease, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var progress by remember { mutableStateOf<Float?>(null) }
-    var failed by remember { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.update_available, release.version)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(release.notes.take(600))
-                progress?.let { value -> LinearProgressIndicator(progress = { value }) }
-                if (failed) Text(stringResource(R.string.update_failed))
-            }
-        },
-        confirmButton = {
-            Button(
-                enabled = progress == null,
-                onClick = {
-                    progress = 0f
-                    scope.launch {
-                        failed = runCatching {
-                            Updater.install(context, release) { progress = it }
-                        }
-                            .isFailure
-                        progress = null
-                    }
-                },
-            ) { Text(stringResource(R.string.install)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.later)) }
-        },
-    )
-}
-
-@Composable
-fun OnboardingScreen() {
-    val app = shelfApp()
-    val (settings, update) = rememberSettings()
-    val offline = settings.isOffline(LocalContext.current)
-    var language by remember { mutableStateOf(app.systemLanguage()) }
-    val selected = remember(language) { mutableStateListOf<String>() }
-    var refreshes by remember { mutableIntStateOf(0) }
-    val packs = packInfos(language, refreshes)
-    val downloads by app.downloads.collectAsStateWithLifecycle()
-    val required = !BuildConfig.BUNDLED_CATALOGUE
-    val core = packs?.firstOrNull { it.pack == "core" }
-    val coreDownload = downloads["$language-core"]
-    var started by remember(language) { mutableStateOf(false) }
-    var showSources by remember { mutableStateOf(false) }
-    var showPacks by remember { mutableStateOf(false) }
-    fun finish(chosen: String = language) {
-        if (chosen != language) app.reload(chosen)
-        val now = System.currentTimeMillis()
-        update { it.copy(onboarded = true, language = chosen, lastCatalogueCheck = now) }
-    }
-
-    LaunchedEffect(started, core?.state) {
-        if (!started || core?.state == PackState.Available) return@LaunchedEffect
-        finish()
-    }
-
-    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
-        Column(
-            Modifier.weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(top = 24.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            AppIcon(72)
-            Text(
-                stringResource(R.string.welcome),
-                style = MaterialTheme.typography.headlineLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-            )
-            AboutText(
-                stringResource(
-                    if (required) R.string.welcome_download else R.string.welcome_text,
-                ),
-            )
-            SettingsGroup(stringResource(R.string.catalogue_language)) {
-                CatalogueLanguageChoice(language) {
-                    language = it
-                    app.reload(it)
-                }
-            }
-            SettingsGroup { OfflineRow(settings, update) }
-            if (!offline) {
-                val hint = if (required) R.string.core_required else R.string.core_offline
-                SettingsGroup(stringResource(R.string.catalogue), stringResource(hint)) {
-                    if (required) CoreRow(core, coreDownload)
-                    ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
-                    val skip = if (required) "core" else null
-                    if (showPacks) OnboardingPacks(packs, selected, skip)
-                }
-            }
-            SettingsGroup {
-                ExpandRow(R.string.own_sources, showSources) {
-                    showSources = !showSources
-                }
-                if (showSources) {
-                    SourceRows(language, settings, { refreshes++ }) { complete ->
-                        if (complete != null) finish(complete) else refreshes++
-                    }
-                }
-            }
-        }
-        HorizontalDivider()
-        if (offline) {
-            Button(
-                onClick = { finish() },
-                modifier = Modifier.align(Alignment.End).padding(ScreenPadding),
-            ) { Text(stringResource(R.string.start_offline)) }
-            return@Column
-        }
-        OnboardingActions(
-            available = packs.orEmpty().filter { it.state == PackState.Available },
-            selected = if (required) listOf("core") + selected else selected,
-            canSkip = !required || core?.state == PackState.Installed,
-            canDownload = if (required) core != null else selected.isNotEmpty(),
-            waiting = started && coreDownload !is Download.Failed,
-            onSkip = { finish() },
-        ) { chosen ->
-            chosen.forEach { app.download(language, it) }
-            started = true
-        }
-    }
-}
-
-@Composable
-private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) =
-    SettingRow(stringResource(title), onClick = onToggle) {
-        val icon = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore
-        Icon(icon, contentDescription = null)
-    }
-
-@Composable
-private fun OnboardingActions(
-    available: List<PackInfo>,
-    selected: List<String>,
-    canSkip: Boolean,
-    canDownload: Boolean,
-    waiting: Boolean,
-    onSkip: () -> Unit,
-    onDownload: (List<String>) -> Unit,
-) {
-    val total = available.sumOf { it.bytes }
-    Row(
-        Modifier.fillMaxWidth().padding(ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-    ) {
-        if (canSkip) {
-            TextButton(onClick = onSkip) { Text(stringResource(R.string.later)) }
-        }
-        if (total > 0) {
-            OutlinedButton(
-                enabled = !waiting, onClick = { onDownload(available.map { it.pack }) },
-            ) { Text(stringResource(R.string.download_all, bytes(total))) }
-        }
-        Button(enabled = !waiting && canDownload, onClick = { onDownload(selected) }) {
-            Text(stringResource(R.string.download))
-        }
-    }
-}
-
-@Composable
-private fun CoreRow(info: PackInfo?, download: Download?) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(PACK_LABELS.getValue("core")),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                if (info != null && info.bytes > 0) bytes(info.bytes) else "–",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        DownloadBar(download)
-        if (download is Download.Failed) {
-            Text(
-                stringResource(R.string.pack_failed),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-    }
-}
-
-@Composable
-private fun OnboardingPacks(
-    packs: List<PackInfo>?,
-    selected: MutableList<String>,
-    skip: String?,
-) {
-    if (packs == null) {
-        LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
-        return
-    }
-    packs
-        .filter { it.state == PackState.Available && it.pack != skip }
-        .forEach { info ->
-            val checked = info.pack in selected
-            val size = if (info.bytes > 0) bytes(info.bytes) else "–"
-            SettingRow(
-                stringResource(PACK_LABELS.getValue(info.pack)),
-                size,
-                onClick = {
-                    if (checked) selected.remove(info.pack) else selected.add(info.pack)
-                },
-            ) { Checkbox(checked = checked, onCheckedChange = null) }
-        }
 }

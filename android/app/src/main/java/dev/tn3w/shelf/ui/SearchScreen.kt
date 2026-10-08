@@ -42,7 +42,10 @@ fun SearchScreen(navigator: Navigator) {
 
     LaunchedEffect(query, loaded) {
         val current = loaded ?: return@LaunchedEffect
-        if (query.isBlank()) return@LaunchedEffect run { results = null }
+        if (query.isBlank()) {
+            results = null
+            return@LaunchedEffect
+        }
         delay(150)
         results = withContext(Dispatchers.Default) {
             val searcher = current.searcher
@@ -77,7 +80,7 @@ fun SearchScreen(navigator: Navigator) {
             val completions =
                 current.completions.filter { it != query.trim().lowercase() }
             items(completions, key = { "completion-$it" }) {
-                SuggestionRow(Icons.Outlined.Search, it, Modifier.animateItem()) {
+                IconSuggestionRow(Icons.Outlined.Search, it, Modifier.animateItem()) {
                     query = "$it "
                 }
             }
@@ -100,7 +103,7 @@ fun SearchScreen(navigator: Navigator) {
                 }
             }
             item(key = "own") {
-                SuggestionRow(
+                IconSuggestionRow(
                     Icons.Outlined.LibraryAdd,
                     stringResource(R.string.add_own_book, query.trim()),
                     Modifier.animateItem(),
@@ -155,19 +158,21 @@ private fun LazyListScope.suggestions(
                 }
             }
         }
-        items(recent) { SuggestionRow(Icons.Outlined.History, it) { onQuery(it) } }
+        items(recent, key = { "recent-$it" }) {
+            IconSuggestionRow(Icons.Outlined.History, it) { onQuery(it) }
+        }
     }
     if (trending.isEmpty()) return
     item { SectionHeader(stringResource(R.string.trending)) }
     items(trending, key = { it.work }) {
-        SuggestionRow(Icons.AutoMirrored.Outlined.TrendingUp, it.title) {
+        IconSuggestionRow(Icons.AutoMirrored.Outlined.TrendingUp, it.title) {
             onQuery(it.title)
         }
     }
 }
 
 @Composable
-private fun SuggestionRow(
+private fun IconSuggestionRow(
     icon: ImageVector,
     text: String,
     modifier: Modifier = Modifier,

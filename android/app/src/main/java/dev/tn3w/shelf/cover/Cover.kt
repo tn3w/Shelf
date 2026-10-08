@@ -185,11 +185,9 @@ object Covers {
         }
     }
 
-    private fun decode(file: File): Bitmap? = if (!file.exists()) {
-        null
-    } else {
-        runCatching { BitmapFactory.decodeFile(file.path) }
-            .getOrNull()
+    private fun decode(file: File): Bitmap? {
+        if (!file.exists()) return null
+        return runCatching { BitmapFactory.decodeFile(file.path) }.getOrNull()
     }
 
     private fun store(file: File, bitmap: Bitmap) {
@@ -360,12 +358,11 @@ internal fun hsv(hue: Float, saturation: Float, value: Float): Int {
 
 internal fun mix(first: Int, second: Int, amount: Float): Int {
     val weight = amount.coerceIn(0f, 1f)
+    fun channel(from: Int, to: Int) = (from + (to - from) * weight).toInt()
     return Color.rgb(
-        (Color.red(first) + (Color.red(second) - Color.red(first)) * weight).toInt(),
-        (
-            Color.green(first) + (Color.green(second) - Color.green(first)) * weight
-            ).toInt(),
-        (Color.blue(first) + (Color.blue(second) - Color.blue(first)) * weight).toInt(),
+        channel(Color.red(first), Color.red(second)),
+        channel(Color.green(first), Color.green(second)),
+        channel(Color.blue(first), Color.blue(second)),
     )
 }
 
@@ -375,11 +372,12 @@ internal fun shade(color: Int, factor: Float) = Color.rgb(
     (Color.blue(color) * factor).toInt().coerceIn(0, 255),
 )
 
-internal fun luminance(color: Int) = (
-    0.2126f * Color.red(color) + 0.7152f * Color.green(color) +
-        0.0722f * Color.blue(color)
-    ) /
-    255f
+internal fun luminance(color: Int): Float {
+    val red = 0.2126f * Color.red(color)
+    val green = 0.7152f * Color.green(color)
+    val blue = 0.0722f * Color.blue(color)
+    return (red + green + blue) / 255f
+}
 
 internal fun alpha(color: Int, amount: Float) = Color.argb(
     (amount.coerceIn(0f, 1f) * 255).toInt(),

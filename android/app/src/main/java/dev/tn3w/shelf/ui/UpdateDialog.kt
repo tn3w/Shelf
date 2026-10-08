@@ -1,0 +1,67 @@
+package dev.tn3w.shelf.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.*
+import androidx.compose.ui.res.*
+import androidx.compose.ui.unit.dp
+import dev.tn3w.shelf.*
+import dev.tn3w.shelf.R
+import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.*
+
+private const val DAY_MILLIS = 24L * 60 * 60 * 1000
+
+@Composable
+fun UpdatePrompt(settings: Settings) {
+    val app = shelfApp()
+    val context = LocalContext.current
+    var release by remember { mutableStateOf<Release?>(null) }
+    LaunchedEffect(Unit) {
+        val now = System.currentTimeMillis()
+        val due = now - settings.lastAppCheck > DAY_MILLIS
+        val allowed = settings.checkUpdates && !settings.isOffline(context)
+        if (!allowed || !due || !Updater.isEnabled(context)) return@LaunchedEffect
+        app.library.updateSettings { it.copy(lastAppCheck = now) }
+        release = runCatching { Updater.latest() }.getOrNull()
+    }
+    release?.let { UpdateDialog(it) { release = null } }
+}
+
+@Composable
+fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var progress by remember { mutableStateOf<Float?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.update_available, release.version)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(release.body.take(600))
+                progress?.let { value -> LinearProgressIndicator(progress = { value }) }
+                if (failed) Text(stringResource(R.string.update_failed))
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = progress == null,
+                onClick = {
+                    progress = 0f
+                    scope.launch {
+                        val result = runCatching {
+                            Updater.install(context, release) { progress = it }
+                        }
+                        failed = result.isFailure
+                        progress = null
+                    }
+                },
+            ) { Text(stringResource(R.string.install)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.later)) }
+        },
+    )
+}

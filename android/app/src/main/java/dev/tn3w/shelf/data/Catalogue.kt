@@ -65,9 +65,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     private val visible = visibility(segments)
     private val order = segments.withIndex().associate { (index, it) -> it to index }
     val workCount = visible.sumOf { it.cardinality() }
-    val tags = segments.firstOrNull()?.tags.orEmpty().map {
-        Tag(it.id, it.slug, it.label, it.category)
-    }
+    val tags = segments.firstOrNull()?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
     private val maxScore by lazy {
         segments
@@ -134,8 +132,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         val (segment, local) = locate(work) ?: return null
         val slot = segment.facts(local).series
         if (slot < 0) return null
-        val record = segment.series(slot)
-        return Series(record.name, record.members.toList())
+        return segment.series(slot)
     }
 
     fun visibleWorks(segment: Segment, locals: IntArray): IntArray {
@@ -225,7 +222,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
                 if (next != null && next ushr 32 == current ushr 32) continue
                 val local = (current and ((1L shl LOCAL_BITS) - 1)).toInt() - 1
                 if (local < 0) continue
-                bits[(current ushr LOCAL_BITS and 0xFF).toInt()].set(local)
+                bits[((current ushr LOCAL_BITS) and 0xFF).toInt()].set(local)
             }
             return bits
         }
@@ -233,4 +230,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         private fun entry(work: Int, segment: Int, local: Int): Long =
             (work.toLong() shl 32) or (segment.toLong() shl LOCAL_BITS) or local.toLong()
     }
+}
+
+class Loaded(val catalogue: Catalogue) {
+    val searcher = Searcher(catalogue)
+    val recommender = Recommender(catalogue)
 }

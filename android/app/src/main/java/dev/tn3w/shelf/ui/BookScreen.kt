@@ -1,9 +1,9 @@
 package dev.tn3w.shelf.ui
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -121,7 +121,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                     )
                 }
             }
-        item { Box(Modifier.height(24.dp)) }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
@@ -131,7 +131,6 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     val scope = rememberCoroutineScope()
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
-    val unsupported = stringResource(R.string.unsupported_file)
     var confirmDelete by remember { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null
     fun place(target: Shelf) = scope.launch {
@@ -144,10 +143,8 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            if (app.library.importBook(book, uri)) {
-                return@launch navigator.reader(book.work)
-            }
-            Toast.makeText(app, unsupported, Toast.LENGTH_LONG).show()
+            val work = book.work.takeIf { app.library.importBook(book, uri) }
+            navigator.openImported(work, app)
         }
     }
 
@@ -263,7 +260,7 @@ private fun DeleteDialog(book: Book, onDismiss: () -> Unit, onConfirm: () -> Uni
 @Composable
 private fun ShelfToggle(
     checked: Boolean,
-    label: Int,
+    @StringRes label: Int,
     onToggle: () -> Unit,
     icon: (Boolean) -> ImageVector,
 ) {

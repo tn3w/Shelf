@@ -23,8 +23,61 @@ private const val COMPANION_PENALTY = 0.7
 private const val SERIES_START = 0.9
 private const val RELEVANCE_FLOOR = 0.45
 private const val ANCHOR = 0.8
-private val ARTICLE = Regex("^(the|a|an|der|die|das|le|la|les|el|los|las) ")
+private const val LONG_COMPLETION = 0.9
+private const val SHORT_COMPLETION = 0.75
+private const val SPARSE_EXACT = 50
+private const val SPARSE_COMPLETIONS = 20
+private const val ONE_TYPO = 0.72
+private const val TWO_TYPOS = 0.5
+private const val RANK_POPULARITY = 0.35
+private const val MAX_TOKEN_LENGTH = 24
+val ARTICLES =
+    setOf("the", "a", "an", "der", "die", "das", "le", "la", "les", "el", "los", "las")
+private val ARTICLE = Regex("^(${ARTICLES.joinToString("|")}) ")
 private val TITLE_BREAK = Regex("[:;(/]")
+
+private val FOLD = buildMap {
+    listOf(
+        "áàâäãåÁÀÂÄÃÅ" to 'a',
+        "éèêëÉÈÊË" to 'e',
+        "íìîïÍÌÎÏ" to 'i',
+        "óòôöõøÓÒÔÖÕØ" to 'o',
+        "úùûüÚÙÛÜ" to 'u',
+        "ñÑ" to 'n',
+        "çÇ" to 'c',
+        "ýÿÝ" to 'y',
+        "ß" to 's',
+    )
+        .forEach { (characters, replacement) ->
+            characters.forEach { put(it, replacement) }
+        }
+}
+
+private fun foldCharacter(character: Char): Char? {
+    val lowered = if (character.code < 128) character.lowercaseChar() else character
+    if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
+    return FOLD[character]
+}
+
+fun tokenize(text: String): List<String> {
+    val tokens = mutableListOf<String>()
+    val current = StringBuilder()
+    for (character in text) {
+        if (character == '\'' || character == '’' || character in '\u0300'..'\u036f') {
+            continue
+        }
+        val folded = foldCharacter(character)
+        if (folded != null) current.append(folded)
+        if (
+            (folded == null || current.length >= MAX_TOKEN_LENGTH) && current.isNotEmpty()
+        ) {
+            tokens += current.toString()
+            current.clear()
+        }
+    }
+    if (current.isNotEmpty()) tokens += current.toString()
+    return tokens
+}
 
 private class TermMatch(val text: String, val weight: Double)
 
@@ -126,17 +179,17 @@ class Searcher(private val catalogue: Catalogue) {
         if (exactFrequency > 0) matches += TermMatch(token, 1.0)
         var completionFrequency = 0
         if (isLast && token.length >= 2) {
-            val weight = if (token.length >= 4) 0.9 else 0.75
+            val weight = if (token.length >= 4) LONG_COMPLETION else SHORT_COMPLETION
             completions(token).forEach {
                 completionFrequency += frequency(it)
                 matches += TermMatch(it, weight)
             }
         }
-        val sparse =
-            exactFrequency < 50 && (completionFrequency < 20 || exactFrequency == 0)
+        val sparse = exactFrequency < SPARSE_EXACT &&
+            (completionFrequency < SPARSE_COMPLETIONS || exactFrequency == 0)
         if (!sparse) return matches
         fuzzyTerms(token).forEach { (text, distance) ->
-            matches += TermMatch(text, if (distance == 1) 0.72 else 0.5)
+            matches += TermMatch(text, if (distance == 1) ONE_TYPO else TWO_TYPOS)
         }
         return matches
     }
@@ -254,7 +307,9 @@ class Searcher(private val catalogue: Catalogue) {
         fun popularityOf(work: Int) =
             popularity.getOrPut(work) { catalogue.popularity(work) }
         val head = scored.keys
-            .sortedByDescending { scored.getValue(it) + 0.35 * popularityOf(it) }
+            .sortedByDescending {
+                scored.getValue(it) + RANK_POPULARITY * popularityOf(it)
+            }
             .take(RERANK_DEPTH)
         val joined = tokens.joinToString(" ")
         val ranked = head
@@ -263,7 +318,8 @@ class Searcher(private val catalogue: Catalogue) {
                 val matched =
                     perToken.count { it.scores.containsKey(book.work) }.toDouble() /
                         perToken.size
-                val boost = (0.35 + POPULARITY) * popularityOf(book.work) * matched
+                val boost =
+                    (RANK_POPULARITY + POPULARITY) * popularityOf(book.work) * matched
                 val penalty = if (book.isCompanion) COMPANION_PENALTY else 0.0
                 book to scored.getValue(book.work) + bonus(book, perToken) + boost +
                     seriesBonus(book, joined) - penalty
@@ -274,6 +330,18 @@ class Searcher(private val catalogue: Catalogue) {
             .filter { it.second >= RELEVANCE_FLOOR * best }
             .take(limit)
             .map { it.first }
+    }
+
+    fun find(title: String, author: String): Book? {
+        val wanted = tokenize(mainTitle(title))
+        val surname = tokenize(author).lastOrNull()
+        return search("${wanted.joinToString(" ")} $author", 5).firstOrNull { book ->
+            val titles = listOf(book.title, book.alternate).map {
+                tokenize(mainTitle(it))
+            }
+            wanted in titles &&
+                (surname == null || book.authors.any { surname in tokenize(it.name) })
+        }
     }
 
     fun complete(query: String, limit: Int = 3): List<String> {

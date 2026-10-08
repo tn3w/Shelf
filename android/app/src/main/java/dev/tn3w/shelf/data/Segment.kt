@@ -1,11 +1,8 @@
 package dev.tn3w.shelf.data
 
 import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.channels.FileChannel
 import java.util.zip.Inflater
 
 private const val MAGIC = "SHLF"
@@ -13,125 +10,7 @@ const val CATALOGUE_FORMAT = 2
 private const val NAME_BYTES = 16
 private const val SEPARATOR = '\u001f'
 private const val YEAR_EPOCH = 1400
-private const val MAX_TOKEN_BYTES = 24
 private val COMPLETION_LENGTHS = 2..4
-
-private val FOLD = buildMap {
-    listOf(
-        "áàâäãåÁÀÂÄÃÅ" to 'a',
-        "éèêëÉÈÊË" to 'e',
-        "íìîïÍÌÎÏ" to 'i',
-        "óòôöõøÓÒÔÖÕØ" to 'o',
-        "úùûüÚÙÛÜ" to 'u',
-        "ñÑ" to 'n',
-        "çÇ" to 'c',
-        "ýÿÝ" to 'y',
-        "ß" to 's',
-    )
-        .forEach { (characters, replacement) ->
-            characters.forEach { put(it, replacement) }
-        }
-}
-
-private fun foldCharacter(character: Char): Char? {
-    val lowered = if (character.code < 128) character.lowercaseChar() else character
-    if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
-    return FOLD[character]
-}
-
-fun tokenize(text: String): List<String> {
-    val tokens = mutableListOf<String>()
-    val current = StringBuilder()
-    for (character in text) {
-        if (character == '\'' || character == '’' || character in '\u0300'..'\u036f') {
-            continue
-        }
-        val folded = foldCharacter(character)
-        if (folded != null) current.append(folded)
-        if (
-            (folded == null || current.length >= MAX_TOKEN_BYTES) && current.isNotEmpty()
-        ) {
-            tokens += current.toString()
-            current.clear()
-        }
-    }
-    if (current.isNotEmpty()) tokens += current.toString()
-    return tokens
-}
-
-class Reader(private val bytes: ByteArray, var offset: Int = 0) {
-    val hasMore
-        get() = offset < bytes.size
-
-    fun byte() = bytes[offset++].toInt() and 0xFF
-
-    fun varint(): Int {
-        var value = 0
-        var shift = 0
-        while (true) {
-            val byte = byte()
-            value = value or ((byte and 0x7F) shl shift)
-            if (byte and 0x80 == 0) return value
-            shift += 7
-        }
-    }
-
-    fun text(): String {
-        val length = varint()
-        offset += length
-        return String(bytes, offset - length, length, Charsets.UTF_8)
-    }
-
-    fun skip(length: Int) {
-        offset += length
-    }
-
-    fun take(length: Int) =
-        bytes.copyOfRange(offset, offset + length).also { offset += length }
-
-    fun rest() = take(bytes.size - offset)
-}
-
-fun decodePostings(bytes: ByteArray): IntArray {
-    val reader = Reader(bytes)
-    val values = IntArrayList()
-    var current = 0
-    while (reader.hasMore) {
-        current += reader.varint()
-        values.add(current)
-    }
-    return values.toArray()
-}
-
-class IntArrayList {
-    private var values = IntArray(16)
-    private var count = 0
-
-    fun add(value: Int) {
-        if (count == values.size) values = values.copyOf(count * 2)
-        values[count++] = value
-    }
-
-    fun toArray(): IntArray = values.copyOf(count)
-}
-
-class Cache<K : Any, V : Any>(private val capacity: Int) {
-    private val map = object : LinkedHashMap<K, V>(capacity, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>) =
-            size > capacity
-    }
-
-    fun get(key: K, load: (K) -> V): V {
-        synchronized(map) { map[key] }?.let { return it }
-        val value = load(key)
-        synchronized(map) { map[key] = value }
-        return value
-    }
-}
-
-fun mapFile(file: File): ByteBuffer = RandomAccessFile(file, "r").use {
-    it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
-}
 
 private fun ByteBuffer.region(offset: Int, length: Int): ByteBuffer = duplicate()
     .apply {
@@ -183,7 +62,7 @@ private fun inflate(
 }
 
 private fun lengthPrefixed(raw: ByteArray): List<ByteArray> {
-    val reader = Reader(raw)
+    val reader = ByteReader(raw)
     return buildList { while (reader.hasMore) add(reader.take(reader.varint())) }
 }
 
@@ -215,34 +94,19 @@ private fun readMeta(buffer: ByteBuffer) = String(buffer.all())
     .filter { '=' in it }
     .associate { it.substringBefore('=') to it.substringAfter('=') }
 
-data class Facts(
+class Facts(
     val authors: IntArray,
     val year: Int,
     val cover: Int,
     val tags: IntArray,
     val series: Int,
-    val order: Int,
 )
 
 data class Heads(val title: String, val subtitle: String, val alternate: String)
 
 data class Description(val text: String, val translated: Boolean)
 
-data class AuthorRecord(
-    val number: Int,
-    val born: Int,
-    val name: String,
-    val works: IntArray,
-)
-
-data class TagRecord(
-    val id: Int,
-    val slug: String,
-    val label: String,
-    val category: String,
-)
-
-class SeriesRecord(val name: String, val members: IntArray)
+class AuthorRecord(val number: Int, val born: Int, val name: String, val works: IntArray)
 
 class Term(
     val text: String,
@@ -264,11 +128,11 @@ class Term(
 private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) {
     private val table = Table(buffer)
     val count = table.count
-    private val firstTerms = List(count) { Reader(table[it], 1).text() }
+    private val firstTerms = List(count) { ByteReader(table[it], 1).text() }
     private val cache = Cache<Int, List<Term>>(512)
 
     fun block(index: Int) = cache.get(index) {
-        val reader = Reader(table[index])
+        val reader = ByteReader(table[index])
         var previous = ""
         buildList {
             while (reader.hasMore) {
@@ -279,7 +143,7 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
         }
     }
 
-    private fun readTerm(reader: Reader, text: String): Term {
+    private fun readTerm(reader: ByteReader, text: String): Term {
         val titleCount = reader.varint()
         val authorCount = reader.varint()
         if (!withPostings) return Term(text, titleCount, authorCount, EMPTY, EMPTY)
@@ -333,14 +197,14 @@ class Segment(buffer: ByteBuffer) {
     private val terms = TermBlocks(section("terms"), withPostings = true)
     private val completions = Table(section("completions"))
     private val completionKeys =
-        List(completions.count) { Reader(completions[it]).text() }
+        List(completions.count) { ByteReader(completions[it]).text() }
     private val grams = Table(section("grams"))
-    private val gramKeys = List(grams.count) { Reader(grams[it]).text() }
+    private val gramKeys = List(grams.count) { ByteReader(grams[it]).text() }
     private val descriptions = BlockIndex(section("descriptions"))
     private val tagTable = Table(section("tags"))
     val tags = List(tagTable.count) {
-        val reader = Reader(tagTable[it])
-        TagRecord(it, reader.text(), reader.text(), reader.text())
+        val reader = ByteReader(tagTable[it])
+        Tag(it, reader.text(), reader.text(), reader.text())
     }
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
@@ -371,14 +235,12 @@ class Segment(buffer: ByteBuffer) {
             }[index % recordsPerBlock]
 
     fun facts(local: Int): Facts {
-        val reader = Reader(record(facts, local))
+        val reader = ByteReader(record(facts, local))
         val authorSlots = IntArray(reader.varint()) { reader.varint() }
         val year = reader.varint().let { if (it == 0) 0 else it + YEAR_EPOCH }
         val cover = reader.varint()
         val tagIds = IntArray(reader.varint()) { reader.byte() }
-        return Facts(
-            authorSlots, year, cover, tagIds, reader.varint() - 1, reader.varint(),
-        )
+        return Facts(authorSlots, year, cover, tagIds, reader.varint() - 1)
     }
 
     fun heads(local: Int): Heads {
@@ -388,21 +250,21 @@ class Segment(buffer: ByteBuffer) {
     }
 
     fun author(slot: Int): AuthorRecord {
-        val reader = Reader(record(authors, slot))
+        val reader = ByteReader(record(authors, slot))
         val number = reader.varint()
         val born = reader.varint()
         return AuthorRecord(number, born, reader.text(), decodePostings(reader.rest()))
     }
 
-    fun series(slot: Int): SeriesRecord {
-        val reader = Reader(series[slot])
+    fun series(slot: Int): Series {
+        val reader = ByteReader(series[slot])
         val name = reader.text()
-        return SeriesRecord(name, IntArray(reader.varint()) { reader.varint() })
+        return Series(name, List(reader.varint()) { reader.varint() })
     }
 
-    private fun afterTagLabels(tag: Int): Reader? {
+    private fun afterTagLabels(tag: Int): ByteReader? {
         if (tag >= tagTable.count) return null
-        return Reader(tagTable[tag]).also { reader ->
+        return ByteReader(tagTable[tag]).also { reader ->
             repeat(3) { reader.skip(reader.varint()) }
         }
     }
@@ -420,7 +282,7 @@ class Segment(buffer: ByteBuffer) {
         if (block < 0) return Description("", false)
         return descriptionBlocks
             .get(block) {
-                val reader = Reader(inflate(descriptions.blocks[it], textDictionary))
+                val reader = ByteReader(inflate(descriptions.blocks[it], textDictionary))
                 val first = descriptions.firsts[it]
                 buildMap {
                     while (reader.hasMore) {
@@ -442,7 +304,7 @@ class Segment(buffer: ByteBuffer) {
         if (prefix.length !in COMPLETION_LENGTHS) return scan(prefix, limit)
         val position = completionKeys.binarySearch(prefix)
         if (position < 0) return scan(prefix, limit)
-        val reader = Reader(completions[position])
+        val reader = ByteReader(completions[position])
         reader.text()
         return List(minOf(reader.varint(), limit)) { termById(reader.varint()) }
     }
@@ -453,7 +315,7 @@ class Segment(buffer: ByteBuffer) {
     fun gramTerms(gram: String): IntArray {
         val position = gramKeys.binarySearch(gram)
         if (position < 0) return IntArray(0)
-        val reader = Reader(grams[position])
+        val reader = ByteReader(grams[position])
         reader.text()
         return decodePostings(reader.rest())
     }
@@ -487,7 +349,7 @@ class Ranks(buffer: ByteBuffer) {
     }
 
     private fun decode(index: Int): PopularityBlock {
-        val reader = Reader(inflate(popularityIndex.blocks[index]))
+        val reader = ByteReader(inflate(popularityIndex.blocks[index]))
         val works = IntArrayList()
         val rows = mutableListOf<Popularity>()
         var work = popularityIndex.firsts[index]

@@ -159,4 +159,5 @@ dependencies {
     implementation(libs.coil.network)
     implementation(libs.jsoup)
     debugImplementation(libs.compose.tooling)
+    testImplementation(libs.junit)
 }

@@ -128,14 +128,20 @@ fun BookCover(
     }
 }
 
-private fun initials(name: String) =
-    name.split(" ").mapNotNull { it.firstOrNull() }.take(2).joinToString("")
+private fun initials(name: String) = name
+    .split(" ")
+    .mapNotNull { it.firstOrNull()?.uppercaseChar() }
+    .take(2)
+    .joinToString("")
 
 @Composable
 fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
     val settings = loadedSettings()
     val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(author.number) { mutableStateOf(false) }
+    val small = size < 64.dp
+    val typography = MaterialTheme.typography
+    val initialsStyle = if (small) typography.titleMedium else typography.headlineMedium
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -145,17 +151,12 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
             if (!loaded) {
                 Text(
                     initials(author.name),
-                    style =
-                    if (size < 64.dp) {
-                        MaterialTheme.typography.titleMedium
-                    } else {
-                        MaterialTheme.typography.headlineMedium
-                    },
+                    style = initialsStyle,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
             if (settings == null || offline || !settings.authorImages) return@Box
-            val photo = if (size < 64.dp) "S" else "M"
+            val photo = if (small) "S" else "M"
             AsyncImage(
                 model = author.photoUrl(settings.coverHost, photo),
                 contentDescription = author.name,

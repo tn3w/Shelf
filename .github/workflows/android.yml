@@ -43,7 +43,6 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: >
           ./gradlew assembleGithubRelease assembleFdroidRelease
-          -x lintVitalGithubRelease -x lintVitalFdroidRelease
           --parallel --build-cache
 
       - name: Collect

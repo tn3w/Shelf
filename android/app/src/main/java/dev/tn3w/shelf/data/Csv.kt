@@ -7,8 +7,9 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 private val DATE = DateTimeFormatter.ofPattern("yyyy/MM/dd")
-private val EXPORT_COLUMNS =
-    "Title,Author,ISBN,My Rating,Date Read,Date Added,Exclusive Shelf".split(",")
+private val EXPORT_COLUMNS = listOf(
+    "Title", "Author", "ISBN", "My Rating", "Date Read", "Date Added", "Exclusive Shelf",
+)
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
     Shelf.Reading to "currently-reading",
@@ -68,22 +69,26 @@ private fun parseCsv(text: String): List<List<String>> {
 fun csvBooks(text: String): List<CsvBook> {
     val rows = parseCsv(text.trimStart('\uFEFF'))
     val header = rows.firstOrNull()?.map { it.trim().lowercase() } ?: return emptyList()
-    fun List<String>.column(vararg names: String) = names
-        .map(header::indexOf)
-        .firstOrNull { it >= 0 }
-        ?.let { getOrNull(it)?.trim() }
-        .orEmpty()
+    fun column(vararg names: String): (List<String>) -> String {
+        val index = names.map(header::indexOf).firstOrNull { it >= 0 } ?: -1
+        return { row -> row.getOrNull(index)?.trim().orEmpty() }
+    }
+    val titleOf = column("title")
+    val statusOf = column("exclusive shelf", "read status")
+    val readOf = column("date read", "last date read")
+    val addedOf = column("date added")
+    val authorOf = column("author", "authors")
+    val ratingOf = column("my rating", "star rating")
     return rows.drop(1).mapNotNull { row ->
-        val title = row.column("title").ifEmpty { return@mapNotNull null }
-        val shelf = shelfOf(row.column("exclusive shelf", "read status"))
-        val read = dateOf(row.column("date read", "last date read"))
-            .takeIf { shelf == Shelf.Read }
-        val added = dateOf(row.column("date added"))
+        val title = titleOf(row).ifEmpty { return@mapNotNull null }
+        val shelf = shelfOf(statusOf(row))
+        val read = dateOf(readOf(row)).takeIf { shelf == Shelf.Read }
+        val added = dateOf(addedOf(row))
         CsvBook(
             title,
-            row.column("author", "authors").substringBefore(',').trim(),
+            authorOf(row).substringBefore(',').trim(),
             shelf,
-            row.column("my rating", "star rating").toFloatOrNull()?.roundToInt() ?: 0,
+            ratingOf(row).toFloatOrNull()?.roundToInt() ?: 0,
             read ?: added ?: System.currentTimeMillis(),
         )
     }
@@ -103,16 +108,6 @@ private fun dateOf(value: String) = runCatching {
 
 private fun formatDate(millis: Long) =
     DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
-
-fun Searcher.find(title: String, author: String): Book? {
-    val wanted = tokenize(mainTitle(title))
-    val surname = tokenize(author).lastOrNull()
-    return search("${wanted.joinToString(" ")} $author", 5).firstOrNull { book ->
-        val titles = listOf(book.title, book.alternate).map { tokenize(mainTitle(it)) }
-        wanted in titles &&
-            (surname == null || book.authors.any { surname in tokenize(it.name) })
-    }
-}
 
 fun csvOf(entries: List<Saved>): String {
     fun quoted(value: String) = "\"${value.replace("\"", "\"\"")}\""

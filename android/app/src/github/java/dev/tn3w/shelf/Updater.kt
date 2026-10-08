@@ -8,10 +8,9 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams
 import android.os.Build
+import androidx.core.content.IntentCompat
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
@@ -23,21 +22,13 @@ private val STORES = setOf(
     "com.aurora.store",
 )
 private const val APK_NAME = "shelf.apk"
-private val json = Json { ignoreUnknownKeys = true }
-
-@Serializable
-private data class GithubRelease(
-    val tag_name: String,
-    val body: String = "",
-    val draft: Boolean = false,
-    val prerelease: Boolean = false,
-    val assets: List<Asset> = emptyList(),
-)
+private const val CHECKSUMS_NAME = "SHA256SUMS"
 
 private fun numbers(version: String) = version.split(".").map { it.toIntOrNull() ?: 0 }
 
 private fun isNewer(version: String): Boolean {
-    val (candidate, installed) = numbers(version) to numbers(BuildConfig.VERSION_NAME)
+    val candidate = numbers(version)
+    val installed = numbers(BuildConfig.VERSION_NAME)
     val length = maxOf(candidate.size, installed.size)
     val differing = (0 until length).firstOrNull {
         candidate.getOrElse(it) { 0 } != installed.getOrElse(it) { 0 }
@@ -57,37 +48,28 @@ object Updater {
         return installer !in STORES
     }
 
-    suspend fun latest(): AppRelease? = withContext(Dispatchers.IO) {
+    suspend fun latest(): Release? = withContext(Dispatchers.IO) {
         val release = json
-            .decodeFromString<List<GithubRelease>>(fetchText(RELEASES))
-            .firstOrNull {
-                it.tag_name.startsWith("v") && !it.draft && !it.prerelease
-            }
-        val assets = release?.assets.orEmpty()
-        val apk = assets.firstOrNull { it.name == APK_NAME }
-        val sums = assets.firstOrNull { it.name == "SHA256SUMS" }
-        if (release == null || apk == null || sums == null) return@withContext null
-        val version = release.tag_name.removePrefix("v")
-        if (!isNewer(version)) return@withContext null
-        AppRelease(
-            version, release.body, apk.browser_download_url, sums.browser_download_url,
-        )
+            .decodeFromString<List<Release>>(fetchText(RELEASES))
+            .firstOrNull { it.tag.startsWith("v") && !it.draft && !it.prerelease }
+        val names = release?.assets.orEmpty().map { it.name }
+        val complete = APK_NAME in names && CHECKSUMS_NAME in names
+        release?.takeIf { complete && isNewer(it.version) }
     }
 
     suspend fun install(
         context: Context,
-        release: AppRelease,
+        release: Release,
         onProgress: (Float) -> Unit,
     ) = withContext(Dispatchers.IO) {
-        val name = release.apkUrl.substringAfterLast('/')
-        val expected = checksum(fetchText(release.checksumsUrl), name)
+        val expected = checksum(fetchText(release.assetUrl(CHECKSUMS_NAME)), APK_NAME)
         val installer = context.packageManager.packageInstaller
         val sessionId =
             installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
         installer.openSession(sessionId).use { session ->
             try {
                 val digest = MessageDigest.getInstance("SHA-256")
-                write(session, digest, release.apkUrl, onProgress)
+                write(session, digest, release.assetUrl(APK_NAME), onProgress)
                 check(sha256(digest) == expected) { "checksum mismatch" }
             } catch (exception: Throwable) {
                 session.abandon()
@@ -120,7 +102,9 @@ object Updater {
         val total = connection.contentLengthLong
         DigestInputStream(connection.inputStream, digest).use { input ->
             session.openWrite(APK_NAME, 0, total).use { output ->
-                copy(input, output) { if (total > 0) onProgress(it.toFloat() / total) }
+                copyWithProgress(input, output) {
+                    if (total > 0) onProgress(it.toFloat() / total)
+                }
                 session.fsync(output)
             }
         }
@@ -128,14 +112,8 @@ object Updater {
 
     private fun statusReceiver(context: Context, sessionId: Int): PendingIntent {
         val intent = Intent(context, InstallReceiver::class.java)
-        val mutable = if (Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.S
-        ) {
-            FLAG_MUTABLE
-        } else {
-            0
-        }
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT or mutable
+        val modern = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (modern) FLAG_MUTABLE else 0
         return PendingIntent.getBroadcast(context, sessionId, intent, flags)
     }
 }
@@ -144,8 +122,9 @@ class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
         if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) return
-        @Suppress("DEPRECATION")
-        val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
+        val confirm = IntentCompat.getParcelableExtra(
+            intent, Intent.EXTRA_INTENT, Intent::class.java,
+        ) ?: return
         context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

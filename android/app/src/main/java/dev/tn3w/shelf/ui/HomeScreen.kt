@@ -128,12 +128,12 @@ fun HomeScreen(navigator: Navigator) {
                 )
             }
         }
-        item { Box(Modifier.height(24.dp)) }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
 @Composable
-private fun rowTitle(row: Row) = when (row.kind) {
+private fun rowTitle(row: HomeRow) = when (row.kind) {
     RowKind.Series -> stringResource(R.string.next_in_series)
 
     RowKind.Author -> stringResource(R.string.more_by, row.author?.name.orEmpty())
@@ -147,7 +147,7 @@ private fun rowTitle(row: Row) = when (row.kind) {
 }
 
 @Composable
-private fun rowSubtitle(row: Row) = when (row.kind) {
+private fun rowSubtitle(row: HomeRow) = when (row.kind) {
     RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
 
     RowKind.Popular -> stringResource(R.string.popular_subtitle)

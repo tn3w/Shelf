@@ -17,24 +17,6 @@ import kotlin.random.Random
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
 private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
 
-data class AppRelease(
-    val version: String,
-    val notes: String,
-    val apkUrl: String,
-    val checksumsUrl: String,
-)
-
-class Loaded(val catalogue: Catalogue) {
-    val searcher = Searcher(catalogue)
-    val recommender = Recommender(catalogue)
-}
-
-sealed interface Download {
-    data class Running(val progress: Float) : Download
-
-    data object Failed : Download
-}
-
 class ShelfApp :
     Application(),
     SingletonImageLoader.Factory {
@@ -64,9 +46,11 @@ class ShelfApp :
         OkHttpClient.Builder()
             .cookieJar(CookieJar.NO_COOKIES)
             .addInterceptor { chain ->
-                val headers =
-                    chain.request().newBuilder().header("User-Agent", USER_AGENT)
-                chain.proceed(headers.header("Accept", "image/*").build())
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", "image/*")
+                    .build()
+                chain.proceed(request)
             }
             .build()
     }

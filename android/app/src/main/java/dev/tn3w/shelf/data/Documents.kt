@@ -164,7 +164,7 @@ private fun isComicPage(name: String): Boolean {
     return fileName.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS
 }
 
-private fun naturalSortKey(name: String) =
+internal fun naturalSortKey(name: String) =
     name.lowercase().replace(Regex("\\d+")) { it.value.padStart(20, '0') }
 
 private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<Int, Int> {

@@ -13,7 +13,6 @@ private val FORM_TAGS = setOf("fiction", "nonfiction")
 private val AUDIENCE_TAGS =
     setOf("picture-book", "childrens", "middle-grade", "young-adult")
 private val BROAD_TAGS = FORM_TAGS + AUDIENCE_TAGS
-private val ARTICLES = setOf("the", "a", "an", "der", "die", "das", "le", "la", "el")
 private const val MAX_SOURCES = 24
 private const val MERGE_OVERLAP = 0.7
 private const val WEAK_MERGE_OVERLAP = 0.3
@@ -26,12 +25,28 @@ private const val MAX_PER_AUTHOR = 2
 private const val MAX_AUTHOR_ROWS = 2
 private const val MIN_ROW = 4
 private const val MIN_SERIES_ROW = 2
-private const val ADULT = 4
 private const val MAX_AUDIENCE_GAP = 2.0
 private const val SPECIFIC_TAGS = 3.0
 private const val JITTER = 0.15
 private const val READERS_REFERENCE = 50_000.0
 private const val RATING_PRIOR = 8
+private const val RATING_PRIOR_MEAN = 3.8
+private const val RATING_FLOOR = 3.0
+private const val RATING_SPAN = 2.0
+private const val READERS_SHARE = 0.7
+private const val RATING_SHARE = 0.3
+private const val CONFIDENCE_DECAY = 0.15
+private const val FORM_WEIGHT = 0.25
+private const val MIN_NEIGHBOUR = 0.2
+private const val NEIGHBOUR_WEIGHT = 0.40
+private const val GENERAL_WEIGHT = 0.20
+private const val BROAD_GENERAL_WEIGHT = 0.30
+private const val QUALITY_WEIGHT = 0.40
+private const val BROAD_QUALITY_WEIGHT = 0.10
+private const val MIN_COVERAGE = 0.3
+private const val COVERAGE_WEIGHT = 0.7
+private const val YOUNGER_PENALTY = 0.4
+private const val OLDER_PENALTY = 0.15
 
 private typealias Vector = Map<Int, Double>
 
@@ -75,7 +90,7 @@ enum class RowKind {
     Popular,
 }
 
-class Row(
+class HomeRow(
     val kind: RowKind,
     val books: List<Book>,
     val sources: List<Book> = emptyList(),
@@ -142,8 +157,8 @@ class Recommender(private val catalogue: Catalogue) {
         .filter(keep)
         .withIndex()
         .associate { (index, tag) ->
-            val confidence = 1.0 / (1.0 + 0.15 * index)
-            val weight = if (slug[tag] in FORM_TAGS) 0.25 else 1.0
+            val confidence = 1.0 / (1.0 + CONFIDENCE_DECAY * index)
+            val weight = if (slug[tag] in FORM_TAGS) FORM_WEIGHT else 1.0
             tag to (idf[tag] ?: 0.0) * confidence * weight
         }
 
@@ -155,7 +170,7 @@ class Recommender(private val catalogue: Catalogue) {
         "young-adult" in slugs -> 3
         "middle-grade" in slugs -> 2
         "childrens" in slugs -> 1
-        else -> ADULT
+        else -> 4
     }
 
     private fun sourceOf(entry: Saved): Source? {
@@ -241,9 +256,11 @@ class Recommender(private val catalogue: Catalogue) {
     private fun quality(work: Int): Double {
         val popularity = catalogue.ranks?.popularity(work) ?: return 0.0
         val readers = min(1.0, ln(1.0 + popularity.readers) / ln(1.0 + READERS_REFERENCE))
-        val mean = (RATING_PRIOR * 3.8 + popularity.rating * popularity.ratings) /
-            (RATING_PRIOR + popularity.ratings)
-        return 0.7 * readers + 0.3 * (mean - 3.0) / 2.0
+        val ratings = popularity.ratings
+        val mean = (RATING_PRIOR * RATING_PRIOR_MEAN + popularity.rating * ratings) /
+            (RATING_PRIOR + ratings)
+        return READERS_SHARE * readers +
+            RATING_SHARE * (mean - RATING_FLOOR) / RATING_SPAN
     }
 
     private fun score(profile: Profile, cluster: Cluster, work: Int): Scored? {
@@ -256,16 +273,18 @@ class Recommender(private val catalogue: Catalogue) {
         val gap = audienceOf(slugs) - cluster.audience
         if (abs(gap) > MAX_AUDIENCE_GAP) return null
         val neighbour = overlap(vector, cluster.vector)
-        if (neighbour <= 0.2) return null
+        if (neighbour <= MIN_NEIGHBOUR) return null
         val general = overlap(vector, profile.tags)
         val specificity = min(1.0, specificTags(cluster.vector) / SPECIFIC_TAGS)
-        val value = 0.40 * specificity * neighbour +
-            (0.20 + 0.30 * (1 - specificity)) * general +
-            (0.40 + 0.10 * (1 - specificity)) * quality(work)
+        val broad = 1 - specificity
+        val value = NEIGHBOUR_WEIGHT * specificity * neighbour +
+            (GENERAL_WEIGHT + BROAD_GENERAL_WEIGHT * broad) * general +
+            (QUALITY_WEIGHT + BROAD_QUALITY_WEIGHT * broad) * quality(work)
         val younger = max(0.0, -gap)
         val older = max(0.0, gap)
-        val covered = 0.3 + 0.7 * coverage(vector, cluster.vector)
-        return Scored(value * covered / (1.0 + 0.4 * younger + 0.15 * older), work)
+        val covered = MIN_COVERAGE + COVERAGE_WEIGHT * coverage(vector, cluster.vector)
+        val penalty = 1.0 + YOUNGER_PENALTY * younger + OLDER_PENALTY * older
+        return Scored(value * covered / penalty, work)
     }
 
     private fun rank(
@@ -316,14 +335,14 @@ class Recommender(private val catalogue: Catalogue) {
         profile: Profile,
         taken: MutableSet<TitleKey>,
         size: Int,
-    ): Row? {
+    ): HomeRow? {
         val books = profile.library
             .mapNotNull { work -> nextVolume(work, profile) }
             .distinct()
             .let(catalogue::books)
             .filter { taken.add(titleKey(it)) }
             .take(size)
-        return if (books.size < MIN_SERIES_ROW) null else Row(RowKind.Series, books)
+        return if (books.size < MIN_SERIES_ROW) null else HomeRow(RowKind.Series, books)
     }
 
     private fun nextVolume(work: Int, profile: Profile): Int? {
@@ -354,7 +373,7 @@ class Recommender(private val catalogue: Catalogue) {
         profile: Profile,
         taken: MutableSet<TitleKey>,
         size: Int,
-    ): List<Row> {
+    ): List<HomeRow> {
         val authors = profile.clusters
             .flatMap { cluster -> cluster.sources.map { it.book to cluster.weight } }
             .mapNotNull { (book, weight) -> book.authors.firstOrNull()?.to(weight) }
@@ -363,7 +382,7 @@ class Recommender(private val catalogue: Catalogue) {
             .entries
             .sortedByDescending { it.value }
             .map { it.key }
-        val rows = mutableListOf<Row>()
+        val rows = mutableListOf<HomeRow>()
         for (author in authors) {
             if (rows.size >= MAX_AUTHOR_ROWS) break
             val picker = picker(profile, taken, authorLimit = size)
@@ -372,7 +391,8 @@ class Recommender(private val catalogue: Catalogue) {
                 .take(size * 4)
                 .mapNotNull(picker::accept)
                 .take(size)
-            if (books.size >= MIN_ROW) rows += Row(RowKind.Author, books, author = author)
+            if (books.size < MIN_ROW) continue
+            rows += HomeRow(RowKind.Author, books, author = author)
         }
         return rows
     }
@@ -382,19 +402,21 @@ class Recommender(private val catalogue: Catalogue) {
         seed: Long = 0,
         hidden: Set<Int> = emptySet(),
         size: Int = 12,
-    ): List<Row> {
+    ): List<HomeRow> {
         val profile = buildProfile(entries, hidden)
-        if (profile.clusters.isEmpty()) return listOf(Row(RowKind.Popular, popular(size)))
+        if (profile.clusters.isEmpty()) {
+            return listOf(HomeRow(RowKind.Popular, popular(size)))
+        }
         val random = Random(seed)
         val taken = profile.seen.toMutableSet()
-        val rows = mutableListOf<Row>()
+        val rows = mutableListOf<HomeRow>()
         seriesRow(profile, taken, size)?.let { rows += it }
         for (cluster in profile.clusters) {
             val picker = picker(profile, taken)
             val books = rank(profile, cluster, random, size * 4)
                 .mapNotNull { picker.accept(it.work) }
             if (books.size >= MIN_ROW) {
-                rows += Row(RowKind.Because, books.take(size), cluster.readBooks)
+                rows += HomeRow(RowKind.Because, books.take(size), cluster.readBooks)
             }
         }
         rows += authorRows(profile, taken, size)

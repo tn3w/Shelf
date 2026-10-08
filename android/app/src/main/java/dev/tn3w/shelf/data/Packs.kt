@@ -4,13 +4,10 @@ import android.content.Context
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
-import java.io.OutputStream
-import java.net.HttpURLConnection
-import java.net.URI
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.security.DigestInputStream
@@ -31,7 +28,8 @@ val PACKS = listOf(
 private fun labelParts(label: String) = label.split("-").map { it.toIntOrNull() ?: 0 }
 
 val releaseOrder = Comparator<String> { first, second ->
-    val (left, right) = labelParts(first) to labelParts(second)
+    val left = labelParts(first)
+    val right = labelParts(second)
     left.zip(right).map { (a, b) -> a.compareTo(b) }.firstOrNull { it != 0 }
         ?: left.size.compareTo(right.size)
 }
@@ -51,7 +49,6 @@ fun isValidSource(source: String) =
     source.isEmpty() || GITHUB_REPOSITORY.matches(source) || source.startsWith("https://")
 
 private const val MANIFEST_NAME = "manifest.json"
-private val json = Json { ignoreUnknownKeys = true }
 
 @Serializable
 data class ManifestEntry(
@@ -67,10 +64,6 @@ data class ManifestEntry(
 @Serializable
 data class Manifest(val format: Int, val month: String, val segments: List<ManifestEntry>)
 
-@Serializable data class Asset(val name: String, val browser_download_url: String)
-
-@Serializable private data class Release(val tag_name: String, val assets: List<Asset>)
-
 enum class PackState {
     Installed,
     Update,
@@ -78,6 +71,12 @@ enum class PackState {
 }
 
 data class PackInfo(val pack: String, val state: PackState, val bytes: Long)
+
+sealed interface Download {
+    data class Running(val progress: Float) : Download
+
+    data object Failed : Download
+}
 
 private data class LocalFile(val id: String, val pack: String, val month: String) {
     val language
@@ -92,36 +91,9 @@ private fun parseName(name: String): LocalFile? {
     return LocalFile(name.removeSuffix(".bin"), pack, release)
 }
 
-fun copy(input: InputStream, output: OutputStream, onBytes: (Long) -> Unit) {
-    val buffer = ByteArray(64 * 1024)
-    var copied = 0L
-    while (true) {
-        val read = input.read(buffer)
-        if (read < 0) return
-        output.write(buffer, 0, read)
-        copied += read
-        onBytes(copied)
-    }
+private fun mapFile(file: File): ByteBuffer = RandomAccessFile(file, "r").use {
+    it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
 }
-
-fun sha256(digest: MessageDigest) = digest.digest().joinToString("") { "%02x".format(it) }
-
-const val USER_AGENT = "Shelf"
-
-fun connect(url: String): HttpURLConnection {
-    val target = URI(url).toURL()
-    require(target.protocol == "https") { "refusing plain http request" }
-    return (target.openConnection() as HttpURLConnection).apply {
-        connectTimeout = 15_000
-        readTimeout = 30_000
-        useCaches = false
-        setRequestProperty("User-Agent", USER_AGENT)
-        setRequestProperty("Accept", "application/vnd.github+json")
-    }
-}
-
-fun fetchText(url: String) =
-    connect(url).inputStream.use { it.readBytes().decodeToString() }
 
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply {
@@ -270,9 +242,9 @@ class Packs(private val context: Context) {
         val url = releasesUrl(source)
         if (url.substringBefore('?').endsWith(MANIFEST_NAME)) return url
         val release = json.decodeFromString<List<Release>>(fetchText(url)).first {
-            it.tag_name.startsWith("catalogue-")
+            it.tag.startsWith("catalogue-")
         }
-        return release.assets.first { it.name == MANIFEST_NAME }.browser_download_url
+        return release.assetUrl(MANIFEST_NAME)
     }
 
     fun importFile(name: String, input: InputStream): Boolean {
@@ -348,7 +320,7 @@ class Packs(private val context: Context) {
         replace(binOf(entry.id)) { temporary ->
             val digest = MessageDigest.getInstance("SHA-256")
             DigestInputStream(connect(entry.url).inputStream, digest).use { input ->
-                temporary.outputStream().use { copy(input, it, onBytes) }
+                temporary.outputStream().use { copyWithProgress(input, it, onBytes) }
             }
             check(sha256(digest) == entry.sha256) { "checksum mismatch for ${entry.id}" }
         }
