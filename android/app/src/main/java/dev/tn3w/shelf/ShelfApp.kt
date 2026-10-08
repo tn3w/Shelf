@@ -3,6 +3,7 @@ package dev.tn3w.shelf
 import android.app.Application
 import android.net.Uri
 import android.os.LocaleList
+import android.util.Log
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -20,7 +21,10 @@ private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
 class ShelfApp :
     Application(),
     SingletonImageLoader.Factory {
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val logErrors = CoroutineExceptionHandler { _, error ->
+        Log.e("ShelfApp", "Background task failed", error)
+    }
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + logErrors)
     val session = Random.nextLong()
     val library by lazy { Library(this) }
     val packs by lazy { Packs(this) }
