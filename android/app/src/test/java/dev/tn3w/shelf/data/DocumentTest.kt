@@ -23,7 +23,7 @@ private fun zip(file: File, entries: Map<String, ByteArray>) = file.apply {
     }
 }
 
-private fun epub(file: File, body: String, chapter: String = "chapter") = zip(
+private fun epubOf(file: File, opf: String, files: Map<String, ByteArray>) = zip(
     file,
     mapOf(
         "META-INF/container.xml" to """
@@ -31,15 +31,41 @@ private fun epub(file: File, body: String, chapter: String = "chapter") = zip(
               <rootfile full-path="OEBPS/content.opf"/>
             </rootfiles></container>
         """.toByteArray(),
-        "OEBPS/content.opf" to """
-            <package>
-              <manifest><item id="one" href="text/$chapter.xhtml"/></manifest>
-              <spine><itemref idref="one"/></spine>
-            </package>
-        """.toByteArray(),
-        "OEBPS/text/$chapter.xhtml" to "<html><body>$body</body></html>".toByteArray(),
-        "OEBPS/images/first.png" to FIRST_IMAGE,
-        "OEBPS/images/second.png" to SECOND_IMAGE,
+        "OEBPS/content.opf" to "<package>$opf</package>".toByteArray(),
+    ) + files.mapKeys { "OEBPS/${it.key}" },
+)
+
+private fun epub(file: File, body: String, chapter: String = "chapter") = epubOf(
+    file,
+    """
+        <manifest><item id="one" href="text/$chapter.xhtml"/></manifest>
+        <spine><itemref idref="one"/></spine>
+    """,
+    mapOf(
+        "text/$chapter.xhtml" to "<html><body>$body</body></html>".toByteArray(),
+        "images/first.png" to FIRST_IMAGE,
+        "images/second.png" to SECOND_IMAGE,
+    ),
+)
+
+private fun chapters(file: File, tableOfContents: Pair<String, String>) = epubOf(
+    file,
+    """
+        <manifest>
+          ${tableOfContents.first}
+          <item id="a" href="a.xhtml"/>
+          <item id="b" href="text/b.xhtml"/>
+          <item id="lost" href="lost.xhtml"/>
+        </manifest>
+        <spine>
+          <itemref idref="a"/><itemref idref="ghost"/>
+          <itemref idref="lost"/><itemref idref="b"/>
+        </spine>
+    """,
+    mapOf(
+        "toc" to tableOfContents.second.toByteArray(),
+        "a.xhtml" to "<html><body><p>First part</p></body></html>".toByteArray(),
+        "text/b.xhtml" to "<html><body><p>Second part</p></body></html>".toByteArray(),
     ),
 )
 
@@ -149,5 +175,73 @@ class DocumentTest {
             listOf("b/page1.jpg", "page1.jpg", "Page2.jpg", "page10.jpg"),
             names.sortedBy(::naturalSortKey),
         )
+    }
+
+    @Test
+    fun epubChaptersFollowNavAndSkipMissingParts() {
+        val nav = """
+            <html><body><nav><ol>
+              <li><a href="a.xhtml">Opening</a></li>
+              <li><a href="text/b.xhtml#start">Ending</a></li>
+            </ol></nav></body></html>
+        """
+        val item = """<item id="nav" href="toc" properties="nav"/>"""
+        val document = openDocument(chapters(folder.newFile("nav.epub"), item to nav))
+        assertEquals(
+            listOf("First part", "Second part"),
+            blocks(document).map {
+                it.text
+            },
+        )
+        val expected = listOf(Chapter("Opening", 0), Chapter("Ending", 1))
+        assertEquals(expected, (document as TextDocument).chapters)
+    }
+
+    @Test
+    fun epubChaptersFallBackToNcx() {
+        val ncx = """
+            <ncx><navMap>
+              <navPoint><navLabel><text>Opening</text></navLabel>
+                <content src="a.xhtml"/></navPoint>
+              <navPoint><navLabel><text>Ending</text></navLabel>
+                <content src="text/b.xhtml"/></navPoint>
+            </navMap></ncx>
+        """
+        val item = """<item id="ncx" href="toc" media-type="application/x-dtbncx+xml"/>"""
+        val document = openDocument(chapters(folder.newFile("ncx.epub"), item to ncx))
+        val expected = listOf(Chapter("Opening", 0), Chapter("Ending", 1))
+        assertEquals(expected, (document as TextDocument).chapters)
+    }
+
+    @Test
+    fun readsImportMetadata() {
+        val opf = "<metadata><dc:title>Night Train</dc:title><dc:creator>Ann Author" +
+            "</dc:creator></metadata>"
+        val book = epubOf(folder.newFile("meta.epub"), opf, emptyMap())
+        val fictionBook = folder.newFile("meta.fb2").apply {
+            writeText(
+                """
+                <FictionBook><description><title-info>
+                  <author>
+                    <first-name>Ann</first-name><last-name>Author</last-name>
+                  </author>
+                  <book-title>Night Train</book-title>
+                </title-info></description></FictionBook>
+                """.trimIndent(),
+            )
+        }
+        val garbage = folder.newFile("garbage.epub").apply { writeBytes(FIRST_IMAGE) }
+        val expected = Metadata("Night Train", "Ann Author")
+        assertEquals(expected, readMetadata(book))
+        assertEquals(expected, readMetadata(fictionBook))
+        assertNull(readMetadata(garbage))
+    }
+
+    @Test
+    fun emptyFilesOpenWithoutContent() {
+        listOf("empty.txt", "empty.html", "empty.fb2").forEach { name ->
+            val document = openDocument(folder.newFile(name)) as TextDocument
+            assertEquals(emptyList<List<Block>>(), document.sections)
+        }
     }
 }

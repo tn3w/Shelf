@@ -97,4 +97,30 @@ class TextTest {
             csvBooks(csv),
         )
     }
+
+    @Test
+    fun multilineReviewsKeepRowsAligned() {
+        val csv = """
+            Title,Author,ISBN,My Rating,Exclusive Shelf,My Review
+            Dune,Frank Herbert,="0441013597",5,read,"Great,
+            ""spice"" saga"
+            Emma,Jane Austen,="",3,to-read,
+        """.trimIndent()
+        assertEquals(
+            listOf(
+                listOf("Dune", "Frank Herbert", Shelf.Read, 5),
+                listOf("Emma", "Jane Austen", Shelf.Want, 3),
+            ),
+            csvBooks(csv).map { listOf(it.title, it.author, it.shelf, it.rating) },
+        )
+    }
+
+    @Test
+    fun missingColumnsFallBackToDefaults() {
+        val book = csvBooks("Title\nSolo").single()
+        assertEquals(
+            listOf("Solo", "", Shelf.Want, 0),
+            listOf(book.title, book.author, book.shelf, book.rating),
+        )
+    }
 }

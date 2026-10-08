@@ -105,6 +105,21 @@ private fun mapFile(file: File): ByteBuffer = RandomAccessFile(file, "r").use {
     it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
 }
 
+private fun currentChain(chain: List<Segment>): List<Segment> {
+    val base = chain.filter { it.isBase }.map { it.month }.maxWithOrNull(releaseOrder)
+        ?: return emptyList()
+    return chain.filter { it.base == base && releaseOrder.compare(it.month, base) >= 0 }
+}
+
+internal fun currentSegments(segments: List<Segment>) = segments
+    .groupBy { it.pack }
+    .flatMap { (_, chain) -> currentChain(chain) }
+    .sortedWith(
+        compareBy<Segment, String>(releaseOrder) { it.month }
+            .thenBy { !it.isBase }
+            .thenBy { PACKS.indexOf(it.pack) },
+    )
+
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply {
         mkdirs()
@@ -157,30 +172,14 @@ class Packs(private val context: Context) {
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
-        val segments = files
-            .filter { it.pack != "ranks" }
-            .distinctBy { it.id }
-            .mapNotNull(::open)
-            .groupBy { it.pack }
-            .flatMap { (_, chain) -> currentChain(chain) }
-            .sortedWith(
-                compareBy<Segment, String>(releaseOrder) { it.month }
-                    .thenBy { !it.isBase }
-                    .thenBy { PACKS.indexOf(it.pack) },
-            )
+        val segments = currentSegments(
+            files.filter { it.pack != "ranks" }.distinctBy { it.id }.mapNotNull(::open),
+        )
         val ranks = files
             .filter { it.pack == "ranks" }
             .maxWithOrNull(compareBy(releaseOrder) { it.month })
             ?.let { runCatching { Ranks(map(it)) }.getOrNull() }
         return Catalogue(language, segments, ranks)
-    }
-
-    private fun currentChain(chain: List<Segment>): List<Segment> {
-        val base = chain.filter { it.isBase }.map { it.month }.maxWithOrNull(releaseOrder)
-            ?: return emptyList()
-        return chain.filter {
-            it.base == base && releaseOrder.compare(it.month, base) >= 0
-        }
     }
 
     private fun open(file: LocalFile): Segment? {

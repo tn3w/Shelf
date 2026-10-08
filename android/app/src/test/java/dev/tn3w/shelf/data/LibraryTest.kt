@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.data
 
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.take
@@ -9,6 +10,19 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
 import kotlin.time.Duration
+
+private inline fun <reified T> MutablePreferences.read(name: String) =
+    json.decodeFromString<T>(this[stringPreferencesKey(name)]!!)
+
+private fun backupOf(preferences: MutablePreferences) = with(preferences) {
+    Backup(
+        read("entries"),
+        read("progress"),
+        read("activity"),
+        read("dismissed"),
+        read("settings"),
+    )
+}
 
 class LibraryTest {
     private val entries = stringPreferencesKey("entries")
@@ -115,5 +129,65 @@ class LibraryTest {
     fun systemLanguageStoredAsAutomatic() {
         assertEquals("", storedLanguage("de", "de"))
         assertEquals("fr", storedLanguage("fr", "de"))
+    }
+
+    @Test
+    fun mergeKeepsNewestEntryPerWork() {
+        val current =
+            listOf(Saved(1, Shelf.Read, 5, rating = 4), Saved(-7, Shelf.Want, 1))
+        val preferences = mutablePreferencesOf(entries to json.encodeToString(current))
+        val imported = listOf(
+            Saved(1, Shelf.Want, 3),
+            Saved(2, Shelf.Reading, 1),
+            Saved(-7, Shelf.Read, 9, "Own", "Me"),
+        )
+        preferences.merge(Backup(entries = imported))
+        val merged = json.decodeFromString<List<Saved>>(preferences[entries]!!)
+        assertEquals(
+            setOf(current[0], imported[1], imported[2]),
+            merged.toSet(),
+        )
+    }
+
+    @Test
+    fun mergeCombinesActivityProgressAndDismissed() {
+        val current = Backup(
+            progress = mapOf(1 to Progress("1.epub", page = 40)),
+            activity = mapOf("2026-01-01" to 5, "2026-01-02" to 9),
+            dismissed = setOf(3),
+        )
+        val onboarded = json.encodeToString(Settings(onboarded = true))
+        val preferences = mutablePreferencesOf(settings to onboarded)
+        preferences.merge(current)
+        val imported = Backup(
+            progress = mapOf(1 to Progress("1.epub", page = 2), 2 to Progress("2.pdf")),
+            activity = mapOf("2026-01-01" to 7, "2026-01-03" to 1),
+            dismissed = setOf(4),
+            settings = Settings(dailyGoal = 30),
+        )
+        preferences.merge(imported)
+        val expected = Backup(
+            progress = mapOf(1 to Progress("1.epub", page = 40), 2 to Progress("2.pdf")),
+            activity = mapOf("2026-01-01" to 7, "2026-01-02" to 9, "2026-01-03" to 1),
+            dismissed = setOf(3, 4),
+            settings = Settings(onboarded = true, dailyGoal = 30),
+        )
+        assertEquals(expected, backupOf(preferences))
+    }
+
+    @Test
+    fun streakSurvivesUntilTodayIsOver() {
+        val today = LocalDate.of(2026, 3, 29)
+        fun day(back: Long) = today.minusDays(back).toString()
+        val activity = mapOf(day(1) to 10, day(2) to 12, day(3) to 2, day(4) to 10)
+        assertEquals(
+            2 to false,
+            habitOf(activity, 10, today).let {
+                it.streak to it.done
+            },
+        )
+        val met = activity + (today.toString() to 10)
+        assertEquals(3 to true, habitOf(met, 10, today).let { it.streak to it.done })
+        assertEquals(0, habitOf(activity, 10, today.plusDays(1)).streak)
     }
 }

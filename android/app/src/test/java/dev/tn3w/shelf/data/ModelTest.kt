@@ -5,6 +5,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
@@ -154,5 +155,30 @@ class ModelTest {
             MutableStateFlow<Map<String, Download>>(mapOf("en-core" to Download.Failed))
         assertTrue(downloads.claim("en-core"))
         assertFalse(downloads.claim("en-core"))
+    }
+
+    @Test
+    fun newBaseReplacesOlderChain() {
+        fun pack(pack: String, month: String, base: String? = null) =
+            segment(emptyList(), pack, month, base)
+        val segments = listOf(
+            pack("core", "2000-02", base = "2000-01"),
+            pack("fantasy", "2000-03"),
+            pack("core", "2000-01"),
+            pack("core", "2000-04", base = "2000-03"),
+            pack("core", "2000-03"),
+            pack("scifi", "2000-04", base = "2000-03"),
+        )
+        assertEquals(
+            listOf("core 2000-03", "fantasy 2000-03", "core 2000-04"),
+            currentSegments(segments).map { "${it.pack} ${it.month}" },
+        )
+    }
+
+    @Test
+    fun refusesPlainHttpConnections() {
+        assertThrows(IllegalArgumentException::class.java) {
+            connect("http://example.org/pack.bin")
+        }
     }
 }
