@@ -23,7 +23,7 @@ private fun zip(file: File, entries: Map<String, ByteArray>) = file.apply {
     }
 }
 
-private fun epub(file: File, body: String) = zip(
+private fun epub(file: File, body: String, chapter: String = "chapter") = zip(
     file,
     mapOf(
         "META-INF/container.xml" to """
@@ -33,11 +33,11 @@ private fun epub(file: File, body: String) = zip(
         """.toByteArray(),
         "OEBPS/content.opf" to """
             <package>
-              <manifest><item id="one" href="text/chapter.xhtml"/></manifest>
+              <manifest><item id="one" href="text/$chapter.xhtml"/></manifest>
               <spine><itemref idref="one"/></spine>
             </package>
         """.toByteArray(),
-        "OEBPS/text/chapter.xhtml" to "<html><body>$body</body></html>".toByteArray(),
+        "OEBPS/text/$chapter.xhtml" to "<html><body>$body</body></html>".toByteArray(),
         "OEBPS/images/first.png" to FIRST_IMAGE,
         "OEBPS/images/second.png" to SECOND_IMAGE,
     ),
@@ -78,6 +78,15 @@ class DocumentTest {
             listOf(Span(6, 10, bold = true, italic = false), Span(15, 19, false, true)),
             block.spans,
         )
+    }
+
+    @Test
+    fun epubSkipsFrontMatterByWholeWordOnly() {
+        val body = "<p>Short</p>"
+        val skipped = epub(folder.newFile("toc.epub"), body, chapter = "toc")
+        val kept = epub(folder.newFile("stockholm.epub"), body, chapter = "stockholm")
+        assertEquals(emptyList<Block>(), blocks(openDocument(skipped)))
+        assertEquals(listOf("Short"), blocks(openDocument(kept)).map { it.text })
     }
 
     @Test

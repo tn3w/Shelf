@@ -25,7 +25,8 @@ import kotlin.math.roundToInt
 private const val SECTION_CHARACTERS = 40_000
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
 private val HEADING = Regex("h([1-6])")
-private val FRONT_MATTER = Regex("copyright|colophon|imprint|toc|contents|titlepage")
+private val FRONT_MATTER =
+    Regex("\\b(copyright|colophon|imprint|toc|contents|titlepage)\\b")
 private val WHITESPACE = Regex("\\s+")
 private const val JP2_SIGNATURE = "\u0000\u0000\u0000\u000CjP  \r\n\u0087\n"
 private const val CHUNK_SIZE = 1 shl 22
