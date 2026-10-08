@@ -75,6 +75,14 @@ class TextTest {
     }
 
     @Test
+    fun importsDidNotFinishAsRead() {
+        val csv = "Title,Read Status,Last Date Read\nDropped,did-not-finish,2022/12/31"
+        val book = csvBooks(csv).single()
+        assertEquals(Shelf.Read, book.shelf)
+        assertEquals(millis("2022-12-31"), book.date)
+    }
+
+    @Test
     fun ignoresFilesWithoutRows() {
         assertEquals(emptyList<CsvBook>(), csvBooks(""))
         assertEquals(emptyList<CsvBook>(), csvBooks("Title,Author\n"))

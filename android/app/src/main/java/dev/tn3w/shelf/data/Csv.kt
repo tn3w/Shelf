@@ -95,7 +95,7 @@ fun csvBooks(text: String): List<CsvBook> {
 }
 
 private fun shelfOf(status: String) = when (status.lowercase()) {
-    "read" -> Shelf.Read
+    "read", "did-not-finish" -> Shelf.Read
     "currently-reading", "paused" -> Shelf.Reading
     else -> Shelf.Want
 }
