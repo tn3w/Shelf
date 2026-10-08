@@ -17,6 +17,8 @@ import java.io.RandomAccessFile
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.Charset
 import java.util.zip.ZipFile
 import kotlin.math.roundToInt
 
@@ -211,7 +213,7 @@ private fun epubMetadata(epub: Epub): Metadata? {
 }
 
 private fun fictionBookMetadata(file: File): Metadata? {
-    val document = Jsoup.parse(file.readText(), "", Parser.xmlParser())
+    val document = Jsoup.parse(file, null, "", Parser.xmlParser())
     val info = document.selectFirst("title-info") ?: return null
     val author = info.selectFirst("author")?.let { author ->
         author.select("> first-name, > last-name").joinToString(" ") { it.text() }
@@ -233,7 +235,14 @@ fun openDocument(file: File): Document = when (file.extension.lowercase()) {
     "xhtml",
     -> byHeadings(htmlBlocks(Jsoup.parse(file).body()) { null })
 
-    else -> byHeadings(plainBlocks(file.readText()))
+    else -> byHeadings(plainBlocks(decodeText(file.readBytes())))
+}
+
+private fun decodeText(bytes: ByteArray): String = try {
+    val text = Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()
+    text.removePrefix("\uFEFF")
+} catch (_: CharacterCodingException) {
+    String(bytes, Charset.forName("windows-1252"))
 }
 
 private fun assemble(parts: List<Pair<String?, List<Block>>>): TextDocument {
@@ -434,7 +443,7 @@ private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
 }
 
 private fun readFictionBook(file: File): TextDocument {
-    val document = Jsoup.parse(file.readText(), "", Parser.xmlParser())
+    val document = Jsoup.parse(file, null, "", Parser.xmlParser())
     val body = document.selectFirst("body") ?: return assemble(emptyList())
     val sections =
         body.children().filter { it.tagName() == "section" }.ifEmpty { listOf(body) }

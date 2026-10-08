@@ -93,6 +93,31 @@ class DocumentTest {
     }
 
     @Test
+    fun plainTextFallsBackToLatinWhenNotUtf8() {
+        val file = folder.newFile("latin.txt")
+        file.writeText("Café über", Charsets.ISO_8859_1)
+        assertEquals("Café über", blocks(openDocument(file)).single().text)
+    }
+
+    @Test
+    fun plainTextDropsUtf8ByteOrderMark() {
+        val file = folder.newFile("marked.txt")
+        file.writeText("\uFEFFCafé")
+        assertEquals("Café", blocks(openDocument(file)).single().text)
+    }
+
+    @Test
+    fun fictionBookHonoursDeclaredEncoding() {
+        val file = folder.newFile("russian.fb2")
+        val xml = """
+            <?xml version="1.0" encoding="windows-1251"?>
+            <FictionBook><body><section><p>Привет мир</p></section></body></FictionBook>
+        """.trimIndent()
+        file.writeText(xml, charset("windows-1251"))
+        assertEquals("Привет мир", blocks(openDocument(file)).single().text)
+    }
+
+    @Test
     fun comicSkipsMacMetadataAndHiddenFiles() {
         val image = byteArrayOf(0)
         val file = zip(
