@@ -110,4 +110,10 @@ class LibraryTest {
         assertEquals(today, habit.day)
         assertEquals(listOf(0, 0, 0, 0, 0, 5, 0), habit.week)
     }
+
+    @Test
+    fun systemLanguageStoredAsAutomatic() {
+        assertEquals("", storedLanguage("de", "de"))
+        assertEquals("fr", storedLanguage("fr", "de"))
+    }
 }

@@ -64,7 +64,8 @@ fun OnboardingScreen() {
     fun finish(chosen: String = language) {
         if (chosen != language) app.reload(chosen)
         val now = System.currentTimeMillis()
-        update { it.copy(onboarded = true, language = chosen, lastCatalogueCheck = now) }
+        val stored = storedLanguage(chosen, app.systemLanguage())
+        update { it.copy(onboarded = true, language = stored, lastCatalogueCheck = now) }
     }
 
     LaunchedEffect(started, core?.state) {

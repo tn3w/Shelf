@@ -111,6 +111,8 @@ data class Settings(
         get() = coverSource.ifEmpty { COVERS }.trimEnd('/')
 }
 
+fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
+
 fun networkPermitted(context: Context) =
     context.checkSelfPermission(INTERNET) == PackageManager.PERMISSION_GRANTED
 
