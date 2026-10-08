@@ -2,9 +2,13 @@ package dev.tn3w.shelf.data
 
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
+import kotlin.time.Duration
 
 class LibraryTest {
     private val entries = stringPreferencesKey("entries")
@@ -89,5 +93,21 @@ class LibraryTest {
             assertEquals(1, habit.goal)
             assertEquals(2, habit.streak)
         }
+    }
+
+    @Test
+    fun datesEmitNewDayAfterMidnight() = runBlocking {
+        val first = LocalDate.of(2026, 1, 10)
+        val clock = listOf(first, first, first.plusDays(1)).iterator()
+        val emitted = dates({ clock.next() }, Duration.ZERO).take(2).toList()
+        assertEquals(listOf(first, first.plusDays(1)), emitted)
+    }
+
+    @Test
+    fun habitCarriesItsDay() {
+        val today = LocalDate.of(2026, 1, 10)
+        val habit = habitOf(mapOf(today.minusDays(1).toString() to 5), 5, today)
+        assertEquals(today, habit.day)
+        assertEquals(listOf(0, 0, 0, 0, 0, 5, 0), habit.week)
     }
 }

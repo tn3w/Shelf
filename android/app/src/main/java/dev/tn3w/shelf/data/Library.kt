@@ -21,6 +21,8 @@ import java.time.LocalDate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 private const val RECENT_LIMIT = 8
 private val Context.dataStore by preferencesDataStore(
@@ -123,7 +125,13 @@ data class Backup(
     val settings: Settings = Settings(),
 )
 
-data class Habit(val goal: Int, val today: Int, val streak: Int, val week: List<Int>) {
+data class Habit(
+    val goal: Int,
+    val today: Int,
+    val streak: Int,
+    val week: List<Int>,
+    val day: LocalDate,
+) {
     val done
         get() = today >= goal
 }
@@ -140,8 +148,18 @@ internal fun habitOf(
         .takeWhile { pages(it) >= goal }
         .count()
     val week = (6 downTo 0).map { pages(today.minusDays(it.toLong())) }
-    return Habit(goal, pages(today), streak, week)
+    return Habit(goal, pages(today), streak, week, today)
 }
+
+internal fun dates(
+    now: () -> LocalDate = LocalDate::now,
+    interval: Duration = 1.minutes,
+) = flow {
+    while (true) {
+        emit(now())
+        delay(interval)
+    }
+}.distinctUntilChanged()
 
 fun Book.toSaved(shelf: Shelf) =
     Saved(work, shelf, System.currentTimeMillis(), title, author, cover)
@@ -221,9 +239,9 @@ class Library(private val context: Context) {
 
     val settings = data.map { it.decode(SETTINGS, Settings()) }
 
-    val habit = data.map {
-        val goal = it.decode(SETTINGS, Settings()).dailyGoal
-        habitOf(it.decode(ACTIVITY, emptyMap()), goal)
+    val habit = combine(data, dates()) { preferences, today ->
+        val goal = preferences.decode(SETTINGS, Settings()).dailyGoal
+        habitOf(preferences.decode(ACTIVITY, emptyMap()), goal, today)
     }
 
     private val booksDir

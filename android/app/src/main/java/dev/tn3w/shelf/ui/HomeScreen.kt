@@ -22,7 +22,6 @@ import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.format.TextStyle
 
 private val HOME_TAGS =
@@ -271,11 +270,10 @@ private fun GoalBar(fraction: Float, label: String) {
 
 @Composable
 private fun WeekRow(habit: Habit) {
-    val today = LocalDate.now()
     val locale = LocalConfiguration.current.locales[0]
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         habit.week.forEachIndexed { index, pages ->
-            val day = today.minusDays((6 - index).toLong())
+            val day = habit.day.minusDays((6 - index).toLong())
             DayDot(
                 label = day.dayOfWeek.getDisplayName(TextStyle.NARROW, locale),
                 done = pages >= habit.goal,
