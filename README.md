@@ -58,6 +58,7 @@ flowchart LR
 <tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
 <tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
 <tr><td>Hosts</td><td>GitHub, Open Library, or <b>your own server</b></td></tr>
+<tr><td>Stored data</td><td>unreadable values <b>kept</b>, never overwritten</td></tr>
 </table>
 
 ## Own books

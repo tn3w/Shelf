@@ -6,11 +6,13 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -21,7 +23,10 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 private const val RECENT_LIMIT = 8
-private val Context.dataStore by preferencesDataStore("library")
+private val Context.dataStore by preferencesDataStore(
+    "library",
+    corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+)
 private val ENTRIES = stringPreferencesKey("entries")
 private val RECENT = stringPreferencesKey("recent")
 private val PROGRESS = stringPreferencesKey("progress")
@@ -160,30 +165,47 @@ fun Context.displayName(uri: Uri): String {
     return if (extension == null) name else "$name.$extension"
 }
 
+private inline fun <reified T> decodeOrNull(text: String) =
+    runCatching { json.decodeFromString<T>(text) }.getOrNull()
+
 private inline fun <reified T> Preferences.decode(
     key: Preferences.Key<String>,
     fallback: T,
-): T = this[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() }
-    ?: fallback
+): T = this[key]?.let { decodeOrNull<T>(it) } ?: fallback
+
+internal inline fun <reified T> MutablePreferences.updateJson(
+    key: Preferences.Key<String>,
+    fallback: T,
+    change: (T) -> T,
+) {
+    val stored = this[key]
+    val current = if (stored == null) fallback else decodeOrNull<T>(stored) ?: return
+    this[key] = json.encodeToString(change(current))
+}
 
 class Library(private val context: Context) {
     private val store = context.dataStore
 
-    val saved = store.data.map { preferences ->
+    private val data = store.data.catch {
+        if (it !is IOException) throw it
+        emit(emptyPreferences())
+    }
+
+    val saved = data.map { preferences ->
         preferences.decode(ENTRIES, emptyList<Saved>()).sortedByDescending {
             it.updated
         }
     }
 
-    val recentSearches = store.data.map { it.decode(RECENT, emptyList<String>()) }
+    val recentSearches = data.map { it.decode(RECENT, emptyList<String>()) }
 
-    val dismissed = store.data.map { it.decode(DISMISSED, emptySet<Int>()) }
+    val dismissed = data.map { it.decode(DISMISSED, emptySet<Int>()) }
 
-    val progress = store.data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }
+    val progress = data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }
 
-    val settings = store.data.map { it.decode(SETTINGS, Settings()) }
+    val settings = data.map { it.decode(SETTINGS, Settings()) }
 
-    val habit = store.data.map {
+    val habit = data.map {
         val goal = it.decode(SETTINGS, Settings()).dailyGoal
         habitOf(it.decode(ACTIVITY, emptyMap()), goal)
     }
@@ -287,7 +309,7 @@ class Library(private val context: Context) {
         key: Preferences.Key<String>,
         fallback: T,
         crossinline change: (T) -> T,
-    ) = store.edit { it[key] = json.encodeToString(change(it.decode(key, fallback))) }
+    ) = store.edit { it.updateJson(key, fallback, change) }
 
     suspend fun place(book: Book, shelf: Shelf?) =
         update(ENTRIES, emptyList<Saved>()) { entries ->
@@ -344,7 +366,7 @@ class Library(private val context: Context) {
     suspend fun dismiss(work: Int) = update(DISMISSED, emptySet<Int>()) { it + work }
 
     suspend fun exportTo(uri: Uri): Boolean {
-        val backup = store.data.first().toBackup()
+        val backup = data.first().toBackup()
         return writeTo(uri) { writeArchive(it, backup) }
     }
 
@@ -387,14 +409,7 @@ class Library(private val context: Context) {
         target.outputStream().use { input.copyTo(it) }
     }
 
-    private suspend fun merge(backup: Backup) = store.edit { preferences ->
-        val merged = preferences.toBackup().mergedWith(backup)
-        preferences[ENTRIES] = json.encodeToString(merged.entries)
-        preferences[PROGRESS] = json.encodeToString(merged.progress)
-        preferences[ACTIVITY] = json.encodeToString(merged.activity)
-        preferences[DISMISSED] = json.encodeToString(merged.dismissed)
-        preferences[SETTINGS] = json.encodeToString(merged.settings)
-    }
+    private suspend fun merge(backup: Backup) = store.edit { it.merge(backup) }
 }
 
 private fun Preferences.toBackup() = Backup(
@@ -405,13 +420,13 @@ private fun Preferences.toBackup() = Backup(
     decode(SETTINGS, Settings()),
 )
 
-private fun Backup.mergedWith(imported: Backup) = Backup(
-    entries = newestPerWork(entries + imported.entries),
-    progress = imported.progress + progress,
-    activity = maxPerDay(imported.activity, activity),
-    dismissed = dismissed + imported.dismissed,
-    settings = imported.settings.copy(onboarded = settings.onboarded),
-)
+internal fun MutablePreferences.merge(imported: Backup) {
+    updateJson(ENTRIES, emptyList<Saved>()) { newestPerWork(it + imported.entries) }
+    updateJson(PROGRESS, emptyMap<Int, Progress>()) { imported.progress + it }
+    updateJson(ACTIVITY, emptyMap<String, Int>()) { maxPerDay(imported.activity, it) }
+    updateJson(DISMISSED, emptySet<Int>()) { it + imported.dismissed }
+    updateJson(SETTINGS, Settings()) { imported.settings.copy(onboarded = it.onboarded) }
+}
 
 private fun newestPerWork(entries: List<Saved>) =
     entries.groupBy { it.work }.map { (_, saved) -> saved.maxBy { it.updated } }

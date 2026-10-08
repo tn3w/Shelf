@@ -10,7 +10,10 @@ import java.net.URI
 import java.security.MessageDigest
 
 const val USER_AGENT = "Shelf"
-val json = Json { ignoreUnknownKeys = true }
+val json = Json {
+    ignoreUnknownKeys = true
+    coerceInputValues = true
+}
 
 @Serializable
 data class Asset(val name: String, @SerialName("browser_download_url") val url: String)
