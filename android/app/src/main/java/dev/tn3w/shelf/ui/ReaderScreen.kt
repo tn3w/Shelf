@@ -88,6 +88,9 @@ private fun pageStep(key: Key, volumeKeys: Boolean) = when (key) {
     else -> null
 }
 
+internal fun isNewPageRead(previous: Int, settled: Int, furthest: Int) =
+    settled == previous + 1 && settled > furthest
+
 @Composable
 fun ReaderScreen(work: Int, navigator: Navigator) {
     val app = shelfApp()
@@ -374,6 +377,7 @@ private fun Pages(
     var chrome by remember { mutableStateOf(false) }
     var showChapters by remember { mutableStateOf(false) }
     var furthest by remember { mutableIntStateOf(pager.currentPage) }
+    var previous by remember { mutableIntStateOf(pager.currentPage) }
     val chapter = chapters.lastOrNull { it.second in 0..pager.currentPage }
     val focus = remember { FocusRequester() }
     fun turn(page: Int) = scope.launch { pager.animateScrollToPage(page) }
@@ -384,9 +388,10 @@ private fun Pages(
 
     LaunchedEffect(pager.settledPage) {
         app.library.saveProgress(state.work, save(pager.settledPage))
-        val newPages = pager.settledPage - furthest
-        if (newPages > 0) app.library.addPages(newPages)
-        furthest = maxOf(furthest, pager.settledPage)
+        val settled = pager.settledPage
+        if (isNewPageRead(previous, settled, furthest)) app.library.addPages(1)
+        furthest = maxOf(furthest, settled)
+        previous = settled
     }
 
     Box(
