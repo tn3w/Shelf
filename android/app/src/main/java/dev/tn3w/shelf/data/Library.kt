@@ -128,6 +128,21 @@ data class Habit(val goal: Int, val today: Int, val streak: Int, val week: List<
         get() = today >= goal
 }
 
+internal fun habitOf(
+    activity: Map<String, Int>,
+    dailyGoal: Int,
+    today: LocalDate = LocalDate.now(),
+): Habit {
+    val goal = dailyGoal.coerceAtLeast(1)
+    fun pages(day: LocalDate) = activity[day.toString()] ?: 0
+    val start = if (pages(today) >= goal) today else today.minusDays(1)
+    val streak = generateSequence(start) { it.minusDays(1) }
+        .takeWhile { pages(it) >= goal }
+        .count()
+    val week = (6 downTo 0).map { pages(today.minusDays(it.toLong())) }
+    return Habit(goal, pages(today), streak, week)
+}
+
 fun Book.toSaved(shelf: Shelf) =
     Saved(work, shelf, System.currentTimeMillis(), title, author, cover)
 
@@ -209,17 +224,6 @@ class Library(private val context: Context) {
     val habit = data.map {
         val goal = it.decode(SETTINGS, Settings()).dailyGoal
         habitOf(it.decode(ACTIVITY, emptyMap()), goal)
-    }
-
-    private fun habitOf(activity: Map<String, Int>, goal: Int): Habit {
-        val today = LocalDate.now()
-        fun pages(day: LocalDate) = activity[day.toString()] ?: 0
-        val start = if (pages(today) >= goal) today else today.minusDays(1)
-        val streak = generateSequence(start) { it.minusDays(1) }
-            .takeWhile { pages(it) >= goal }
-            .count()
-        val week = (6 downTo 0).map { pages(today.minusDays(it.toLong())) }
-        return Habit(goal, pages(today), streak, week)
     }
 
     private val booksDir

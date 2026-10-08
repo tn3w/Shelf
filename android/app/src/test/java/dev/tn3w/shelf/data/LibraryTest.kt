@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 
 class LibraryTest {
     private val entries = stringPreferencesKey("entries")
@@ -77,5 +78,16 @@ class LibraryTest {
         preferences.updateJson(settings, Settings()) { it.copy(margin = 12) }
         val decoded = json.decodeFromString<Settings>(preferences[settings]!!)
         assertEquals(Settings(serif = false, margin = 12), decoded)
+    }
+
+    @Test
+    fun habitTreatsNonPositiveGoalAsOne() {
+        val today = LocalDate.of(2026, 1, 10)
+        val activity = mapOf(today.toString() to 3, today.minusDays(1).toString() to 1)
+        listOf(0, -5).forEach { goal ->
+            val habit = habitOf(activity, goal, today)
+            assertEquals(1, habit.goal)
+            assertEquals(2, habit.streak)
+        }
     }
 }
