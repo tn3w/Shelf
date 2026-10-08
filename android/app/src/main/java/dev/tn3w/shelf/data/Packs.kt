@@ -2,6 +2,7 @@ package dev.tn3w.shelf.data
 
 import android.content.Context
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -78,6 +79,13 @@ sealed interface Download {
     data class Running(val progress: Float) : Download
 
     data object Failed : Download
+}
+
+fun MutableStateFlow<Map<String, Download>>.claim(key: String): Boolean {
+    val before = getAndUpdate {
+        if (it[key] is Download.Running) it else it + (key to Download.Running(0f))
+    }
+    return before[key] !is Download.Running
 }
 
 private data class LocalFile(val id: String, val pack: String, val month: String) {

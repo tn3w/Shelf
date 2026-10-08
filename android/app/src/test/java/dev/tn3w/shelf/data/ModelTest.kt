@@ -1,11 +1,14 @@
 package dev.tn3w.shelf.data
 
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 class ModelTest {
     @Test
@@ -131,5 +134,25 @@ class ModelTest {
         val list = IntArrayList()
         repeat(100) { list.add(it) }
         assertArrayEquals(IntArray(100) { it }, list.toArray())
+    }
+
+    @Test
+    fun downloadClaimedOnceUnderConcurrency() {
+        val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
+        val claims = AtomicInteger()
+        val threads =
+            List(16) {
+                thread { if (downloads.claim("en-core")) claims.incrementAndGet() }
+            }
+        threads.forEach { it.join() }
+        assertEquals(1, claims.get())
+    }
+
+    @Test
+    fun failedDownloadCanBeClaimedAgain() {
+        val downloads =
+            MutableStateFlow<Map<String, Download>>(mapOf("en-core" to Download.Failed))
+        assertTrue(downloads.claim("en-core"))
+        assertFalse(downloads.claim("en-core"))
     }
 }

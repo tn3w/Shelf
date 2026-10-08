@@ -82,8 +82,7 @@ class ShelfApp :
 
     fun download(language: String, pack: String) = scope.launch(Dispatchers.IO) {
         val key = "$language-$pack"
-        if (downloads.value[key] is Download.Running) return@launch
-        downloads.update { it + (key to Download.Running(0f)) }
+        if (!downloads.claim(key)) return@launch
         runCatching {
             packs.download(language, pack) { progress ->
                 downloads.update { it + (key to Download.Running(progress)) }
