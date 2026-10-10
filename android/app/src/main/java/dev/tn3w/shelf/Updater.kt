@@ -14,14 +14,7 @@ import kotlinx.coroutines.*
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
-private val STORES = setOf(
-    "org.fdroid.fdroid",
-    "org.fdroid.basic",
-    "com.looker.droidify",
-    "com.machiav3lli.fdroid",
-    "com.aurora.store",
-)
-private const val APK_NAME = "shelf.apk"
+private const val APK_NAME = "shelf-fdroid.apk"
 private const val CHECKSUMS_NAME = "SHA256SUMS"
 
 private fun numbers(version: String) = version.split(".").map { it.toIntOrNull() ?: 0 }
@@ -37,17 +30,6 @@ private fun isNewer(version: String): Boolean {
 }
 
 object Updater {
-    fun isEnabled(context: Context): Boolean {
-        val manager = context.packageManager
-        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            manager.getInstallSourceInfo(context.packageName).installingPackageName
-        } else {
-            @Suppress("DEPRECATION")
-            manager.getInstallerPackageName(context.packageName)
-        }
-        return installer !in STORES
-    }
-
     suspend fun latest(): Release? = withContext(Dispatchers.IO) {
         val release = json
             .decodeFromString<List<Release>>(fetchText(RELEASES))
@@ -75,6 +57,7 @@ object Updater {
                 session.abandon()
                 throw exception
             }
+            (context.applicationContext as ShelfApp).packs.copyBundled()
             session.commit(statusReceiver(context, sessionId).intentSender)
         }
     }
@@ -121,7 +104,10 @@ object Updater {
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
-        if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) return
+        if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            (context.applicationContext as ShelfApp).packs.removeBundledCopies()
+            return
+        }
         val confirm = IntentCompat.getParcelableExtra(
             intent, Intent.EXTRA_INTENT, Intent::class.java,
         ) ?: return

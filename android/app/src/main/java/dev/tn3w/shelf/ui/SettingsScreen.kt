@@ -390,14 +390,12 @@ private fun PrivacySettings() {
             settings.catalogueUpdates,
             enabled = !offline,
         ) { value -> update { it.copy(catalogueUpdates = value) } }
-        if (Updater.isEnabled(context)) {
-            SwitchRow(
-                R.string.check_updates,
-                R.string.check_updates_hint,
-                settings.checkUpdates,
-                enabled = !offline,
-            ) { value -> update { it.copy(checkUpdates = value) } }
-        }
+        SwitchRow(
+            R.string.check_updates,
+            R.string.check_updates_hint,
+            settings.checkUpdates,
+            enabled = !offline,
+        ) { value -> update { it.copy(checkUpdates = value) } }
     }
 }
 
@@ -604,7 +602,7 @@ private fun AboutRows() {
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
     val summary = listOfNotNull(version, status?.let { stringResource(it) })
 
-    if (Updater.isEnabled(context) && !settings.isOffline(context)) {
+    if (!settings.isOffline(context)) {
         ActionRow(
             R.string.app_name,
             Icons.Outlined.Refresh,

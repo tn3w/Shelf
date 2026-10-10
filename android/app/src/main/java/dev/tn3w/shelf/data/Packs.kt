@@ -129,6 +129,10 @@ class Packs(private val context: Context) {
     private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
+    init {
+        removeBundledCopies()
+    }
+
     var source = ""
 
     val manifest: Manifest?
@@ -167,6 +171,18 @@ class Packs(private val context: Context) {
 
     private fun installed(language: String) =
         (bundled + downloaded()).filter { it.language == language }
+
+    fun copyBundled() = bundled
+        .filterNot { binOf(it.id).exists() }
+        .forEach { file ->
+            replaceFile(binOf(file.id)) { temporary ->
+                context.assets.open("${file.id}.bin").use { input ->
+                    temporary.outputStream().use { input.copyTo(it) }
+                }
+            }
+        }
+
+    fun removeBundledCopies() = deleteAll(bundled)
 
     fun storageBytes() = downloaded().sumOf { binOf(it.id).length() }
 

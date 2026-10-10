@@ -25,7 +25,7 @@ fun UpdatePrompt(settings: Settings) {
         val now = System.currentTimeMillis()
         val due = now - settings.lastAppCheck > DAY_MILLIS
         val allowed = settings.checkUpdates && !settings.isOffline(context)
-        if (!allowed || !due || !Updater.isEnabled(context)) return@LaunchedEffect
+        if (!allowed || !due) return@LaunchedEffect
         app.library.updateSettings { it.copy(lastAppCheck = now) }
         release = runCatching { Updater.latest() }.getOrNull()
     }
