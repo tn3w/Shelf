@@ -28,7 +28,7 @@
     <string name="core_required">The core catalogue is needed to use Shelf. Nothing is downloaded until you tap Download.</string>
     <string name="cover_of">Cover of %s</string>
     <string name="daily_goal">Daily goal</string>
-    <string name="daily_goal_hint">Pages to read each day to keep your streak.</string>
+    <string name="daily_goal_hint">Pages to read each day to keep your streak. 0 hides the widget.</string>
     <string name="download">Download</string>
     <string name="download_all">All (%s)</string>
     <string name="download_pack">Download %s</string>

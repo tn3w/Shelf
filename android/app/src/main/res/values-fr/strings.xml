@@ -27,7 +27,7 @@
     <string name="core_required">Le catalogue principal est nécessaire pour utiliser Shelf. Rien n’est téléchargé avant que vous appuyiez sur Télécharger.</string>
     <string name="cover_of">Couverture de %s</string>
     <string name="daily_goal">Objectif quotidien</string>
-    <string name="daily_goal_hint">Pages à lire chaque jour pour garder la série.</string>
+    <string name="daily_goal_hint">Pages à lire chaque jour pour garder la série. 0 masque le widget.</string>
     <string name="download">Télécharger</string>
     <string name="download_all">Tout (%s)</string>
     <string name="download_pack">Télécharger %s</string>

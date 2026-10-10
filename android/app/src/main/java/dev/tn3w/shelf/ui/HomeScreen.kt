@@ -34,6 +34,7 @@ fun HomeScreen(navigator: Navigator) {
     val saved by app.library.saved.collectAsStateWithLifecycle(null)
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val habit by app.library.habit.collectAsStateWithLifecycle(null)
+    val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
     val dismissed by app.library.dismissed.collectAsStateWithLifecycle(emptySet())
     val scope = rememberCoroutineScope()
     val rows by load(saved, dismissed) {
@@ -55,7 +56,7 @@ fun HomeScreen(navigator: Navigator) {
                 IconAction(Icons.Outlined.Settings, label, navigator::settings)
             }
         }
-        habit?.let { item { HabitCard(it) } }
+        habit?.takeIf { settings.dailyGoal > 0 }?.let { item { HabitCard(it) } }
         if (reading.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.continue_reading)) }
             item {

@@ -27,7 +27,7 @@
     <string name="core_required">El catálogo básico es necesario para usar Shelf. No se descarga nada hasta que pulses Descargar.</string>
     <string name="cover_of">Portada de %s</string>
     <string name="daily_goal">Meta diaria</string>
-    <string name="daily_goal_hint">Páginas diarias para mantener la racha.</string>
+    <string name="daily_goal_hint">Páginas diarias para mantener la racha. 0 oculta el widget.</string>
     <string name="download">Descargar</string>
     <string name="download_all">Todo (%s)</string>
     <string name="download_pack">Descargar %s</string>

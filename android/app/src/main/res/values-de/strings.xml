@@ -27,7 +27,7 @@
     <string name="core_required">Der Kernkatalog wird für Shelf benötigt. Es wird nichts geladen, bis du auf Herunterladen tippst.</string>
     <string name="cover_of">Cover von %s</string>
     <string name="daily_goal">Tagesziel</string>
-    <string name="daily_goal_hint">Seiten pro Tag, um die Serie zu halten.</string>
+    <string name="daily_goal_hint">Seiten pro Tag, um die Serie zu halten. 0 blendet das Widget aus.</string>
     <string name="download">Herunterladen</string>
     <string name="download_all">Alle (%s)</string>
     <string name="download_pack">%s herunterladen</string>

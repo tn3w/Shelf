@@ -308,7 +308,7 @@ private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
 @Composable
 private fun GoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
     var text by remember { mutableStateOf(current.toString()) }
-    val goal = text.toIntOrNull()?.takeIf { it in 1..MAX_GOAL }
+    val goal = text.toIntOrNull()?.takeIf { it in 0..MAX_GOAL }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.daily_goal)) },
