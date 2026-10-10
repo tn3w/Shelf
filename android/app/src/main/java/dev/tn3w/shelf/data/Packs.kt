@@ -120,6 +120,10 @@ internal fun currentSegments(segments: List<Segment>) = segments
             .thenBy { PACKS.indexOf(it.pack) },
     )
 
+internal fun newest(vararg manifests: Manifest?) = manifests
+    .filterNotNull()
+    .maxWithOrNull(compareBy(releaseOrder) { it.month })
+
 class Packs(private val context: Context) {
     private val directory = context.filesDir.resolve("catalogue").apply {
         mkdirs()
@@ -136,7 +140,7 @@ class Packs(private val context: Context) {
     var source = ""
 
     val manifest: Manifest?
-        get() = stored() ?: bundledManifest().takeIf { source.isEmpty() }
+        get() = newest(stored(), bundledManifest().takeIf { source.isEmpty() })
 
     fun forgetManifest() = manifestFile.delete()
 

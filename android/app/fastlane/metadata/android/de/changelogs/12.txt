@@ -1,0 +1,8 @@
+• Buchcover oder ISBN-Barcode scannen, komplett auf dem Gerät
+• CSV-Import findet Bücher zuerst per ISBN
+• Sicherere Daten: kein stilles Löschen bei Lesefehlern, geprüfter Backup-Import
+• Leseziel zählt nur echtes Umblättern; Gewohnheit aktualisiert sich nach Mitternacht
+• FB2- und TXT-Dateien mit anderen Zeichensätzen öffnen richtig
+• StoryGraph-Abbrüche werden als gelesen importiert
+• Update-Dialog zeigt saubere Änderungsliste
+• Eingebauter Katalog aktualisiert

@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-10-07"
+val catalogueRelease = "catalogue-2026-10-10"
 val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
@@ -22,8 +22,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 11
-        versionName = "1.2.1"
+        versionCode = 12
+        versionName = "1.3.0"
     }
 
     flavorDimensions += "distribution"

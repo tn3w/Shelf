@@ -1,0 +1,8 @@
+• Scannez une couverture ou un code-barres ISBN, sur l'appareil
+• L'import CSV cherche d'abord par ISBN
+• Données plus sûres : pas d'effacement silencieux, import de sauvegarde vérifié
+• L'objectif quotidien ne compte que les vraies pages tournées ; habitude à jour après minuit
+• Les fichiers FB2 et TXT dans d'autres encodages s'ouvrent correctement
+• Les livres abandonnés StoryGraph sont importés comme lus
+• La fenêtre de mise à jour affiche des notes propres
+• Catalogue intégré mis à jour

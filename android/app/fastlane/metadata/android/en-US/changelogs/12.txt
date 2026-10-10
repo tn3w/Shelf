@@ -1,0 +1,8 @@
+• Scan a book cover or ISBN barcode to find it, fully on device
+• CSV import matches books by ISBN first
+• Safer data: no silent wipe on read errors, validated backup import
+• Reading goal counts only real page turns; habit updates after midnight
+• FB2 and TXT files in other charsets open correctly
+• StoryGraph did-not-finish books import as read
+• Update dialog shows a clean changelog
+• Built-in catalogue updated

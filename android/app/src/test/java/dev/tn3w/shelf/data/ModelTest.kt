@@ -23,6 +23,16 @@ class ModelTest {
     }
 
     @Test
+    fun prefersNewestManifest() {
+        val older = Manifest(CATALOGUE_FORMAT, "2026-01-02", emptyList())
+        val newer = Manifest(CATALOGUE_FORMAT, "2026-01-03", emptyList())
+        assertEquals(newer, newest(older, newer))
+        assertEquals(newer, newest(newer, older))
+        assertEquals(older, newest(older, null))
+        assertEquals(null, newest(null, null))
+    }
+
+    @Test
     fun validatesSources() {
         assertTrue(isValidSource(""))
         assertTrue(isValidSource("tn3w/Shelf"))
