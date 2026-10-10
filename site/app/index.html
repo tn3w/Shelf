@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelf · Browse the catalogue</title>
+  <meta name="description" content="Search and explore the Shelf book catalogue in your
+    browser. No account, no tracking.">
+  <meta name="theme-color" content="#16120F">
+  <link rel="canonical" href="https://shelf.tn3w.dev/app/">
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="app.css">
+  <script>
+    try {
+      const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      document.documentElement.dataset.theme = localStorage.getItem("theme") ?? system
+    } catch {}
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="wrap nav">
+      <a class="brand" href="../"><img src="../icon.svg" alt=""><span>Shelf</span></a>
+      <input id="search" type="search" placeholder="Search books, authors, ISBN"
+        autocomplete="off" aria-label="Search">
+      <nav class="tabs">
+        <a href="#/">Explore</a>
+        <a href="#/library">Library</a>
+        <a href="#/settings">Settings</a>
+      </nav>
+      <button class="icon-button" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor"
+            stroke-width="2" />
+          <path fill="currentColor" d="M12 3a9 9 0 0 1 0 18Z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="status">Loading catalogue</p>
+  </main>
+</body>
+</html>

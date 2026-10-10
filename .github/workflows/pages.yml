@@ -8,6 +8,9 @@ on:
       - android/design/**
       - android/app/fastlane/metadata/android/en-US/images/**
       - .github/workflows/pages.yml
+  workflow_run:
+    workflows: [database]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -47,12 +50,34 @@ jobs:
             done
           done
 
+      - name: Catalogue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p site/catalogue
+          cd site/catalogue
+          latest=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+            --json tagName --jq '[.[].tagName | select(startswith("catalogue-"))]
+              | sort | last')
+          gh release download "$latest" --repo "$GITHUB_REPOSITORY" \
+            --pattern manifest.json
+          jq '.segments |= map(select(.pack == "core" or .pack == "ranks"))' \
+            manifest.json > core.json
+          mv core.json manifest.json
+          jq -r '.segments[] | "url = \(.url)\noutput = \(.id).bin"' manifest.json \
+            | curl --silent --show-error --fail --location --parallel --config -
+          jq -r '.segments[] | "\(.sha256)  \(.id).bin"' manifest.json \
+            | sha256sum --check --quiet
+          gzip --best *.bin
+
       - name: Minify
         run: |
           npx --yes svgo@4.1.0 --multipass --quiet site/*.svg
           npx --yes esbuild@0.28.2 site/style.css --minify --allow-overwrite \
             --target=chrome111,firefox113,safari16.4 --outfile=site/style.css
-          for page in site/*.html; do
+          npx --yes esbuild@0.28.2 site/app/*.js site/app/*.css --minify \
+            --allow-overwrite --target=chrome111,firefox113,safari16.4 --outdir=site/app
+          for page in site/*.html site/app/*.html; do
             npx --yes html-minifier-terser@7.2.0 --collapse-whitespace \
               --remove-comments --remove-redundant-attributes --minify-js true \
               --minify-css true --use-short-doctype -o "$page" "$page"
