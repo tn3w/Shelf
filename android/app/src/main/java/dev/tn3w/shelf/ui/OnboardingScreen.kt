@@ -131,7 +131,6 @@ fun OnboardingScreen() {
             available = packs.orEmpty().filter { it.state == PackState.Available },
             selected = if (required) listOf("core") + selected else selected,
             canSkip = !required || core?.state == PackState.Installed,
-            canDownload = if (required) core != null else selected.isNotEmpty(),
             waiting = started && coreDownload !is Download.Failed,
             onSkip = { finish() },
         ) { chosen ->
@@ -157,25 +156,28 @@ private fun OnboardingActions(
     available: List<PackInfo>,
     selected: List<String>,
     canSkip: Boolean,
-    canDownload: Boolean,
     waiting: Boolean,
     onSkip: () -> Unit,
     onDownload: (List<String>) -> Unit,
 ) {
     val total = available.sumOf { it.bytes }
+    val pending = selected.filter { pack -> available.any { it.pack == pack } }
     Row(
         Modifier.fillMaxWidth().padding(ScreenPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
     ) {
-        if (canSkip) {
-            TextButton(onClick = onSkip) { Text(stringResource(R.string.later)) }
-        }
         if (total > 0) {
             OutlinedButton(
                 enabled = !waiting, onClick = { onDownload(available.map { it.pack }) },
             ) { Text(stringResource(R.string.download_all, bytes(total))) }
         }
-        Button(enabled = !waiting && canDownload, onClick = { onDownload(selected) }) {
+        if (pending.isEmpty()) {
+            Button(enabled = canSkip, onClick = onSkip) {
+                Text(stringResource(R.string.next))
+            }
+            return@Row
+        }
+        Button(enabled = !waiting, onClick = { onDownload(pending) }) {
             Text(stringResource(R.string.download))
         }
     }

@@ -43,6 +43,7 @@
     <string name="install">Installer</string>
     <string name="larger_text">Texte plus grand</string>
     <string name="later">Plus tard</string>
+    <string name="next">Continuer</string>
     <string name="library">Bibliothèque</string>
     <string name="library_empty">Les livres commencés, enregistrés ou importés apparaissent ici.</string>
     <string name="license">Licence (MIT)</string>
