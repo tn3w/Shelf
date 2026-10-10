@@ -51,6 +51,11 @@ jobs:
           cp app/build/outputs/apk/github/release/*.apk dist/shelf.apk
           cp app/build/outputs/apk/fdroid/release/*.apk dist/shelf-fdroid.apk
           (cd dist && sha256sum shelf.apk shelf-fdroid.apk > SHA256SUMS)
+          code=$(grep -oP 'versionCode = \K\d+' app/build.gradle.kts)
+          for locale in app/fastlane/metadata/android/*/; do
+            language=$(basename "$locale")
+            cp "$locale/changelogs/$code.txt" "dist/changelog-${language%%-*}.txt"
+          done
 
       - name: Release
         env:

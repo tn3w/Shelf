@@ -64,6 +64,19 @@ class ModelTest {
     }
 
     @Test
+    fun picksChangelogInLanguageWithEnglishFallback() {
+        val release = Release(
+            "v9.8.7",
+            assets = listOf("en", "de").map {
+                Asset("changelog-$it.txt", "https://host/$it")
+            },
+        )
+        assertEquals("https://host/de", release.changelogUrl("de"))
+        assertEquals("https://host/en", release.changelogUrl("fr"))
+        assertEquals(null, Release("v9.8.7").changelogUrl("de"))
+    }
+
+    @Test
     fun decodesSettingsWithEnumsAndUnknownKeys() {
         val settings = json.decodeFromString<Settings>(
             """{"theme": "Dark", "pageColor": "Night", "dailyGoal": 15, "removed": 1}""",

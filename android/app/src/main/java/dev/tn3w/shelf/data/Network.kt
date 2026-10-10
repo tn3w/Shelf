@@ -30,6 +30,10 @@ data class Release(
         get() = tag.removePrefix("v")
 
     fun assetUrl(name: String) = assets.first { it.name == name }.url
+
+    fun changelogUrl(language: String) = listOf(language, "en")
+        .firstNotNullOfOrNull { code -> assets.find { it.name == "changelog-$code.txt" } }
+        ?.url
 }
 
 fun connect(url: String): HttpURLConnection {

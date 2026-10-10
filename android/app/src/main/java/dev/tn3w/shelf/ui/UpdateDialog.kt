@@ -1,8 +1,11 @@
 package dev.tn3w.shelf.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
@@ -35,12 +38,24 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     var progress by remember { mutableStateOf<Float?>(null) }
     var failed by remember { mutableStateOf(false) }
+    val language = LocalConfiguration.current.locales[0].language
+    val notes by produceState("", release, language) {
+        val url = release.changelogUrl(language) ?: return@produceState
+        value = runCatching { withContext(Dispatchers.IO) { fetchText(url).trim() } }
+            .getOrDefault("")
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.update_available, release.version)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(release.body.take(600))
+                if (notes.isNotEmpty()) {
+                    Text(
+                        notes,
+                        modifier = Modifier.weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState()),
+                    )
+                }
                 progress?.let { value -> LinearProgressIndicator(progress = { value }) }
                 if (failed) Text(stringResource(R.string.update_failed))
             }
