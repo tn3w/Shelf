@@ -1,27 +1,23 @@
 name: Feature request
-description: Suggest an addition or a change
+description: Got an idea? Big or small, we'd love to hear it
 labels: [enhancement]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping shape Shelf! Rough ideas are welcome, no need to have it all
+        figured out.
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What is hard or missing today?
+      label: What would make Shelf better for you?
+      description: Something missing, clunky or just a nice-to-have.
     validations:
       required: true
 
   - type: textarea
     id: idea
     attributes:
-      label: Proposal
-      description: How it should work, and alternatives you considered.
-    validations:
-      required: true
-
-  - type: checkboxes
-    id: offline
-    attributes:
-      label: Constraints
-      options:
-        - label: This works offline and keeps library data on the device.
-          required: true
+      label: Any thoughts on how it could work?
+      description: Optional. Sketches, examples from other apps, anything helps.

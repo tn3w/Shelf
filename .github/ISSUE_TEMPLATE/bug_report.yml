@@ -1,12 +1,18 @@
 name: Bug report
-description: Something in the app, builder or catalogue is broken
+description: Something not working right? Let us know
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this! Every report helps make Shelf better.
+        Fill in what you can, partial info is fine.
+
   - type: textarea
     id: what
     attributes:
-      label: What happens
-      description: What you did, what you expected, what you got.
+      label: What happened?
+      description: What you did, what you expected, what you got instead.
     validations:
       required: true
 
@@ -14,28 +20,24 @@ body:
     id: version
     attributes:
       label: Shelf version
-      placeholder: v1.2.3 (Settings → About)
-    validations:
-      required: true
+      description: Found under Settings → About.
+      placeholder: v1.2.3
 
   - type: dropdown
     id: source
     attributes:
       label: Install source
-      options: [GitHub APK, F-Droid, Obtainium, Built from source]
-    validations:
-      required: true
+      options: [GitHub APK, F-Droid, Obtainium, Built from source, Not sure]
 
   - type: input
     id: device
     attributes:
       label: Device and Android version
       placeholder: Pixel 7, Android 15
-    validations:
-      required: true
 
   - type: textarea
     id: logs
     attributes:
       label: Logs or screenshots
+      description: Optional, but often a big help.
       render: text
