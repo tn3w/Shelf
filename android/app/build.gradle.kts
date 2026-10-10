@@ -149,6 +149,15 @@ fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
 bundleCatalogue("github", "downloadCatalogue", bundledPacks)
 bundleCatalogue("fdroid", "downloadManifest", emptyList())
 
+tasks.register<JavaExec>("scanBench") {
+    val unitTest = tasks.named<Test>("testGithubDebugUnitTest")
+    dependsOn("downloadCatalogue", unitTest.map { it.taskDependencies })
+    classpath = files(unitTest.map { it.classpath })
+    mainClass = "dev.tn3w.shelf.data.ScanBenchKt"
+    workingDir = rootDir.parentFile
+    maxHeapSize = "6g"
+}
+
 dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)

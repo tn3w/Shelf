@@ -50,6 +50,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class ReaderRoute(val work: Int)
 
+@Serializable object ScanRoute
+
 @Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
 
 private const val SCREEN_FADE_MILLIS = 220
@@ -74,6 +76,8 @@ class Navigator(private val controller: NavHostController) {
 
     fun reader(work: Int) =
         controller.navigate(ReaderRoute(work)) { launchSingleTop = true }
+
+    fun scan() = controller.navigate(ScanRoute) { launchSingleTop = true }
 
     fun settings(page: SettingsPage = SettingsPage.Main) =
         controller.navigate(SettingsRoute(page))
@@ -165,7 +169,8 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     val navigator = Navigator(controller)
     val entry by controller.currentBackStackEntryAsState()
     val selected = remember(entry) { controller.selectedTab() }
-    val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true
+    val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true ||
+        entry?.destination?.hasRoute(ScanRoute::class) == true
     val adaptive = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
         currentWindowAdaptiveInfoV2(),
     )
@@ -232,6 +237,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
+        screen<ScanRoute> { ScanScreen(navigator) }
         screen<SettingsRoute> {
             SettingsScreen(it.toRoute<SettingsRoute>().page, navigator)
         }

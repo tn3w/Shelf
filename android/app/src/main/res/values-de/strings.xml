@@ -241,4 +241,8 @@
     <string name="catalogue_incomplete">Importiere die Core- und die Ranks-Datei einer Sprache.</string>
     <string name="no_catalogue">Noch kein Katalog installiert. Lade einen herunter oder importiere Katalogdateien in den Einstellungen, um Bücher zu entdecken. Eigene Dateien importierst du in der Bibliothek.</string>
     <string name="open_settings">Einstellungen öffnen</string>
+    <string name="scan">Cover scannen</string>
+    <string name="scan_hint">Cover ins Bild halten, tippen zum Erfassen</string>
+    <string name="scan_again">Erneut scannen</string>
+    <string name="camera_denied">Shelf liest Buchcover mit der Kamera, komplett auf deinem Handy. Erlaube den Kamerazugriff in den Systemeinstellungen, um zu scannen.</string>
 </resources>

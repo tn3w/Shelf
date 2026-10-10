@@ -92,7 +92,7 @@ private fun withoutArticle(text: String) = text.replaceFirst(ARTICLE, "")
 
 fun mainTitle(title: String) = title.split(TITLE_BREAK).first()
 
-private fun editDistance(left: String, right: String, limit: Int): Int {
+fun editDistance(left: String, right: String, limit: Int): Int {
     if (abs(left.length - right.length) > limit) return limit + 1
     var beforePrevious: IntArray? = null
     var previous = IntArray(right.length + 1) { it }
@@ -117,7 +117,7 @@ private fun editDistance(left: String, right: String, limit: Int): Int {
     return previous.last()
 }
 
-private fun allowedTypos(token: String) = when {
+fun allowedTypos(token: String) = when {
     token.length <= 3 -> 0
     token.length <= 6 -> 1
     else -> 2
@@ -162,7 +162,7 @@ class Searcher(private val catalogue: Catalogue) {
         }
     }
 
-    private fun frequency(text: String) = catalogue.ranks?.frequency(text)
+    fun frequency(text: String) = catalogue.ranks?.frequency(text)
         ?: segments.sumOf { it.term(text)?.frequency ?: 0 }
 
     private fun completions(prefix: String) = segments
@@ -295,6 +295,9 @@ class Searcher(private val catalogue: Catalogue) {
         }
         return value - min(LENGTH * max(0, main.size - query.size), 0.3)
     }
+
+    fun matches(word: String, prefix: Boolean = false) =
+        tokenScores(word, termMatches(word, prefix)).scores
 
     fun search(query: String, limit: Int = 30): List<Book> {
         val tokens = tokenize(query)

@@ -1,5 +1,13 @@
 package dev.tn3w.shelf.ui
 
+import android.Manifest.permission.CAMERA
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -14,9 +22,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
@@ -61,7 +71,7 @@ fun SearchScreen(navigator: Navigator) {
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).imePadding()) {
         LargeTitle(stringResource(R.string.search))
-        SearchField(query, onChange = { query = it }, onSubmit = { saveQuery() })
+        SearchField(query, { query = it }, { saveQuery() }, scan(navigator))
         LazyColumn {
             val current = results
             if (current == null) {
@@ -115,16 +125,70 @@ fun SearchScreen(navigator: Navigator) {
 }
 
 @Composable
-private fun SearchField(query: String, onChange: (String) -> Unit, onSubmit: () -> Unit) {
+private fun scan(navigator: Navigator): (() -> Unit)? {
+    val context = LocalContext.current
+    var denied by remember { mutableStateOf(false) }
+    val permission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
+        if (granted) navigator.scan() else denied = true
+    }
+    if (denied) CameraDenied { denied = false }
+    val manager = context.packageManager
+    if (!manager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) return null
+    return {
+        if (ContextCompat.checkSelfPermission(context, CAMERA) == PERMISSION_GRANTED) {
+            navigator.scan()
+        } else {
+            permission.launch(CAMERA)
+        }
+    }
+}
+
+@Composable
+private fun CameraDenied(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.scan)) },
+        text = { Text(stringResource(R.string.camera_denied)) },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onDismiss()
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null),
+                        ),
+                    )
+                },
+            ) { Text(stringResource(R.string.open_settings)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun SearchField(
+    query: String,
+    onChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onScan: (() -> Unit)?,
+) {
     TextField(
         value = query,
         onValueChange = onChange,
         placeholder = { Text(stringResource(R.string.search_hint)) },
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
         trailingIcon = {
-            if (query.isEmpty()) return@TextField
-            IconAction(Icons.Outlined.Close, stringResource(R.string.clear)) {
-                onChange("")
+            if (query.isNotEmpty()) {
+                IconAction(Icons.Outlined.Close, stringResource(R.string.clear)) {
+                    onChange("")
+                }
+            } else if (onScan != null) {
+                val label = stringResource(R.string.scan)
+                IconAction(Icons.Outlined.DocumentScanner, label, onScan)
             }
         },
         singleLine = true,

@@ -179,7 +179,7 @@ private fun OwnBookField(
 }
 
 @Composable
-private fun ShelfPicker(selected: Shelf, onSelect: (Shelf) -> Unit) {
+fun ShelfPicker(selected: Shelf?, onSelect: (Shelf) -> Unit) {
     val shelves = FILTERS.mapNotNull { (label, shelf) -> shelf?.let { label to it } }
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         shelves.forEachIndexed { index, (label, shelf) ->

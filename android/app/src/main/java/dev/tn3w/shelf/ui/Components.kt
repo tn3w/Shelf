@@ -377,14 +377,19 @@ fun SkeletonTile(modifier: Modifier = Modifier.width(TileWidth)) {
 }
 
 @Composable
-fun BookListItem(book: Book, origin: String, onOpen: (Book, String) -> Unit) {
+fun BookListItem(
+    book: Book,
+    origin: String,
+    shared: Boolean = true,
+    onOpen: (Book, String) -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth()
             .clickable { onOpen(book, origin) }
             .padding(horizontal = ScreenPadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BookCover(book, 48.dp, sharedKey = "$origin-${book.work}")
+        BookCover(book, 48.dp, sharedKey = "$origin-${book.work}".takeIf { shared })
         Column(Modifier.padding(start = 16.dp).weight(1f)) {
             Text(book.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2)
             Text(

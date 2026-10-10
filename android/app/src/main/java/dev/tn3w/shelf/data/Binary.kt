@@ -1,7 +1,5 @@
 package dev.tn3w.shelf.data
 
-import android.util.LruCache
-
 class ByteReader(private val bytes: ByteArray, var offset: Int = 0) {
     val hasMore
         get() = offset < bytes.size
@@ -58,6 +56,12 @@ class IntArrayList {
     fun toArray(): IntArray = values.copyOf(count)
 }
 
-class Cache<K : Any, V : Any>(capacity: Int) : LruCache<K, V>(capacity) {
-    fun get(key: K, load: (K) -> V): V = get(key) ?: load(key).also { put(key, it) }
+class Cache<K : Any, V : Any>(private val capacity: Int) {
+    private val entries = object : LinkedHashMap<K, V>(capacity, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>) =
+            size > capacity
+    }
+
+    fun get(key: K, load: (K) -> V): V = synchronized(entries) { entries[key] }
+        ?: load(key).also { synchronized(entries) { entries[key] = it } }
 }
