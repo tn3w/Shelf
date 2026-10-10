@@ -250,7 +250,7 @@
     <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
     <string name="open_settings">Abrir ajustes</string>
     <string name="scan">Escanear portada</string>
-    <string name="scan_hint">Enfoca una portada, toca para capturar</string>
+    <string name="scan_hint">Enfoca portada o código de barras, toca</string>
     <string name="scan_again">Escanear de nuevo</string>
     <string name="camera_denied">Shelf lee portadas con la cámara, todo en tu teléfono. Permite el acceso a la cámara en los ajustes del sistema para escanear.</string>
 </resources>

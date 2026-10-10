@@ -1,5 +1,11 @@
 package dev.tn3w.shelf.data
 
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.LuminanceSource
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.common.HybridBinarizer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 import kotlin.math.PI
@@ -395,11 +401,58 @@ class StopRule(private val settings: ScanSettings) {
 
 class Step(val work: Int?, val dots: List<Dot>)
 
+private val BARCODE_FORMATS = listOf(BarcodeFormat.EAN_13, BarcodeFormat.QR_CODE)
+private val BARCODE_HINTS = mapOf(
+    DecodeHintType.POSSIBLE_FORMATS to BARCODE_FORMATS,
+    DecodeHintType.TRY_HARDER to true,
+)
+private val ISBN_IN_TEXT = Regex("97[89](-?\\d){10}")
+
+private class GraySource(private val frame: Gray, private val turned: Boolean = false) :
+    LuminanceSource(
+        if (turned) frame.height else frame.width,
+        if (turned) frame.width else frame.height,
+    ) {
+    override fun getRow(y: Int, row: ByteArray?) = ByteArray(width) { luminance(it, y) }
+
+    override fun getMatrix() = ByteArray(width * height) {
+        luminance(
+            it % width,
+            it / width,
+        )
+    }
+
+    override fun isRotateSupported() = true
+
+    override fun rotateCounterClockwise() = GraySource(frame, !turned)
+
+    private fun luminance(x: Int, y: Int): Byte {
+        val index = if (turned) {
+            x * frame.width + frame.width - 1 - y
+        } else {
+            y * frame.width +
+                x
+        }
+        return frame.pixels[index].toInt().toByte()
+    }
+}
+
+class BarcodeReader {
+    private val reader = MultiFormatReader().apply { setHints(BARCODE_HINTS) }
+
+    fun isbn(frame: Gray): String? {
+        val bitmap = BinaryBitmap(HybridBinarizer(GraySource(frame)))
+        val text = runCatching { reader.decodeWithState(bitmap).text }.getOrNull()
+        return text?.let(ISBN_IN_TEXT::find)?.value?.let(::normalizedIsbn)
+    }
+}
+
 class Scanner(
     private val catalogue: Catalogue,
     searcher: Searcher,
     recognizer: Recognizer,
     settings: ScanSettings = ScanSettings(),
+    others: List<Catalogue> = emptyList(),
 ) {
     private val vocabulary = ConcurrentHashMap<String, Boolean>()
     private val reader = Reader(recognizer, settings) { word ->
@@ -407,8 +460,14 @@ class Scanner(
     }
     private val matcher = Matcher(catalogue, searcher)
     private val rule = StopRule(settings)
+    private val barcodes = BarcodeReader()
+    private val isbnCatalogues = listOf(catalogue) + others
 
     fun next(frame: Gray, tapped: Boolean = false): Step {
+        val scanned = barcodes.isbn(frame)?.let { isbn ->
+            isbnCatalogues.firstNotNullOfOrNull { it.bookOfIsbn(isbn) }
+        }
+        if (scanned != null) return Step(scanned.work, emptyList())
         val readings = reader.read(frame)
         val work = rule.update(matcher.scores(readings), tapped)
         return Step(work, work?.let { matched(readings, it) }.orEmpty())

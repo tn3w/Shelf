@@ -41,16 +41,17 @@ private data class Related(
 fun BookScreen(work: Int, origin: String, navigator: Navigator) {
     val saved by shelfApp().library.saved.collectAsStateWithLifecycle(emptyList())
     val details by load(work) {
-        val book = catalogue.book(work) ?: return@load null
+        val source = catalogueOf(work) ?: return@load null
+        val book = source.book(work) ?: return@load null
         val tags = book.tags.mapNotNull { id ->
-            catalogue.tags.getOrNull(id)?.let { id to it.label }
+            source.tags.getOrNull(id)?.let { id to it.label }
         }
-        Details(book, catalogue.description(work), tags)
+        Details(book, source.description(work), tags)
     }
     val entry = saved.firstOrNull { it.work == work }
     val book = details?.book ?: entry?.toBook()
     val related by load(work) {
-        val found = catalogue.book(work) ?: return@load null
+        val found = book(work) ?: return@load null
         Related(
             recommender.series(found),
             recommender.byAuthor(found),

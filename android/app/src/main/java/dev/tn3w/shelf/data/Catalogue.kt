@@ -48,6 +48,31 @@ private val COMPANION = Regex(
 val Book.isCompanion
     get() = COMPANION.containsMatchIn("$title $subtitle")
 
+private const val ISBN_BASE = 978_000_000_000L
+private val ISBN_PREFIXES = setOf("978", "979")
+
+private fun checkDigit(twelve: String): Int {
+    val sum = twelve.withIndex().sumOf { (index, digit) ->
+        digit.digitToInt() * if (index % 2 == 0) 1 else 3
+    }
+    return (10 - sum % 10) % 10
+}
+
+fun normalizedIsbn(text: String): String? {
+    val cleaned = text.filter { it.isLetterOrDigit() }.uppercase()
+    val twelve = when (cleaned.length) {
+        10 -> "978" + cleaned.take(9)
+        13 -> cleaned.take(12)
+        else -> return null
+    }
+    if (!twelve.all { it in '0'..'9' } || twelve.take(3) !in ISBN_PREFIXES) return null
+    val isbn = twelve + checkDigit(twelve)
+    return isbn.takeIf { cleaned.length == 10 || it == cleaned }
+}
+
+fun isbnKey(isbn: String) =
+    normalizedIsbn(isbn)?.let { (it.take(12).toLong() - ISBN_BASE).toInt() }
+
 data class Tag(val id: Int, val slug: String, val label: String, val category: String)
 
 data class Series(val name: String, val members: List<Int>)
@@ -121,6 +146,13 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
             facts.tags.toList(),
             ranks?.popularity(work),
         )
+    }
+
+    fun bookOfIsbn(isbn: String): Book? {
+        val key = isbnKey(isbn) ?: return null
+        return segments.asReversed().firstNotNullOfOrNull { segment ->
+            segment.localOfIsbn(key).takeIf { it >= 0 }?.let { book(segment.work(it)) }
+        }
     }
 
     fun facts(work: Int) = locate(work)?.let { it.segment.facts(it.local) }
@@ -232,7 +264,16 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 }
 
-class Loaded(val catalogue: Catalogue) {
+class Loaded(
+    val catalogue: Catalogue,
+    loadOthers: () -> List<Catalogue> = { emptyList() },
+) {
     val searcher = Searcher(catalogue)
     val recommender = Recommender(catalogue)
+    val others by lazy(loadOthers)
+
+    fun catalogueOf(work: Int) =
+        (listOf(catalogue) + others).firstOrNull { it.locate(work) != null }
+
+    fun book(work: Int) = catalogueOf(work)?.book(work)
 }

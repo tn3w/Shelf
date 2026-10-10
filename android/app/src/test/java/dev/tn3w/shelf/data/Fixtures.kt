@@ -23,6 +23,7 @@ data class Fixture(
     val year: Int = 0,
     val description: String = "",
     val score: Int = 0,
+    val isbns: List<String> = emptyList(),
 )
 
 class Bytes {
@@ -159,6 +160,25 @@ private fun meta(vararg lines: Pair<String, Any?>) = lines
     .joinToString("") { (key, value) -> "$key=$value\n" }
     .toByteArray()
 
+private fun isbnSection(books: List<Fixture>): ByteArray? {
+    val rows = books.withIndex()
+        .flatMap { (local, book) -> book.isbns.map { isbnKey(it)!! to local } }
+        .sortedBy { it.first }
+        .ifEmpty { return null }
+        .chunked(RECORDS_PER_BLOCK)
+    val blocks = rows.map { chunk ->
+        deflate(
+            bytes {
+                chunk.fold(chunk.first().first) { previous, (key, local) ->
+                    varint(key - previous).varint(local)
+                    key
+                }
+            },
+        )
+    }
+    return blockIndex(rows.map { it.first().first }, blocks)
+}
+
 fun segmentBuffer(
     unsorted: List<Fixture>,
     pack: String = "core",
@@ -197,41 +217,40 @@ fun segmentBuffer(
             if (book.description.isNotEmpty()) varint(local shl 1).text(book.description)
         }
     }
-    return container(
-        mapOf(
-            "meta" to meta(
-                "pack" to pack,
-                "month" to month,
-                "base" to base,
-                "records_per_block" to RECORDS_PER_BLOCK,
-                "terms_per_block" to TERMS_PER_BLOCK,
-            ),
-            "works" to ints(books.map { it.work }),
-            "tombstones" to ints(tombstones.sorted()),
-            "head_dictionary" to DICTIONARY,
-            "text_dictionary" to DICTIONARY,
-            "facts" to records(facts),
-            "heads" to records(heads, DICTIONARY),
-            "authors" to records(authorRecords),
-            "series" to table(seriesRows),
-            "terms" to termBlocks(texts) { text ->
-                val postings = terms.getValue(text)
-                val titles = bytes { postings(postings.titles) }
-                val names = bytes { postings(postings.authors) }
-                bytes {
-                    varint(postings.titles.size).varint(postings.authors.size)
-                    varint(titles.size).varint(names.size).raw(titles).raw(names)
-                }
-            },
-            "completions" to completions(texts, terms),
-            "grams" to grams(texts),
-            "descriptions" to blockIndex(
-                listOf(0),
-                listOf(deflate(descriptions, DICTIONARY)),
-            ),
-            "tags" to table(tagRows),
+    val sections = mapOf(
+        "meta" to meta(
+            "pack" to pack,
+            "month" to month,
+            "base" to base,
+            "records_per_block" to RECORDS_PER_BLOCK,
+            "terms_per_block" to TERMS_PER_BLOCK,
         ),
+        "works" to ints(books.map { it.work }),
+        "tombstones" to ints(tombstones.sorted()),
+        "head_dictionary" to DICTIONARY,
+        "text_dictionary" to DICTIONARY,
+        "facts" to records(facts),
+        "heads" to records(heads, DICTIONARY),
+        "authors" to records(authorRecords),
+        "series" to table(seriesRows),
+        "terms" to termBlocks(texts) { text ->
+            val postings = terms.getValue(text)
+            val titles = bytes { postings(postings.titles) }
+            val names = bytes { postings(postings.authors) }
+            bytes {
+                varint(postings.titles.size).varint(postings.authors.size)
+                varint(titles.size).varint(names.size).raw(titles).raw(names)
+            }
+        },
+        "completions" to completions(texts, terms),
+        "grams" to grams(texts),
+        "descriptions" to blockIndex(
+            listOf(0),
+            listOf(deflate(descriptions, DICTIONARY)),
+        ),
+        "tags" to table(tagRows),
     )
+    return container(sections + listOfNotNull(isbnSection(books)?.let { "isbns" to it }))
 }
 
 fun numberOf(author: String) = author.hashCode() and Int.MAX_VALUE

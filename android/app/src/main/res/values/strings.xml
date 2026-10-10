@@ -243,7 +243,7 @@
     <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
     <string name="open_settings">Open settings</string>
     <string name="scan">Scan cover</string>
-    <string name="scan_hint">Hold a book cover in view, tap to capture</string>
+    <string name="scan_hint">Show a cover or barcode, tap to capture</string>
     <string name="scan_again">Scan again</string>
     <string name="camera_denied">Shelf reads book covers with the camera, entirely on your phone. Allow camera access in the system settings to scan.</string>
 </resources>

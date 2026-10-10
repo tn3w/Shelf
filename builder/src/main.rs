@@ -6,7 +6,7 @@ mod tags;
 mod translations;
 
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
-use dumps::{Authors, Book, Context, Titles};
+use dumps::{Authors, Book, Context, Isbns, Titles};
 use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
 use std::path::{Path, PathBuf};
@@ -103,6 +103,7 @@ struct Job<'a> {
     previous: Option<&'a State>,
     books: &'a [Book],
     authors: &'a Authors,
+    isbns: &'a Isbns,
     output: &'a Path,
     translations: &'a Translations,
     requests: Option<&'a Path>,
@@ -156,6 +157,7 @@ fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> 
                     .map(|(slot, order)| (&selection.series[slot], order)),
                 description,
                 translated,
+                isbns: job.isbns.of(book.work, job.language),
             };
             Placed {
                 pack: chosen.pack,
@@ -245,6 +247,11 @@ fn adjusted(limit: usize, size: usize, cap: usize, works: usize, target: f64) ->
 }
 
 fn fit(job: &Job, entries: &[Entry]) -> (usize, usize, Merged) {
+    let unbudgeted = Isbns::default();
+    let job = &Job {
+        isbns: &unbudgeted,
+        ..*job
+    };
     let fresh = entries
         .iter()
         .filter(|entry| entry.sticky.is_none())
@@ -448,7 +455,7 @@ fn main() {
         .collect();
     let sticky = sticky_works(&states);
 
-    let (signals, authors, (facts, titles, shapes)) = thread::scope(|scope| {
+    let (signals, authors, (facts, titles, shapes, isbns)) = thread::scope(|scope| {
         let signals = scope.spawn(|| dumps::signals(&options.source));
         let authors = scope.spawn(|| dumps::authors(&options.source));
         let editions = scope.spawn(|| dumps::editions(&options.source));
@@ -501,6 +508,7 @@ fn main() {
             previous,
             books: &books,
             authors: &authors,
+            isbns: &isbns,
             output: &options.output,
             translations: &loaded[language],
             requests: options.requests.as_deref(),

@@ -56,6 +56,7 @@ data class Saved(
     val author: String = "",
     val cover: Int = 0,
     val rating: Int = 0,
+    val isbn: String = "",
 )
 
 @Serializable
@@ -340,14 +341,18 @@ class Library(private val context: Context) {
 
     suspend fun place(book: Book, shelf: Shelf?) =
         update(ENTRIES, emptyList<Saved>()) { entries ->
-            val rating = entries.firstOrNull { it.work == book.work }?.rating ?: 0
+            val previous = entries.firstOrNull { it.work == book.work }
             val others = entries.filter { it.work != book.work }
-            shelf?.let { others + book.toSaved(it).copy(rating = rating) } ?: others
+            val placed = shelf?.let(book::toSaved)?.copy(
+                rating = previous?.rating ?: 0,
+                isbn = previous?.isbn.orEmpty(),
+            )
+            placed?.let { others + it } ?: others
         }
 
     suspend fun importCsv(
         uri: Uri,
-        searcher: Searcher?,
+        loaded: Loaded?,
         onProgress: (Float) -> Unit,
     ): CsvReport? {
         val text = readFrom(uri) { it.readBytes().decodeToString() } ?: return null
@@ -356,10 +361,12 @@ class Library(private val context: Context) {
         val entries = withContext(Dispatchers.Default) {
             books.mapIndexed { index, row ->
                 onProgress(index.toFloat() / books.size)
-                val match = searcher?.find(row.title, row.author)
+                val match = loaded?.catalogue?.bookOfIsbn(row.isbn)
+                    ?: loaded?.searcher?.find(row.title, row.author)
                 if (match == null) missing += row.title
                 val book = match ?: ownBook(row.title, row.author)
-                book.toSaved(row.shelf).copy(updated = row.date, rating = row.rating)
+                book.toSaved(row.shelf)
+                    .copy(updated = row.date, rating = row.rating, isbn = row.isbn)
             }
         }
         update(ENTRIES, emptyList<Saved>()) { newestPerWork(it + entries) }

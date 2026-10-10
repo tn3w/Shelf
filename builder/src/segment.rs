@@ -12,6 +12,7 @@ const NAME_BYTES: usize = 16;
 const RECORDS_PER_BLOCK: usize = 32;
 const TERMS_PER_BLOCK: usize = 16;
 const RANKS_PER_BLOCK: usize = 4096;
+const ISBNS_PER_BLOCK: usize = 512;
 const DICTIONARY_BYTES: usize = 1 << 15;
 const DICTIONARY_SAMPLES: usize = 6000;
 const DESCRIPTION_BLOCK_BYTES: usize = 9000;
@@ -34,6 +35,7 @@ pub struct Work<'a> {
     pub series: Option<(&'a Series, u16)>,
     pub description: &'a str,
     pub translated: bool,
+    pub isbns: &'a [u32],
 }
 
 pub struct Meta<'a> {
@@ -127,6 +129,16 @@ fn dictionary(samples: &[Vec<u8>]) -> Vec<u8> {
     dictionary
 }
 
+fn indexed_blocks(firsts: &[u32], blocks: &[Vec<u8>]) -> Vec<u8> {
+    let mut section = Vec::new();
+    put_u32(&mut section, blocks.len() as u32);
+    firsts
+        .iter()
+        .for_each(|&first| put_u32(&mut section, first));
+    section.extend(offset_table(blocks));
+    section
+}
+
 fn record_blocks(records: &[Vec<u8>], dictionary: &[u8]) -> Vec<u8> {
     let blocks: Vec<Vec<u8>> = records
         .chunks(RECORDS_PER_BLOCK)
@@ -203,6 +215,9 @@ pub fn content_hash(work: &Work, authors: &Authors) -> u64 {
     }
     put_text(&mut bytes, work.description);
     bytes.push(u8::from(work.translated));
+    work.isbns
+        .iter()
+        .for_each(|&isbn| put_u32(&mut bytes, isbn));
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, &byte| {
         (hash ^ byte as u64).wrapping_mul(0x0100_0000_01b3)
     })
@@ -366,13 +381,32 @@ fn description_section(works: &[Work], dictionary: &[u8]) -> Vec<u8> {
     if !raw.is_empty() {
         blocks.push(deflate(&raw, dictionary));
     }
-    let mut section = Vec::new();
-    put_u32(&mut section, blocks.len() as u32);
-    firsts
-        .iter()
-        .for_each(|&first| put_u32(&mut section, first));
-    section.extend(offset_table(&blocks));
-    section
+    indexed_blocks(&firsts, &blocks)
+}
+
+fn isbn_block(block: &[(u32, u32)]) -> Vec<u8> {
+    let mut raw = Vec::new();
+    let mut previous = block[0].0;
+    for &(isbn, local) in block {
+        put_varint(&mut raw, isbn - previous);
+        put_varint(&mut raw, local);
+        previous = isbn;
+    }
+    deflate(&raw, &[])
+}
+
+fn isbn_section(works: &[Work]) -> Vec<u8> {
+    let mut locals: BTreeMap<u32, u32> = BTreeMap::new();
+    for (index, work) in works.iter().enumerate() {
+        for &isbn in work.isbns {
+            locals.entry(isbn).or_insert(index as u32);
+        }
+    }
+    let rows: Vec<(u32, u32)> = locals.into_iter().collect();
+    let blocks: Vec<&[(u32, u32)]> = rows.chunks(ISBNS_PER_BLOCK).collect();
+    let firsts: Vec<u32> = blocks.iter().map(|block| block[0].0).collect();
+    let compressed: Vec<Vec<u8>> = blocks.iter().map(|block| isbn_block(block)).collect();
+    indexed_blocks(&firsts, &compressed)
 }
 
 fn tag_section(works: &[Work], language: usize) -> Vec<u8> {
@@ -531,6 +565,7 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         ("completions", completion_section(&terms)),
         ("grams", gram_section(&terms)),
         ("descriptions", description_section(works, &text_dictionary)),
+        ("isbns", isbn_section(works)),
     ])
 }
 
@@ -551,14 +586,9 @@ fn popularity_block(block: &[Popularity]) -> Vec<u8> {
 
 fn popularity_section(rows: &[Popularity]) -> Vec<u8> {
     let blocks: Vec<&[Popularity]> = rows.chunks(RANKS_PER_BLOCK).collect();
-    let mut section = Vec::new();
-    put_u32(&mut section, blocks.len() as u32);
-    blocks
-        .iter()
-        .for_each(|block| put_u32(&mut section, block[0].id));
+    let firsts: Vec<u32> = blocks.iter().map(|block| block[0].id).collect();
     let compressed: Vec<Vec<u8>> = blocks.iter().map(|block| popularity_block(block)).collect();
-    section.extend(offset_table(&compressed));
-    section
+    indexed_blocks(&firsts, &compressed)
 }
 
 pub fn ranks(

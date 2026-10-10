@@ -586,6 +586,21 @@ impl Titles {
     }
 }
 
+#[derive(Default)]
+pub struct Isbns {
+    keys: Vec<(u32, u8)>,
+    codes: Vec<u32>,
+}
+
+impl Isbns {
+    pub fn of(&self, work: u32, language: usize) -> &[u32] {
+        let key = (work, language as u8);
+        let start = self.keys.partition_point(|&known| known < key);
+        let end = self.keys.partition_point(|&known| known <= key);
+        &self.codes[start..end]
+    }
+}
+
 struct Edition {
     work: u32,
     facts: Facts,
@@ -597,6 +612,7 @@ struct Edition {
     series: Option<(String, u16)>,
     publisher: u32,
     covers: Vec<u32>,
+    isbns: Vec<u32>,
 }
 
 fn edition_readers(source: &str) -> HashMap<u32, u16> {
@@ -776,12 +792,14 @@ fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -
             true => covers.filter_map(|id| u32::try_from(id).ok()).collect(),
             false => Vec::new(),
         },
+        isbns: isbns(edition).filter_map(catalog::isbn_key).collect(),
     })
 }
 
-pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
+pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes, Isbns) {
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
+    let mut isbns: Vec<(u32, u8, u32)> = Vec::new();
     let shapes = Shapes::load(source);
     let readers = edition_readers(source);
     scan(
@@ -799,12 +817,17 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
             for &cover in &edition.covers {
                 *slot(&mut titles.claimed_covers, cover) = true;
             }
-            if edition.title.is_empty() {
-                return;
-            }
-            for (language, &count) in edition.facts.language_editions.iter().enumerate() {
-                if count > 0 {
-                    titles.push(&edition, language as u8);
+            let languages = edition.facts.language_editions.iter().enumerate();
+            for (language, _) in languages.filter(|(_, count)| **count > 0) {
+                let language = language as u8;
+                isbns.extend(
+                    edition
+                        .isbns
+                        .iter()
+                        .map(|&isbn| (edition.work, language, isbn)),
+                );
+                if !edition.title.is_empty() {
+                    titles.push(&edition, language);
                 }
             }
         },
@@ -814,7 +837,16 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes) {
         .sort_unstable_by_key(|record| (record.work, record.language));
     titles.records.shrink_to_fit();
     titles.text.shrink_to_fit();
-    (facts, titles, shapes)
+    isbns.sort_unstable();
+    isbns.dedup();
+    let isbns = Isbns {
+        keys: isbns
+            .iter()
+            .map(|&(work, language, _)| (work, language))
+            .collect(),
+        codes: isbns.iter().map(|&(.., isbn)| isbn).collect(),
+    };
+    (facts, titles, shapes, isbns)
 }
 
 pub struct Book {

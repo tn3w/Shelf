@@ -22,6 +22,7 @@ data class CsvBook(
     val shelf: Shelf,
     val rating: Int,
     val date: Long,
+    val isbn: String = "",
 )
 
 data class CsvReport(val total: Int, val missing: List<String>)
@@ -79,6 +80,7 @@ fun csvBooks(text: String): List<CsvBook> {
     val addedOf = column("date added")
     val authorOf = column("author", "authors")
     val ratingOf = column("my rating", "star rating")
+    val isbnColumns = listOf(column("isbn13"), column("isbn"), column("isbn/uid"))
     return rows.drop(1).mapNotNull { row ->
         val title = titleOf(row).ifEmpty { return@mapNotNull null }
         val shelf = shelfOf(statusOf(row))
@@ -90,6 +92,7 @@ fun csvBooks(text: String): List<CsvBook> {
             shelf,
             ratingOf(row).toFloatOrNull()?.roundToInt() ?: 0,
             read ?: added ?: System.currentTimeMillis(),
+            isbnColumns.firstNotNullOfOrNull { normalizedIsbn(it(row)) }.orEmpty(),
         )
     }
 }
@@ -116,7 +119,7 @@ fun csvOf(entries: List<Saved>): String {
         listOf(
             saved.title,
             saved.author,
-            "",
+            saved.isbn,
             saved.rating.toString(),
             if (saved.shelf == Shelf.Read) date else "",
             date,

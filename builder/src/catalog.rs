@@ -320,6 +320,9 @@ const ISBN_GROUPS: [(&str, usize); 19] = [
     ("9789974", 3),
 ];
 
+const ISBN_BASE: u64 = 978_000_000_000;
+const ISBN_KEYS: u32 = 2_000_000_000;
+
 const FOREIGN_ISBN_GROUPS: [&str; 17] = [
     "9784", "9785", "9786", "9787", "97880", "97881", "97882", "97883", "97885", "97886", "97887",
     "97888", "97889", "9789", "97911", "97912", "97913",
@@ -437,6 +440,29 @@ fn normalized_isbn(isbn: &str) -> Option<String> {
         digits
     };
     (normalized.len() == 13).then_some(normalized)
+}
+
+fn has_valid_check_digit(isbn13: &str) -> bool {
+    let weights = [1, 3].into_iter().cycle();
+    let digits = isbn13
+        .bytes()
+        .map(|byte| u32::from(byte.wrapping_sub(b'0')));
+    let sum: u32 = digits
+        .zip(weights)
+        .map(|(digit, weight)| digit * weight)
+        .sum();
+    isbn13.bytes().all(|byte| byte.is_ascii_digit()) && sum.is_multiple_of(10)
+}
+
+pub fn isbn_key(isbn: &str) -> Option<u32> {
+    let cleaned: String = isbn.chars().filter(char::is_ascii_alphanumeric).collect();
+    let twelve = match cleaned.len() {
+        10 => format!("978{}", &cleaned[..9]),
+        13 if has_valid_check_digit(&cleaned) => cleaned[..12].to_string(),
+        _ => return None,
+    };
+    let key = twelve.parse::<u64>().ok()?.checked_sub(ISBN_BASE)?;
+    u32::try_from(key).ok().filter(|&key| key < ISBN_KEYS)
 }
 
 pub fn isbn_language(isbn: &str) -> Option<usize> {
@@ -1252,6 +1278,19 @@ mod tests {
             "Volume One",
         ] {
             assert!(!is_bad_title(title), "{title}");
+        }
+    }
+
+    #[test]
+    fn isbns_keyed() {
+        let key = Some(43_902_348);
+        assert_eq!(isbn_key("9780439023481"), key);
+        assert_eq!(isbn_key("978-0-439-02348-1"), key);
+        assert_eq!(isbn_key("0439023483"), key);
+        assert_eq!(isbn_key("043902348X"), key);
+        assert_eq!(isbn_key("9791032305690"), Some(1_103_230_569));
+        for invalid in ["9780439023482", "1234567890123", "12345", "97804390234AB"] {
+            assert_eq!(isbn_key(invalid), None, "{invalid}");
         }
     }
 

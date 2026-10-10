@@ -92,14 +92,20 @@ class TextTest {
     fun exportReadsBack() {
         val updated = millis("2023-04-05")
         val entries = listOf(
-            Saved(1, Shelf.Read, updated, "Say \"hi\", world", "Ann Author", rating = 5),
+            Saved(
+                1, Shelf.Read, updated, "Say \"hi\", world", "Ann Author",
+                rating = 5, isbn = "9780441013593",
+            ),
             Saved(2, Shelf.Want, updated, "Later", "Bob"),
         )
         val csv = csvOf(entries)
         assertTrue(csv.startsWith("\"Title\",\"Author\",\"ISBN\",\"My Rating\""))
         assertEquals(
             listOf(
-                CsvBook("Say \"hi\", world", "Ann Author", Shelf.Read, 5, updated),
+                CsvBook(
+                    "Say \"hi\", world", "Ann Author", Shelf.Read, 5, updated,
+                    "9780441013593",
+                ),
                 CsvBook("Later", "Bob", Shelf.Want, 0, updated),
             ),
             csvBooks(csv),
@@ -120,6 +126,33 @@ class TextTest {
                 listOf("Emma", "Jane Austen", Shelf.Want, 3),
             ),
             csvBooks(csv).map { listOf(it.title, it.author, it.shelf, it.rating) },
+        )
+    }
+
+    @Test
+    fun isbnsNormalizeToThirteenDigits() {
+        val inputs = listOf(
+            "0439023483", "=978-0-439-02348-1", "043902348x", "9791032305690",
+            "9780439023482", "9800000000001", "=",
+        )
+        assertEquals(
+            listOf("9780439023481", "9780439023481", "9780439023481", "9791032305690") +
+                listOf(null, null, null),
+            inputs.map(::normalizedIsbn),
+        )
+    }
+
+    @Test
+    fun goodreadsIsbnColumnsFallBackInOrder() {
+        val csv = """
+            Title,Author,ISBN,ISBN13,Exclusive Shelf
+            Dune,Frank Herbert,="0441013597",="9780441013593",read
+            Emma,Jane Austen,="0141439580",="",to-read
+            Solo,Nobody,="",="",to-read
+        """.trimIndent()
+        assertEquals(
+            listOf("9780441013593", "9780141439587", ""),
+            csvBooks(csv).map { it.isbn },
         )
     }
 

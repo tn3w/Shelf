@@ -10,6 +10,7 @@ plugins {
 val catalogueRelease = "catalogue-2026-10-07"
 val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
+val localCatalogue = providers.gradleProperty("localCatalogue")
 
 android {
     namespace = "dev.tn3w.shelf"
@@ -96,13 +97,17 @@ abstract class DownloadCatalogue : DefaultTask() {
     @get:Input
     abstract val filter: ListProperty<String>
 
+    @get:Input
+    @get:Optional
+    abstract val local: Property<String>
+
     @get:OutputDirectory
     abstract val output: DirectoryProperty
 
     @TaskAction
     fun download() {
         val base = "https://github.com/tn3w/Shelf/releases/download/${release.get()}"
-        val manifest = URI("$base/manifest.json").toURL().readText()
+        val manifest = fetch("$base/manifest.json").decodeToString()
         val found = Regex("\"format\": (\\d+)").find(manifest)?.groupValues?.get(1)
         check(found == format.get().toString()) {
             "catalogue format $found is not supported"
@@ -115,13 +120,22 @@ abstract class DownloadCatalogue : DefaultTask() {
             .findAll(manifest)
             .map { it.destructured }
             .filter { (id) -> filter.get().any { Regex(it).matches(id) } }
+            .toList()
+        val wanted = entries.map { (id) -> "$id.bin" }
+        directory.listFiles { file -> file.extension == "bin" && file.name !in wanted }
+            ?.forEach(File::delete)
         for ((id, sha256, url) in entries) {
             val target = directory.resolve("$id.bin")
             if (target.exists() && digest(target.readBytes()) == sha256) continue
-            val bytes = URI(url).toURL().readBytes()
+            val bytes = fetch(url)
             check(digest(bytes) == sha256) { "checksum mismatch for $id" }
             target.writeBytes(bytes)
         }
+    }
+
+    private fun fetch(url: String): ByteArray {
+        val directory = local.orNull ?: return URI(url).toURL().readBytes()
+        return File(directory, url.substringAfterLast('/')).readBytes()
     }
 
     private fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256")
@@ -134,6 +148,7 @@ fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
         release = catalogueRelease
         format = catalogueFormat
         filter = packs.map { "[a-z]{2}-$it-.*" }
+        local = localCatalogue
         output = layout.buildDirectory.dir("generated/$taskName")
     }
     androidComponents.onVariants(
@@ -171,6 +186,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.jsoup)
+    implementation(libs.zxing.core)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
 }

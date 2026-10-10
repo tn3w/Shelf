@@ -74,7 +74,11 @@ class ShelfApp :
     fun reload(language: String) {
         reloadJob?.cancel()
         reloadJob = scope.launch(Dispatchers.IO) {
-            val next = Loaded(packs.load(language))
+            val next = Loaded(packs.load(language)) {
+                LANGUAGES.filter { it != language }
+                    .map(packs::load)
+                    .filter { it.segments.isNotEmpty() }
+            }
             ensureActive()
             loaded.value = next
         }

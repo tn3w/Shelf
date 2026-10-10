@@ -32,6 +32,15 @@ class LibraryTest {
     private val settings = stringPreferencesKey("settings")
 
     @Test
+    fun savedIsbnStaysOptionalBothWays() {
+        val old = """{"work":1,"shelf":"Read","updated":2}"""
+        assertEquals("", json.decodeFromString<Saved>(old).isbn)
+        assertEquals(old, json.encodeToString(Saved(1, Shelf.Read, 2)))
+        val future = old.dropLast(1) + ""","isbn":"9780441013593","x":0}"""
+        assertEquals("9780441013593", json.decodeFromString<Saved>(future).isbn)
+    }
+
+    @Test
     fun updateKeepsUndecodableData() {
         val stored = """[{"work":1,"shelf":"Unknown","updated":0}]"""
         val preferences = mutablePreferencesOf(entries to stored)

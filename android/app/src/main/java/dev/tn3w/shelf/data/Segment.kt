@@ -206,8 +206,10 @@ class Segment(buffer: ByteBuffer) {
         val reader = ByteReader(tagTable[it])
         Tag(it, reader.text(), reader.text(), reader.text())
     }
+    private val isbns = sections["isbns"]?.let(::BlockIndex)
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
+    private val isbnBlocks = Cache<Int, Map<Int, Int>>(16)
 
     private fun section(name: String) = sections.getValue(name)
 
@@ -294,6 +296,22 @@ class Segment(buffer: ByteBuffer) {
                     }
                 }
             }[local] ?: Description("", false)
+    }
+
+    fun localOfIsbn(key: Int): Int {
+        val index = isbns ?: return -1
+        val block = index.firsts.lastAtMost(key)
+        if (block < 0) return -1
+        return isbnBlocks.get(block) {
+            val reader = ByteReader(inflate(index.blocks[it]))
+            var isbn = index.firsts[it]
+            buildMap {
+                while (reader.hasMore) {
+                    isbn += reader.varint()
+                    put(isbn, reader.varint())
+                }
+            }
+        }[key] ?: -1
     }
 
     fun term(text: String) = terms.find(text)

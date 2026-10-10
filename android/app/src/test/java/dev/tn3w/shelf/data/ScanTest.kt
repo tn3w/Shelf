@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.data
 
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -83,7 +85,43 @@ private fun columns(vararg values: Float) = Gray(
     },
 )
 
+private fun rendered(text: String, format: BarcodeFormat, turned: Boolean = false): Gray {
+    val matrix = MultiFormatWriter().encode(text, format, 400, 240)
+    val width = if (turned) matrix.height else matrix.width
+    val height = if (turned) matrix.width else matrix.height
+    return Gray(
+        width, height,
+        FloatArray(width * height) {
+            val (x, y) = it % width to it / width
+            if (if (turned) matrix[y, x] else matrix[x, y]) 0f else 255f
+        },
+    )
+}
+
 class ScanTest {
+    @Test
+    fun barcodesReadAsIsbnInAnyOrientation() {
+        val reader = BarcodeReader()
+        val frames = listOf(
+            rendered("9780439023481", BarcodeFormat.EAN_13),
+            rendered("9780439023481", BarcodeFormat.EAN_13, turned = true),
+            rendered("https://example.org/isbn/978-0-439-02348-1", BarcodeFormat.QR_CODE),
+        )
+        assertEquals(List(3) { "9780439023481" }, frames.map(reader::isbn))
+        assertNull(reader.isbn(rendered("4006381333931", BarcodeFormat.EAN_13)))
+    }
+
+    @Test
+    fun scannerFindsBarcodeInOtherInstalledCatalogues() {
+        val dune = Fixture(7, "Dune", isbns = listOf("0441013597"))
+        val catalogue = Catalogue("de", listOf(segment(listOf(Fixture(1, "Emma")))), null)
+        val other = Catalogue("en", listOf(segment(listOf(dune))), null)
+        val scanner =
+            Scanner(catalogue, Searcher(catalogue), recognizer, others = listOf(other))
+        val frame = rendered("9780441013593", BarcodeFormat.EAN_13)
+        assertEquals(7, scanner.next(frame).work)
+    }
+
     @Test
     fun brightColumnsReadAsFirstLetterDarkAsSecond() {
         val reading = recognizer.read(columns(255f, 0f, 0f, 255f))

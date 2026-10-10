@@ -75,6 +75,10 @@ fun ScanScreen(navigator: Navigator) {
             app.assets.open("scan.bin").use { Recognizer(it.readBytes()) }
         }
     }
+    val others by produceState(emptyList(), loaded) {
+        val current = loaded ?: return@produceState
+        value = withContext(Dispatchers.IO) { current.others }
+    }
     var found by remember { mutableStateOf<Found?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
     val haptics = LocalHapticFeedback.current
@@ -83,12 +87,12 @@ fun ScanScreen(navigator: Navigator) {
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (found == null && current != null && model != null) {
-            val scanner = remember(attempt, current, model) {
-                Scanner(current.catalogue, current.searcher, model)
+            val scanner = remember(attempt, current, model, others) {
+                Scanner(current.catalogue, current.searcher, model, others = others)
             }
             key(scanner) {
                 CameraPreview(scanner::next) { work, frame, marks ->
-                    val book = current.catalogue.book(work) ?: return@CameraPreview
+                    val book = current.book(work) ?: return@CameraPreview
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     found = Found(book, frame, marks)
                 }

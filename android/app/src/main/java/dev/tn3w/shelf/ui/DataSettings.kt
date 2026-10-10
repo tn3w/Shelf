@@ -97,8 +97,7 @@ private fun CsvRows() {
         progress = 0f
         imported = null
         scope.launch {
-            val searcher = app.loaded.value?.searcher
-            report = app.library.importCsv(uri, searcher) { progress = it }
+            report = app.library.importCsv(uri, app.loaded.value) { progress = it }
             imported = if (report == null) R.string.backup_failed else null
             progress = null
         }

@@ -250,7 +250,7 @@
     <string name="no_catalogue">Aucun catalogue installé. Téléchargez-en un ou importez des fichiers de catalogue dans les paramètres pour parcourir les livres. Vos propres fichiers s\'importent dans la bibliothèque.</string>
     <string name="open_settings">Ouvrir les paramètres</string>
     <string name="scan">Scanner une couverture</string>
-    <string name="scan_hint">Visez une couverture, touchez pour saisir</string>
+    <string name="scan_hint">Visez couverture ou code-barres, touchez</string>
     <string name="scan_again">Scanner à nouveau</string>
     <string name="camera_denied">Shelf lit les couvertures avec l’appareil photo, entièrement sur votre téléphone. Autorisez l’accès à l’appareil photo dans les paramètres du système pour scanner.</string>
 </resources>

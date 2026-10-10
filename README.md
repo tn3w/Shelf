@@ -78,7 +78,8 @@ backup keeps the library only, so re-import files there.
 Search › scan icon (hidden without camera). Hold a cover in view: frames are matched
 live against the **selected catalogue**; clear leader → vibration, frozen frame with
 dots on the read title, sheet with book, shelf picker, **Scan again**. Tap → capture
-with a lower threshold.
+with a lower threshold. ISBN barcodes (EAN-13, QR) are read with ZXing and looked up in
+every installed catalogue.
 
 On device, pure Kotlin, no network:
 
@@ -98,7 +99,8 @@ On device, pure Kotlin, no network:
 Export CSV  →  Settings › Your data › Import CSV  →  done
 ```
 
-Shelves, ratings and read dates carry over. Books not in the catalogue become your own.
+Shelves, ratings and read dates carry over. Books match by ISBN, then title and author.
+Books not in the catalogue become your own.
 Export writes the same format back.
 
 ## Catalogue
@@ -111,6 +113,7 @@ Export writes the same format back.
 </table>
 
 `core` ships in the APK. Other packs download on demand, verified by SHA-256.
+Packs include ISBNs of editions in their language; older apps ignore them.
 
 ## Generated covers
 
@@ -130,6 +133,7 @@ Title on top in serif, sans or condensed. Author in small caps at the bottom.
 cd android
 ./gradlew assembleGithubDebug
 ./gradlew testGithubDebugUnitTest testFdroidDebugUnitTest
+./gradlew assembleGithubRelease -PlocalCatalogue=<builder out dir>
 ```
 
 ```sh

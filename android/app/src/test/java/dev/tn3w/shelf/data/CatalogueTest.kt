@@ -114,4 +114,51 @@ class CatalogueTest {
         assertEquals(emptyList<Book>(), searcher.search("gone"))
         assertEquals(emptyList<Book>(), searcher.search("old"))
     }
+
+    @Test
+    fun isbnsFindNewestVisibleBook() {
+        val base = segment(
+            listOf(
+                Fixture(1, "Old Title", isbns = listOf("9780439023481")),
+                Fixture(2, "Gone", isbns = listOf("9780441013593")),
+                Fixture(3, "Plain"),
+                Fixture(4, "Twin", isbns = listOf("9791032305690", "0306406152")),
+            ),
+        )
+        val delta = Segment(
+            segmentBuffer(
+                listOf(Fixture(1, "New Title")),
+                month = "2000-02",
+                base = "2000-01",
+                tombstones = listOf(2),
+            ),
+        )
+        val catalogue = Catalogue("en", listOf(base, delta), null)
+        val isbns =
+            listOf("978-0-439-02348-1", "9780441013593", "979103230569-0", "0306406152")
+        assertEquals(
+            listOf("New Title", null, "Twin", "Twin", null),
+            (isbns + "9780000000002").map { catalogue.bookOfIsbn(it)?.title },
+        )
+    }
+
+    @Test
+    fun loadedFindsBooksOfOtherInstalledLanguages() {
+        val english = Catalogue("en", listOf(segment(listOf(Fixture(1, "Emma")))), null)
+        val german =
+            Catalogue("de", listOf(segment(listOf(Fixture(2, "Der Process")))), null)
+        val loaded = Loaded(english) { listOf(german) }
+        assertEquals(
+            listOf("Emma", "Der Process", null),
+            (1..3).map {
+                loaded.book(it)?.title
+            },
+        )
+        assertEquals("de", loaded.catalogueOf(2)?.language)
+    }
+
+    @Test
+    fun packsWithoutIsbnsFindNothing() {
+        assertNull(catalogue(BOOKS).bookOfIsbn("9780439023481"))
+    }
 }
