@@ -88,8 +88,14 @@ private fun pageStep(key: Key, volumeKeys: Boolean) = when (key) {
     else -> null
 }
 
-internal fun isNewPageRead(previous: Int, settled: Int, furthest: Int) =
-    settled == previous + 1 && settled > furthest
+private const val MAX_TURN = 3
+
+internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
+    if (settled - previous in 1..MAX_TURN) {
+        (settled - maxOf(previous, furthest)).coerceAtLeast(0)
+    } else {
+        0
+    }
 
 @Composable
 fun ReaderScreen(work: Int, navigator: Navigator) {
@@ -122,7 +128,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     }
     fun changeFont(change: Float) = scope.launch {
         app.library.updateSettings {
-            it.copy(fontScale = (it.fontScale + change).coerceIn(0.7f, 1.8f))
+            it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
         }
     }
 
@@ -389,7 +395,8 @@ private fun Pages(
     LaunchedEffect(pager.settledPage) {
         app.library.saveProgress(state.work, save(pager.settledPage))
         val settled = pager.settledPage
-        if (isNewPageRead(previous, settled, furthest)) app.library.addPages(1)
+        val read = newPagesRead(previous, settled, furthest)
+        if (read > 0) app.library.addPages(read)
         furthest = maxOf(furthest, settled)
         previous = settled
     }

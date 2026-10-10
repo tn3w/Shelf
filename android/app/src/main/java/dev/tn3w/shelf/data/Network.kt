@@ -21,7 +21,6 @@ data class Asset(val name: String, @SerialName("browser_download_url") val url: 
 @Serializable
 data class Release(
     @SerialName("tag_name") val tag: String,
-    val body: String = "",
     val draft: Boolean = false,
     val prerelease: Boolean = false,
     val assets: List<Asset> = emptyList(),

@@ -56,7 +56,6 @@ class ModelTest {
         val app = releases[0]
         assertEquals("v9.8.7", app.tag)
         assertEquals("9.8.7", app.version)
-        assertEquals("Notes", app.body)
         assertTrue(app.prerelease)
         assertFalse(app.draft)
         assertEquals("https://host/shelf.apk", app.assetUrl("shelf.apk"))

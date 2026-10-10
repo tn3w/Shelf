@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
 import java.time.LocalDate
 import kotlin.time.Duration
 
@@ -81,6 +84,32 @@ class LibraryTest {
         preferences.merge(Backup(settings = imported.copy(margin = 12)))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)
         assertEquals(current.copy(margin = 12), merged)
+    }
+
+    @Test
+    fun failedBookExtractionLeavesNoFileAndRetries() {
+        val directory = Files.createTempDirectory("books").toFile()
+        val broken = object : InputStream() {
+            private var sent = 0
+
+            override fun read() = if (sent++ < 10) 1 else throw IOException("cut")
+        }
+        runCatching { extractBook(directory, "books/-2.epub", broken) }
+        assertEquals(emptyList<String>(), directory.list()!!.toList())
+        extractBook(directory, "books/-2.epub", "book".byteInputStream())
+        assertEquals("book", directory.resolve("-2.epub").readText())
+        directory.deleteRecursively()
+    }
+
+    @Test
+    fun mergeClampsImportedReaderSettings() {
+        val preferences = mutablePreferencesOf()
+        val imported = Settings(fontScale = 9f, lineSpacing = -1f, margin = -5)
+        preferences.merge(Backup(settings = imported))
+        val merged = json.decodeFromString<Settings>(preferences[settings]!!)
+        assertEquals(FONT_SCALES.endInclusive, merged.fontScale)
+        assertEquals(1f, merged.lineSpacing)
+        assertEquals(0, merged.margin)
     }
 
     @Test

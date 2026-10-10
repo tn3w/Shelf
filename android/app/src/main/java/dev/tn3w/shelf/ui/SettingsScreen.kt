@@ -259,7 +259,7 @@ private fun ReadingSettings() {
             scale,
             { scale = it },
             Modifier.padding(horizontal = 16.dp),
-            valueRange = 0.7f..1.8f,
+            valueRange = FONT_SCALES,
             steps = 10,
             onValueChangeFinished = { update { it.copy(fontScale = scale) } },
         )

@@ -116,6 +116,13 @@ class DocumentTest {
     }
 
     @Test
+    fun epubSkipsFrontMatterJoinedByUnderscoreOrDigit() {
+        val body = "<p>Short</p>"
+        val joined = epub(folder.newFile("joined.epub"), body, chapter = "part1_toc_2")
+        assertEquals(emptyList<Block>(), blocks(openDocument(joined)))
+    }
+
+    @Test
     fun plainTextSplitsParagraphsAndHeadings() {
         val file = folder.newFile("notes.txt")
         file.writeText("# Title\n\nFirst   line\nwraps.\n\n\nSecond.")

@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -38,6 +39,7 @@ private val DISMISSED = stringPreferencesKey("dismissed")
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
 private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
+val FONT_SCALES = 0.7f..1.8f
 
 enum class Shelf {
     Reading,
@@ -420,21 +422,22 @@ class Library(private val context: Context) {
                 entry.name == BACKUP_ENTRY ->
                     backup = json.decodeFromString(archive.readBytes().decodeToString())
 
-                entry.name.startsWith(BOOKS_PREFIX) -> extractBook(entry.name, archive)
+                entry.name.startsWith(BOOKS_PREFIX) ->
+                    extractBook(booksDir, entry.name, archive)
             }
         }
         backup
     }
 
-    private fun extractBook(entry: String, input: InputStream) {
-        val name = entry.removePrefix(BOOKS_PREFIX)
-        if (!BOOK_FILE.matches(name)) return
-        val target = bookFile(name).apply { parentFile?.mkdirs() }
-        if (target.exists()) return
-        target.outputStream().use { input.copyTo(it) }
-    }
-
     private suspend fun merge(backup: Backup) = store.edit { it.merge(backup) }
+}
+
+internal fun extractBook(directory: File, entry: String, input: InputStream) {
+    val name = entry.removePrefix(BOOKS_PREFIX)
+    if (!BOOK_FILE.matches(name)) return
+    val target = directory.resolve(name).apply { parentFile?.mkdirs() }
+    if (target.exists()) return
+    replaceFile(target) { file -> file.outputStream().use(input::copyTo) }
 }
 
 private fun Preferences.toBackup() = Backup(
@@ -459,6 +462,9 @@ private fun restoredSettings(imported: Settings, current: Settings): Settings {
     val covers = imported.coverSource.takeIf(::isValidCoverSource)
     return imported.copy(
         onboarded = current.onboarded,
+        fontScale = imported.fontScale.coerceIn(FONT_SCALES),
+        lineSpacing = imported.lineSpacing.coerceAtLeast(1f),
+        margin = imported.margin.coerceAtLeast(0),
         catalogueSource = catalogue ?: current.catalogueSource,
         coverSource = covers ?: current.coverSource,
     )

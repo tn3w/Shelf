@@ -8,11 +8,13 @@ import android.graphics.ImageFormat
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
+import android.media.Image
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
@@ -84,10 +86,12 @@ fun ScanScreen(navigator: Navigator) {
             val scanner = remember(attempt, current, model) {
                 Scanner(current.catalogue, current.searcher, model)
             }
-            CameraPreview(scanner::next) { work, frame, marks ->
-                val book = current.catalogue.book(work) ?: return@CameraPreview
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                found = Found(book, frame, marks)
+            key(scanner) {
+                CameraPreview(scanner::next) { work, frame, marks ->
+                    val book = current.catalogue.book(work) ?: return@CameraPreview
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    found = Found(book, frame, marks)
+                }
             }
         }
         found?.let { Frozen(it) }
@@ -192,6 +196,12 @@ private fun ScanSheet(book: Book, navigator: Navigator, onAgain: () -> Unit) {
 
 private fun fourByThree(size: Size) = size.width * 3 == size.height * 4
 
+private fun grayOf(image: Image): Gray {
+    val plane = image.planes[0]
+    val bytes = ByteArray(plane.buffer.remaining()).also(plane.buffer::get)
+    return Gray.of(bytes, image.width, image.height, plane.rowStride)
+}
+
 private fun upright(dots: List<Dot>, frame: Gray, degrees: Int): Marks {
     val width = frame.width.toFloat()
     val height = frame.height.toFloat()
@@ -207,6 +217,10 @@ private fun upright(dots: List<Dot>, frame: Gray, degrees: Int): Marks {
     return Marks(turned, height, width)
 }
 
+private val cameraHandler by lazy {
+    Handler(HandlerThread("camera").apply { start() }.looper)
+}
+
 private class Camera(
     private val context: Context,
     private val view: TextureView,
@@ -215,13 +229,15 @@ private class Camera(
 ) : TextureView.SurfaceTextureListener {
     private val manager = context.getSystemService(CameraManager::class.java)
     private val busy = AtomicBoolean(false)
-    private var thread: HandlerThread? = null
     private var device: CameraDevice? = null
     private var reader: ImageReader? = null
     private var surface: Surface? = null
     private var worker = Executors.newSingleThreadExecutor()
+
+    @Volatile
     private var running = false
     private var degrees = 0
+    private var generation = 0
 
     @Volatile
     private var tappedAt = 0L
@@ -258,43 +274,53 @@ private class Camera(
             abs(it.width * it.height - ANALYSIS_PIXELS) +
                 if (fourByThree(it)) 0 else 1_000_000
         }
-        val looper = HandlerThread("camera").apply { start() }.also { thread = it }.looper
-        val handler = Handler(looper)
         if (worker.isShutdown) worker = Executors.newSingleThreadExecutor()
-        reader =
-            ImageReader.newInstance(
-                analysis.width, analysis.height, ImageFormat.YUV_420_888, 2,
-            )
-                .apply { setOnImageAvailableListener(::onImage, handler) }
         view.surfaceTexture?.setDefaultBufferSize(preview.width, preview.height)
         transform(preview)
-        manager.openCamera(id, DeviceCallback(handler), handler)
+        cameraHandler.post { start(id, analysis) }
     }
 
     fun close() {
         running = false
+        worker.shutdown()
+        cameraHandler.post(::stop)
+    }
+
+    private fun start(id: String, analysis: Size) {
+        reader =
+            ImageReader.newInstance(
+                analysis.width, analysis.height, ImageFormat.YUV_420_888, 2,
+            )
+                .apply { setOnImageAvailableListener(::onImage, cameraHandler) }
+        val callback = DeviceCallback(++generation)
+        try {
+            manager.openCamera(id, callback, cameraHandler)
+        } catch (_: SecurityException) {
+        } catch (_: CameraAccessException) {
+        }
+    }
+
+    private fun stop() {
+        generation++
         device?.close()
         reader?.close()
         surface?.release()
-        thread?.quitSafely()
-        worker.shutdown()
         device = null
         reader = null
         surface = null
-        thread = null
     }
 
-    private inner class DeviceCallback(private val handler: Handler) :
+    private inner class DeviceCallback(private val attempt: Int) :
         CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
-            if (!running) return camera.close()
+            if (attempt != generation) return camera.close()
             device = camera
             val preview = Surface(view.surfaceTexture).also { surface = it }
             val surfaces = listOfNotNull(preview, reader?.surface)
 
             @Suppress("DEPRECATION")
             val callback = SessionCallback(camera, surfaces)
-            camera.createCaptureSession(surfaces, callback, handler)
+            camera.createCaptureSession(surfaces, callback, cameraHandler)
         }
 
         override fun onDisconnected(camera: CameraDevice) = camera.close()
@@ -324,10 +350,8 @@ private class Camera(
     private fun onImage(source: ImageReader) {
         val image = runCatching { source.acquireLatestImage() }.getOrNull() ?: return
         if (!busy.compareAndSet(false, true)) return image.close()
-        val plane = image.planes[0]
-        val bytes = ByteArray(plane.buffer.remaining()).also(plane.buffer::get)
-        val frame = Gray.of(bytes, image.width, image.height, plane.rowStride)
-        image.close()
+        val frame = runCatching { image.use(::grayOf) }.getOrNull()
+        if (frame == null) return busy.set(false)
         runCatching {
             worker.execute {
                 if (running) {

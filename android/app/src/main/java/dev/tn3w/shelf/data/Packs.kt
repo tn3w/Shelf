@@ -260,7 +260,7 @@ class Packs(private val context: Context) {
         if (name == MANIFEST_NAME) return importManifest(input.readBytes())
         val file = parseName(name) ?: return false
         return runCatching {
-            replace(binOf(file.id)) { temporary ->
+            replaceFile(binOf(file.id)) { temporary ->
                 temporary.outputStream().use { input.copyTo(it) }
                 val buffer = mapFile(temporary)
                 if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
@@ -326,7 +326,7 @@ class Packs(private val context: Context) {
     fun removeAll() = deleteAll(downloaded())
 
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
-        replace(binOf(entry.id)) { temporary ->
+        replaceFile(binOf(entry.id)) { temporary ->
             val digest = MessageDigest.getInstance("SHA-256")
             DigestInputStream(connect(entry.url).inputStream, digest).use { input ->
                 temporary.outputStream().use { copyWithProgress(input, it, onBytes) }
@@ -335,15 +335,15 @@ class Packs(private val context: Context) {
         }
 
     private fun writeAtomically(target: File, bytes: ByteArray) =
-        replace(target) { it.writeBytes(bytes) }
+        replaceFile(target) { it.writeBytes(bytes) }
+}
 
-    private fun replace(target: File, write: (File) -> Unit) {
-        val temporary = File(target.path + ".part")
-        try {
-            write(temporary)
-            check(temporary.renameTo(target)) { "cannot replace ${target.name}" }
-        } finally {
-            temporary.delete()
-        }
+fun replaceFile(target: File, write: (File) -> Unit) {
+    val temporary = File(target.path + ".part")
+    try {
+        write(temporary)
+        check(temporary.renameTo(target)) { "cannot replace ${target.name}" }
+    } finally {
+        temporary.delete()
     }
 }

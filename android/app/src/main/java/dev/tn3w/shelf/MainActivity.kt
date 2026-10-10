@@ -110,11 +110,15 @@ private fun openedFile(intent: Intent): Uri? = when (intent.action) {
     else -> null
 }
 
+private fun ComponentActivity.transparentBars(style: SystemBarStyle) =
+    enableEdgeToEdge(style, style)
+
 class MainActivity : ComponentActivity() {
     private val opened = MutableStateFlow<Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        transparentBars(SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
         if (savedInstanceState == null) opened.value = openedFile(intent)
         val app = application as ShelfApp
         setContent {
@@ -122,9 +126,9 @@ class MainActivity : ComponentActivity() {
             val current = settings ?: return@setContent
             val dark = isDark(current.theme)
             LaunchedEffect(dark) {
-                val style =
-                    SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
-                enableEdgeToEdge(style, style)
+                transparentBars(
+                    SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                )
             }
             ShelfTheme(current) {
                 Surface(
