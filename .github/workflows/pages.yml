@@ -1,0 +1,68 @@
+name: Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - site/**
+      - android/design/**
+      - android/app/fastlane/metadata/android/en-US/images/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends webp
+
+      - name: Images
+        run: |
+          cp android/design/shelf-icon.svg site/icon.svg
+          webp="cwebp -quiet -q 75 -m 6 -sharp_yuv"
+          $webp android/design/covers.jpg -o site/covers-light.webp
+          $webp android/design/covers-dark.jpg -o site/covers-dark.webp
+          light=android/app/fastlane/metadata/android/en-US/images/phoneScreenshots
+          for theme in light dark; do
+            source=$light
+            [ "$theme" = dark ] && source=android/design/screenshots/dark
+            mkdir -p "site/shots/$theme"
+            for name in home library book explore reader scan; do
+              $webp -crop 178 645 724 1275 -resize 640 0 \
+                "$source"/*_$name.jpg -o "site/shots/$theme/$name.webp"
+            done
+          done
+
+      - name: Minify
+        run: |
+          npx --yes svgo@4.1.0 --multipass --quiet site/*.svg
+          npx --yes esbuild@0.28.2 site/style.css --minify --allow-overwrite \
+            --target=chrome111,firefox113,safari16.4 --outfile=site/style.css
+          for page in site/*.html; do
+            npx --yes html-minifier-terser@7.2.0 --collapse-whitespace \
+              --remove-comments --remove-redundant-attributes --minify-js true \
+              --minify-css true --use-short-doctype -o "$page" "$page"
+          done
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

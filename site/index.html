@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelf · Offline book catalogue for Android</title>
+  <meta name="description" content="Search books, track reading streaks and read your own
+    files. Offline, no account, no ads. Free and open source.">
+  <meta name="theme-color" content="#16120F">
+  <meta property="og:title" content="Shelf · Your books, offline">
+  <meta property="og:description" content="Offline book catalogue for Android.">
+  <link rel="canonical" href="https://shelf.tn3w.dev/">
+  <meta property="og:url" content="https://shelf.tn3w.dev/">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try {
+      const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      document.documentElement.dataset.theme = localStorage.getItem("theme") ?? system
+    } catch {}
+  </script>
+</head>
+<body>
+  <svg hidden>
+    <symbol id="download" viewBox="0 0 24 24">
+      <path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16" fill="none" stroke="currentColor"
+        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="github" viewBox="0 0 24 24">
+      <path fill="currentColor"
+        d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2
+        c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7
+        1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25
+        3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28 -5.25-5.7 0-1.26.45-2.29
+        1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77
+        0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1
+        0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0
+        0 0 12 .5Z" />
+    </symbol>
+    <symbol id="theme" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
+      <path fill="currentColor"
+        d="M12 3a9 9 0 0 1 0 18Z" />
+    </symbol>
+    <symbol id="logo" viewBox="0 0 108 108">
+      <rect class="logo-ground" width="108" height="108" rx="24" />
+      <g transform="translate(54 54) scale(1.3) translate(-54 -54)">
+        <path class="logo-accent" d="M37,34h7a3,3 0 0 1 3,3v35h-13v-35a3,3 0 0 1 3,-3z" />
+        <path class="logo-ink" d="M52,29h6a3,3 0 0 1 3,3v40h-12v-40a3,3 0 0 1 3,-3z" />
+        <path class="logo-ochre" transform="rotate(12 66 72)"
+          d="M66,38h6a3,3 0 0 1 3,3v31h-12v-31a3,3 0 0 1 3,-3z" />
+        <rect class="logo-ink" x="29" y="74" width="50" height="5" rx="2" />
+      </g>
+    </symbol>
+  </svg>
+
+  <header class="bar">
+    <nav class="wrap nav">
+      <a class="brand" href="#top"><svg><use href="#logo" /></svg>Shelf</a>
+      <div class="links">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="https://github.com/tn3w/Shelf">Source</a>
+      </div>
+      <button class="icon-button" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg><use href="#theme" /></svg>
+      </button>
+      <a class="button outline small" href="#get">Download</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-text">
+        <p class="pill">Free · Open source · Android 8+</p>
+        <h1><span class="gradient">Your books,</span> offline.</h1>
+        <p class="lead">
+          Shelf is a <strong>book catalogue that lives on your phone</strong>.
+          Search, scan, track reading streaks and read your own files.
+          No account, no ads, no tracking.
+        </p>
+
+        <a class="button primary large"
+          href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
+          <svg><use href="#download" /></svg>Download for Android
+        </a>
+        <p class="sources">
+          or get it on
+          <a href="https://f-droid.org/packages/dev.tn3w.shelf/">F-Droid</a> ·
+          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D">Obtainium</a> ·
+          <a href="https://github.com/tn3w/Shelf/releases/latest">GitHub</a>
+        </p>
+        <a class="desktop-hint" href="#get">On a computer? Scan a QR code to install →</a>
+      </div>
+
+      <div class="stage" aria-hidden="true">
+        <div class="phone library side left"></div>
+        <div class="phone home center"></div>
+        <div class="phone explore side right"></div>
+      </div>
+    </section>
+
+    <section class="facts wrap" aria-label="Highlights">
+      <p><strong>0</strong> accounts</p>
+      <p><strong>0</strong> ads or trackers</p>
+      <p><strong>4</strong> catalogue languages</p>
+      <p><strong>6</strong> file formats</p>
+    </section>
+
+    <section id="features" class="features wrap">
+      <article class="feature">
+        <div class="phone book"></div>
+        <div>
+          <p class="eyebrow">Search</p>
+          <h2>Find any book. Even in airplane mode.</h2>
+          <p>
+            The whole catalogue sits on your phone, built from Open Library.
+            Search forgives typos, completes as you type and shows editions,
+            ratings and genres in a tap.
+          </p>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="phone scan"></div>
+        <div>
+          <p class="eyebrow">Scan</p>
+          <h2>Point at a cover. Done.</h2>
+          <p>
+            Hold a book in front of the camera and Shelf reads its title on device.
+            ISBN barcodes and QR codes work too. No frame ever leaves your phone.
+          </p>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="phone home"></div>
+        <div>
+          <p class="eyebrow">Track</p>
+          <h2>Keep the streak alive.</h2>
+          <p>
+            Set a daily page goal and watch the week fill up. Sort books into
+            Want to read, Reading and Finished, and pick up right where you left off.
+          </p>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="phone reader"></div>
+        <div>
+          <p class="eyebrow">Read</p>
+          <h2>Read your own files.</h2>
+          <p>
+            Open books from any app or import them. Tune text size, spacing,
+            margins and typeface, switch to paper or night pages, turn with volume keys.
+          </p>
+          <ul class="chips">
+            <li>EPUB</li><li>PDF</li><li>FB2</li><li>CBZ</li><li>TXT</li><li>HTML</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="feature">
+        <div class="phone explore"></div>
+        <div>
+          <p class="eyebrow">Discover</p>
+          <h2>Your next read, picked on your phone.</h2>
+          <p>
+            Browse genres, follow series and authors, and get recommendations
+            computed locally from what you read. Nobody else sees your taste.
+          </p>
+        </div>
+      </article>
+    </section>
+
+    <section class="more wrap">
+      <h2>And everything else you'd expect.</h2>
+      <div class="grid">
+        <article>
+          <h3>Switch in a minute</h3>
+          <p>
+            Import Goodreads or StoryGraph CSV. Shelves, ratings and dates carry over.
+          </p>
+        </article>
+        <article>
+          <h3>Your own books</h3>
+          <p>Missing from the catalogue? Add it with your own cover.</p>
+        </article>
+        <article>
+          <h3>Four languages</h3>
+          <p>English, Deutsch, Français, Español, plus optional genre packs.</p>
+        </article>
+        <article>
+          <h3>Self-hostable</h3>
+          <p>Point Shelf at your own catalogue source and cover server.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="covers">
+      <div class="wrap">
+        <p class="eyebrow">Generated covers</p>
+        <h2>No cover? Shelf draws one.</h2>
+        <p>Same book, same cover. The style follows the genre.</p>
+      </div>
+      <div class="cover-strip" role="img"
+        aria-label="Eight covers drawn on device in different genre styles"></div>
+    </section>
+
+    <section id="privacy" class="privacy wrap">
+      <div>
+        <p class="eyebrow">Privacy</p>
+        <h2>Private by design. Not by promise.</h2>
+        <p>Shelf has nothing to sell, so it has no reason to know you.</p>
+      </div>
+      <ul class="checks">
+        <li><span><strong>No accounts, ads or trackers</strong></span></li>
+        <li><span><strong>No request on first launch</strong></span></li>
+        <li><span><strong>One switch</strong> cuts all network</span></li>
+        <li><span><strong>Scanner runs on device</strong>, frames never stored</span></li>
+        <li><span><strong>HTTPS only</strong>, no identifiers, no cookies</span></li>
+        <li><span><strong>Open source</strong> under MIT</span></li>
+      </ul>
+    </section>
+
+    <section id="get" class="get">
+      <div class="wrap get-card">
+        <div class="get-text">
+          <svg class="get-logo"><use href="#logo" /></svg>
+          <h2>Get Shelf</h2>
+          <p>Free forever. Android 8 or newer.</p>
+          <a class="button primary large"
+          href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
+            <svg><use href="#download" /></svg>Download APK
+          </a>
+          <div class="stores">
+            <a class="button outline"
+              href="https://f-droid.org/packages/dev.tn3w.shelf/">F-Droid</a>
+            <a class="button outline" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D">Obtainium</a>
+            <a class="button outline" href="https://github.com/tn3w/Shelf/releases/latest">
+              <svg><use href="#github" /></svg>GitHub
+            </a>
+          </div>
+        </div>
+        <figure class="qr">
+          <img src="qr.svg" width="168" height="168" alt="QR code linking to the APK">
+          <figcaption>Scan with your phone</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    <a class="brand" href="#top"><svg><use href="#logo" /></svg>Shelf</a>
+    <nav>
+      <a href="https://github.com/tn3w/Shelf">GitHub</a>
+      <a href="https://github.com/tn3w/Shelf/blob/master/CONTRIBUTING.md">Contribute</a>
+      <a href="https://buymeacoffee.com/tn3w">Donate</a>
+      <a href="https://github.com/tn3w/Shelf/blob/master/LICENSE">MIT License</a>
+    </nav>
+    <p>Book data from <a href="https://openlibrary.org">Open Library</a></p>
+  </footer>
+
+  <script>
+    document.querySelector("#theme-toggle").addEventListener("click", () => {
+      const root = document.documentElement
+      root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark"
+      try { localStorage.setItem("theme", root.dataset.theme) } catch {}
+    })
+  </script>
+</body>
+</html>

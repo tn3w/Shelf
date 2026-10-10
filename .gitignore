@@ -52,3 +52,7 @@ __pycache__/
 tooling/promo/out/
 
 scanbench/
+
+site/shots/
+site/covers-*.webp
+site/icon.svg

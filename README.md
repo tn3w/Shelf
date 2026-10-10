@@ -14,7 +14,7 @@ Search, explore, track reading streaks, read your own files.
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 
 <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
-<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
 <a href="https://f-droid.org/packages/dev.tn3w.shelf/"><img src="https://f-droid.org/badge/get-it-on.png" height="60" alt="Get it on F-Droid"></a>
 
 <p align="center">
@@ -144,8 +144,8 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>]
 Format with `ktlint -F "android/app/src/**/*.kt"`.
 
 Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, app installed, `ffmpeg`):
-`python3 tooling/screenshots.py [--only 7_scan|8_settings]`. Scan shot: emulator camera
-plays a rendered book-on-table loop; taps to capture after 30 s.
+`python3 tooling/screenshots.py [--only 7_scan|8_settings]`.
+Scan shot: emulator camera plays a rendered book-on-table loop; taps to capture after 30 s.
 
 Scanner bench (local `scanbench/cache` clips; `--tune` grid-searches the stop rule):
 
@@ -154,6 +154,11 @@ cd android
 ./gradlew scanBench --args="bench tune [--reuse] [--tune]"
 ```
 
+## Website
+
+`site/` → https://shelf.tn3w.dev via `.github/workflows/pages.yml` on push to `master`.
+Workflow adds icon, covers and screenshots as WebP, then minifies.
+
 ## Project
 
 <table>
@@ -161,6 +166,7 @@ cd android
 <tr><td><code>android/</code></td><td>App</td></tr>
 <tr><td><code>builder/</code></td><td>Catalogue builder</td></tr>
 <tr><td><code>tooling/</code></td><td>Screenshots, translation, promo</td></tr>
+<tr><td><code>site/</code></td><td>Static website</td></tr>
 </table>
 
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·

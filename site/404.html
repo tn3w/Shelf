@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not found · Shelf</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script>
+    try {
+      const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+      document.documentElement.dataset.theme = localStorage.getItem("theme") ?? system
+    } catch {}
+  </script>
+</head>
+<body>
+  <header class="bar">
+    <nav class="wrap nav">
+      <a class="brand" href="/"><img src="/icon.svg" alt="">Shelf</a>
+    </nav>
+  </header>
+
+  <main class="hero missing">
+    <div class="wrap hero-text">
+      <p class="pill">Error 404</p>
+      <h1><span class="gradient">Not on</span> this shelf.</h1>
+      <p class="lead">
+        This page doesn't exist. Maybe it was borrowed and never returned.
+      </p>
+      <a class="button primary large" href="/">Back to Shelf</a>
+    </div>
+  </main>
+</body>
+</html>
