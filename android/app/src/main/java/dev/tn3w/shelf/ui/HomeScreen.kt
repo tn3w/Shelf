@@ -213,14 +213,20 @@ private fun habitMessage(habit: Habit) = when {
 }
 
 @Composable
-private fun StreakFlame(habit: Habit) {
-    val pulsing = habit.done && !LocalReducedMotion.current
+private fun rememberFlamePulse(): Float {
     val pulse by rememberInfiniteTransition()
         .animateFloat(
             initialValue = 1f,
-            targetValue = if (pulsing) 1.15f else 1f,
+            targetValue = 1.15f,
             animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
         )
+    return pulse
+}
+
+@Composable
+private fun StreakFlame(habit: Habit) {
+    val pulsing = habit.done && !LocalReducedMotion.current
+    val pulse = if (pulsing) rememberFlamePulse() else 1f
     val lit = habit.done || habit.streak > 0
     val tint by
         animateColorAsState(if (lit) Flame else MaterialTheme.colorScheme.outlineVariant)

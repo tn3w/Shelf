@@ -315,18 +315,20 @@ fun BookRow(
     shared: Boolean = true,
     onDismiss: ((Book) -> Unit)? = null,
 ) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        userScrollEnabled = books != null,
-    ) {
-        if (books == null) {
-            items(6) { SkeletonTile() }
-            return@LazyRow
-        }
-        items(books, key = { it.work }) {
-            Box(Modifier.animateItem()) {
-                BookTile(it, origin, onOpen, shared = shared, onDismiss = onDismiss)
+    SkeletonAlphaProvider(books == null) {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = ScreenPadding),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            userScrollEnabled = books != null,
+        ) {
+            if (books == null) {
+                items(6) { SkeletonTile() }
+                return@LazyRow
+            }
+            items(books, key = { it.work }) {
+                Box(Modifier.animateItem()) {
+                    BookTile(it, origin, onOpen, shared = shared, onDismiss = onDismiss)
+                }
             }
         }
     }
@@ -347,22 +349,32 @@ fun BookSection(
     BookRow(books, origin, onOpen, shared, onDismiss)
 }
 
+private val LocalSkeletonAlpha = staticCompositionLocalOf<State<Float>> {
+    mutableFloatStateOf(0.6f)
+}
+
 @Composable
-private fun skeletonAlpha(): Float {
-    if (LocalReducedMotion.current) return 0.6f
-    val alpha by rememberInfiniteTransition()
-        .animateFloat(
-            initialValue = 0.35f,
-            targetValue = 0.8f,
-            animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
-        )
-    return alpha
+private fun SkeletonAlphaProvider(loading: Boolean, content: @Composable () -> Unit) {
+    val animated = loading && !LocalReducedMotion.current
+    val alpha =
+        if (animated) {
+            rememberInfiniteTransition()
+                .animateFloat(
+                    initialValue = 0.35f,
+                    targetValue = 0.8f,
+                    animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+                )
+        } else {
+            remember { mutableFloatStateOf(0.6f) }
+        }
+    CompositionLocalProvider(LocalSkeletonAlpha provides alpha, content = content)
 }
 
 @Composable
 fun SkeletonTile(modifier: Modifier = Modifier.width(TileWidth)) {
     val color = MaterialTheme.colorScheme.surfaceContainerHigh
-    Column(modifier.alpha(skeletonAlpha())) {
+    val alpha = LocalSkeletonAlpha.current
+    Column(modifier.graphicsLayer { this.alpha = alpha.value }) {
         Box(
             Modifier.fillMaxWidth()
                 .aspectRatio(2f / 3f)
@@ -522,15 +534,21 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
 }
 
 @Composable
-private fun TileGrid(header: LazyGridScope.() -> Unit, body: LazyGridScope.() -> Unit) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(GridTileWidth),
-        contentPadding = PaddingValues(ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        header()
-        body()
+private fun TileGrid(
+    loading: Boolean,
+    header: LazyGridScope.() -> Unit,
+    body: LazyGridScope.() -> Unit,
+) {
+    SkeletonAlphaProvider(loading) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(GridTileWidth),
+            contentPadding = PaddingValues(ScreenPadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            header()
+            body()
+        }
     }
 }
 
@@ -551,7 +569,7 @@ fun BookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(header) {
+) = TileGrid(books == null, header) {
     if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
 }
 
@@ -561,7 +579,7 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(header) {
+) = TileGrid(groups == null, header) {
     if (groups == null) return@TileGrid skeletonTiles()
     val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
     groups.forEach { group ->
