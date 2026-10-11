@@ -79,7 +79,10 @@ private fun PackList(
 ) {
     val app = shelfApp()
     val downloads by app.downloads.collectAsStateWithLifecycle()
-    val storage by produceState(0L, packs) {
+    val storage by produceState(0L, packs, language) {
+        value = withContext(Dispatchers.IO) { app.packs.storageBytes(language) }
+    }
+    val totalStorage by produceState(0L, packs) {
         value = withContext(Dispatchers.IO) { app.packs.storageBytes() }
     }
     val release by produceState<String?>(null, packs) {
@@ -118,6 +121,11 @@ private fun PackList(
         } else if (storage > 0) {
             ActionRow(R.string.delete_all, Icons.Outlined.Delete) {
                 app.removeAll(language)
+            }
+        }
+        if (totalStorage > storage) {
+            ActionRow(R.string.delete_all_languages, Icons.Outlined.Delete) {
+                app.removeEverything(language)
             }
         }
         if (!offline) CatalogueCheck(language, onChecked)

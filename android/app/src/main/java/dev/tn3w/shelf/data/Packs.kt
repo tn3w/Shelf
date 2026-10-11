@@ -189,7 +189,9 @@ class Packs(private val context: Context) {
 
     fun removeBundledCopies() = deleteAll(bundled)
 
-    fun storageBytes() = downloaded().sumOf { binOf(it.id).length() }
+    fun storageBytes(language: String? = null) =
+        downloaded().filter { language == null || it.language == language }
+            .sumOf { binOf(it.id).length() }
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
@@ -344,7 +346,8 @@ class Packs(private val context: Context) {
     fun remove(language: String, pack: String) =
         deleteAll(downloaded().filter { it.language == language && it.pack == pack })
 
-    fun removeAll() = deleteAll(downloaded())
+    fun removeAll(language: String? = null) =
+        deleteAll(downloaded().filter { language == null || it.language == language })
 
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->

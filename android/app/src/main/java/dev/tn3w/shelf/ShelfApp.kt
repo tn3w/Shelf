@@ -112,6 +112,11 @@ class ShelfApp :
     }
 
     fun removeAll(language: String) = scope.launch(Dispatchers.IO) {
+        packs.removeAll(language)
+        reload(language)
+    }
+
+    fun removeEverything(language: String) = scope.launch(Dispatchers.IO) {
         packs.removeAll()
         reload(language)
     }

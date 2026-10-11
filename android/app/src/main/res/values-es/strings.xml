@@ -223,6 +223,7 @@
     <string name="download_all_short">Descargar todo</string>
     <string name="csv_progress">Buscando libros… %d%%</string>
     <string name="delete_all">Eliminar todo</string>
+    <string name="delete_all_languages">Eliminar todos los idiomas</string>
     <string name="offline_forced">Sin permiso de red, Shelf permanece sin conexión.</string>
     <string name="offline_mode">Modo sin conexión</string>
     <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin catálogo, sin imágenes.</string>

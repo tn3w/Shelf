@@ -216,6 +216,7 @@
     <string name="download_all_short">Download all</string>
     <string name="csv_progress">Matching books… %d%%</string>
     <string name="delete_all">Delete all</string>
+    <string name="delete_all_languages">Delete all languages</string>
     <string name="offline_forced">Network access is not granted, so Shelf stays offline.</string>
     <string name="offline_mode">Offline mode</string>
     <string name="offline_mode_hint">No network at all: no updates, no catalogue refresh, no images.</string>

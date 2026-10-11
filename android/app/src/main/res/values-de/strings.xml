@@ -215,6 +215,7 @@
     <string name="download_all_short">Alle herunterladen</string>
     <string name="csv_progress">Bücher werden abgeglichen… %d%%</string>
     <string name="delete_all">Alle löschen</string>
+    <string name="delete_all_languages">Alle Sprachen löschen</string>
     <string name="offline_forced">Kein Netzwerkzugriff erlaubt, Shelf bleibt offline.</string>
     <string name="offline_mode">Offline-Modus</string>
     <string name="offline_mode_hint">Gar kein Netzwerk: keine Updates, keine Katalogsuche, keine Bilder.</string>

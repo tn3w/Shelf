@@ -223,6 +223,7 @@
     <string name="download_all_short">Tout télécharger</string>
     <string name="csv_progress">Correspondance des livres… %d%%</string>
     <string name="delete_all">Tout supprimer</string>
+    <string name="delete_all_languages">Supprimer toutes les langues</string>
     <string name="offline_forced">Accès réseau non accordé, Shelf reste hors ligne.</string>
     <string name="offline_mode">Mode hors ligne</string>
     <string name="offline_mode_hint">Aucun réseau : pas de mises à jour, pas de catalogue, pas d\'images.</string>
