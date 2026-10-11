@@ -51,3 +51,17 @@ class RecommendTest {
         assertTrue(similar.isNotEmpty() && 20 !in similar)
     }
 }
+
+class FictionRuleTest {
+    @Test
+    fun untaggedCountsAsFiction() {
+        assertTrue(isFiction(emptySet()))
+        assertTrue(isFiction(setOf("fantasy")))
+        assertTrue(isFiction(setOf("fiction", "nonfiction")))
+    }
+
+    @Test
+    fun nonfictionTagCountsAsNonfiction() {
+        assertTrue(!isFiction(setOf("nonfiction", "history")))
+    }
+}

@@ -13,6 +13,9 @@ private val FORM_TAGS = setOf("fiction", "nonfiction")
 private val AUDIENCE_TAGS =
     setOf("picture-book", "childrens", "middle-grade", "young-adult")
 private val BROAD_TAGS = FORM_TAGS + AUDIENCE_TAGS
+
+internal fun isFiction(slugs: Set<String>) = "fiction" in slugs || "nonfiction" !in slugs
+
 private const val MAX_SOURCES = 24
 private const val MERGE_OVERLAP = 0.7
 private const val WEAK_MERGE_OVERLAP = 0.3
@@ -183,7 +186,7 @@ class Recommender(private val catalogue: Catalogue) {
             vector,
             SHELF_WEIGHT.getValue(entry.shelf),
             audienceOf(slugs),
-            "fiction" in slugs || "nonfiction" !in slugs,
+            isFiction(slugs),
             entry.shelf != Shelf.Want,
         )
     }
@@ -269,7 +272,7 @@ class Recommender(private val catalogue: Catalogue) {
         val vector = vectorOf(tags)
         if (vector.isEmpty()) return null
         val slugs = tags.mapNotNull(slug::get).toSet()
-        if (("fiction" in slugs) != cluster.fiction) return null
+        if (isFiction(slugs) != cluster.fiction) return null
         val gap = audienceOf(slugs) - cluster.audience
         if (abs(gap) > MAX_AUDIENCE_GAP) return null
         val neighbour = overlap(vector, cluster.vector)
