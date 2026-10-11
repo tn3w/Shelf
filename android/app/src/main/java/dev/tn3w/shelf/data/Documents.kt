@@ -28,6 +28,7 @@ private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
     Regex("(?<!\\p{L})(copyright|colophon|imprint|toc|contents|titlepage)(?!\\p{L})")
 private val WHITESPACE = Regex("\\s+")
+private val UNSAFE_URI_CHARACTER = Regex("""[ \[\]|{}^\\"<>`]""")
 private const val JP2_SIGNATURE = "\u0000\u0000\u0000\u000CjP  \r\n\u0087\n"
 private const val CHUNK_SIZE = 1 shl 22
 private const val ICC_PROFILE_METHOD: Byte = 2
@@ -398,7 +399,9 @@ private class Epub(private val zip: ZipFile) {
         bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }
 
     fun resolve(base: String, href: String): String {
-        val clean = href.substringBefore('#').replace(" ", "%20")
+        val clean = href.substringBefore('#').replace(UNSAFE_URI_CHARACTER) {
+            "%%%02X".format(it.value.single().code)
+        }
         return URI(null, null, "/$base", null).resolve(clean).path.removePrefix("/")
     }
 

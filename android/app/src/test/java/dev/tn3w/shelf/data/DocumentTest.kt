@@ -251,4 +251,11 @@ class DocumentTest {
             assertEquals(emptyList<List<Block>>(), document.sections)
         }
     }
+
+    @Test
+    fun epubHrefWithSpecialCharactersOpens() {
+        val file = epub(folder.newFile("odd.epub"), "<p>Body</p>", "a[1]|{b}^ c")
+        val texts = blocks(openDocument(file)).map { it.text }
+        assertEquals(listOf("Body"), texts)
+    }
 }
