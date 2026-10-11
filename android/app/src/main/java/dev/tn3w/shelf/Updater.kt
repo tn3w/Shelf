@@ -17,6 +17,25 @@ import java.security.MessageDigest
 private const val APK_NAME = "shelf-fdroid.apk"
 private const val CHECKSUMS_NAME = "SHA256SUMS"
 
+private val STORE_INSTALLERS = setOf(
+    "org.fdroid.fdroid",
+    "org.fdroid.basic",
+    "com.looker.droidify",
+    "com.machiav3lli.fdroid",
+)
+
+fun isStoreInstaller(installer: String?) = installer in STORE_INSTALLERS
+
+private fun installerOf(context: Context): String? {
+    val manager = context.packageManager
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        manager.getInstallSourceInfo(context.packageName).installingPackageName
+    } else {
+        @Suppress("DEPRECATION")
+        manager.getInstallerPackageName(context.packageName)
+    }
+}
+
 private fun numbers(version: String) = version.split(".").map { it.toIntOrNull() ?: 0 }
 
 private fun isNewer(version: String): Boolean {
@@ -30,6 +49,8 @@ private fun isNewer(version: String): Boolean {
 }
 
 object Updater {
+    fun supported(context: Context) = !isStoreInstaller(installerOf(context))
+
     suspend fun latest(): Release? = withContext(Dispatchers.IO) {
         val release = json
             .decodeFromString<List<Release>>(fetchText(RELEASES))
