@@ -149,10 +149,10 @@ class ShelfApp :
         val now = System.currentTimeMillis()
         if (now - settings.lastCatalogueCheck < MONTH_MILLIS) return
         runCatching { packs.refreshManifest() }.getOrElse { return }
-        library.updateSettings { it.copy(lastCatalogueCheck = now) }
         val language = bookLanguage(settings)
         val updates = packs.pendingUpdates(language)
-        val small = updates.sumOf { it.bytes } <= AUTOMATIC_UPDATE_BYTES
-        if (small) updates.forEach { download(language, it.pack) }
+        if (updates.sumOf { it.bytes } > AUTOMATIC_UPDATE_BYTES) return
+        updates.forEach { download(language, it.pack) }
+        library.updateSettings { it.copy(lastCatalogueCheck = now) }
     }
 }
