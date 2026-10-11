@@ -250,4 +250,22 @@
     <string name="scan_again">Erneut scannen</string>
     <string name="camera_denied">Shelf liest Buchcover mit der Kamera, komplett auf deinem Handy. Erlaube den Kamerazugriff in den Systemeinstellungen, um zu scannen.</string>
     <string name="camera_failed">Die Kamera wurde unerwartet geschlossen. Geh zurück und versuche es erneut.</string>
+    <string name="sort">Sortieren</string>
+    <string name="sort_added">Zuletzt hinzugefügt</string>
+    <string name="sort_rating">Meine Bewertung</string>
+    <string name="sort_finished">Zuletzt beendet</string>
+    <string name="relevance">Relevanz</string>
+    <string name="newest">Neueste</string>
+    <string name="oldest">Älteste</string>
+    <string name="genre">Genre</string>
+    <string name="published">Erschienen</string>
+    <string name="before_year">Vor %d</string>
+    <string name="since_year">Seit %d</string>
+    <string name="search_library">Bibliothek durchsuchen</string>
+    <string name="grid_view">Raster</string>
+    <string name="list_view">Liste</string>
+    <string name="in_library">In deiner Bibliothek</string>
+    <string name="clear_filters">Filter zurücksetzen</string>
+    <string name="sort_filter">Sortieren und filtern</string>
+    <string name="view">Ansicht</string>
 </resources>

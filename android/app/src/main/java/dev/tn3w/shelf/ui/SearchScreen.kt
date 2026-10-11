@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -33,11 +34,41 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 
+private const val RESULT_LIMIT = 50
+private const val LIBRARY_LIMIT = 3
+
+private val RESULT_SORTS = listOf(
+    R.string.relevance to ResultSort.Relevance,
+    R.string.popular to ResultSort.Popular,
+    R.string.newest to ResultSort.Newest,
+    R.string.oldest to ResultSort.Oldest,
+)
+
 private data class Results(
     val completions: List<String>,
     val authors: List<Author>,
     val books: List<Book>,
+    val facets: List<Tag>,
 )
+
+private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Results {
+    val lookup = searcher.lookup(query, job)
+    val unfiltered = searcher.search(lookup, RESULT_LIMIT, job)
+    val books = if (filter.narrows) {
+        searcher.search(lookup, RESULT_LIMIT, job, filter)
+    } else {
+        unfiltered.sorted(filter.sort)
+    }
+    val isbn = catalogue.bookOfIsbn(query)
+    val tags = facets(unfiltered.map { it.tags }) + listOfNotNull(filter.tag)
+    val refining = filter != SearchFilter()
+    return Results(
+        if (refining) emptyList() else searcher.complete(lookup),
+        if (refining) emptyList() else searcher.authors(lookup, job = job),
+        listOfNotNull(isbn) + books.filter { it.work != isbn?.work },
+        tags.distinct().mapNotNull { catalogue.tags.getOrNull(it) },
+    )
+}
 
 @Composable
 fun SearchScreen(navigator: Navigator) {
@@ -45,12 +76,17 @@ fun SearchScreen(navigator: Navigator) {
     val scope = rememberCoroutineScope()
     val loaded by app.loaded.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
+    var tag by rememberSaveable { mutableStateOf<Int?>(null) }
+    var era by rememberSaveable { mutableStateOf<Int?>(null) }
+    var sort by rememberSaveable { mutableStateOf(ResultSort.Relevance) }
+    val filter = SearchFilter(tag, era?.let(ERAS::get), sort)
     var results by remember { mutableStateOf<Results?>(null) }
+    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
     val recent by app.library.recentSearches.collectAsStateWithLifecycle(emptyList())
     val trending by load { recommender.popular(8) }
     var addingOwn by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(query, loaded) {
+    LaunchedEffect(query, loaded, filter) {
         val current = loaded ?: return@LaunchedEffect
         if (query.isBlank()) {
             results = null
@@ -58,36 +94,51 @@ fun SearchScreen(navigator: Navigator) {
         }
         delay(150)
         results = withContext(Dispatchers.Default) {
-            val searcher = current.searcher
-            val job = coroutineContext.job
-            val lookup = searcher.lookup(query, job)
-            Results(
-                searcher.complete(lookup),
-                searcher.authors(lookup, job = job),
-                searcher.search(lookup, job = job),
-            )
+            current.results(query, filter, coroutineContext.job)
         }
     }
 
     fun saveQuery() = scope.launch { if (query.isNotBlank()) app.library.remember(query) }
 
+    fun clearFilters() {
+        tag = null
+        era = null
+        sort = ResultSort.Relevance
+    }
+
+    val owned = saved.filtered(query).take(LIBRARY_LIMIT)
+        .takeIf { query.isNotBlank() }
+        .orEmpty()
+
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).imePadding()) {
         LargeTitle(stringResource(R.string.search))
-        SearchField(query, { query = it }, { saveQuery() }, scan(navigator))
+        SearchField(
+            query = query,
+            onChange = { query = it },
+            hint = stringResource(R.string.search_hint),
+            onSubmit = { saveQuery() },
+            onScan = scan(navigator),
+        )
+        val current = results
+        if (current != null) {
+            ResultFilters(
+                facets = current.facets,
+                filter = filter,
+                onTag = { tag = it },
+                onEra = { era = it },
+                onSort = { sort = it },
+            )
+        }
         LazyColumn {
-            val current = results
             if (current == null) {
                 suggestions(recent, trending.orEmpty(), { query = it }) {
                     scope.launch { app.library.clearSearches() }
                 }
                 return@LazyColumn
             }
-            if (current.authors.isEmpty() && current.books.isEmpty()) {
-                item {
-                    EmptyState(
-                        Icons.Outlined.SearchOff, stringResource(R.string.no_results),
-                    )
-                }
+            val nothing = current.authors.isEmpty() && current.books.isEmpty()
+            if (nothing && owned.isEmpty()) {
+                item { NoResults(filter.narrows, ::clearFilters) }
             }
             val completions =
                 current.completions.filter { it != query.trim().lowercase() }
@@ -106,14 +157,15 @@ fun SearchScreen(navigator: Navigator) {
                     },
                 ) { AuthorAvatar(author, 36.dp) }
             }
-            items(current.books, key = { "book-${it.work}" }) { book ->
-                Column(Modifier.animateItem()) {
-                    BookListItem(book, "search") { opened, origin ->
-                        saveQuery()
-                        navigator.book(opened, origin)
-                    }
-                }
+            val openBook = { opened: Book, origin: String ->
+                saveQuery()
+                navigator.book(opened, origin)
             }
+            val ownedWorks = owned.map { it.work }.toSet()
+            val found = current.books.filter { it.work !in ownedWorks }
+            books(R.string.in_library, owned.map { it.toBook() }, "owned", openBook)
+            val catalogue = R.string.catalogue.takeIf { owned.isNotEmpty() }
+            books(catalogue, found, "search", openBook)
             item(key = "own") {
                 IconSuggestionRow(
                     Icons.Outlined.LibraryAdd,
@@ -124,6 +176,60 @@ fun SearchScreen(navigator: Navigator) {
         }
     }
     if (addingOwn) OwnBookSheet(query, navigator) { addingOwn = false }
+}
+
+private fun LazyListScope.books(
+    @StringRes header: Int?,
+    books: List<Book>,
+    origin: String,
+    onOpen: (Book, String) -> Unit,
+) {
+    if (books.isEmpty()) return
+    if (header != null) {
+        item(key = "$origin-header") { SectionHeader(stringResource(header)) }
+    }
+    items(books, key = { "$origin-${it.work}" }) { book ->
+        Column(Modifier.animateItem()) { BookListItem(book, origin, onOpen = onOpen) }
+    }
+}
+
+@Composable
+private fun eraLabel(era: IntRange) = when {
+    era.first <= 1 -> stringResource(R.string.before_year, era.last + 1)
+    era.last >= 9999 -> stringResource(R.string.since_year, era.first)
+    else -> "${era.first}–${era.last}"
+}
+
+@Composable
+private fun ResultFilters(
+    facets: List<Tag>,
+    filter: SearchFilter,
+    onTag: (Int?) -> Unit,
+    onEra: (Int?) -> Unit,
+    onSort: (ResultSort) -> Unit,
+) {
+    val sorts = RESULT_SORTS.map { (label, value) -> stringResource(label) to value }
+    FilterRow(actions = { SortMenu(sorts, filter.sort, onSort) }) {
+        if (facets.isNotEmpty()) GenreChip(facets, filter.tag, onTag)
+        FilterMenuChip(
+            stringResource(R.string.published),
+            ERAS.mapIndexed { index, era -> eraLabel(era) to index },
+            filter.era?.let(ERAS::indexOf),
+            onEra,
+        )
+    }
+}
+
+@Composable
+private fun NoResults(filtered: Boolean, onClear: () -> Unit) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        EmptyState(Icons.Outlined.SearchOff, stringResource(R.string.no_results))
+        if (filtered) {
+            OutlinedButton(onClick = onClear) {
+                Text(stringResource(R.string.clear_filters))
+            }
+        }
+    }
 }
 
 @Composable
@@ -172,16 +278,18 @@ private fun CameraDenied(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun SearchField(
+fun SearchField(
     query: String,
     onChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onScan: (() -> Unit)?,
+    hint: String,
+    modifier: Modifier = Modifier,
+    onSubmit: () -> Unit = {},
+    onScan: (() -> Unit)? = null,
 ) {
     TextField(
         value = query,
         onValueChange = onChange,
-        placeholder = { Text(stringResource(R.string.search_hint)) },
+        placeholder = { Text(hint) },
         leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
@@ -203,7 +311,7 @@ private fun SearchField(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
         modifier =
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+        modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
     )
 }
 

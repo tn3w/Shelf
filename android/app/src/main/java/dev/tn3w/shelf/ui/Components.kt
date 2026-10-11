@@ -13,7 +13,11 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +26,7 @@ import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -389,10 +394,19 @@ fun SkeletonTile(modifier: Modifier = Modifier.width(TileWidth)) {
 }
 
 @Composable
+fun ratingLabel(book: Book): String? {
+    val locale = LocalConfiguration.current.locales[0]
+    return book.popularity
+        ?.takeIf { it.ratings > 0 }
+        ?.let { "★ ${String.format(locale, "%.1f", it.rating)}" }
+}
+
+@Composable
 fun BookListItem(
     book: Book,
     origin: String,
     shared: Boolean = true,
+    detail: String? = null,
     onOpen: (Book, String) -> Unit,
 ) {
     Row(
@@ -405,8 +419,11 @@ fun BookListItem(
         Column(Modifier.padding(start = 16.dp).weight(1f)) {
             Text(book.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2)
             Text(
-                listOfNotNull(book.author, book.year.takeIf { it > 0 })
-                    .joinToString(" · "),
+                detail ?: listOfNotNull(
+                    book.author,
+                    book.year.takeIf { it > 0 }?.toString(),
+                    ratingLabel(book),
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -512,6 +529,60 @@ fun EditableCover(
         ) {
             Icon(Icons.Outlined.AddPhotoAlternate, null, Modifier.padding(6.dp))
         }
+    }
+}
+
+@Composable
+private fun <T> OptionsMenu(
+    open: Boolean,
+    onDismiss: () -> Unit,
+    options: List<Pair<String, T>>,
+    current: T?,
+    onSelect: (T) -> Unit,
+) = DropdownMenu(open, onDismissRequest = onDismiss) {
+    options.forEach { (text, value) ->
+        DropdownMenuItem(
+            text = { Text(text) },
+            trailingIcon = { if (value == current) Icon(Icons.Outlined.Check, null) },
+            onClick = {
+                onDismiss()
+                onSelect(value)
+            },
+        )
+    }
+}
+
+@Composable
+fun <T : Any> FilterMenuChip(
+    name: String,
+    options: List<Pair<String, T>>,
+    current: T?,
+    onSelect: (T?) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val label = options.firstOrNull { it.second == current }?.first
+    val icon = if (label == null) Icons.Outlined.ArrowDropDown else Icons.Outlined.Close
+    Box {
+        FilterChip(
+            selected = label != null,
+            onClick = { if (label == null) open = true else onSelect(null) },
+            label = { Text(label ?: name, maxLines = 1) },
+            trailingIcon = {
+                Icon(icon, null, Modifier.size(FilterChipDefaults.IconSize))
+            },
+        )
+        OptionsMenu(open, { open = false }, options, current, onSelect)
+    }
+}
+
+@Composable
+fun <T> SortMenu(options: List<Pair<String, T>>, current: T, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconAction(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.sort)) {
+            open = true
+        }
+        OptionsMenu(open, { open = false }, options, current, onSelect)
     }
 }
 

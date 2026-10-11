@@ -251,4 +251,22 @@
     <string name="scan_again">Scan again</string>
     <string name="camera_denied">Shelf reads book covers with the camera, entirely on your phone. Allow camera access in the system settings to scan.</string>
     <string name="camera_failed">Camera closed unexpectedly. Go back and try again.</string>
+    <string name="sort">Sort</string>
+    <string name="sort_added">Recently added</string>
+    <string name="sort_rating">My rating</string>
+    <string name="sort_finished">Recently finished</string>
+    <string name="relevance">Relevance</string>
+    <string name="newest">Newest</string>
+    <string name="oldest">Oldest</string>
+    <string name="genre">Genre</string>
+    <string name="published">Published</string>
+    <string name="before_year">Before %d</string>
+    <string name="since_year">Since %d</string>
+    <string name="search_library">Search your library</string>
+    <string name="grid_view">Grid</string>
+    <string name="list_view">List</string>
+    <string name="in_library">In your library</string>
+    <string name="clear_filters">Clear filters</string>
+    <string name="sort_filter">Sort and filter</string>
+    <string name="view">View</string>
 </resources>

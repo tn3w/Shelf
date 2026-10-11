@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
@@ -276,12 +275,9 @@ private fun ShelfToggle(
 @Composable
 private fun facts(book: Book): String {
     val popularity = book.popularity
-    val locale = LocalConfiguration.current.locales[0]
     return listOfNotNull(
         book.year.takeIf { it > 0 }?.toString(),
-        popularity
-            ?.takeIf { it.ratings > 0 }
-            ?.let { "★ ${String.format(locale, "%.1f", it.rating)}" },
+        ratingLabel(book),
         popularity
             ?.readers
             ?.takeIf { it > 0 }

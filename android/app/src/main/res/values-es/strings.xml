@@ -258,4 +258,22 @@
     <string name="scan_again">Escanear de nuevo</string>
     <string name="camera_denied">Shelf lee portadas con la cámara, todo en tu teléfono. Permite el acceso a la cámara en los ajustes del sistema para escanear.</string>
     <string name="camera_failed">La cámara se cerró inesperadamente. Vuelve atrás e inténtalo de nuevo.</string>
+    <string name="sort">Ordenar</string>
+    <string name="sort_added">Añadidos recientemente</string>
+    <string name="sort_rating">Mi valoración</string>
+    <string name="sort_finished">Terminados recientemente</string>
+    <string name="relevance">Relevancia</string>
+    <string name="newest">Más recientes</string>
+    <string name="oldest">Más antiguos</string>
+    <string name="genre">Género</string>
+    <string name="published">Publicación</string>
+    <string name="before_year">Antes de %d</string>
+    <string name="since_year">Desde %d</string>
+    <string name="search_library">Buscar en tu biblioteca</string>
+    <string name="grid_view">Cuadrícula</string>
+    <string name="list_view">Lista</string>
+    <string name="in_library">En tu biblioteca</string>
+    <string name="clear_filters">Quitar filtros</string>
+    <string name="sort_filter">Ordenar y filtrar</string>
+    <string name="view">Vista</string>
 </resources>

@@ -113,6 +113,8 @@ data class Settings(
     val lastAppCheck: Long = 0,
     val catalogueSource: String = "",
     val coverSource: String = "",
+    val librarySort: LibrarySort = LibrarySort.Added,
+    val libraryList: Boolean = false,
 ) {
     val coverHost
         get() = coverSource.ifEmpty { COVERS }.trimEnd('/')

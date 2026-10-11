@@ -99,7 +99,7 @@ private class TokenScores(
     val idf: Double,
 )
 
-private fun withoutArticle(text: String) = text.replaceFirst(ARTICLE, "")
+fun withoutArticle(text: String) = text.replaceFirst(ARTICLE, "")
 
 fun mainTitle(title: String) = title.split(TITLE_BREAK).first()
 
@@ -323,7 +323,18 @@ class Searcher(private val catalogue: Catalogue) {
 
     fun search(query: String, limit: Int = 30) = search(lookup(query), limit)
 
-    fun search(lookup: Lookup, limit: Int = 30, job: Job? = null): List<Book> {
+    private fun SearchFilter.accepts(work: Int): Boolean {
+        if (!narrows) return true
+        val facts = catalogue.facts(work) ?: return false
+        return (tag == null || tag in facts.tags) && (era == null || facts.year in era)
+    }
+
+    fun search(
+        lookup: Lookup,
+        limit: Int = 30,
+        job: Job? = null,
+        filter: SearchFilter = SearchFilter(),
+    ): List<Book> {
         val tokens = lookup.tokens
         if (tokens.isEmpty()) return emptyList()
         val perToken = tokens.zip(lookup.matches) { token, matches ->
@@ -339,7 +350,10 @@ class Searcher(private val catalogue: Catalogue) {
             .sortedByDescending {
                 scored.getValue(it) + RANK_POPULARITY * popularityOf(it)
             }
+            .asSequence()
+            .filter { filter.accepts(it) }
             .take(RERANK_DEPTH)
+            .toList()
         val joined = tokens.joinToString(" ")
         val ranked = head
             .mapNotNull(catalogue::book)
@@ -360,6 +374,7 @@ class Searcher(private val catalogue: Catalogue) {
             .filter { it.second >= RELEVANCE_FLOOR * best }
             .take(limit)
             .map { it.first }
+            .sorted(filter.sort)
     }
 
     fun find(title: String, author: String): Book? {

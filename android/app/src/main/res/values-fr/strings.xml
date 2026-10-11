@@ -258,4 +258,22 @@
     <string name="scan_again">Scanner à nouveau</string>
     <string name="camera_denied">Shelf lit les couvertures avec l’appareil photo, entièrement sur votre téléphone. Autorisez l’accès à l’appareil photo dans les paramètres du système pour scanner.</string>
     <string name="camera_failed">La caméra s’est fermée de façon inattendue. Revenez en arrière et réessayez.</string>
+    <string name="sort">Trier</string>
+    <string name="sort_added">Ajoutés récemment</string>
+    <string name="sort_rating">Ma note</string>
+    <string name="sort_finished">Terminés récemment</string>
+    <string name="relevance">Pertinence</string>
+    <string name="newest">Plus récents</string>
+    <string name="oldest">Plus anciens</string>
+    <string name="genre">Genre</string>
+    <string name="published">Publication</string>
+    <string name="before_year">Avant %d</string>
+    <string name="since_year">Depuis %d</string>
+    <string name="search_library">Rechercher dans la bibliothèque</string>
+    <string name="grid_view">Grille</string>
+    <string name="list_view">Liste</string>
+    <string name="in_library">Dans votre bibliothèque</string>
+    <string name="clear_filters">Effacer les filtres</string>
+    <string name="sort_filter">Trier et filtrer</string>
+    <string name="view">Affichage</string>
 </resources>

@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 <table>
 <tr><th width="1%">Find</th><th width="1%">Read</th><th width="1%">Track</th></tr>
-<tr><td align="center">Typo-tolerant search, cover scanner</td><td align="center">EPUB · PDF · FB2 · CBZ · TXT · HTML</td><td align="center">Want · Reading · Finished</td></tr>
+<tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · PDF · FB2 · CBZ · TXT · HTML</td><td align="center">Want · Reading · Finished</td></tr>
 <tr><td align="center">Genres, series, authors</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
 <tr><td align="center">Recommendations on device</td><td align="center">Volume and page keys</td><td align="center">Goodreads / StoryGraph import</td></tr>
 </table>
@@ -63,6 +63,14 @@ flowchart LR
 <tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
 <tr><td>Hosts</td><td>GitHub, Open Library, or <b>your own server</b></td></tr>
 </table>
+
+## Search and sort
+
+**Search**: typo-tolerant, completes words, finds authors and ISBNs. Your own books
+show first. Filter by genre or publication year, sort by relevance, popularity or date.
+
+**Library**: search, shelf chips, and a sort and filter sheet (sort, genre, grid or
+list). Genres group books automatically, no collections to maintain.
 
 ## Own books
 
