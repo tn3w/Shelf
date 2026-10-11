@@ -226,6 +226,11 @@ internal inline fun <reified T> MutablePreferences.updateJson(
     this[key] = json.encodeToString(change(current))
 }
 
+internal fun deleteOtherFormats(directory: File, work: Int, keep: String) = directory
+    .listFiles { file -> file.name != keep && file.nameWithoutExtension == "$work" }
+    .orEmpty()
+    .forEach { it.delete() }
+
 class Library(private val context: Context, private val scope: CoroutineScope) {
     private val store = context.dataStore
 
@@ -294,9 +299,12 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val name = "$work.$extension"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
         val copied = readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
-        if (copied != null) return name
-        target.delete()
-        return null
+        if (copied == null) {
+            target.delete()
+            return null
+        }
+        deleteOtherFormats(booksDir, work, keep = name)
+        return name
     }
 
     fun coverFile(book: Book) = bookFile("${book.work}-cover-${book.cover}")

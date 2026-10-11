@@ -228,4 +228,16 @@ class LibraryTest {
         assertEquals(3 to true, habitOf(met, 10, today).let { it.streak to it.done })
         assertEquals(0, habitOf(activity, 10, today.plusDays(1)).streak)
     }
+
+    @Test
+    fun deleteOtherFormatsKeepsOnlyNewFileAndOtherWorks() {
+        val directory = Files.createTempDirectory("books").toFile()
+        val names = listOf("7.epub", "7.pdf", "70.epub", "7-cover-5")
+        names.forEach { directory.resolve(it).writeText("x") }
+
+        deleteOtherFormats(directory, work = 7, keep = "7.pdf")
+
+        val remaining = directory.list().orEmpty().sorted()
+        assertEquals(listOf("7-cover-5", "7.pdf", "70.epub"), remaining)
+    }
 }
