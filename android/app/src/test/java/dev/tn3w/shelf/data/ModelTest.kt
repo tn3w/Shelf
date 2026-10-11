@@ -130,6 +130,14 @@ class ModelTest {
     }
 
     @Test
+    fun contentWorkCopiesInputWhileHashing() {
+        val output = java.io.ByteArrayOutputStream()
+        val work = contentWork("some book".byteInputStream(), output)
+        assertEquals("some book", output.toString())
+        assertEquals(contentWork("some book".byteInputStream()), work)
+    }
+
+    @Test
     fun readsBinaryValues() {
         val bytes =
             byteArrayOf(

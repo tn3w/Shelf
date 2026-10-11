@@ -187,11 +187,15 @@ private fun localWork(hash: Int) = -1 - (hash and Int.MAX_VALUE)
 fun ownBook(title: String, author: String) =
     bookOf(localWork((title + author).hashCode()), title, author)
 
-internal fun contentWork(input: InputStream): Int {
+private const val IMPORT_TEMPORARY = "import.tmp"
+
+internal fun contentWork(input: InputStream, output: OutputStream? = null): Int {
     val digest = MessageDigest.getInstance("SHA-256")
     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-    generateSequence { input.read(buffer).takeIf { it >= 0 } }
-        .forEach { digest.update(buffer, 0, it) }
+    generateSequence { input.read(buffer).takeIf { it >= 0 } }.forEach {
+        digest.update(buffer, 0, it)
+        output?.write(buffer, 0, it)
+    }
     return localWork(ByteBuffer.wrap(digest.digest()).int)
 }
 
@@ -293,8 +297,18 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun importFile(uri: Uri): Int? {
         val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
-        val work = readFrom(uri, ::contentWork) ?: return null
-        val name = copyBook(uri, fileName, work) ?: return null
+        if (!isReadable(fileName)) return null
+        val temporary = bookFile(IMPORT_TEMPORARY).apply { parentFile?.mkdirs() }
+        val work = readFrom(uri) { input ->
+            temporary.outputStream().use { contentWork(input, it) }
+        }
+        if (work == null) {
+            temporary.delete()
+            return null
+        }
+        val name = "$work.${extensionOf(fileName)}"
+        temporary.renameTo(bookFile(name))
+        finishBook(bookFile(name), work)
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
         update(PROGRESS, emptyMap<Int, Progress>()) {
@@ -307,19 +321,28 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     }
 
     private suspend fun copyBook(uri: Uri, fileName: String, work: Int): String? {
-        val extension = fileName.substringAfterLast('.', "").lowercase()
-        if (extension !in READABLE_EXTENSIONS) return null
-        val name = "$work.$extension"
+        if (!isReadable(fileName)) return null
+        val name = "$work.${extensionOf(fileName)}"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
         val copied = readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
         if (copied == null) {
             target.delete()
             return null
         }
-        if (extension == "pdf") replaceJpegIccProfiles(target)
-        deleteOtherFormats(booksDir, work, keep = name)
+        finishBook(target, work)
         return name
     }
+
+    private fun finishBook(file: File, work: Int) {
+        if (file.extension == "pdf") replaceJpegIccProfiles(file)
+        deleteOtherFormats(booksDir, work, keep = file.name)
+    }
+
+    private fun extensionOf(fileName: String) =
+        fileName.substringAfterLast('.', "").lowercase()
+
+    private fun isReadable(fileName: String) =
+        extensionOf(fileName) in READABLE_EXTENSIONS
 
     fun coverFile(book: Book) = bookFile("${book.work}-cover-${book.cover}")
 
