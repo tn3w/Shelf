@@ -77,6 +77,7 @@ fun ScanScreen(navigator: Navigator) {
         }
     }
     var found by remember { mutableStateOf<Found?>(null) }
+    var frozen by remember { mutableStateOf<Found?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
     var failure by remember { mutableStateOf<Int?>(null) }
     val haptics = LocalHapticFeedback.current
@@ -89,14 +90,18 @@ fun ScanScreen(navigator: Navigator) {
                 Scanner(current.catalogue, current.searcher, model) { current.others }
             }
             key(scanner) {
-                CameraPreview(scanner::next, { failure = it }) { work, frame, marks ->
+                CameraPreview(
+                    analyze = scanner::next,
+                    onFailed = { failure = it },
+                    onShown = { frozen = null },
+                ) { work, frame, marks ->
                     val book = current.book(work) ?: return@CameraPreview
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    found = Found(book, frame, marks)
+                    found = Found(book, frame, marks).also { frozen = it }
                 }
             }
         }
-        found?.let { Frozen(it) }
+        frozen?.let { Frozen(it) }
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
             BackBar(navigator::back)
         }
@@ -141,6 +146,7 @@ private fun Frozen(found: Found) {
 private fun CameraPreview(
     analyze: (Gray, Boolean) -> Step,
     onFailed: (Int) -> Unit,
+    onShown: () -> Unit,
     onFound: (Int, Bitmap?, Marks) -> Unit,
 ) {
     val context = LocalContext.current
@@ -149,7 +155,7 @@ private fun CameraPreview(
     val latest by rememberUpdatedState(onFound)
     val view = remember { TextureView(context) }
     val camera = remember {
-        Camera(context, view, analyze, onFailed) { work, frame, marks ->
+        Camera(context, view, analyze, onFailed, onShown) { work, frame, marks ->
             latest(work, frame, marks)
         }
     }
@@ -230,6 +236,7 @@ private class Camera(
     private val view: TextureView,
     private val analyze: (Gray, Boolean) -> Step,
     private val onFailed: (Int) -> Unit,
+    private val onShown: () -> Unit,
     private val onFound: (Int, Bitmap?, Marks) -> Unit,
 ) : TextureView.SurfaceTextureListener {
     private val manager = context.getSystemService(CameraManager::class.java)
@@ -453,5 +460,5 @@ private class Camera(
 
     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
 
-    override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = Unit
+    override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = onShown()
 }
