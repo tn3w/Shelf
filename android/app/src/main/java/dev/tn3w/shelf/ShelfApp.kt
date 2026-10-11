@@ -36,7 +36,7 @@ class ShelfApp :
         scope.launch {
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
-            reload(bookLanguage(settings))
+            showLanguage(bookLanguage(settings))
             if (settings.onboarded) checkCatalogue()
         }
     }
@@ -69,9 +69,15 @@ class ShelfApp :
     fun bookLanguage(settings: Settings) = settings.language.ifEmpty { systemLanguage() }
 
     private var reloadJob: Job? = null
+    private var requestedLanguage: String? = null
+
+    fun showLanguage(language: String) {
+        if (language != requestedLanguage) reload(language)
+    }
 
     @Synchronized
     fun reload(language: String) {
+        requestedLanguage = language
         reloadJob?.cancel()
         reloadJob = scope.launch(Dispatchers.IO) {
             val next = Loaded(packs.load(language)) {

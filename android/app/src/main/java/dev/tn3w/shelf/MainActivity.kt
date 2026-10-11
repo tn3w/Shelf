@@ -181,10 +181,7 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     val hidden = reading || WindowInsets.isImeVisible
     val app = shelfApp()
     val language = app.bookLanguage(settings)
-    LaunchedEffect(language) {
-        val current = app.loaded.value ?: return@LaunchedEffect
-        if (current.catalogue.language != language) app.reload(language)
-    }
+    LaunchedEffect(language) { app.showLanguage(language) }
 
     UpdatePrompt(settings)
     OpenFile(opened, navigator)
