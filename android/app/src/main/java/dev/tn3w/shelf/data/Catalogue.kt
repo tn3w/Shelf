@@ -207,27 +207,25 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         return result.toArray().also { it.sort() }
     }
 
-    fun authorWorks(author: Author): List<Int> {
-        val token = tokenize(author.name).maxByOrNull { it.length } ?: return emptyList()
-        return segments
-            .flatMap { segment ->
-                val slots = segment.term(token)?.authorSlots ?: IntArray(0)
-                slots
-                    .map(segment::author)
-                    .filter { it.number == author.number }
-                    .flatMap { visibleWorks(segment, it.works).toList() }
-            }
-            .distinct()
+    private fun authorRecords(author: Author): Sequence<Pair<Segment, AuthorRecord>> {
+        val token = tokenize(author.name).maxByOrNull { it.length }
+            ?: return emptySequence()
+        return segments.asSequence().flatMap { segment ->
+            val slots = segment.term(token)?.authorSlots ?: IntArray(0)
+            slots
+                .map(segment::author)
+                .filter { it.number == author.number }
+                .map { segment to it }
+        }
     }
 
-    fun authorBorn(author: Author): Int {
-        val book = authorWorks(author).firstOrNull()?.let(::locate) ?: return 0
-        val slots = book.segment.facts(book.local).authors
-        return slots
-            .map(book.segment::author)
-            .firstOrNull { it.number == author.number }
-            ?.born ?: 0
-    }
+    fun authorWorks(author: Author) = authorRecords(author)
+        .flatMap { (segment, record) -> visibleWorks(segment, record.works).toList() }
+        .distinct()
+        .toList()
+
+    fun authorBorn(author: Author) =
+        authorRecords(author).firstOrNull { it.second.born > 0 }?.second?.born ?: 0
 
     companion object {
         private const val SEGMENT_BITS = 8

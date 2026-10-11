@@ -141,23 +141,37 @@ class Packs(private val context: Context) {
     var source = ""
 
     val manifest: Manifest?
-        get() = newest(stored(), bundledManifest().takeIf { source.isEmpty() })
+        get() = newest(stored(), bundledManifest.takeIf { source.isEmpty() })
 
-    fun forgetManifest() = manifestFile.delete()
+    @Volatile
+    private var storedManifest: Manifest? = null
+
+    fun forgetManifest() {
+        storedManifest = null
+        manifestFile.delete()
+    }
 
     private fun stored(): Manifest? {
+        storedManifest?.let { return it }
         if (!manifestFile.exists()) return null
         val manifest = parseManifest(manifestFile.readText())
-        if (manifest != null) return manifest
-        manifestFile.delete()
-        return null
+        if (manifest == null) manifestFile.delete()
+        storedManifest = manifest
+        return manifest
     }
 
-    private fun bundledManifest() = runCatching {
-        context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
+    private fun storeManifest(bytes: ByteArray) {
+        writeAtomically(manifestFile, bytes)
+        storedManifest = null
     }
-        .getOrNull()
-        ?.let(::parseManifest)
+
+    private val bundledManifest by lazy {
+        runCatching {
+            context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
+        }
+            .getOrNull()
+            ?.let(::parseManifest)
+    }
 
     private fun parseManifest(text: String) =
         runCatching { json.decodeFromString<Manifest>(text) }
@@ -228,6 +242,7 @@ class Packs(private val context: Context) {
     fun packs(language: String): List<PackInfo> {
         val ids = localIds()
         val files = installed(language)
+        val manifest = manifest
         val entries = manifest?.segments.orEmpty().filter { it.language == language }
         val offered = entries.map { it.pack }.toSet()
         val missingRanks =
@@ -265,7 +280,7 @@ class Packs(private val context: Context) {
         check(manifest.format == CATALOGUE_FORMAT) {
             "catalogue format ${manifest.format} is no longer supported"
         }
-        writeAtomically(manifestFile, text.toByteArray())
+        storeManifest(text.toByteArray())
         removeObsolete(manifest)
         manifest
     }
@@ -294,7 +309,7 @@ class Packs(private val context: Context) {
 
     private fun importManifest(bytes: ByteArray): Boolean {
         parseManifest(bytes.decodeToString()) ?: return false
-        writeAtomically(manifestFile, bytes)
+        storeManifest(bytes)
         return true
     }
 
