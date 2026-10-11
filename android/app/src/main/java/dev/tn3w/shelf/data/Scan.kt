@@ -456,7 +456,7 @@ class Scanner(
     searcher: Searcher,
     recognizer: Recognizer,
     settings: ScanSettings = ScanSettings(),
-    others: List<Catalogue> = emptyList(),
+    private val others: () -> List<Catalogue> = { emptyList() },
 ) {
     private val vocabulary = ConcurrentHashMap<String, Boolean>()
     private val reader = Reader(recognizer, settings) { word ->
@@ -465,17 +465,17 @@ class Scanner(
     private val matcher = Matcher(catalogue, searcher)
     private val rule = StopRule(settings)
     private val barcodes = BarcodeReader()
-    private val isbnCatalogues = listOf(catalogue) + others
 
     fun next(frame: Gray, tapped: Boolean = false): Step {
-        val scanned = barcodes.isbn(frame)?.let { isbn ->
-            isbnCatalogues.firstNotNullOfOrNull { it.bookOfIsbn(isbn) }
-        }
+        val scanned = barcodes.isbn(frame)?.let(::bookOfIsbn)
         if (scanned != null) return Step(scanned.work, emptyList())
         val readings = reader.read(frame)
         val work = rule.update(matcher.scores(readings), tapped)
         return Step(work, work?.let { matched(readings, it) }.orEmpty())
     }
+
+    private fun bookOfIsbn(isbn: String) = catalogue.bookOfIsbn(isbn)
+        ?: others().firstNotNullOfOrNull { it.bookOfIsbn(isbn) }
 
     private fun matched(readings: List<Reading>, work: Int): List<Dot> {
         val words = identity(catalogue, work).filter { it.length >= 3 }

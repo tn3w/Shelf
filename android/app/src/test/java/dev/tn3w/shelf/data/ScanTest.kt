@@ -117,7 +117,18 @@ class ScanTest {
         val catalogue = Catalogue("de", listOf(segment(listOf(Fixture(1, "Emma")))), null)
         val other = Catalogue("en", listOf(segment(listOf(dune))), null)
         val scanner =
-            Scanner(catalogue, Searcher(catalogue), recognizer, others = listOf(other))
+            Scanner(catalogue, Searcher(catalogue), recognizer) { listOf(other) }
+        val frame = rendered("9780441013593", BarcodeFormat.EAN_13)
+        assertEquals(7, scanner.next(frame).work)
+    }
+
+    @Test
+    fun scannerSkipsOtherCataloguesWhenBarcodeIsInCurrent() {
+        val dune = Fixture(7, "Dune", isbns = listOf("0441013597"))
+        val catalogue = Catalogue("en", listOf(segment(listOf(dune))), null)
+        val scanner = Scanner(catalogue, Searcher(catalogue), recognizer) {
+            error("other catalogues loaded")
+        }
         val frame = rendered("9780441013593", BarcodeFormat.EAN_13)
         assertEquals(7, scanner.next(frame).work)
     }

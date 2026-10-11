@@ -76,10 +76,6 @@ fun ScanScreen(navigator: Navigator) {
             app.assets.open("scan.bin").use { Recognizer(it.readBytes()) }
         }
     }
-    val others by produceState(emptyList(), loaded) {
-        val current = loaded ?: return@produceState
-        value = withContext(Dispatchers.IO) { current.others }
-    }
     var found by remember { mutableStateOf<Found?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
     var failure by remember { mutableStateOf<Int?>(null) }
@@ -89,8 +85,8 @@ fun ScanScreen(navigator: Navigator) {
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (found == null && current != null && model != null) {
-            val scanner = remember(attempt, current, model, others) {
-                Scanner(current.catalogue, current.searcher, model, others = others)
+            val scanner = remember(attempt, current, model) {
+                Scanner(current.catalogue, current.searcher, model) { current.others }
             }
             key(scanner) {
                 CameraPreview(scanner::next, { failure = it }) { work, frame, marks ->
