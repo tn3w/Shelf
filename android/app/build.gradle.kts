@@ -1,3 +1,4 @@
+import groovy.json.JsonSlurper
 import java.net.URI
 import java.security.MessageDigest
 
@@ -8,6 +9,8 @@ plugins {
 }
 
 val catalogueRelease = "catalogue-2026-10-10"
+val catalogueManifestSha256 =
+    "2ca03c17a7fced3d013862d2d31c196debde894f0d54242e559fd239be6bb4ea"
 val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
@@ -92,6 +95,9 @@ abstract class DownloadCatalogue : DefaultTask() {
     abstract val release: Property<String>
 
     @get:Input
+    abstract val manifestSha256: Property<String>
+
+    @get:Input
     abstract val format: Property<Int>
 
     @get:Input
@@ -107,31 +113,28 @@ abstract class DownloadCatalogue : DefaultTask() {
     @TaskAction
     fun download() {
         val base = "https://github.com/tn3w/Shelf/releases/download/${release.get()}"
-        val manifest = fetch("$base/manifest.json").decodeToString()
-        val found = Regex("\"format\": (\\d+)").find(manifest)?.groupValues?.get(1)
-        check(found == format.get().toString()) {
-            "catalogue format $found is not supported"
+        val manifestBytes = fetch("$base/manifest.json")
+        check(local.isPresent || digest(manifestBytes) == manifestSha256.get()) {
+            "manifest checksum mismatch"
+        }
+        val manifest = JsonSlurper().parse(manifestBytes) as Map<*, *>
+        check(manifest["format"] == format.get()) {
+            "catalogue format ${manifest["format"]} is not supported"
         }
         val directory = output.get().asFile
-        directory.resolve("manifest.json").writeText(manifest)
-        val entryHead = "\"id\": \"([^\"]+)\"[^}]*?"
-        val entryTail = "\"sha256\": \"([0-9a-f]+)\"[^}]*?\"url\": \"([^\"]+)\""
-        val entries = Regex(entryHead + entryTail)
-            .findAll(manifest)
-            .map { it.destructured }
-            .filter { (id) -> filter.get().any { Regex(it).matches(id) } }
-            .toList()
-        val wanted = entries.map { (id) -> "$id.bin" }
-        directory.listFiles { file -> file.extension == "bin" && file.name !in wanted }
-            ?.forEach(File::delete)
-        for ((id, sha256, url) in entries) {
-            val target = directory.resolve("$id.bin")
-            if (target.exists() && digest(target.readBytes()) == sha256) continue
-            val bytes = fetch(url)
-            check(digest(bytes) == sha256) { "checksum mismatch for $id" }
-            target.writeBytes(bytes)
+        directory.deleteRecursively()
+        directory.mkdirs()
+        directory.resolve("manifest.json").writeBytes(manifestBytes)
+        val segments = (manifest["segments"] as List<*>).map { it as Map<*, *> }
+        for (segment in segments.filter { wanted(it["id"] as String) }) {
+            val id = segment["id"]
+            val bytes = fetch(segment["url"] as String)
+            check(digest(bytes) == segment["sha256"]) { "checksum mismatch for $id" }
+            directory.resolve("$id.bin").writeBytes(bytes)
         }
     }
+
+    private fun wanted(id: String) = filter.get().any { Regex(it).matches(id) }
 
     private fun fetch(url: String): ByteArray {
         val directory = local.orNull ?: return URI(url).toURL().readBytes()
@@ -146,6 +149,7 @@ abstract class DownloadCatalogue : DefaultTask() {
 fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
     val task = tasks.register<DownloadCatalogue>(taskName) {
         release = catalogueRelease
+        manifestSha256 = catalogueManifestSha256
         format = catalogueFormat
         filter = packs.map { "[a-z]{2}-$it-.*" }
         local = localCatalogue
