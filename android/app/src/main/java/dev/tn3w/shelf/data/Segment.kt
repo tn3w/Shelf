@@ -34,6 +34,18 @@ private class Table(private val buffer: ByteBuffer) {
         val end = buffer.getInt(8 + 4 * index)
         return buffer.bytes(data + start, end - start)
     }
+
+    fun leadingText(index: Int, skip: Int = 0): String {
+        var position = data + buffer.getInt(4 + 4 * index) + skip
+        var length = 0
+        var shift = 0
+        do {
+            val byte = buffer.get(position++).toInt() and 0xFF
+            length = length or ((byte and 0x7F) shl shift)
+            shift += 7
+        } while (byte and 0x80 != 0)
+        return String(buffer.bytes(position, length), Charsets.UTF_8)
+    }
 }
 
 private class BlockIndex(buffer: ByteBuffer) {
@@ -128,7 +140,7 @@ class Term(
 private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) {
     private val table = Table(buffer)
     val count = table.count
-    private val firstTerms = List(count) { ByteReader(table[it], 1).text() }
+    private val firstTerms = List(count) { table.leadingText(it, skip = 1) }
     private val cache = Cache<Int, List<Term>>(512)
 
     fun block(index: Int) = cache.get(index) {
@@ -197,9 +209,9 @@ class Segment(buffer: ByteBuffer) {
     private val terms = TermBlocks(section("terms"), withPostings = true)
     private val completions = Table(section("completions"))
     private val completionKeys =
-        List(completions.count) { ByteReader(completions[it]).text() }
+        List(completions.count) { completions.leadingText(it) }
     private val grams = Table(section("grams"))
-    private val gramKeys = List(grams.count) { ByteReader(grams[it]).text() }
+    private val gramKeys = List(grams.count) { grams.leadingText(it) }
     private val descriptions = BlockIndex(section("descriptions"))
     private val tagTable = Table(section("tags"))
     val tags = List(tagTable.count) {
