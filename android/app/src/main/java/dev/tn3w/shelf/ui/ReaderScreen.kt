@@ -40,7 +40,7 @@ private data class TextPage(
     val section: Int,
     val start: Int,
     val text: AnnotatedString = AnnotatedString(""),
-    val image: ByteArray? = null,
+    val image: String? = null,
 )
 
 private sealed interface Opened {
@@ -316,7 +316,7 @@ private fun TextReader(
                         modifier = Modifier.fillMaxWidth().padding(margin),
                     )
                 } else {
-                    PageImage(page.image)
+                    PageImage(document, page.image)
                 }
             }
         }
@@ -324,13 +324,14 @@ private fun TextReader(
 }
 
 @Composable
-private fun PageImage(bytes: ByteArray) {
+private fun PageImage(document: TextDocument, path: String) {
     BoxWithConstraints(Modifier.fillMaxSize().padding(PAGE_PADDING)) {
         val width = constraints.maxWidth
         val height = constraints.maxHeight
-        val bitmap by produceState<ImageBitmap?>(null, bytes, width, height) {
+        val bitmap by produceState<ImageBitmap?>(null, path, width, height) {
             value = withContext(Dispatchers.Default) {
-                decodeImage(bytes, width, height)?.asImageBitmap()
+                document.image(path)?.let { decodeImage(it, width, height) }
+                    ?.asImageBitmap()
             }
         }
         Image(

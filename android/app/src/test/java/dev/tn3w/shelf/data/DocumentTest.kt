@@ -83,15 +83,21 @@ class DocumentTest {
             <p>Middle <img src="../images/second.png"/> after</p>
             <p>End</p>
         """
-        val blocks = blocks(openDocument(epub(folder.newFile("book.epub"), body)))
+        val document = openDocument(epub(folder.newFile("book.epub"), body))
+        val blocks = blocks(document)
         assertEquals(
             listOf("Chapter One", "Before", "", "Middle", "", "after", "End"),
             blocks.map { it.text },
         )
         assertEquals(1, blocks[0].heading)
         assertNull(blocks[1].image)
-        assertArrayEquals(FIRST_IMAGE, blocks[2].image)
-        assertArrayEquals(SECOND_IMAGE, blocks[4].image)
+        assertEquals("OEBPS/images/first.png", blocks[2].image)
+        assertEquals("OEBPS/images/second.png", blocks[4].image)
+        val text = document as TextDocument
+        assertArrayEquals(FIRST_IMAGE, text.image(blocks[2].image!!))
+        assertArrayEquals(SECOND_IMAGE, text.image(blocks[4].image!!))
+        document.close()
+        assertNull(text.image("OEBPS/images/first.png"))
     }
 
     @Test

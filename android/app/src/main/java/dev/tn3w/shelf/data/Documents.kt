@@ -48,7 +48,7 @@ class Block(
     val heading: Int = 0,
     val centered: Boolean = false,
     val spans: List<Span> = emptyList(),
-    val image: ByteArray? = null,
+    val image: String? = null,
 )
 
 data class Chapter(val title: String, val section: Int)
@@ -57,8 +57,23 @@ sealed interface Document : AutoCloseable {
     override fun close() {}
 }
 
-class TextDocument(val sections: List<List<Block>>, val chapters: List<Chapter>) :
-    Document
+class TextDocument(
+    val sections: List<List<Block>>,
+    val chapters: List<Chapter>,
+    private val archive: ZipFile? = null,
+) : Document {
+    fun image(path: String) = runCatching {
+        archive?.let { zip ->
+            zip.getEntry(path)?.let { entry ->
+                zip.getInputStream(entry).use { it.readBytes() }
+            }
+        }
+    }.getOrNull()
+
+    override fun close() {
+        archive?.close()
+    }
+}
 
 interface PagedDocument : Document {
     val pageCount: Int
@@ -247,14 +262,17 @@ private fun decodeText(bytes: ByteArray): String = try {
     String(bytes, Charset.forName("windows-1252"))
 }
 
-private fun assemble(parts: List<Pair<String?, List<Block>>>): TextDocument {
+private fun assemble(
+    parts: List<Pair<String?, List<Block>>>,
+    archive: ZipFile? = null,
+): TextDocument {
     val sections = mutableListOf<List<Block>>()
     val chapters = mutableListOf<Chapter>()
     for ((title, blocks) in parts.filter { it.second.isNotEmpty() }) {
         title?.takeIf { it.isNotBlank() }?.let { chapters += Chapter(it, sections.size) }
         sections += split(blocks)
     }
-    return TextDocument(sections, chapters)
+    return TextDocument(sections, chapters, archive)
 }
 
 private fun split(blocks: List<Block>): List<List<Block>> {
@@ -298,7 +316,7 @@ private fun plainBlocks(text: String) = text
         Block(it.drop(level).trim(), heading = level, centered = level > 0)
     }
 
-private class HtmlReader(private val image: (String) -> ByteArray?) {
+private class HtmlReader(private val imagePath: (String) -> String?) {
     val blocks = mutableListOf<Block>()
     private val text = StringBuilder()
     private val spans = mutableListOf<Span>()
@@ -346,9 +364,9 @@ private class HtmlReader(private val image: (String) -> ByteArray?) {
     private fun addImage(element: Element, block: Element) {
         val source = element.attr("src")
             .ifEmpty { element.attr("xlink:href").ifEmpty { element.attr("href") } }
-        val bytes = image(source) ?: return
+        val path = imagePath(source) ?: return
         flush(block)
-        blocks += Block("", image = bytes)
+        blocks += Block("", image = path)
     }
 
     private fun flush(block: Element) {
@@ -382,14 +400,16 @@ private fun isCentered(element: Element) = generateSequence(element) { it.parent
             "text-align:center" in it.attr("style").replace(" ", "")
     }
 
-private fun htmlBlocks(root: Element, image: (String) -> ByteArray?) =
-    HtmlReader(image).apply {
+private fun htmlBlocks(root: Element, imagePath: (String) -> String?) =
+    HtmlReader(imagePath).apply {
         read(root)
     }.blocks.ifEmpty { plainBlocks(root.wholeText()) }
 
 private class Epub(private val zip: ZipFile) {
     val opfPath
         get() = xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
+
+    fun has(path: String) = zip.getEntry(path) != null
 
     fun bytes(path: String) = zip.getEntry(path)?.let { entry ->
         zip.getInputStream(entry).use { it.readBytes() }
@@ -426,10 +446,15 @@ private class Epub(private val zip: ZipFile) {
     }
 }
 
-private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
+private fun readEpub(file: File): TextDocument {
+    val zip = ZipFile(file)
+    return runCatching { readEpub(zip) }.onFailure { zip.close() }.getOrThrow()
+}
+
+private fun readEpub(zip: ZipFile): TextDocument {
     val epub = Epub(zip)
-    val opfPath = epub.opfPath ?: return assemble(emptyList())
-    val opf = epub.xml(opfPath) ?: return assemble(emptyList())
+    val opfPath = epub.opfPath ?: return assemble(emptyList(), zip)
+    val opf = epub.xml(opfPath) ?: return assemble(emptyList(), zip)
     val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
     val titles = epub.titles(manifest.values.toList(), opfPath)
     val parts = opf.select("spine > itemref").mapNotNull { reference ->
@@ -443,9 +468,9 @@ private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
         val isFrontMatter =
             FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
         if (isFrontMatter) return@mapNotNull null
-        titles[path] to htmlBlocks(body) { epub.bytes(epub.resolve(path, it)) }
+        titles[path] to htmlBlocks(body) { epub.resolve(path, it).takeIf(epub::has) }
     }
-    assemble(parts)
+    return assemble(parts, zip)
 }
 
 private fun readFictionBook(file: File): TextDocument {
