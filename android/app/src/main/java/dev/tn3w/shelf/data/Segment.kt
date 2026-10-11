@@ -1,12 +1,13 @@
 package dev.tn3w.shelf.data
 
+import dev.tn3w.shelf.BuildConfig
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.zip.Inflater
 
 private const val MAGIC = "SHLF"
-const val CATALOGUE_FORMAT = 2
+const val CATALOGUE_FORMAT = BuildConfig.CATALOGUE_FORMAT
 private const val NAME_BYTES = 16
 private const val SEPARATOR = '\u001f'
 private const val YEAR_EPOCH = 1400

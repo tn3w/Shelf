@@ -27,6 +27,7 @@ android {
         targetSdk = 37
         versionCode = 12
         versionName = "1.3.0"
+        buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
     }
 
     flavorDimensions += "distribution"
