@@ -79,7 +79,16 @@ fun tokenize(text: String): List<String> {
     return tokens
 }
 
-private class TermMatch(val text: String, val weight: Double)
+internal class TermMatch(
+    val text: String,
+    val weight: Double,
+    val completion: Boolean = false,
+)
+
+class Lookup internal constructor(
+    val tokens: List<String>,
+    internal val matches: List<List<TermMatch>>,
+)
 
 private class TokenScores(
     val token: String,
@@ -182,7 +191,7 @@ class Searcher(private val catalogue: Catalogue) {
             val weight = if (token.length >= 4) LONG_COMPLETION else SHORT_COMPLETION
             completions(token).forEach {
                 completionFrequency += frequency(it)
-                matches += TermMatch(it, weight)
+                matches += TermMatch(it, weight, completion = true)
             }
         }
         val sparse = exactFrequency < SPARSE_EXACT &&
@@ -299,12 +308,22 @@ class Searcher(private val catalogue: Catalogue) {
     fun matches(word: String, prefix: Boolean = false) =
         tokenScores(word, termMatches(word, prefix)).scores
 
-    fun search(query: String, limit: Int = 30): List<Book> {
+    fun lookup(query: String): Lookup {
         val tokens = tokenize(query)
+        return Lookup(
+            tokens,
+            tokens.mapIndexed { position, token ->
+                termMatches(token, position == tokens.lastIndex)
+            },
+        )
+    }
+
+    fun search(query: String, limit: Int = 30) = search(lookup(query), limit)
+
+    fun search(lookup: Lookup, limit: Int = 30): List<Book> {
+        val tokens = lookup.tokens
         if (tokens.isEmpty()) return emptyList()
-        val perToken = tokens.mapIndexed { position, token ->
-            tokenScores(token, termMatches(token, position == tokens.lastIndex))
-        }
+        val perToken = tokens.zip(lookup.matches, ::tokenScores)
         val scored = candidates(perToken)
         val popularity = HashMap<Int, Double>()
         fun popularityOf(work: Int) =
@@ -347,21 +366,24 @@ class Searcher(private val catalogue: Catalogue) {
         }
     }
 
-    fun complete(query: String, limit: Int = 3): List<String> {
-        val tokens = tokenize(query)
-        val last = tokens.lastOrNull()?.takeIf { it.length >= 2 } ?: return emptyList()
-        val head = tokens.dropLast(1).joinToString(" ")
-        return completions(last)
-            .ifEmpty { fuzzyTerms(last).sortedBy { it.second }.map { it.first } }
+    fun complete(lookup: Lookup, limit: Int = 3): List<String> {
+        val last = lookup.tokens.lastOrNull()?.takeIf { it.length >= 2 }
+            ?: return emptyList()
+        val head = lookup.tokens.dropLast(1).joinToString(" ")
+        val matches = lookup.matches.last()
+        val terms = matches.filter { it.completion }.ifEmpty {
+            matches.filter { it.text != last && !it.completion }
+                .sortedByDescending { it.weight }
+        }
+        return terms
             .take(limit)
-            .map { if (head.isEmpty()) it else "$head $it" }
+            .map { if (head.isEmpty()) it.text else "$head ${it.text}" }
     }
 
-    fun authors(query: String, limit: Int = 3): List<Author> {
-        val tokens = tokenize(query)
-        if (tokens.isEmpty()) return emptyList()
-        val perToken = tokens.mapIndexed { position, token ->
-            val texts = termMatches(token, position == tokens.lastIndex).map { it.text }
+    fun authors(lookup: Lookup, limit: Int = 3): List<Author> {
+        if (lookup.tokens.isEmpty()) return emptyList()
+        val perToken = lookup.matches.map { tokenMatches ->
+            val texts = tokenMatches.map { it.text }
             segments
                 .flatMap { segment ->
                     texts.flatMap { text ->

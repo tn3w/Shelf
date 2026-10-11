@@ -51,4 +51,23 @@ class SearchTest {
             assertEquals(emptyList<Int>(), works(query))
         }
     }
+
+    @Test
+    fun lookupSharesTokenMatchesAcrossSearchCompleteAndAuthors() {
+        val lookup = searcher.lookup("dun")
+        assertEquals(
+            searcher.search("dun").map {
+                it.work
+            },
+            searcher.search(lookup).map { it.work },
+        )
+        assertEquals(listOf("dune", "dunk"), searcher.complete(lookup).sorted().take(2))
+        assertEquals(emptyList<Author>(), searcher.authors(searcher.lookup("")))
+        assertEquals(
+            listOf("Bea Baker"),
+            searcher.authors(searcher.lookup("bea")).map {
+                it.name
+            },
+        )
+    }
 }
