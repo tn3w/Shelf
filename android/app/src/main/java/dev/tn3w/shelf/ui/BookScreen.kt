@@ -236,7 +236,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     if (confirmDelete) {
         DeleteDialog(book, onDismiss = { confirmDelete = false }) {
             scope.launch {
-                app.library.deleteBook(book.work)
+                app.library.deleteBook(book.work, keepShelves = !book.isLocal)
                 navigator.back()
             }
         }

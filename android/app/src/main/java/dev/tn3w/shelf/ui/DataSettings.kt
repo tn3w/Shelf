@@ -43,7 +43,8 @@ private fun BackupRows() {
         Icons.Outlined.Upload,
         CreateDocument("application/zip"),
         BACKUP_FILE,
-        R.string.csv_exported,
+        R.string.backup_exported,
+        R.string.export_failed,
         app.library::exportTo,
     )
     FileRow(
@@ -74,13 +75,14 @@ private fun <I> FileRow(
     contract: ActivityResultContract<I, Uri?>,
     input: I,
     @StringRes success: Int,
+    @StringRes failure: Int = R.string.backup_failed,
     action: suspend (Uri) -> Boolean,
 ) {
     val scope = rememberCoroutineScope()
     var status by remember { mutableStateOf<Int?>(null) }
     val launcher = rememberLauncherForActivityResult(contract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch { status = if (action(uri)) success else R.string.backup_failed }
+        scope.launch { status = if (action(uri)) success else failure }
     }
     ActionRow(title, icon, status?.let { stringResource(it) }) { launcher.launch(input) }
 }
@@ -114,6 +116,7 @@ private fun CsvRows() {
         CreateDocument("text/csv"),
         CSV_FILE,
         R.string.csv_exported,
+        R.string.export_failed,
         app.library::exportCsv,
     )
     report?.let { CsvReportDialog(it) { report = null } }

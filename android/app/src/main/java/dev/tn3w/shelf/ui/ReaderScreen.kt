@@ -49,6 +49,7 @@ private sealed interface Opened {
     data object Failed : Opened
 }
 
+@Immutable
 private data class ReaderState(
     val work: Int,
     val title: String,
@@ -126,13 +127,19 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
         view.keepScreenOn = settings.keepScreenOn
         onDispose { view.keepScreenOn = false }
     }
-    fun changeFont(change: Float) = scope.launch {
-        app.library.updateSettings {
-            it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
+    val changeFont: (Float) -> Unit = remember {
+        { change ->
+            scope.launch {
+                app.library.updateSettings {
+                    it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
+                }
+            }
         }
     }
 
-    val state = ReaderState(work, title, navigator, ::changeFont, settings.volumeKeys)
+    val state = remember(work, title, navigator, settings.volumeKeys) {
+        ReaderState(work, title, navigator, changeFont, settings.volumeKeys)
+    }
     val palette = pagePalette(settings)
     Surface(
         Modifier.fillMaxSize(), color = palette.background, contentColor = palette.text,

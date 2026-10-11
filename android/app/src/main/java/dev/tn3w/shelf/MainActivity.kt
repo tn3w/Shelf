@@ -170,7 +170,7 @@ private fun NavHostController.selectedTab() =
 @Composable
 private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) {
     val controller = rememberNavController()
-    val navigator = Navigator(controller)
+    val navigator = remember(controller) { Navigator(controller) }
     val entry by controller.currentBackStackEntryAsState()
     val selected = remember(entry) { controller.selectedTab() }
     val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true ||

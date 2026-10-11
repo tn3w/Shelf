@@ -10,6 +10,7 @@ private val DATE = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val EXPORT_COLUMNS = listOf(
     "Title", "Author", "ISBN", "My Rating", "Date Read", "Date Added", "Exclusive Shelf",
 )
+private val FORMULA_STARTS = setOf('=', '+', '-', '@')
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
     Shelf.Reading to "currently-reading",
@@ -90,7 +91,7 @@ fun csvBooks(text: String): List<CsvBook> {
             title,
             authorOf(row).substringBefore(',').trim(),
             shelf,
-            ratingOf(row).toFloatOrNull()?.roundToInt() ?: 0,
+            ratingOf(row).toFloatOrNull()?.roundToInt()?.coerceIn(0, 5) ?: 0,
             read ?: added ?: System.currentTimeMillis(),
             isbnColumns.firstNotNullOfOrNull { normalizedIsbn(it(row)) }.orEmpty(),
         )
@@ -113,7 +114,10 @@ private fun formatDate(millis: Long) =
     DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
 
 fun csvOf(entries: List<Saved>): String {
-    fun quoted(value: String) = "\"${value.replace("\"", "\"\"")}\""
+    fun quoted(value: String): String {
+        val safe = if (value.firstOrNull() in FORMULA_STARTS) "'$value" else value
+        return "\"${safe.replace("\"", "\"\"")}\""
+    }
     val rows = entries.map { saved ->
         val date = formatDate(saved.updated)
         listOf(
@@ -122,7 +126,7 @@ fun csvOf(entries: List<Saved>): String {
             saved.isbn,
             saved.rating.toString(),
             if (saved.shelf == Shelf.Read) date else "",
-            date,
+            formatDate(saved.added.takeIf { it > 0 } ?: saved.updated),
             SHELF_NAMES.getValue(saved.shelf),
         )
     }

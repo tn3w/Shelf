@@ -408,12 +408,16 @@ private val BARCODE_HINTS = mapOf(
 )
 private val ISBN_IN_TEXT = Regex("97[89](-?\\d){10}")
 
-private class GraySource(private val frame: Gray, private val turned: Boolean = false) :
+private class GraySource(private val frame: Gray, private val quarterTurns: Int = 0) :
     LuminanceSource(
-        if (turned) frame.height else frame.width,
-        if (turned) frame.width else frame.height,
+        if (quarterTurns % 2 == 1) frame.height else frame.width,
+        if (quarterTurns % 2 == 1) frame.width else frame.height,
     ) {
-    override fun getRow(y: Int, row: ByteArray?) = ByteArray(width) { luminance(it, y) }
+    override fun getRow(y: Int, row: ByteArray?): ByteArray {
+        val target = row?.takeIf { it.size >= width } ?: ByteArray(width)
+        for (x in 0 until width) target[x] = luminance(x, y)
+        return target
+    }
 
     override fun getMatrix() = ByteArray(width * height) {
         luminance(
@@ -424,14 +428,14 @@ private class GraySource(private val frame: Gray, private val turned: Boolean = 
 
     override fun isRotateSupported() = true
 
-    override fun rotateCounterClockwise() = GraySource(frame, !turned)
+    override fun rotateCounterClockwise() = GraySource(frame, (quarterTurns + 1) % 4)
 
     private fun luminance(x: Int, y: Int): Byte {
-        val index = if (turned) {
-            x * frame.width + frame.width - 1 - y
-        } else {
-            y * frame.width +
-                x
+        val index = when (quarterTurns) {
+            0 -> y * frame.width + x
+            1 -> x * frame.width + frame.width - 1 - y
+            2 -> (frame.height - 1 - y) * frame.width + frame.width - 1 - x
+            else -> (frame.height - 1 - x) * frame.width + y
         }
         return frame.pixels[index].toInt().toByte()
     }

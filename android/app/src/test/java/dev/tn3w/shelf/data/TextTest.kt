@@ -164,4 +164,23 @@ class TextTest {
             listOf(book.title, book.author, book.shelf, book.rating),
         )
     }
+
+    @Test
+    fun exportKeepsAddedDateAndGuardsFormulas() {
+        val entries = listOf(
+            Saved(
+                1, Shelf.Read, millis("2023-04-05"), "=SUM(A1)", "+Ann",
+                added = millis("2021-01-02"),
+            ),
+        )
+        val row = csvOf(entries).lines()[1]
+        assertTrue(row.startsWith("\"'=SUM(A1)\",\"'+Ann\""))
+        assertTrue(row.contains("\"2021/01/02\""))
+    }
+
+    @Test
+    fun importClampsRating() {
+        val csv = "Title,My Rating\nHigh,9\nLow,-3"
+        assertEquals(listOf(5, 0), csvBooks(csv).map { it.rating })
+    }
 }

@@ -322,8 +322,9 @@ private class Camera(
             val preview = Surface(view.surfaceTexture).also { surface = it }
             val surfaces = listOfNotNull(preview, reader?.surface)
 
-            @Suppress("DEPRECATION")
             val callback = SessionCallback(camera, surfaces)
+
+            @Suppress("DEPRECATION")
             camera.createCaptureSession(surfaces, callback, cameraHandler)
         }
 

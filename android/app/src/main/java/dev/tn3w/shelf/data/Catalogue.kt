@@ -109,9 +109,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun locate(work: Int): Location? {
         for (segment in segments.asReversed()) {
-            if (segment.tombstones.binarySearch(work) >= 0) return null
             val local = segment.localOf(work)
             if (local >= 0) return Location(segment, local)
+            if (segment.tombstones.binarySearch(work) >= 0) return null
         }
         return null
     }

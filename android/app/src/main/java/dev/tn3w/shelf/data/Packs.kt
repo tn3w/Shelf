@@ -137,6 +137,7 @@ class Packs(private val context: Context) {
         removeBundledCopies()
     }
 
+    @Volatile
     var source = ""
 
     val manifest: Manifest?

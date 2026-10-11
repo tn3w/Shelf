@@ -310,4 +310,10 @@ class ScanTest {
             .scores(listOf(Reading("HARRYPOTTE", 1f, 40f)))
         assertEquals(1, scores.maxBy { it.value }.key)
     }
+
+    @Test
+    fun sampleHandlesSinglePixelAxes() {
+        assertEquals(7f, Gray(1, 1, floatArrayOf(7f)).sample(3f, 2f), 0f)
+        assertEquals(5f, Gray(1, 2, floatArrayOf(4f, 6f)).sample(0f, 0.5f), 0.01f)
+    }
 }

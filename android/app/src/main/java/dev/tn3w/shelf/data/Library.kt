@@ -57,7 +57,10 @@ data class Saved(
     val cover: Int = 0,
     val rating: Int = 0,
     val isbn: String = "",
+    val added: Long = 0,
 )
+
+const val MAX_DAILY_GOAL = 500
 
 @Serializable
 data class Progress(
@@ -166,8 +169,9 @@ internal fun dates(
     }
 }.distinctUntilChanged()
 
-fun Book.toSaved(shelf: Shelf) =
-    Saved(work, shelf, System.currentTimeMillis(), title, author, cover)
+fun Book.toSaved(shelf: Shelf) = System.currentTimeMillis().let {
+    Saved(work, shelf, it, title, author, cover, added = it)
+}
 
 fun Saved.toBook() = bookOf(work, title, author, cover)
 
@@ -328,10 +332,11 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                 .getOrDefault(false)
         }
 
-    suspend fun deleteBook(work: Int) {
+    suspend fun deleteBook(work: Int, keepShelves: Boolean = false) {
         progress.first()[work]?.let { bookFile(it.file).delete() }
-        deleteCovers(work)
         update(PROGRESS, emptyMap<Int, Progress>()) { it - work }
+        if (keepShelves) return
+        deleteCovers(work)
         update(ENTRIES, emptyList<Saved>()) { entries ->
             entries.filter { it.work != work }
         }
@@ -350,6 +355,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             val placed = shelf?.let(book::toSaved)?.copy(
                 rating = previous?.rating ?: 0,
                 isbn = previous?.isbn.orEmpty(),
+                added = previous?.added?.takeIf { it > 0 } ?: System.currentTimeMillis(),
             )
             placed?.let { others + it } ?: others
         }
@@ -370,7 +376,12 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                 if (match == null) missing += row.title
                 val book = match ?: ownBook(row.title, row.author)
                 book.toSaved(row.shelf)
-                    .copy(updated = row.date, rating = row.rating, isbn = row.isbn)
+                    .copy(
+                        updated = row.date,
+                        rating = row.rating,
+                        isbn = row.isbn,
+                        added = row.date,
+                    )
             }
         }
         update(ENTRIES, emptyList<Saved>()) { newestPerWork(it + entries) }
@@ -477,6 +488,9 @@ private fun restoredSettings(imported: Settings, current: Settings): Settings {
     val covers = imported.coverSource.takeIf(::isValidCoverSource)
     return imported.copy(
         onboarded = current.onboarded,
+        dailyGoal = imported.dailyGoal.coerceIn(0, MAX_DAILY_GOAL),
+        language = imported.language.takeIf { it.isEmpty() || it in LANGUAGES }
+            ?: current.language,
         fontScale = imported.fontScale.coerceIn(FONT_SCALES),
         lineSpacing = imported.lineSpacing.coerceAtLeast(1f),
         margin = imported.margin.coerceAtLeast(0),

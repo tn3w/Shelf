@@ -43,12 +43,12 @@ fun connect(url: String): HttpURLConnection {
         readTimeout = 30_000
         useCaches = false
         setRequestProperty("User-Agent", USER_AGENT)
-        setRequestProperty("Accept", "application/vnd.github+json")
     }
 }
 
 fun fetchText(url: String) =
-    connect(url).inputStream.use { it.readBytes().decodeToString() }
+    connect(url).apply { setRequestProperty("Accept", "application/vnd.github+json") }
+        .inputStream.use { it.readBytes().decodeToString() }
 
 fun copyWithProgress(input: InputStream, output: OutputStream, onBytes: (Long) -> Unit) {
     val buffer = ByteArray(64 * 1024)

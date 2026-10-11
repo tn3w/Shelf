@@ -37,7 +37,6 @@ private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
 private const val OPEN_LIBRARY_URL = "https://openlibrary.org/developers/licensing"
 private val GOALS = listOf(5, 10, 20, 30, 50)
-private const val MAX_GOAL = 500
 private val SPACINGS = mapOf(
     1.35f to R.string.spacing_compact,
     1.55f to R.string.normal,
@@ -308,7 +307,7 @@ private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
 @Composable
 private fun GoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
     var text by remember { mutableStateOf(current.toString()) }
-    val goal = text.toIntOrNull()?.takeIf { it in 0..MAX_GOAL }
+    val goal = text.toIntOrNull()?.takeIf { it in 0..MAX_DAILY_GOAL }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.daily_goal)) },

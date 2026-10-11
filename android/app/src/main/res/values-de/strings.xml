@@ -12,6 +12,8 @@
     <string name="backup_import">Aus Datei importieren</string>
     <string name="backup_done">Bibliothek zusammengeführt.</string>
     <string name="backup_failed">Diese Datei konnte nicht verwendet werden.</string>
+    <string name="backup_exported">Sicherung gespeichert.</string>
+    <string name="export_failed">Diese Datei konnte nicht geschrieben werden.</string>
     <string name="born">Geboren %d</string>
     <string name="catalogue">Katalog</string>
     <string name="catalogue_hint">Offline-Pakete, Updates und eigene Quellen.</string>

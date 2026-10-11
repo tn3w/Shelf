@@ -12,6 +12,8 @@
     <string name="backup_import">Importar desde archivo</string>
     <string name="backup_done">Biblioteca combinada.</string>
     <string name="backup_failed">No se pudo usar ese archivo.</string>
+    <string name="backup_exported">Copia guardada.</string>
+    <string name="export_failed">No se pudo escribir ese archivo.</string>
     <string name="born">Nacido en %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Paquetes sin conexión, actualizaciones y fuentes propias.</string>

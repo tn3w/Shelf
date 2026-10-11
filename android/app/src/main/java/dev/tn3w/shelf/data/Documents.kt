@@ -317,7 +317,7 @@ private class HtmlReader(private val image: (String) -> ByteArray?) {
         if (node !is Element) return
         val tag = node.tagName().lowercase()
         when {
-            tag == "br" -> append(" ", bold = false, italic = false)
+            tag == "br" -> text.append('\n')
 
             tag in IMAGE_TAGS -> addImage(node, block)
 
@@ -335,7 +335,8 @@ private class HtmlReader(private val image: (String) -> ByteArray?) {
     private fun append(words: String, bold: Boolean, italic: Boolean) {
         val normalized = words.replace(WHITESPACE, " ")
         val start = text.length
-        text.append(if (text.endsWith(" ")) normalized.trimStart() else normalized)
+        val atBreak = text.endsWith(" ") || text.endsWith("\n")
+        text.append(if (atBreak) normalized.trimStart() else normalized)
         if ((bold || italic) && text.length > start) {
             spans += Span(start, text.length, bold, italic)
         }
@@ -431,8 +432,9 @@ private fun readEpub(file: File): TextDocument = ZipFile(file).use { zip ->
     val parts = opf.select("spine > itemref").mapNotNull { reference ->
         val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
         val path = epub.resolve(opfPath, item.attr("href"))
-        val body = epub.bytes(path)?.let { Jsoup.parse(String(it)).body() }
-            ?: return@mapNotNull null
+        val body =
+            epub.bytes(path)?.let { Jsoup.parse(it.inputStream(), null, "").body() }
+                ?: return@mapNotNull null
         val hints = "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
             .lowercase()
         val isFrontMatter =

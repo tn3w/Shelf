@@ -90,7 +90,7 @@ fun BookCover(
 ) {
     val settings = loadedSettings()
     val offline = settings?.isOffline(LocalContext.current) ?: true
-    var loaded by remember(book.work) { mutableStateOf(false) }
+    var loaded by remember(book.work, book.cover) { mutableStateOf(false) }
     var failed by remember(book.work, book.cover) { mutableStateOf(false) }
     val shape = RoundedCornerShape(6.dp)
     Box(

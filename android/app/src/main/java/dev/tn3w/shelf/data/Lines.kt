@@ -18,15 +18,17 @@ private const val BLOCK = 32
 
 class Gray(val width: Int, val height: Int, val pixels: FloatArray) {
     fun sample(x: Float, y: Float): Float {
-        val clampedX = x.coerceIn(0f, width - 1.001f)
-        val clampedY = y.coerceIn(0f, height - 1.001f)
+        val clampedX = x.coerceIn(0f, maxOf(0f, width - 1.001f))
+        val clampedY = y.coerceIn(0f, maxOf(0f, height - 1.001f))
         val left = clampedX.toInt()
         val top = clampedY.toInt()
+        val right = minOf(left + 1, width - 1)
+        val bottom = minOf(top + 1, height - 1)
         val fractionX = clampedX - left
-        val index = top * width + left
-        val upper = pixels[index] + (pixels[index + 1] - pixels[index]) * fractionX
-        val below = index + width
-        val lower = pixels[below] + (pixels[below + 1] - pixels[below]) * fractionX
+        val upper = pixels[top * width + left] +
+            (pixels[top * width + right] - pixels[top * width + left]) * fractionX
+        val lower = pixels[bottom * width + left] +
+            (pixels[bottom * width + right] - pixels[bottom * width + left]) * fractionX
         return upper + (lower - upper) * (clampedY - top)
     }
 

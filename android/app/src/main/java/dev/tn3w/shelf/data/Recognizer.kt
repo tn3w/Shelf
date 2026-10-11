@@ -188,7 +188,8 @@ class Recognizer(bytes: ByteArray) {
     private fun readLayer(buffer: ByteBuffer): Layer = when (buffer.getInt()) {
         0 -> readConv(buffer)
         1 -> Squeeze(readConv(buffer), readConv(buffer))
-        else -> Pool(buffer.getInt(), buffer.getInt())
+        2 -> Pool(buffer.getInt(), buffer.getInt())
+        else -> error("unknown layer type")
     }
 
     private fun readConv(buffer: ByteBuffer): Conv {
@@ -235,8 +236,7 @@ class Recognizer(bytes: ByteArray) {
         val means = FloatArray(input.channels) { channel ->
             var total = 0f
             for (index in channel * area until (channel + 1) * area) {
-                total +=
-                    input.data[index]
+                total += input.data[index]
             }
             total / area
         }
