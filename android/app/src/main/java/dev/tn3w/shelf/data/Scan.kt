@@ -21,6 +21,7 @@ private const val PROBED_LINES = 8
 private const val ORIENTATION_LINES = 3
 private const val MIN_ORIENTATION_QUALITY = 3.0
 private const val COMMON_WORD = 60
+private const val CACHE_SIZE = 4096
 private const val POPULARITY_BONUS = 0.08
 private val STOP_PHRASES = listOf(
     "a novel", "novel", "new york times", "bestseller", "bestselling", "international",
@@ -205,10 +206,10 @@ fun identity(catalogue: Catalogue, work: Int) = catalogue.book(work)?.let { book
 } ?: listOf(work.toString())
 
 class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) {
-    private val hits = HashMap<String, Map<Int, Double>>()
-    private val profiles = HashMap<Int, BookProfile?>()
-    private val weights = HashMap<String, Double>()
-    private val frequencies = HashMap<String, Int>()
+    private val hits = Cache<String, Map<Int, Double>>(CACHE_SIZE)
+    private val profiles = Cache<Int, BookProfile>(CACHE_SIZE)
+    private val weights = Cache<String, Double>(CACHE_SIZE)
+    private val frequencies = Cache<String, Int>(CACHE_SIZE)
     private val total = (catalogue.ranks?.works ?: catalogue.workCount).toDouble()
 
     private fun words(readings: List<Reading>): List<Word> {
@@ -235,35 +236,39 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
         return listOf(token, split.first, split.second)
     }
 
-    private fun close(word: String) =
-        hits.getOrPut(word) { searcher.matches(word, word.length >= 4) }.isNotEmpty()
+    private fun matches(word: String) =
+        hits.get(word) { searcher.matches(word, word.length >= 4) }
+
+    private fun close(word: String) = matches(word).isNotEmpty()
 
     private fun popularity(work: Int) =
         catalogue.popularity(work).takeIf { it.isFinite() } ?: 0.0
 
     private fun frequency(token: String) =
-        frequencies.getOrPut(token) { searcher.frequency(token) }
+        frequencies.get(token) { searcher.frequency(token) }
 
-    private fun weight(token: String) = weights.getOrPut(token) {
+    private fun weight(token: String) = weights.get(token) {
         ln((total + 1) / (frequency(token) + 1)) + 1
     }
 
-    private fun profile(work: Int) = profiles.getOrPut(work) {
-        catalogue.book(work)?.let { book ->
-            val titles = listOf(book.title, book.alternate)
-                .filter { it.isNotBlank() }
-                .map { title ->
-                    val tokens = tokenize(mainTitle(title))
-                    tokens.filter { it !in ARTICLES }.ifEmpty { tokens }
-                }
-            val authors = book.authors.take(2).map { tokenize(it.name) }
-            val extra = tokenize(
-                "${book.title} ${book.alternate} ${book.subtitle} " +
-                    catalogue.series(work)?.name.orEmpty(),
-            )
-            val tokens = (titles.flatten() + authors.flatten() + extra).toSet()
-            BookProfile(titles, authors, tokens, popularity(work))
-        }
+    private fun profile(work: Int) = catalogue.book(work)?.let { book ->
+        profiles.get(work) { buildProfile(work, book) }
+    }
+
+    private fun buildProfile(work: Int, book: Book): BookProfile {
+        val titles = listOf(book.title, book.alternate)
+            .filter { it.isNotBlank() }
+            .map { title ->
+                val tokens = tokenize(mainTitle(title))
+                tokens.filter { it !in ARTICLES }.ifEmpty { tokens }
+            }
+        val authors = book.authors.take(2).map { tokenize(it.name) }
+        val extra = tokenize(
+            "${book.title} ${book.alternate} ${book.subtitle} " +
+                catalogue.series(work)?.name.orEmpty(),
+        )
+        val tokens = (titles.flatten() + authors.flatten() + extra).toSet()
+        return BookProfile(titles, authors, tokens, popularity(work))
     }
 
     private fun candidates(words: List<Word>): List<Int> {
@@ -271,7 +276,7 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
         val rare = HashSet<Int>()
         for (word in words.map { it.text }.distinct()) {
             if (word.length < 3 || word in ARTICLES) continue
-            val matched = hits.getOrPut(word) { searcher.matches(word, word.length >= 4) }
+            val matched = matches(word)
             matched.keys.forEach { counts.merge(it, 1, Int::plus) }
             val exact = matched.filterValues { it >= 1.0 }
             when {
