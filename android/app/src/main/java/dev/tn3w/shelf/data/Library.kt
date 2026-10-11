@@ -267,11 +267,13 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     fun bookFile(name: String) = booksDir.resolve(name)
 
-    fun hasFile(progress: Progress?) =
+    suspend fun hasFile(progress: Progress?) = withContext(Dispatchers.IO) {
         progress != null && bookFile(progress.file).exists()
+    }
 
     suspend fun importBook(book: Book, uri: Uri): Boolean {
-        val name = copyBook(uri, context.displayName(uri), book.work) ?: return false
+        val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
+        val name = copyBook(uri, fileName, book.work) ?: return false
         val previous = progress.first()[book.work]?.takeIf { it.file == name }
         saveProgress(book.work, previous ?: Progress(name))
         place(book, Shelf.Reading)
@@ -279,7 +281,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     }
 
     suspend fun importFile(uri: Uri): Int? {
-        val fileName = context.displayName(uri)
+        val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
         val work = readFrom(uri, ::contentWork) ?: return null
         val name = copyBook(uri, fileName, work) ?: return null
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }

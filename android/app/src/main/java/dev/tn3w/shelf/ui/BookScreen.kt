@@ -200,10 +200,12 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
         ) {
             Button(
                 onClick = {
-                    if (app.library.hasFile(position)) {
-                        navigator.reader(book.work)
-                    } else {
-                        picker.launch(arrayOf("*/*"))
+                    scope.launch {
+                        if (app.library.hasFile(position)) {
+                            navigator.reader(book.work)
+                        } else {
+                            picker.launch(arrayOf("*/*"))
+                        }
                     }
                 },
             ) {

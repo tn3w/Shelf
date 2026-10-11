@@ -68,10 +68,12 @@ fun HomeScreen(navigator: Navigator) {
                         val book = entry.toBook()
                         val position = progress[entry.work]
                         ContinueCard(book, position?.fraction) {
-                            if (app.library.hasFile(position)) {
-                                navigator.reader(entry.work)
-                            } else {
-                                navigator.book(book, "continue")
+                            scope.launch {
+                                if (app.library.hasFile(position)) {
+                                    navigator.reader(entry.work)
+                                } else {
+                                    navigator.book(book, "continue")
+                                }
                             }
                         }
                     }
