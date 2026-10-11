@@ -256,4 +256,5 @@
     <string name="scan_hint">Enfoca portada o código de barras, toca</string>
     <string name="scan_again">Escanear de nuevo</string>
     <string name="camera_denied">Shelf lee portadas con la cámara, todo en tu teléfono. Permite el acceso a la cámara en los ajustes del sistema para escanear.</string>
+    <string name="camera_failed">La cámara se cerró inesperadamente. Vuelve atrás e inténtalo de nuevo.</string>
 </resources>

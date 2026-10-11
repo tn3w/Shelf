@@ -40,6 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -81,6 +82,7 @@ fun ScanScreen(navigator: Navigator) {
     }
     var found by remember { mutableStateOf<Found?>(null) }
     var attempt by remember { mutableIntStateOf(0) }
+    var failure by remember { mutableStateOf<Int?>(null) }
     val haptics = LocalHapticFeedback.current
     val current = loaded
     val model = recognizer
@@ -91,7 +93,7 @@ fun ScanScreen(navigator: Navigator) {
                 Scanner(current.catalogue, current.searcher, model, others = others)
             }
             key(scanner) {
-                CameraPreview(scanner::next) { work, frame, marks ->
+                CameraPreview(scanner::next, { failure = it }) { work, frame, marks ->
                     val book = current.book(work) ?: return@CameraPreview
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     found = Found(book, frame, marks)
@@ -104,9 +106,10 @@ fun ScanScreen(navigator: Navigator) {
         }
         if (found == null) {
             Text(
-                stringResource(R.string.scan_hint),
+                stringResource(failure ?: R.string.scan_hint),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(32.dp),
@@ -141,6 +144,7 @@ private fun Frozen(found: Found) {
 @Composable
 private fun CameraPreview(
     analyze: (Gray, Boolean) -> Step,
+    onFailed: (Int) -> Unit,
     onFound: (Int, Bitmap?, Marks) -> Unit,
 ) {
     val context = LocalContext.current
@@ -149,7 +153,7 @@ private fun CameraPreview(
     val latest by rememberUpdatedState(onFound)
     val view = remember { TextureView(context) }
     val camera = remember {
-        Camera(context, view, analyze) { work, frame, marks ->
+        Camera(context, view, analyze, onFailed) { work, frame, marks ->
             latest(work, frame, marks)
         }
     }
@@ -229,6 +233,7 @@ private class Camera(
     private val context: Context,
     private val view: TextureView,
     private val analyze: (Gray, Boolean) -> Step,
+    private val onFailed: (Int) -> Unit,
     private val onFound: (Int, Bitmap?, Marks) -> Unit,
 ) : TextureView.SurfaceTextureListener {
     private val manager = context.getSystemService(CameraManager::class.java)
@@ -242,6 +247,7 @@ private class Camera(
     private var running = false
     private var degrees = 0
     private var generation = 0
+    private var retried = false
 
     @Volatile
     private var tappedAt = 0L
@@ -259,7 +265,7 @@ private class Camera(
         if (ContextCompat.checkSelfPermission(context, CAMERA) !=
             PERMISSION_GRANTED
         ) {
-            return
+            return onFailed(R.string.camera_denied)
         }
         val id = manager.cameraIdList.firstOrNull {
             manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
@@ -286,6 +292,7 @@ private class Camera(
 
     fun close() {
         running = false
+        retried = false
         worker.shutdown()
         cameraHandler.post(::stop)
     }
@@ -300,7 +307,20 @@ private class Camera(
         try {
             manager.openCamera(id, callback, cameraHandler)
         } catch (_: SecurityException) {
+            view.post { onFailed(R.string.camera_denied) }
         } catch (_: CameraAccessException) {
+            fail(callback.attempt)
+        }
+    }
+
+    private fun fail(attempt: Int) {
+        if (attempt != generation) return
+        stop()
+        view.post {
+            if (!running) return@post
+            if (retried) return@post onFailed(R.string.camera_failed)
+            retried = true
+            open()
         }
     }
 
@@ -314,8 +334,7 @@ private class Camera(
         surface = null
     }
 
-    private inner class DeviceCallback(private val attempt: Int) :
-        CameraDevice.StateCallback() {
+    inner class DeviceCallback(val attempt: Int) : CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
             if (attempt != generation) return camera.close()
             device = camera
@@ -328,9 +347,14 @@ private class Camera(
             camera.createCaptureSession(surfaces, callback, cameraHandler)
         }
 
-        override fun onDisconnected(camera: CameraDevice) = camera.close()
+        override fun onDisconnected(camera: CameraDevice) = lost(camera)
 
-        override fun onError(camera: CameraDevice, error: Int) = camera.close()
+        override fun onError(camera: CameraDevice, error: Int) = lost(camera)
+
+        private fun lost(camera: CameraDevice) {
+            camera.close()
+            fail(attempt)
+        }
     }
 
     private class SessionCallback(

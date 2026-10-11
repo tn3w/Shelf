@@ -249,4 +249,5 @@
     <string name="scan_hint">Show a cover or barcode, tap to capture</string>
     <string name="scan_again">Scan again</string>
     <string name="camera_denied">Shelf reads book covers with the camera, entirely on your phone. Allow camera access in the system settings to scan.</string>
+    <string name="camera_failed">Camera closed unexpectedly. Go back and try again.</string>
 </resources>
