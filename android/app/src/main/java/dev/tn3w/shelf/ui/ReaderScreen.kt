@@ -356,7 +356,7 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             emptyList(),
             save = { progress.copy(page = it, pages = count) },
         ) {
-            val rendered by produceState<Result<Bitmap>?>(null, it) {
+            val rendered by produceState<Result<Bitmap>?>(null, it, width, height) {
                 value = withContext(Dispatchers.IO) {
                     runCatching { document.render(it, width, height) }
                 }
