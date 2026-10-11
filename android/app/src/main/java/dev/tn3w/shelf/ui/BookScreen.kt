@@ -88,6 +88,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                         pluralStringResource(
                             R.plurals.books_in_series, books.size, books.size,
                         ),
+                        onMore = { navigator.series(work) },
                         shared = false,
                     )
                 }

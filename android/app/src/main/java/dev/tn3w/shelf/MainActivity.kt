@@ -48,6 +48,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class TagRoute(val id: Int)
 
+@Serializable data class SeriesRoute(val work: Int)
+
 @Serializable data class ReaderRoute(val work: Int)
 
 @Serializable object ScanRoute
@@ -73,6 +75,8 @@ class Navigator(private val controller: NavHostController) {
         controller.navigate(AuthorRoute(author.number, author.name))
 
     fun tag(id: Int) = controller.navigate(TagRoute(id))
+
+    fun series(work: Int) = controller.navigate(SeriesRoute(work))
 
     fun reader(work: Int) =
         controller.navigate(ReaderRoute(work)) { launchSingleTop = true }
@@ -237,6 +241,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
             AuthorScreen(Author(route.number, route.name), navigator)
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
+        screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
         screen<ScanRoute> { ScanScreen(navigator) }
         screen<SettingsRoute> {

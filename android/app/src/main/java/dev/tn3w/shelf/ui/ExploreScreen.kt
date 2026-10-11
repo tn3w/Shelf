@@ -109,6 +109,33 @@ fun TagScreen(id: Int, navigator: Navigator) {
 }
 
 @Composable
+fun SeriesScreen(work: Int, navigator: Navigator) {
+    val series by load(work) { book(work)?.let(recommender::series) }
+    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+        BackBar(navigator::back)
+        BookGrid(series?.second, "series-$work", navigator::book) {
+            series?.let { (name, books) -> fullWidth { SeriesHeader(name, books.size) } }
+        }
+    }
+}
+
+@Composable
+private fun SeriesHeader(name: String, count: Int) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            name,
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            pluralStringResource(R.plurals.books_in_series, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 fun AuthorScreen(author: Author, navigator: Navigator) {
     val groups by load(author) { recommender.authorShelf(author) }
     val born by load(author) { catalogue.authorBorn(author) }
