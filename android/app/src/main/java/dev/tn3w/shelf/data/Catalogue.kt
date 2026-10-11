@@ -92,12 +92,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     val workCount = visible.sumOf { it.cardinality() }
     val tags = segments.firstOrNull()?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
-    private val maxScore by lazy {
-        segments
-            .filter { it.pack == "core" }
-            .flatMap { segment -> (0 until segment.workCount).map(segment::work) }
-            .maxOfOrNull { score(it) } ?: 1.0
-    }
+    private val maxScore by lazy { scores.values.maxOrNull()?.toDouble() ?: 1.0 }
     private val tagCounts by lazy {
         tags.associate { tag -> tag.id to segments.sumOf { it.tagCount(tag.id) } }
     }
@@ -106,6 +101,8 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         val works = allWorks()
         Scores(works, FloatArray(works.size) { rawScore(works[it]).toFloat() })
     }
+
+    fun warmUp() = maxScore
 
     fun locate(work: Int): Location? {
         for (segment in segments.asReversed()) {

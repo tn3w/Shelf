@@ -79,6 +79,7 @@ class ShelfApp :
                     .map(packs::load)
                     .filter { it.segments.isNotEmpty() }
             }
+            next.catalogue.warmUp()
             ensureActive()
             loaded.value = next
         }
