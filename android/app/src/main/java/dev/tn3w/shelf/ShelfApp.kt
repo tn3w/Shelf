@@ -26,7 +26,7 @@ class ShelfApp :
     }
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + logErrors)
     val session = Random.nextLong()
-    val library by lazy { Library(this) }
+    val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())

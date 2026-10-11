@@ -222,7 +222,7 @@ internal inline fun <reified T> MutablePreferences.updateJson(
     this[key] = json.encodeToString(change(current))
 }
 
-class Library(private val context: Context) {
+class Library(private val context: Context, private val scope: CoroutineScope) {
     private val store = context.dataStore
 
     private val data = store.data.catch {
@@ -230,24 +230,28 @@ class Library(private val context: Context) {
         emit(emptyPreferences())
     }
 
+    private fun <T> Flow<T>.shared() = distinctUntilChanged()
+        .flowOn(Dispatchers.Default)
+        .shareIn(scope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+
     val saved = data.map { preferences ->
         preferences.decode(ENTRIES, emptyList<Saved>()).sortedByDescending {
             it.updated
         }
-    }
+    }.shared()
 
-    val recentSearches = data.map { it.decode(RECENT, emptyList<String>()) }
+    val recentSearches = data.map { it.decode(RECENT, emptyList<String>()) }.shared()
 
-    val dismissed = data.map { it.decode(DISMISSED, emptySet<Int>()) }
+    val dismissed = data.map { it.decode(DISMISSED, emptySet<Int>()) }.shared()
 
-    val progress = data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }
+    val progress = data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }.shared()
 
-    val settings = data.map { it.decode(SETTINGS, Settings()) }
+    val settings = data.map { it.decode(SETTINGS, Settings()) }.shared()
 
     val habit = combine(data, dates()) { preferences, today ->
         val goal = preferences.decode(SETTINGS, Settings()).dailyGoal
         habitOf(preferences.decode(ACTIVITY, emptyMap()), goal, today)
-    }
+    }.shared()
 
     private val booksDir
         get() = context.filesDir.resolve("books")
