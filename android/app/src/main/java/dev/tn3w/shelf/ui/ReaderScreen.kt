@@ -393,10 +393,9 @@ private fun Pages(
     }
 
     LaunchedEffect(pager.settledPage) {
-        app.library.saveProgress(state.work, save(pager.settledPage))
         val settled = pager.settledPage
         val read = newPagesRead(previous, settled, furthest)
-        if (read > 0) app.library.addPages(read)
+        app.library.saveProgress(state.work, save(settled), read)
         furthest = maxOf(furthest, settled)
         previous = settled
     }

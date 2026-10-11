@@ -378,13 +378,17 @@ class Library(private val context: Context) {
         return writeTo(uri) { it.write(csvOf(entries).toByteArray()) }
     }
 
-    suspend fun saveProgress(work: Int, progress: Progress) =
-        update(PROGRESS, emptyMap<Int, Progress>()) { it + (work to progress) }
-
-    suspend fun addPages(count: Int) =
-        update(ACTIVITY, emptyMap<String, Int>()) { activity ->
-            val today = LocalDate.now().toString()
-            activity + (today to (activity[today] ?: 0) + count)
+    suspend fun saveProgress(work: Int, progress: Progress, pagesRead: Int = 0) =
+        store.edit {
+            it.updateJson(PROGRESS, emptyMap<Int, Progress>()) { all ->
+                all + (work to progress)
+            }
+            if (pagesRead > 0) {
+                it.updateJson(ACTIVITY, emptyMap<String, Int>()) { activity ->
+                    val today = LocalDate.now().toString()
+                    activity + (today to (activity[today] ?: 0) + pagesRead)
+                }
+            }
         }
 
     suspend fun updateSettings(change: (Settings) -> Settings) =
