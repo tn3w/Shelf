@@ -291,8 +291,10 @@ private fun TextReader(
                 }
                 .coerceAtLeast(0)
         }
-        val chapters = document.chapters.map { chapter ->
-            chapter.title to current.indexOfFirst { it.section >= chapter.section }
+        val chapters = remember(document, current) {
+            document.chapters.map { chapter ->
+                chapter.title to current.indexOfFirst { it.section >= chapter.section }
+            }
         }
         key(current) {
             val pager = rememberPagerState(initial) { current.size }
