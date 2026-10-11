@@ -1,7 +1,10 @@
 package dev.tn3w.shelf.data
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 private val searcher = Searcher(
@@ -69,5 +72,20 @@ class SearchTest {
                 it.name
             },
         )
+    }
+
+    @Test
+    fun cancelledJobStopsLookupSearchAndAuthors() {
+        val cancelled = Job().apply { cancel() }
+        val lookup = searcher.lookup("dune")
+        assertThrows(CancellationException::class.java) {
+            searcher.lookup("dune", cancelled)
+        }
+        assertThrows(CancellationException::class.java) {
+            searcher.search(lookup, job = cancelled)
+        }
+        assertThrows(CancellationException::class.java) {
+            searcher.authors(lookup, job = cancelled)
+        }
     }
 }

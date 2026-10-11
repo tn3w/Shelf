@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.data
 
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.max
@@ -308,11 +310,12 @@ class Searcher(private val catalogue: Catalogue) {
     fun matches(word: String, prefix: Boolean = false) =
         tokenScores(word, termMatches(word, prefix)).scores
 
-    fun lookup(query: String): Lookup {
+    fun lookup(query: String, job: Job? = null): Lookup {
         val tokens = tokenize(query)
         return Lookup(
             tokens,
             tokens.mapIndexed { position, token ->
+                job?.ensureActive()
                 termMatches(token, position == tokens.lastIndex)
             },
         )
@@ -320,11 +323,15 @@ class Searcher(private val catalogue: Catalogue) {
 
     fun search(query: String, limit: Int = 30) = search(lookup(query), limit)
 
-    fun search(lookup: Lookup, limit: Int = 30): List<Book> {
+    fun search(lookup: Lookup, limit: Int = 30, job: Job? = null): List<Book> {
         val tokens = lookup.tokens
         if (tokens.isEmpty()) return emptyList()
-        val perToken = tokens.zip(lookup.matches, ::tokenScores)
+        val perToken = tokens.zip(lookup.matches) { token, matches ->
+            job?.ensureActive()
+            tokenScores(token, matches)
+        }
         val scored = candidates(perToken)
+        job?.ensureActive()
         val popularity = HashMap<Int, Double>()
         fun popularityOf(work: Int) =
             popularity.getOrPut(work) { catalogue.popularity(work) }
@@ -337,6 +344,7 @@ class Searcher(private val catalogue: Catalogue) {
         val ranked = head
             .mapNotNull(catalogue::book)
             .map { book ->
+                job?.ensureActive()
                 val matched =
                     perToken.count { it.scores.containsKey(book.work) }.toDouble() /
                         perToken.size
@@ -380,12 +388,13 @@ class Searcher(private val catalogue: Catalogue) {
             .map { if (head.isEmpty()) it.text else "$head ${it.text}" }
     }
 
-    fun authors(lookup: Lookup, limit: Int = 3): List<Author> {
+    fun authors(lookup: Lookup, limit: Int = 3, job: Job? = null): List<Author> {
         if (lookup.tokens.isEmpty()) return emptyList()
         val perToken = lookup.matches.map { tokenMatches ->
             val texts = tokenMatches.map { it.text }
             segments
                 .flatMap { segment ->
+                    job?.ensureActive()
                     texts.flatMap { text ->
                         val slots = segment.term(text)?.authorSlots ?: IntArray(0)
                         slots.take(AUTHOR_LIMIT).map(segment::author)

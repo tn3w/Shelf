@@ -59,11 +59,12 @@ fun SearchScreen(navigator: Navigator) {
         delay(150)
         results = withContext(Dispatchers.Default) {
             val searcher = current.searcher
-            val lookup = searcher.lookup(query)
+            val job = coroutineContext.job
+            val lookup = searcher.lookup(query, job)
             Results(
                 searcher.complete(lookup),
-                searcher.authors(lookup),
-                searcher.search(lookup),
+                searcher.authors(lookup, job = job),
+                searcher.search(lookup, job = job),
             )
         }
     }
