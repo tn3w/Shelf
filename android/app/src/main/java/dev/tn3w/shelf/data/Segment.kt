@@ -60,16 +60,19 @@ private fun inflate(
     dictionary: ByteArray = ByteArray(0),
 ): ByteArray {
     val inflater = Inflater(true)
-    if (dictionary.isNotEmpty()) inflater.setDictionary(dictionary)
-    inflater.setInput(compressed)
     val output = ByteArrayOutputStream(compressed.size * 4)
     val chunk = ByteArray(16384)
-    while (!inflater.finished()) {
-        val read = inflater.inflate(chunk)
-        if (read == 0 && inflater.needsInput()) break
-        output.write(chunk, 0, read)
+    try {
+        if (dictionary.isNotEmpty()) inflater.setDictionary(dictionary)
+        inflater.setInput(compressed)
+        while (!inflater.finished()) {
+            val read = inflater.inflate(chunk)
+            if (read == 0 && inflater.needsInput()) break
+            output.write(chunk, 0, read)
+        }
+    } finally {
+        inflater.end()
     }
-    inflater.end()
     return output.toByteArray()
 }
 
