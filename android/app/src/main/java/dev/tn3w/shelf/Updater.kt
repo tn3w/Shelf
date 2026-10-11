@@ -72,12 +72,16 @@ object Updater {
         installer.openSession(sessionId).use { session ->
             try {
                 val digest = MessageDigest.getInstance("SHA-256")
-                write(session, digest, release.assetUrl(APK_NAME), onProgress)
+                write(session, digest, release.assetUrl(APK_NAME)) { copied, total ->
+                    ensureActive()
+                    if (total > 0) onProgress(copied.toFloat() / total)
+                }
                 check(sha256(digest) == expected) { "checksum mismatch" }
             } catch (exception: Throwable) {
                 session.abandon()
                 throw exception
             }
+            ensureActive()
             (context.applicationContext as ShelfApp).packs.copyBundled()
             session.commit(statusReceiver(context, sessionId).intentSender)
         }
@@ -95,7 +99,7 @@ object Updater {
         session: PackageInstaller.Session,
         digest: MessageDigest,
         url: String,
-        onProgress: (Float) -> Unit,
+        onProgress: (Long, Long) -> Unit,
     ) {
         val connection = connect(url).apply {
             setRequestProperty("Accept", "application/octet-stream")
@@ -106,9 +110,7 @@ object Updater {
         val total = connection.contentLengthLong
         DigestInputStream(connection.inputStream, digest).use { input ->
             session.openWrite(APK_NAME, 0, total).use { output ->
-                copyWithProgress(input, output) {
-                    if (total > 0) onProgress(it.toFloat() / total)
-                }
+                copyWithProgress(input, output) { onProgress(it, total) }
                 session.fsync(output)
             }
         }
