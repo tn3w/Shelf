@@ -13,6 +13,7 @@ import android.graphics.Typeface
 import android.os.Build
 import android.util.LruCache
 import dev.tn3w.shelf.cover.art.*
+import dev.tn3w.shelf.data.replaceFile
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
@@ -192,7 +193,9 @@ object Covers {
 
     private fun store(file: File, bitmap: Bitmap) {
         runCatching {
-            file.outputStream().use { bitmap.compress(compressFormat, 82, it) }
+            replaceFile(file) { temporary ->
+                temporary.outputStream().use { bitmap.compress(compressFormat, 82, it) }
+            }
         }
     }
 }

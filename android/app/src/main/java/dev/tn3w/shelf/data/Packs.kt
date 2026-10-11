@@ -363,7 +363,7 @@ class Packs(private val context: Context) {
 }
 
 fun replaceFile(target: File, write: (File) -> Unit) {
-    val temporary = File(target.path + ".part")
+    val temporary = File.createTempFile(target.name, ".part", target.parentFile)
     try {
         write(temporary)
         check(temporary.renameTo(target)) { "cannot replace ${target.name}" }
