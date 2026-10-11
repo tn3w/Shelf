@@ -154,6 +154,10 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun facts(work: Int) = locate(work)?.let { it.segment.facts(it.local) }
 
+    fun firstAuthorNumber(work: Int) = locate(work)?.let { (segment, local) ->
+        segment.facts(local).authors.firstOrNull()?.let { segment.author(it).number }
+    }
+
     fun description(work: Int) =
         locate(work)?.let { it.segment.description(it.local) } ?: Description("", false)
 

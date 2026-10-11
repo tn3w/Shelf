@@ -230,7 +230,7 @@ class Recommender(private val catalogue: Catalogue) {
     }
 
     private fun worksOf(author: Author) = catalogue.authorWorks(author).filter {
-        catalogue.book(it)?.authors?.firstOrNull()?.number == author.number
+        catalogue.firstAuthorNumber(it) == author.number
     }
 
     private fun retrieve(cluster: Cluster): Set<Int> {
