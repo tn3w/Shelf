@@ -36,6 +36,7 @@ private val PROGRESS = stringPreferencesKey("progress")
 private val ACTIVITY = stringPreferencesKey("activity")
 private val SETTINGS = stringPreferencesKey("settings")
 private val DISMISSED = stringPreferencesKey("dismissed")
+private val PDFS_NORMALISED = booleanPreferencesKey("pdfsNormalised")
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
 private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
@@ -267,6 +268,16 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     fun bookFile(name: String) = booksDir.resolve(name)
 
+    suspend fun normaliseStoredPdfs() {
+        if (data.first()[PDFS_NORMALISED] == true) return
+        withContext(Dispatchers.IO) {
+            booksDir.listFiles { file -> file.extension == "pdf" }
+                .orEmpty()
+                .forEach(::replaceJpegIccProfiles)
+        }
+        store.edit { it[PDFS_NORMALISED] = true }
+    }
+
     suspend fun hasFile(progress: Progress?) = withContext(Dispatchers.IO) {
         progress != null && bookFile(progress.file).exists()
     }
@@ -305,6 +316,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             target.delete()
             return null
         }
+        if (extension == "pdf") replaceJpegIccProfiles(target)
         deleteOtherFormats(booksDir, work, keep = name)
         return name
     }
@@ -473,7 +485,10 @@ internal fun extractBook(directory: File, entry: String, input: InputStream) {
     if (!BOOK_FILE.matches(name)) return
     val target = directory.resolve(name).apply { parentFile?.mkdirs() }
     if (target.exists()) return
-    replaceFile(target) { file -> file.outputStream().use(input::copyTo) }
+    replaceFile(target) { file ->
+        file.outputStream().use(input::copyTo)
+        if (name.endsWith(".pdf")) replaceJpegIccProfiles(file)
+    }
 }
 
 private fun Preferences.toBackup() = Backup(

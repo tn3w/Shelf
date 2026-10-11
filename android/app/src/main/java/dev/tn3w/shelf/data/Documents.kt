@@ -94,7 +94,7 @@ class PdfDocument(file: File) : PagedDocument {
 
 private class Box(val type: String, val start: Int, val end: Int)
 
-private fun replaceJpegIccProfiles(file: File) = runCatching {
+internal fun replaceJpegIccProfiles(file: File) = runCatching {
     RandomAccessFile(file, "rw").use { access ->
         val mode = FileChannel.MapMode.READ_WRITE
         val buffer = access.channel.map(mode, 0, access.length())
@@ -226,7 +226,7 @@ private fun fictionBookMetadata(file: File): Metadata? {
 fun openDocument(file: File): Document = when (file.extension.lowercase()) {
     "epub" -> readEpub(file)
 
-    "pdf" -> PdfDocument(file.also(::replaceJpegIccProfiles))
+    "pdf" -> PdfDocument(file)
 
     "cbz" -> ComicDocument(file)
 

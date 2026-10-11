@@ -36,6 +36,7 @@ class ShelfApp :
         scope.launch {
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
+            library.normaliseStoredPdfs()
             showLanguage(bookLanguage(settings))
             if (settings.onboarded) checkCatalogue()
         }
