@@ -1,0 +1,8 @@
+• Biblioteca: orden, filtros y vista de lista; filtros de búsqueda por faceta
+• Pantalla de serie desde la ficha del libro
+• Meta diaria 0 oculta el widget del hábito
+• «Borrar todo» por idioma y «Borrar todos los idiomas»
+• Los EPUB con caracteres especiales en enlaces se abren; el lector se adapta al tamaño
+• El escáner reintenta la cámara y explica los fallos
+• Búsqueda, catálogo y biblioteca más rápidos
+• La compilación de F-Droid ahora es reproducible

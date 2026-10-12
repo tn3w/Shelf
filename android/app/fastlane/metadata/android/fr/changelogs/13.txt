@@ -1,0 +1,8 @@
+• Bibliothèque : tri, filtres et vue liste ; filtres de recherche par facette
+• Écran de série depuis la fiche du livre
+• Objectif quotidien 0 masque le widget d'habitude
+• « Tout supprimer » par langue, et « Supprimer toutes les langues »
+• Les EPUB avec caractères spéciaux dans les liens s'ouvrent ; le lecteur s'adapte à la taille
+• Le scanner relance la caméra et explique les échecs
+• Recherche, catalogue et bibliothèque plus rapides
+• La compilation F-Droid est désormais reproductible

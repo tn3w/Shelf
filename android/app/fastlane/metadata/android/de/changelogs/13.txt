@@ -1,0 +1,8 @@
+• Bibliothek: Sortierung, Filter und Listenansicht; Suchfilter nach Facetten
+• Serienansicht von der Buchseite aus
+• Leseziel 0 blendet das Gewohnheits-Widget aus
+• „Alle löschen“ pro Sprache, dazu „Alle Sprachen löschen“
+• EPUBs mit Sonderzeichen in Links öffnen; Reader passt sich der Größe an
+• Scanner startet die Kamera neu und erklärt Fehler
+• Schnellere Suche, Katalog und Bibliothek
+• F-Droid-Build ist jetzt reproduzierbar

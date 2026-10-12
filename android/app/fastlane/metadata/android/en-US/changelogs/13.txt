@@ -1,0 +1,8 @@
+• Library: sort, filter and list view; search filters by facet
+• Series screen from the book page
+• Daily goal 0 hides the habit widget
+• "Delete all" per language, plus "Delete all languages"
+• EPUBs with special characters in links open; reader adapts to resizing
+• Scanner retries the camera and explains failures
+• Faster search, catalogue and library loading
+• F-Droid build is now reproducible
