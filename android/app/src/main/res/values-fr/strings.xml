@@ -250,6 +250,8 @@
     <string name="own_sources_hint">Utiliser un serveur de catalogue ou de couvertures auto-hébergé, ou importer des fichiers de catalogue.</string>
     <string name="cover_source">Serveur de couvertures</string>
     <string name="cover_source_hint">URL de base d\'un serveur de couvertures Open Library, https uniquement. Vide signifie la valeur par défaut.</string>
+    <string name="dnb_cover_source">Serveur de couvertures DNB</string>
+    <string name="dnb_cover_source_hint">URL de base du service de couvertures de la Bibliothèque nationale allemande, https uniquement. Vide signifie la valeur par défaut.</string>
     <string name="catalogue_incomplete">Importez le fichier core et le fichier ranks d\'une même langue.</string>
     <string name="no_catalogue">Aucun catalogue installé. Téléchargez-en un ou importez des fichiers de catalogue dans les paramètres pour parcourir les livres. Vos propres fichiers s\'importent dans la bibliothèque.</string>
     <string name="open_settings">Ouvrir les paramètres</string>

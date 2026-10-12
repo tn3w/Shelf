@@ -19,6 +19,7 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   DUMPS: https://openlibrary.org/data
+  DNB: https://data.dnb.de/opendata/dnb-all_lds.rdf.gz
   HF_HOME: /mnt/huggingface
 
 jobs:
@@ -58,12 +59,13 @@ jobs:
           [ -n "$latest" ] && gh release download "$latest" --dir previous \
             --pattern 'state-*.bin' --pattern 'translations-*.bin' \
             --pattern manifest.json &
-          for name in reading-log ratings authors covers_metadata editions works; do
+          { for name in reading-log ratings authors covers_metadata editions works; do
             echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
-          done | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 6 \
-            --split 16 --max-connection-per-server 16 --min-split-size 64M \
-            --max-tries 20 --retry-wait 5 --file-allocation none \
-            --console-log-level warn --summary-interval 60
+          done; echo "$DNB"; } \
+            | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 7 \
+              --split 16 --max-connection-per-server 16 --min-split-size 64M \
+              --max-tries 20 --retry-wait 5 --file-allocation none \
+              --console-log-level warn --summary-interval 60
           wait
           du -sh /mnt/dumps
 
@@ -71,6 +73,7 @@ jobs:
         run: |
           builder/target/release/builder /mnt/dumps out \
             --month "$RELEASE" --previous previous --translations previous \
+            --library dnb=/mnt/dumps/dnb-all_lds.rdf.gz \
             --requests requests ${{ inputs.rebase && '--rebase' || '' }} \
             --translator "python tooling/translate.py --device cpu \
               --compute-type int8 --limit 20000 --models-dir /mnt/models"

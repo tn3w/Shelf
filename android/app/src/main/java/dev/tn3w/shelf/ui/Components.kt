@@ -117,13 +117,14 @@ fun BookCover(
             )
             return@Box
         }
-        if (offline || !settings.onlineCovers || book.cover == 0 || failed) {
+        val url = book.coverUrl(settings.coverHost, "L", settings.dnbCoverHost)
+        if (offline || !settings.onlineCovers || url == null || failed) {
             DrawnCover(book)
             return@Box
         }
         if (!loaded) CoverPlaceholder(book)
         AsyncImage(
-            model = book.coverUrl(settings.coverHost, "L"),
+            model = url,
             contentDescription = stringResource(R.string.cover_of, book.title),
             contentScale = ContentScale.Crop,
             onSuccess = { loaded = true },

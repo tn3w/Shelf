@@ -13,6 +13,7 @@ const RECORDS_PER_BLOCK: usize = 32;
 const TERMS_PER_BLOCK: usize = 16;
 const RANKS_PER_BLOCK: usize = 4096;
 const ISBNS_PER_BLOCK: usize = 512;
+const COVERS_PER_BLOCK: usize = 512;
 const DICTIONARY_BYTES: usize = 1 << 15;
 const DICTIONARY_SAMPLES: usize = 6000;
 const DESCRIPTION_BLOCK_BYTES: usize = 9000;
@@ -36,6 +37,7 @@ pub struct Work<'a> {
     pub description: &'a str,
     pub translated: bool,
     pub isbns: &'a [u32],
+    pub library_cover: Option<(u8, u32)>,
 }
 
 pub struct Meta<'a> {
@@ -218,6 +220,10 @@ pub fn content_hash(work: &Work, authors: &Authors) -> u64 {
     work.isbns
         .iter()
         .for_each(|&isbn| put_u32(&mut bytes, isbn));
+    if let Some((source, isbn)) = work.library_cover {
+        bytes.push(source);
+        put_u32(&mut bytes, isbn);
+    }
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, &byte| {
         (hash ^ byte as u64).wrapping_mul(0x0100_0000_01b3)
     })
@@ -409,6 +415,36 @@ fn isbn_section(works: &[Work]) -> Vec<u8> {
     indexed_blocks(&firsts, &compressed)
 }
 
+fn cover_block(block: &[(u32, u8, u32)]) -> Vec<u8> {
+    let mut raw = Vec::new();
+    let mut previous = block[0].0;
+    for &(local, source, isbn) in block {
+        put_varint(&mut raw, local - previous);
+        raw.push(source);
+        put_varint(&mut raw, isbn);
+        previous = local;
+    }
+    deflate(&raw, &[])
+}
+
+fn library_cover_section(works: &[Work]) -> Option<Vec<u8>> {
+    let rows: Vec<(u32, u8, u32)> = works
+        .iter()
+        .enumerate()
+        .filter_map(|(index, work)| {
+            let (source, isbn) = work.library_cover?;
+            Some((index as u32, source, isbn))
+        })
+        .collect();
+    if rows.is_empty() {
+        return None;
+    }
+    let blocks: Vec<&[(u32, u8, u32)]> = rows.chunks(COVERS_PER_BLOCK).collect();
+    let firsts: Vec<u32> = blocks.iter().map(|block| block[0].0).collect();
+    let compressed: Vec<Vec<u8>> = blocks.iter().map(|rows| cover_block(rows)).collect();
+    Some(indexed_blocks(&firsts, &compressed))
+}
+
 fn tag_section(works: &[Work], language: usize) -> Vec<u8> {
     let mut tagged: Vec<Vec<u32>> = vec![Vec::new(); tags::rules().len()];
     for (index, work) in works.iter().enumerate() {
@@ -550,7 +586,7 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         ("records_per_block", RECORDS_PER_BLOCK.to_string()),
         ("terms_per_block", TERMS_PER_BLOCK.to_string()),
     ];
-    assemble(vec![
+    let mut sections = vec![
         ("meta", meta_section(&meta_lines)),
         ("works", raw_u32s(works.iter().map(|work| work.id))),
         ("tombstones", raw_u32s(tombstones.iter().copied())),
@@ -566,7 +602,10 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         ("grams", gram_section(&terms)),
         ("descriptions", description_section(works, &text_dictionary)),
         ("isbns", isbn_section(works)),
-    ])
+    ];
+    let covers = library_cover_section(works);
+    sections.extend(covers.map(|section| ("library_covers", section)));
+    assemble(sections)
 }
 
 fn popularity_block(block: &[Popularity]) -> Vec<u8> {
@@ -597,6 +636,7 @@ pub fn ranks(
     works: &[Work],
     rows: &[Popularity],
     authors: &Authors,
+    aliases: &[(u32, u32)],
 ) -> Vec<u8> {
     let (order, _) = author_slots(works);
     let terms = collect_terms(works, &order, authors);
@@ -611,9 +651,124 @@ pub fn ranks(
         ("terms_per_block", TERMS_PER_BLOCK.to_string()),
         ("ranks_per_block", RANKS_PER_BLOCK.to_string()),
     ];
-    assemble(vec![
+    let mut sections = vec![
         ("meta", meta_section(&meta_lines)),
         ("popularity", popularity_section(rows)),
         ("terms", term_blocks(&terms, false)),
-    ])
+    ];
+    if !aliases.is_empty() {
+        let pairs = aliases.iter().flat_map(|&(from, to)| [from, to]);
+        sections.push(("aliases", raw_u32s(pairs)));
+    }
+    assemble(sections)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::read::DeflateDecoder;
+    use std::io::Read;
+
+    fn u32_at(bytes: &[u8], offset: usize) -> usize {
+        let word: [u8; 4] = bytes[offset..offset + 4].try_into().expect("4 bytes");
+        u32::from_le_bytes(word) as usize
+    }
+
+    fn section<'a>(file: &'a [u8], name: &str) -> Option<&'a [u8]> {
+        (0..u32_at(file, 8)).find_map(|index| {
+            let entry = 12 + index * (NAME_BYTES + 8);
+            let label = &file[entry..entry + NAME_BYTES];
+            let label = std::str::from_utf8(label).ok()?.trim_end_matches('\0');
+            let offset = u32_at(file, entry + NAME_BYTES);
+            let length = u32_at(file, entry + NAME_BYTES + 4);
+            (label == name).then(|| &file[offset..offset + length])
+        })
+    }
+
+    fn varint(bytes: &[u8], cursor: &mut usize) -> u32 {
+        let mut value = 0;
+        for shift in (0..35).step_by(7) {
+            let byte = bytes[*cursor];
+            *cursor += 1;
+            value |= u32::from(byte & 0x7f) << shift;
+            if byte < 0x80 {
+                break;
+            }
+        }
+        value
+    }
+
+    fn work(id: u32, library_cover: Option<(u8, u32)>) -> Work<'static> {
+        Work {
+            id,
+            title: "Jetzt reicht's!",
+            subtitle: "",
+            alternate: "",
+            authors: &[],
+            year: 0,
+            cover: 0,
+            tags: &[],
+            series: None,
+            description: "",
+            translated: false,
+            isbns: &[],
+            library_cover,
+        }
+    }
+
+    fn built(works: &[Work]) -> Vec<u8> {
+        let meta = Meta {
+            language: 1,
+            pack: "kids",
+            month: "month",
+            base: "month",
+        };
+        segment(&meta, works, &[], &Authors::default())
+    }
+
+    #[test]
+    fn library_covers_round_trip() {
+        let works = [
+            work(4, Some((1, 375_120_527))),
+            work(9, None),
+            work(12, Some((1, 7))),
+        ];
+        let file = built(&works);
+        let covers = section(&file, "library_covers").expect("section");
+        assert_eq!(u32_at(covers, 0), 1);
+        assert_eq!(u32_at(covers, 4), 0);
+        let blocks = 8;
+        let start = blocks + 4 + 4 * 2;
+        let end = start + u32_at(covers, blocks + 8);
+        let mut raw = Vec::new();
+        DeflateDecoder::new(&covers[start..end])
+            .read_to_end(&mut raw)
+            .expect("inflate");
+        let mut cursor = 0;
+        let mut rows = Vec::new();
+        let mut local = 0;
+        while cursor < raw.len() {
+            local += varint(&raw, &mut cursor);
+            let source = raw[cursor];
+            cursor += 1;
+            rows.push((local, source, varint(&raw, &mut cursor)));
+        }
+        assert_eq!(rows, vec![(0, 1, 375_120_527), (2, 1, 7)]);
+        let hashed = |work: &Work| content_hash(work, &Authors::default());
+        assert_ne!(hashed(&works[0]), hashed(&work(4, None)));
+    }
+
+    #[test]
+    fn library_covers_absent_without_library_data() {
+        let file = built(&[work(4, None)]);
+        assert!(section(&file, "library_covers").is_none());
+        assert!(section(&file, "isbns").is_some());
+        let ranked = ranks(1, "month", &[], &[], &Authors::default(), &[]);
+        assert!(section(&ranked, "aliases").is_none());
+        let aliased = ranks(1, "month", &[], &[], &Authors::default(), &[(7, 3)]);
+        assert_eq!(
+            section(&aliased, "aliases"),
+            Some(&[7, 0, 0, 0, 3, 0, 0, 0][..])
+        );
+    }
 }

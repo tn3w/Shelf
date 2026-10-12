@@ -59,6 +59,7 @@ data class Saved(
     val rating: Int = 0,
     val isbn: String = "",
     val added: Long = 0,
+    val libraryCover: LibraryCover? = null,
 )
 
 const val MAX_DAILY_GOAL = 500
@@ -113,11 +114,15 @@ data class Settings(
     val lastAppCheck: Long = 0,
     val catalogueSource: String = "",
     val coverSource: String = "",
+    val dnbCoverSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
 ) {
     val coverHost
         get() = coverSource.ifEmpty { COVERS }.trimEnd('/')
+
+    val dnbCoverHost
+        get() = dnbCoverSource.ifEmpty { DNB_COVERS }.trimEnd('/')
 }
 
 fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
@@ -173,13 +178,29 @@ internal fun dates(
 }.distinctUntilChanged()
 
 fun Book.toSaved(shelf: Shelf) = System.currentTimeMillis().let {
-    Saved(work, shelf, it, title, author, cover, added = it)
+    Saved(work, shelf, it, title, author, cover, added = it, libraryCover = libraryCover)
 }
 
-fun Saved.toBook() = bookOf(work, title, author, cover)
+fun Saved.toBook() = bookOf(work, title, author, cover, libraryCover)
 
-private fun bookOf(work: Int, title: String, author: String, cover: Int = 0) =
-    Book(work, title, "", "", listOf(Author(0, author)), 0, cover, emptyList(), null)
+private fun bookOf(
+    work: Int,
+    title: String,
+    author: String,
+    cover: Int = 0,
+    libraryCover: LibraryCover? = null,
+) = Book(
+    work,
+    title,
+    "",
+    "",
+    listOf(Author(0, author)),
+    0,
+    cover,
+    emptyList(),
+    null,
+    libraryCover,
+)
 
 val Book.isLocal
     get() = work < 0
@@ -463,6 +484,13 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun clearSearches() = store.edit { it.remove(RECENT) }
 
+    suspend fun redirect(alias: (Int) -> Int?) {
+        val works =
+            saved.first().map { it.work } + progress.first().keys + dismissed.first()
+        if (works.none { alias(it) != null }) return
+        store.edit { it.redirect(alias) }
+    }
+
     suspend fun dismiss(work: Int) = update(DISMISSED, emptySet<Int>()) { it + work }
 
     suspend fun exportTo(uri: Uri): Boolean {
@@ -536,6 +564,7 @@ internal fun MutablePreferences.merge(imported: Backup) {
 private fun restoredSettings(imported: Settings, current: Settings): Settings {
     val catalogue = imported.catalogueSource.takeIf(::isValidSource)
     val covers = imported.coverSource.takeIf(::isValidCoverSource)
+    val dnbCovers = imported.dnbCoverSource.takeIf(::isValidCoverSource)
     return imported.copy(
         onboarded = current.onboarded,
         dailyGoal = imported.dailyGoal.coerceIn(0, MAX_DAILY_GOAL),
@@ -546,7 +575,21 @@ private fun restoredSettings(imported: Settings, current: Settings): Settings {
         margin = imported.margin.coerceAtLeast(0),
         catalogueSource = catalogue ?: current.catalogueSource,
         coverSource = covers ?: current.coverSource,
+        dnbCoverSource = dnbCovers ?: current.dnbCoverSource,
     )
+}
+
+internal fun MutablePreferences.redirect(alias: (Int) -> Int?) {
+    fun moved(work: Int) = alias(work) ?: work
+    updateJson(ENTRIES, emptyList<Saved>()) { entries ->
+        newestPerWork(entries.map { it.copy(work = moved(it.work)) })
+    }
+    updateJson(PROGRESS, emptyMap<Int, Progress>()) { all ->
+        all.mapKeys { moved(it.key) }
+    }
+    updateJson(DISMISSED, emptySet<Int>()) { dismissed ->
+        dismissed.mapTo(HashSet(), ::moved)
+    }
 }
 
 private fun newestPerWork(entries: List<Saved>) =

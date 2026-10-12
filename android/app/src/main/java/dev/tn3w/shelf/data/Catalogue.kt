@@ -1,14 +1,26 @@
 package dev.tn3w.shelf.data
 
+import kotlinx.serialization.Serializable
 import java.util.BitSet
 import java.util.PriorityQueue
 import kotlin.math.ln
 
 const val COVERS = "https://covers.openlibrary.org"
+const val DNB_COVERS = "https://portal.dnb.de"
+const val SYNTHETIC = 1_000_000_000
+const val DNB = 1
 
 data class Author(val number: Int, val name: String) {
     fun photoUrl(host: String, size: String) =
-        "$host/a/olid/OL${number}A-$size.jpg?default=false"
+        "$host/a/olid/OL${number}A-$size.jpg?default=false".takeIf { number < SYNTHETIC }
+}
+
+@Serializable
+data class LibraryCover(val source: Int, val isbn: String) {
+    fun url(dnbHost: String) = when (source) {
+        DNB -> "$dnbHost/opac/mvb/cover?isbn=$isbn"
+        else -> null
+    }
 }
 
 data class Book(
@@ -21,12 +33,13 @@ data class Book(
     val cover: Int,
     val tags: List<Int>,
     val popularity: Popularity?,
+    val libraryCover: LibraryCover? = null,
 ) {
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
 
-    fun coverUrl(host: String, size: String) =
-        if (cover == 0) null else "$host/b/id/$cover-$size.jpg"
+    fun coverUrl(host: String, size: String, dnbHost: String = DNB_COVERS) =
+        if (cover == 0) libraryCover?.url(dnbHost) else "$host/b/id/$cover-$size.jpg"
 }
 
 private val COMPANION = Regex(
@@ -73,6 +86,8 @@ fun normalizedIsbn(text: String): String? {
 fun isbnKey(isbn: String) =
     normalizedIsbn(isbn)?.let { (it.take(12).toLong() - ISBN_BASE).toInt() }
 
+fun isbnOf(key: Int) = (ISBN_BASE + key).toString().let { it + checkDigit(it) }
+
 data class Tag(val id: Int, val slug: String, val label: String, val category: String)
 
 data class Series(val name: String, val members: List<Int>)
@@ -104,7 +119,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun warmUp() = maxScore
 
-    fun locate(work: Int): Location? {
+    fun locate(work: Int): Location? = find(work) ?: ranks?.alias(work)?.let(::find)
+
+    private fun find(work: Int): Location? {
         for (segment in segments.asReversed()) {
             val local = segment.localOf(work)
             if (local >= 0) return Location(segment, local)
@@ -112,6 +129,8 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         }
         return null
     }
+
+    fun alias(work: Int) = ranks?.alias(work)
 
     private fun rawScore(work: Int) = ranks?.popularity(work)?.score ?: 0.0
 
@@ -142,6 +161,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
             facts.cover,
             facts.tags.toList(),
             ranks?.popularity(work),
+            segment.libraryCover(local),
         )
     }
 

@@ -1,5 +1,6 @@
 use crate::dumps::{Authors, Book, FLAG_COVER, FLAG_ISBN, FLAG_PUBLISHER, FLAG_READABLE};
 use crate::dumps::{Facts, Signal, TitleRecord, Titles};
+use crate::libraries::{self, SYNTHETIC};
 use crate::release::State;
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
@@ -9,7 +10,7 @@ pub const MAX_SERIES_MEMBERS: usize = 40;
 pub const SUBTITLE_SEPARATOR: char = '\u{1f}';
 pub const OTHER_LANGUAGE: u32 = 1 << 31;
 
-const MIN_SCORE: f32 = 150.0;
+pub const MIN_SCORE: f32 = 150.0;
 const MAX_TITLE_BYTES: usize = 160;
 const FOREIGN_TITLE_WORDS: usize = 3;
 const DESCRIPTION_TARGET: usize = 480;
@@ -291,7 +292,7 @@ const PRINT_ON_DEMAND: &[&str] = &[
     "sharp ink",
 ];
 
-const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
+pub const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
 
 const LANGUAGE_CODES: [&str; 24] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe", "ara",
@@ -513,7 +514,7 @@ fn has_volume_range(title: &str) -> bool {
         .any(is_volume_range)
 }
 
-const ENTITIES: [(&str, &str); 7] = [
+pub const ENTITIES: [(&str, &str); 7] = [
     ("&amp;", "&"),
     ("&lt;", "<"),
     ("&gt;", ">"),
@@ -1178,6 +1179,13 @@ impl<'a> Resolver<'a> {
         if title_key(&alternate, &[]) == key || alternate.to_lowercase() == title.to_lowercase() {
             alternate.clear();
         }
+        let unnamed = !key.contains(&series_key(&series));
+        let touched = book
+            .library_cover
+            .is_some_and(|cover| cover.language == self.language);
+        if touched && alternate.is_empty() && series_position > 0 && unnamed {
+            alternate = format!("{series} {series_position}. {title}");
+        }
         let unclaimed = self.unclaimed_cover(&records, book);
         let english = self.best_cover(&records, &key, 0, book).max(unclaimed);
         let native = match self.language {
@@ -1235,6 +1243,12 @@ pub fn candidates(
             .then(a.book.cmp(&b.book))
     });
     let mut seen = HashSet::new();
+    let touched = |entry: &Entry| {
+        let cover = books[entry.book].library_cover;
+        cover.is_some_and(|cover| cover.language == language)
+    };
+    let guarded = entries.iter().any(touched);
+    let mut matched: HashMap<(String, String), bool> = HashMap::new();
     entries.retain(|entry| {
         let book = &books[entry.book];
         let names: Vec<&str> = book
@@ -1247,9 +1261,38 @@ pub fn candidates(
             title_key(&entry.title, &names),
             book.authors.first().copied(),
         );
-        seen.insert(key) || entry.sticky.is_some()
+        let fresh = seen.insert(key);
+        let writer = names
+            .first()
+            .filter(|_| guarded)
+            .map(|name| libraries::name_key(name));
+        let title = || libraries::match_key(&entry.title);
+        let library_key = writer.map(|writer| (title(), writer));
+        let library_key =
+            library_key.filter(|(title, writer)| !title.is_empty() && !writer.is_empty());
+        let repeated = library_key.is_some_and(|library_key| {
+            let earlier = matched.get(&library_key).copied();
+            matched.insert(library_key, earlier.unwrap_or(false) || touched(entry));
+            earlier.is_some_and(|earlier| earlier || touched(entry))
+        });
+        fresh && !repeated || entry.sticky.is_some()
     });
-    entries.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.book.cmp(&b.book)));
+    let is_library = |entry: &Entry| books[entry.book].work >= SYNTHETIC;
+    let read = entries.iter().filter(|entry| {
+        let book = &books[entry.book];
+        !is_library(entry) && book.signal.readers() > 0
+    });
+    let reader_floor = read.map(|entry| entry.score).fold(f32::INFINITY, f32::min);
+    let rank = |entry: &Entry| match is_library(entry) {
+        true => entry.score.min(reader_floor),
+        false => entry.score,
+    };
+    entries.sort_by(|a, b| {
+        let by_rank = rank(b).total_cmp(&rank(a));
+        by_rank
+            .then(is_library(a).cmp(&is_library(b)))
+            .then(a.book.cmp(&b.book))
+    });
     entries
 }
 

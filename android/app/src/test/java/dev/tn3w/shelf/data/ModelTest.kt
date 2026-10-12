@@ -94,6 +94,9 @@ class ModelTest {
         assertEquals(PageColor.Night, settings.pageColor)
         assertEquals(15, settings.dailyGoal)
         assertEquals(COVERS, settings.coverHost)
+        assertEquals(DNB_COVERS, settings.dnbCoverHost)
+        val mirrored = settings.copy(dnbCoverSource = "https://m/")
+        assertEquals("https://m", mirrored.dnbCoverHost)
         val encoded = json.encodeToString(settings)
         assertEquals(settings, json.decodeFromString<Settings>(encoded))
     }

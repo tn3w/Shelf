@@ -161,4 +161,63 @@ class CatalogueTest {
     fun packsWithoutIsbnsFindNothing() {
         assertNull(catalogue(BOOKS).bookOfIsbn("9780439023481"))
     }
+
+    @Test
+    fun coverUrlPrefersOpenLibraryThenLibrary() {
+        val book = Book(1, "T", "", "", emptyList(), 0, 0, emptyList(), null)
+        val dnb = LibraryCover(DNB, "9783833911316")
+        assertNull(book.coverUrl(COVERS, "L"))
+        assertEquals(
+            "https://portal.dnb.de/opac/mvb/cover?isbn=9783833911316",
+            book.copy(libraryCover = dnb).coverUrl(COVERS, "L"),
+        )
+        assertEquals(
+            "$COVERS/b/id/7-L.jpg",
+            book.copy(cover = 7, libraryCover = dnb).coverUrl(COVERS, "L"),
+        )
+        assertEquals(
+            "https://mirror.example/opac/mvb/cover?isbn=9783833911316",
+            book.copy(libraryCover = dnb).coverUrl(COVERS, "L", "https://mirror.example"),
+        )
+        val unknown = LibraryCover(99, "9783833911316")
+        assertNull(book.copy(libraryCover = unknown).coverUrl(COVERS, "L"))
+    }
+
+    @Test
+    fun libraryCoversReadFromOptionalSection() {
+        val books = listOf(
+            Fixture(SYNTHETIC + 5, "Jetzt reicht's!", libraryIsbn = "9783833911316"),
+            Fixture(4, "Emma"),
+            Fixture(SYNTHETIC + 9, "Ich war's nicht!", libraryIsbn = "978-3-8387-8656-8"),
+        )
+        val catalogue = Catalogue("de", listOf(segment(books)), null)
+        val straw = catalogue.book(SYNTHETIC + 5)!!.libraryCover
+        assertEquals(LibraryCover(DNB, "9783833911316"), straw)
+        assertEquals("9783838786568", catalogue.book(SYNTHETIC + 9)!!.libraryCover?.isbn)
+        assertNull(catalogue.book(4)!!.libraryCover)
+        assertNull(catalogue(BOOKS).book(30)!!.libraryCover)
+    }
+
+    @Test
+    fun aliasesResolveMovedWorks() {
+        val books =
+            listOf(Fixture(42, "The Last Straw"), Fixture(SYNTHETIC + 3, "Dog Days"))
+        val aliases = listOf(SYNTHETIC + 1 to 42, SYNTHETIC + 2 to SYNTHETIC + 3)
+        val catalogue =
+            Catalogue("de", listOf(segment(books)), Ranks(ranksBuffer(books, aliases)))
+        assertEquals(42, catalogue.book(SYNTHETIC + 1)?.work)
+        assertEquals(SYNTHETIC + 3, catalogue.book(SYNTHETIC + 2)?.work)
+        assertEquals(42, catalogue.alias(SYNTHETIC + 1))
+        assertNull(catalogue.book(SYNTHETIC + 4))
+        assertNull(catalogue(BOOKS).alias(30))
+    }
+
+    @Test
+    fun syntheticAuthorsHaveNoPhoto() {
+        assertNull(Author(SYNTHETIC + 13395351, "Jeff Kinney").photoUrl(COVERS, "M"))
+        assertEquals(
+            "$COVERS/a/olid/OL7A-M.jpg?default=false",
+            Author(7, "Jeff Kinney").photoUrl(COVERS, "M"),
+        )
+    }
 }

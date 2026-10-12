@@ -46,7 +46,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 ```mermaid
 flowchart LR
-    A[Open Library dumps] -->|monthly| B[Rust builder]
+    A[Open Library + DNB dumps] -->|monthly| B[Rust builder]
     B -->|GitHub release| C[Catalogue packs]
     C -->|download once| D[Shelf]
     D --> E[Your library stays on device]
@@ -61,7 +61,7 @@ flowchart LR
 <tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
 <tr><td>Cover scanner</td><td><b>on device</b>, no request, frames never stored</td></tr>
 <tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
-<tr><td>Hosts</td><td>GitHub, Open Library, or <b>your own server</b></td></tr>
+<tr><td>Hosts</td><td>GitHub, Open Library, DNB covers, or <b>your own server</b></td></tr>
 </table>
 
 ## Search and sort
@@ -134,6 +134,20 @@ Export writes the same format back.
 `core` ships in the APK. Other packs download on demand, verified by SHA-256.
 Packs include ISBNs of editions in their language; older apps ignore them.
 
+<table>
+<tr><th width="1%">Source</th><th width="1%">Use</th><th width="1%">Licence</th></tr>
+<tr><td><a href="https://openlibrary.org/developers/dumps">Open Library</a></td><td>works, editions, readers, covers</td><td>CC0</td></tr>
+<tr><td><a href="https://data.dnb.de/opendata/">DNB</a> title dump</td><td>German editions, series, volumes, ISBNs, audience</td><td>CC0</td></tr>
+</table>
+
+DNB only enriches the German catalogue. Its records join Open Library works by ISBN, else
+by title plus author. Books missing from Open Library get stable ids from 1,000,000,000;
+if Open Library gains one later, an alias moves saved entries. They rank below Open
+Library books with readers.
+
+Covers: Open Library → DNB by ISBN, loaded at view time (not CC0, never packed) → drawn.
+German settings can change the DNB cover server.
+
 ## Generated covers
 
 <p align="center">
@@ -157,7 +171,8 @@ cd android
 
 ```sh
 cd builder && cargo build --release
-target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>]
+target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
+  [--library dnb=<dnb-all_lds.rdf.gz or url>]
 ```
 
 Format with `ktlint -F "android/app/src/**/*.kt"`.
@@ -190,4 +205,5 @@ Workflow adds icon, covers and screenshots as WebP, then minifies.
 
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md) · [MIT License](LICENSE) ·
-Data from [Open Library](https://openlibrary.org)
+Data from [Open Library](https://openlibrary.org) and the
+[Deutsche Nationalbibliothek](https://www.dnb.de)

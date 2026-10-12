@@ -223,9 +223,11 @@ class Segment(buffer: ByteBuffer) {
         Tag(it, reader.text(), reader.text(), reader.text())
     }
     private val isbns = sections["isbns"]?.let(::BlockIndex)
+    private val libraryCovers = sections["library_covers"]?.let(::BlockIndex)
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
     private val isbnBlocks = Cache<Int, Map<Int, Int>>(16)
+    private val coverBlocks = Cache<Int, Map<Int, LibraryCover>>(16)
 
     private fun section(name: String) = sections.getValue(name)
 
@@ -330,6 +332,23 @@ class Segment(buffer: ByteBuffer) {
         }[key] ?: -1
     }
 
+    fun libraryCover(local: Int): LibraryCover? {
+        val index = libraryCovers ?: return null
+        val block = index.firsts.lastAtMost(local)
+        if (block < 0) return null
+        return coverBlocks.get(block) {
+            val reader = ByteReader(inflate(index.blocks[it]))
+            var covered = index.firsts[it]
+            buildMap {
+                while (reader.hasMore) {
+                    covered += reader.varint()
+                    val source = reader.byte()
+                    put(covered, LibraryCover(source, isbnOf(reader.varint())))
+                }
+            }
+        }[local]
+    }
+
     fun term(text: String) = terms.find(text)
 
     fun termById(id: Int) = terms.block(id / termsPerBlock)[id % termsPerBlock]
@@ -370,9 +389,27 @@ class Ranks(buffer: ByteBuffer) {
     val works = readMeta(sections.getValue("meta")).getValue("works").toInt()
     private val terms = TermBlocks(sections.getValue("terms"), withPostings = false)
     private val popularityIndex = BlockIndex(sections.getValue("popularity"))
+    private val aliases = sections["aliases"]?.asIntBuffer()
+        ?.let { IntArray(it.limit(), it::get) }
+        ?: IntArray(0)
     private val cache = Cache<Int, PopularityBlock>(64)
 
     fun frequency(text: String) = terms.find(text)?.frequency ?: 0
+
+    fun alias(work: Int): Int? {
+        var low = 0
+        var high = aliases.size / 2 - 1
+        while (low <= high) {
+            val middle = (low + high) ushr 1
+            val from = aliases[2 * middle]
+            when {
+                from < work -> low = middle + 1
+                from > work -> high = middle - 1
+                else -> return aliases[2 * middle + 1]
+            }
+        }
+        return null
+    }
 
     fun popularity(work: Int): Popularity? {
         val index = popularityIndex.firsts.lastAtMost(work)

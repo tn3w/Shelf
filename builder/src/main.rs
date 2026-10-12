@@ -1,5 +1,6 @@
 mod catalog;
 mod dumps;
+mod libraries;
 mod release;
 mod segment;
 mod tags;
@@ -7,8 +8,10 @@ mod translations;
 
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
 use dumps::{Authors, Book, Context, Isbns, Titles};
+use libraries::{Library, SYNTHETIC, Source};
 use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::thread;
@@ -33,6 +36,7 @@ struct Options {
     requests: Option<PathBuf>,
     translator: Option<String>,
     base_url: String,
+    libraries: Vec<(Source, String)>,
 }
 
 fn usage() -> ! {
@@ -40,7 +44,7 @@ fn usage() -> ! {
         "usage: builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
-         [--base-url <url>]"
+         [--base-url <url>] [--library dnb=<file-or-url>]"
     );
     std::process::exit(2)
 }
@@ -57,6 +61,17 @@ fn release_label(argument: Option<String>) -> String {
     label
 }
 
+fn library(argument: Option<String>) -> (Source, String) {
+    let pair = argument.as_deref().and_then(|text| text.split_once('='));
+    let Some((name, location)) = pair else {
+        usage()
+    };
+    let Some(source) = Source::named(name) else {
+        usage()
+    };
+    (source, location.to_string())
+}
+
 fn directory(argument: Option<String>) -> PathBuf {
     PathBuf::from(argument.unwrap_or_else(|| usage()))
 }
@@ -66,6 +81,7 @@ fn options() -> Options {
     let (mut rebase, mut previous, mut month) = (false, None, None);
     let (mut translations, mut requests, mut translator) = (None, None, None);
     let mut base_url = release::RELEASE_URL.to_string();
+    let mut libraries = Vec::new();
     let mut positional = Vec::new();
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -76,6 +92,7 @@ fn options() -> Options {
             "--translator" => translator = Some(arguments.next().unwrap_or_else(|| usage())),
             "--month" => month = Some(release_label(arguments.next())),
             "--base-url" => base_url = arguments.next().unwrap_or_else(|| usage()),
+            "--library" => libraries.push(library(arguments.next())),
             _ => positional.push(argument),
         }
     }
@@ -92,6 +109,7 @@ fn options() -> Options {
         requests,
         translator,
         base_url: base_url.trim_end_matches('/').to_string(),
+        libraries,
     }
 }
 
@@ -109,6 +127,7 @@ struct Job<'a> {
     requests: Option<&'a Path>,
     sources: Option<&'a Path>,
     translator: Option<&'a str>,
+    aliases: &'a [(u32, u32)],
 }
 
 #[derive(Clone, Copy)]
@@ -158,6 +177,10 @@ fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> 
                 description,
                 translated,
                 isbns: job.isbns.of(book.work, job.language),
+                library_cover: book
+                    .library_cover
+                    .filter(|cover| entry.cover == 0 && cover.language == job.language)
+                    .map(|cover| (cover.source, cover.isbn)),
             };
             Placed {
                 pack: chosen.pack,
@@ -372,7 +395,14 @@ fn ranks(job: &Job, placed: &[Placed]) -> Vec<u8> {
         })
         .collect();
     let works: Vec<Work> = placed.iter().map(|placed| placed.work).collect();
-    segment::ranks(job.language, job.month, &works, &rows, job.authors)
+    segment::ranks(
+        job.language,
+        job.month,
+        &works,
+        &rows,
+        job.authors,
+        job.aliases,
+    )
 }
 
 fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
@@ -420,6 +450,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let state = State {
         base: job.base.to_string(),
         works: tracked,
+        aliases: job.aliases.to_vec(),
     };
     state.save(
         &job.output
@@ -432,7 +463,8 @@ fn sticky_works(states: &[Option<State>]) -> Vec<bool> {
     let ids = states
         .iter()
         .flatten()
-        .flat_map(|state| state.works.iter().map(|tracked| tracked.work));
+        .flat_map(|state| state.works.iter().map(|tracked| tracked.work))
+        .filter(|&id| id < SYNTHETIC);
     let mut sticky = Vec::new();
     for id in ids {
         if sticky.len() <= id as usize {
@@ -441,6 +473,15 @@ fn sticky_works(states: &[Option<State>]) -> Vec<bool> {
         sticky[id as usize] = true;
     }
     sticky
+}
+
+fn log_outcome(outcome: &libraries::Outcome) {
+    for (language, code) in LANGUAGES.iter().enumerate() {
+        let (enriched, added) = (outcome.enriched[language], outcome.added[language]);
+        if enriched + added > 0 {
+            eprintln!("{code}: {enriched} works enriched, {added} added from libraries");
+        }
+    }
 }
 
 fn main() {
@@ -455,29 +496,46 @@ fn main() {
         .collect();
     let sticky = sticky_works(&states);
 
-    let (signals, authors, (facts, titles, shapes, isbns)) = thread::scope(|scope| {
-        let signals = scope.spawn(|| dumps::signals(&options.source));
-        let authors = scope.spawn(|| dumps::authors(&options.source));
-        let editions = scope.spawn(|| dumps::editions(&options.source));
-        let joined = (signals.join(), authors.join(), editions.join());
-        (
-            joined.0.expect("signals"),
-            joined.1.expect("authors"),
-            joined.2.expect("editions"),
-        )
-    });
+    let synthetic: HashSet<u32> = states
+        .iter()
+        .flatten()
+        .flat_map(|state| state.works.iter().map(|tracked| tracked.work))
+        .filter(|&id| id >= SYNTHETIC)
+        .collect();
+
+    let (signals, mut authors, (facts, mut titles, shapes, mut isbns), mut library) =
+        thread::scope(|scope| {
+            let signals = scope.spawn(|| dumps::signals(&options.source));
+            let authors = scope.spawn(|| dumps::authors(&options.source));
+            let editions = scope.spawn(|| dumps::editions(&options.source));
+            let library = scope.spawn(|| Library::load(&options.libraries));
+            (
+                signals.join().expect("signals"),
+                authors.join().expect("authors"),
+                editions.join().expect("editions"),
+                library.join().expect("libraries"),
+            )
+        });
+    library.match_editions(&isbns);
     let context = Context {
         signals: &signals,
         facts: &facts,
         authors: &authors,
         shapes: &shapes,
         sticky: &sticky,
+        titles: &titles,
+        library: &library,
     };
     let works = dumps::works(&options.source, &context);
     drop((signals, facts, shapes));
 
     let month = options.month.clone().unwrap_or(works.month);
-    let mut books = works.books;
+    let is_listed = |book: &Book| {
+        let sticky = sticky.get(book.work as usize).copied().unwrap_or(false);
+        sticky || book.eligible.contains(&true)
+    };
+    let (mut books, mut claimants): (Vec<Book>, Vec<Book>) =
+        works.books.into_iter().partition(is_listed);
     eprintln!("month {month}, {} books", books.len());
     tags::fill_author_tags(&mut books);
 
@@ -494,13 +552,41 @@ fn main() {
         })
         .collect();
 
+    let enriched: Vec<usize> = options
+        .libraries
+        .iter()
+        .map(|(source, _)| source.language())
+        .collect();
+    let mut order: Vec<usize> = (0..LANGUAGES.len()).collect();
+    order.sort_by_key(|language| enriched.contains(language));
+    let mut renamed = vec![Vec::new(); LANGUAGES.len()];
     let mut rebased = [false; 4];
     let mut published = Vec::new();
-    for (language, state) in states.iter().enumerate() {
+    for language in order {
+        if enriched.contains(&language) && !library.is_empty() {
+            let unclaimed = std::mem::take(&mut claimants);
+            let outcome = library.extend(
+                &mut books,
+                unclaimed,
+                &mut titles,
+                &mut isbns,
+                &mut authors,
+                &synthetic,
+            );
+            library = Library::default();
+            log_outcome(&outcome);
+            renamed = outcome.aliases;
+            tags::fill_author_tags(&mut books);
+        }
+        let state = &states[language];
         let same_year = |state: &&State| state.base[..4] == month[..4];
         let previous = state.as_ref().filter(same_year).filter(|_| !options.rebase);
         rebased[language] = previous.is_none();
         let base = previous.map_or(month.as_str(), |state| state.base.as_str());
+        let known = state
+            .as_ref()
+            .map_or(&[][..], |state| state.aliases.as_slice());
+        let aliases = libraries::aliases(known, &renamed[language], &books);
         let job = Job {
             language,
             month: &month,
@@ -514,6 +600,7 @@ fn main() {
             requests: options.requests.as_deref(),
             sources: options.translations.as_deref(),
             translator: options.translator.as_deref(),
+            aliases: &aliases,
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;
@@ -524,8 +611,11 @@ fn main() {
             };
             build_language(&fresh, &titles).expect("fresh build has no previous merge")
         });
-        published.extend(built);
+        published.push((language, built));
     }
+    drop(claimants);
+    published.sort_by_key(|&(language, _)| language);
+    let published: Vec<Published> = published.into_iter().flat_map(|(_, built)| built).collect();
     release::write_manifest(
         options.previous.as_deref(),
         &options.output,

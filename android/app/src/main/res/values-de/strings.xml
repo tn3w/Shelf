@@ -242,6 +242,8 @@
     <string name="own_sources_hint">Selbst gehosteten Katalog- oder Cover-Server nutzen oder Katalogdateien importieren.</string>
     <string name="cover_source">Cover-Server</string>
     <string name="cover_source_hint">Basis-URL eines Open-Library-Cover-Servers, nur https. Leer bedeutet Standard.</string>
+    <string name="dnb_cover_source">DNB-Cover-Server</string>
+    <string name="dnb_cover_source_hint">Basis-URL des Cover-Dienstes der Deutschen Nationalbibliothek, nur https. Leer bedeutet Standard.</string>
     <string name="catalogue_incomplete">Importiere die Core- und die Ranks-Datei einer Sprache.</string>
     <string name="no_catalogue">Noch kein Katalog installiert. Lade einen herunter oder importiere Katalogdateien in den Einstellungen, um Bücher zu entdecken. Eigene Dateien importierst du in der Bibliothek.</string>
     <string name="open_settings">Einstellungen öffnen</string>

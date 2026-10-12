@@ -1,4 +1,5 @@
 use crate::catalog::{self, Traits};
+use crate::libraries::Library;
 use crate::release;
 use crate::tags::{self, Classes};
 use flate2::read::MultiGzDecoder;
@@ -7,7 +8,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
-use std::sync::{Mutex, mpsc};
+use std::sync::Mutex;
+use std::sync::mpsc::{self, SyncSender};
 use std::thread;
 use std::time::Duration;
 
@@ -177,20 +179,36 @@ fn local_dump(source: &str, name: &str) -> Option<std::path::PathBuf> {
     Some(Path::new(source).join(newest))
 }
 
+fn is_url(location: &str) -> bool {
+    location.starts_with("http://") || location.starts_with("https://")
+}
+
+fn download(url: String) -> Box<dyn Read + Send> {
+    buffered(Download {
+        url,
+        offset: 0,
+        failures: 0,
+        body: None,
+    })
+}
+
 fn open(source: &str, name: &str) -> Box<dyn Read + Send> {
-    if source.starts_with("http://") || source.starts_with("https://") {
-        return buffered(Download {
-            url: format!(
-                "{}/ol_dump_{name}_latest.txt.gz",
-                source.trim_end_matches('/')
-            ),
-            offset: 0,
-            failures: 0,
-            body: None,
-        });
+    if is_url(source) {
+        let base = source.trim_end_matches('/');
+        return download(format!("{base}/ol_dump_{name}_latest.txt.gz"));
     }
     let path = local_dump(source, name).unwrap_or_else(|| panic!("no {name} dump in {source}"));
     buffered(File::open(path).expect("open dump"))
+}
+
+pub fn open_location(location: &str) -> Box<dyn Read + Send> {
+    if is_url(location) {
+        return download(location.to_string());
+    }
+    match File::open(location) {
+        Ok(file) => buffered(file),
+        Err(error) => panic!("open {location}: {error}"),
+    }
 }
 
 fn fill(reader: &mut impl Read, buffer: &mut [u8]) -> usize {
@@ -204,7 +222,33 @@ fn fill(reader: &mut impl Read, buffer: &mut [u8]) -> usize {
     filled
 }
 
-fn read_blocks(mut reader: impl Read, sender: mpsc::SyncSender<Vec<u8>>) {
+fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    let mut start = 0;
+    let first = |&byte: &u8| byte == needle[0];
+    while let Some(offset) = haystack[start..].iter().position(first) {
+        let at = start + offset;
+        if haystack[at..].starts_with(needle) {
+            return Some(at);
+        }
+        start = at + 1;
+    }
+    None
+}
+
+fn records<'a>(block: &'a [u8], separator: &'a [u8]) -> impl Iterator<Item = &'a [u8]> {
+    let mut rest = Some(block);
+    std::iter::from_fn(move || {
+        let current = rest?;
+        let Some(at) = find(current, separator) else {
+            rest = None;
+            return Some(current);
+        };
+        rest = Some(&current[at + separator.len()..]);
+        Some(&current[..at])
+    })
+}
+
+fn read_blocks(mut reader: impl Read, separator: &[u8], sender: SyncSender<Vec<u8>>) {
     let mut carry = Vec::new();
     loop {
         let mut block = std::mem::take(&mut carry);
@@ -218,11 +262,14 @@ fn read_blocks(mut reader: impl Read, sender: mpsc::SyncSender<Vec<u8>>) {
             }
             return;
         }
-        let Some(last_newline) = block.iter().rposition(|&byte| byte == b'\n') else {
+        let last = block
+            .windows(separator.len())
+            .rposition(|window| window == separator);
+        let Some(last) = last else {
             carry = block;
             continue;
         };
-        carry = block.split_off(last_newline + 1);
+        carry = block.split_off(last + separator.len());
         if sender.send(block).is_err() {
             return;
         }
@@ -237,6 +284,16 @@ fn scan<T: Send>(
     source: &str,
     name: &str,
     parse: impl Fn(&[u8]) -> Option<T> + Sync,
+    absorb: impl FnMut(T),
+) {
+    scan_records(open(source, name), b"\n", parse, absorb);
+    eprintln!("scanned {name}");
+}
+
+pub fn scan_records<T: Send>(
+    reader: Box<dyn Read + Send>,
+    separator: &[u8],
+    parse: impl Fn(&[u8]) -> Option<T> + Sync,
     mut absorb: impl FnMut(T),
 ) {
     let workers = worker_count();
@@ -244,7 +301,7 @@ fn scan<T: Send>(
     let (item_sender, item_receiver) = mpsc::sync_channel::<Vec<T>>(workers);
     let blocks = Mutex::new(block_receiver);
     thread::scope(|scope| {
-        scope.spawn(|| read_blocks(open(source, name), block_sender));
+        scope.spawn(|| read_blocks(reader, separator, block_sender));
         for _ in 0..workers {
             let item_sender = item_sender.clone();
             let (blocks, parse) = (&blocks, &parse);
@@ -252,7 +309,7 @@ fn scan<T: Send>(
                 loop {
                     let next = blocks.lock().expect("block queue").recv();
                     let Ok(block) = next else { return };
-                    let lines = block.split(|&byte| byte == b'\n');
+                    let lines = records(&block, separator);
                     let items = lines.filter(|line| !line.is_empty()).filter_map(parse);
                     if item_sender.send(items.collect()).is_err() {
                         return;
@@ -265,7 +322,6 @@ fn scan<T: Send>(
             items.into_iter().for_each(&mut absorb);
         }
     });
-    eprintln!("scanned {name}");
 }
 
 fn field(line: &[u8], index: usize) -> &[u8] {
@@ -401,6 +457,7 @@ struct AuthorEntry {
 pub struct Authors {
     names: String,
     entries: Vec<AuthorEntry>,
+    library: HashMap<u32, AuthorEntry>,
 }
 
 pub struct Author<'a> {
@@ -413,6 +470,7 @@ impl Authors {
         let entry = self
             .entries
             .get(id as usize)
+            .or_else(|| self.library.get(&id))
             .filter(|entry| entry.length > 0)?;
         let start = entry.start as usize;
         let name = &self.names[start..start + entry.length as usize];
@@ -420,6 +478,20 @@ impl Authors {
             name,
             birth: entry.birth,
         })
+    }
+
+    pub fn add(&mut self, id: u32, name: &str) {
+        let start = u32::try_from(self.names.len()).expect("author names under 4 GB");
+        self.names.push_str(name);
+        let length = name.len() as u8;
+        self.library.insert(
+            id,
+            AuthorEntry {
+                start,
+                length,
+                birth: 0,
+            },
+        );
     }
 }
 
@@ -472,7 +544,7 @@ pub struct Facts {
 }
 
 impl Facts {
-    fn absorb(&mut self, other: &Facts) {
+    pub fn absorb(&mut self, other: &Facts) {
         self.editions = self.editions.saturating_add(other.editions);
         let counts = self.language_editions.iter_mut();
         for (mine, theirs) in counts.zip(other.language_editions) {
@@ -512,6 +584,8 @@ pub struct TitleRecord {
     series_length: u8,
 }
 
+pub type Volume<'a> = (&'a str, u16);
+
 #[derive(Default)]
 pub struct Titles {
     records: Vec<TitleRecord>,
@@ -521,6 +595,13 @@ pub struct Titles {
 }
 
 impl Titles {
+    pub fn has_language(&self, work: u32, language: usize) -> bool {
+        let records = self.of(work).iter();
+        records
+            .into_iter()
+            .any(|record| record.language as usize == language)
+    }
+
     pub fn of(&self, work: u32) -> &[TitleRecord] {
         let start = self.records.partition_point(|record| record.work < work);
         let end = self.records.partition_point(|record| record.work <= work);
@@ -561,6 +642,32 @@ impl Titles {
         &self.text[start..start + record.series_length as usize]
     }
 
+    pub fn add(&mut self, key: (u32, u8), title: &str, series: Volume, year: u16) {
+        let (work, language) = key;
+        let start = u32::try_from(self.text.len()).expect("edition titles under 4 GB");
+        self.text.push_str(title);
+        self.text.push_str(series.0);
+        self.records.push(TitleRecord {
+            work,
+            language,
+            position: series.1,
+            year,
+            cover: 0,
+            special: false,
+            scanned: false,
+            readers: 0,
+            publisher: 0,
+            start,
+            title_length: title.len() as u8,
+            series_length: series.0.len() as u8,
+        });
+    }
+
+    pub fn sort(&mut self) {
+        self.records
+            .sort_unstable_by_key(|record| (record.work, record.language));
+    }
+
     fn push(&mut self, edition: &Edition, language: u8) {
         let start = u32::try_from(self.text.len()).expect("edition titles under 4 GB");
         let (series, position) = edition
@@ -593,6 +700,32 @@ pub struct Isbns {
 }
 
 impl Isbns {
+    pub fn from_rows(mut rows: Vec<(u32, u8, u32)>) -> Isbns {
+        rows.sort_unstable();
+        rows.dedup();
+        Isbns {
+            keys: rows
+                .iter()
+                .map(|&(work, language, _)| (work, language))
+                .collect(),
+            codes: rows.iter().map(|&(.., isbn)| isbn).collect(),
+        }
+    }
+
+    pub fn entries(&self) -> impl Iterator<Item = (u32, u32)> {
+        self.keys
+            .iter()
+            .zip(&self.codes)
+            .map(|(&(work, _), &isbn)| (work, isbn))
+    }
+
+    pub fn extend(&mut self, rows: Vec<(u32, u8, u32)>) {
+        let keys = std::mem::take(&mut self.keys).into_iter();
+        let known = keys.zip(std::mem::take(&mut self.codes));
+        let known = known.map(|((work, language), isbn)| (work, language, isbn));
+        *self = Isbns::from_rows(known.chain(rows).collect());
+    }
+
     pub fn of(&self, work: u32, language: usize) -> &[u32] {
         let key = (work, language as u8);
         let start = self.keys.partition_point(|&known| known < key);
@@ -837,16 +970,7 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes, Isbns) {
         .sort_unstable_by_key(|record| (record.work, record.language));
     titles.records.shrink_to_fit();
     titles.text.shrink_to_fit();
-    isbns.sort_unstable();
-    isbns.dedup();
-    let isbns = Isbns {
-        keys: isbns
-            .iter()
-            .map(|&(work, language, _)| (work, language))
-            .collect(),
-        codes: isbns.iter().map(|&(.., isbn)| isbn).collect(),
-    };
-    (facts, titles, shapes, isbns)
+    (facts, titles, shapes, Isbns::from_rows(isbns))
 }
 
 pub struct Book {
@@ -863,6 +987,23 @@ pub struct Book {
     pub signal: Signal,
     pub scores: [f32; 4],
     pub eligible: [bool; 4],
+    pub claim: Option<Box<Claim>>,
+    pub library_cover: Option<LibraryCover>,
+}
+
+#[derive(Clone, Copy)]
+pub struct LibraryCover {
+    pub source: u8,
+    pub isbn: u32,
+    pub language: usize,
+}
+
+pub struct Claim {
+    pub groups: Vec<u32>,
+    pub scores: [f32; 4],
+    pub eligible: [bool; 4],
+    pub tags: Vec<u8>,
+    pub editions: u16,
 }
 
 pub struct Context<'a> {
@@ -871,6 +1012,8 @@ pub struct Context<'a> {
     pub authors: &'a Authors,
     pub shapes: &'a Shapes,
     pub sticky: &'a [bool],
+    pub titles: &'a Titles,
+    pub library: &'a Library,
 }
 
 fn author_ids(work: &Value, authors: &Authors) -> Vec<u32> {
@@ -897,6 +1040,56 @@ fn description_of(work: &Value) -> &str {
     text.unwrap_or_default().trim()
 }
 
+fn judged(traits: &Traits, facts: &Facts, signal: &Signal) -> ([f32; 4], [bool; 4]) {
+    let mut scores = [0.0; 4];
+    let mut eligible = [false; 4];
+    for language in 0..4 {
+        scores[language] = catalog::score(traits, facts, signal, language);
+        eligible[language] = catalog::is_eligible(traits, facts, signal, language);
+    }
+    (scores, eligible)
+}
+
+fn claim(id: u32, book: &Draft, context: &Context) -> Option<Box<Claim>> {
+    if context.library.is_empty() {
+        return None;
+    }
+    let author = book.authors.first().and_then(|&id| context.authors.get(id));
+    let local = context
+        .titles
+        .of(id)
+        .iter()
+        .filter(|record| record.language > 0);
+    let local = local.map(|record| context.titles.title(record));
+    let titles: Vec<&str> = std::iter::once(book.title).chain(local).collect();
+    let name = author.map(|author| author.name);
+    let groups = context.library.claim(id, &titles, name);
+    if groups.is_empty() {
+        return None;
+    }
+    let mut facts = book.facts;
+    facts.absorb(&context.library.facts(&groups));
+    let (scores, eligible) = judged(&book.traits, &facts, &book.signal);
+    let library = context.library.subjects(&groups);
+    let subjects = book.subjects.iter().copied().chain(library);
+    Some(Box::new(Claim {
+        groups,
+        scores,
+        eligible,
+        tags: tags::confident_tags(subjects, &facts.classes, facts.editions),
+        editions: facts.editions,
+    }))
+}
+
+struct Draft<'a> {
+    title: &'a str,
+    authors: &'a [u32],
+    subjects: &'a [&'a str],
+    traits: Traits,
+    facts: Facts,
+    signal: Signal,
+}
+
 fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
     let facts = context.facts.get(id as usize).copied().unwrap_or_default();
     let signal = context
@@ -917,17 +1110,26 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         has_description: description.len() >= 40,
         has_cover: first_cover(work) > 0,
     };
-    let mut scores = [0.0; 4];
-    let mut eligible = [false; 4];
-    for language in 0..4 {
-        scores[language] = catalog::score(&traits, &facts, &signal, language);
-        eligible[language] = catalog::is_eligible(&traits, &facts, &signal, language);
-    }
-    if !sticky && !eligible.contains(&true) {
+    let (scores, eligible) = judged(&traits, &facts, &signal);
+    let draft = Draft {
+        title,
+        authors: &authors,
+        subjects: &subjects,
+        traits,
+        facts,
+        signal,
+    };
+    let claim = claim(id, &draft, context);
+    let claimable = claim
+        .as_ref()
+        .is_some_and(|claim| claim.eligible.contains(&true));
+    if !sticky && !eligible.contains(&true) && !claimable {
         return None;
     }
+    let claimed = claim.as_ref().map_or([0.0; 4], |claim| claim.scores);
     let described = scores
         .iter()
+        .chain(&claimed)
         .any(|&score| score >= catalog::DESCRIPTION_MIN_SCORE);
     let year = match year_of(text(work, "first_publish_date")) {
         0 => facts.first_year,
@@ -951,6 +1153,8 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         signal,
         scores,
         eligible,
+        claim,
+        library_cover: None,
     })
 }
 

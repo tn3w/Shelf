@@ -89,6 +89,7 @@ class ShelfApp :
             next.catalogue.warmUp()
             ensureActive()
             loaded.value = next
+            library.redirect(next.catalogue::alias)
         }
     }
 

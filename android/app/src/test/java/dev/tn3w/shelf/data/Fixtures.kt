@@ -24,6 +24,7 @@ data class Fixture(
     val description: String = "",
     val score: Int = 0,
     val isbns: List<String> = emptyList(),
+    val libraryIsbn: String = "",
 )
 
 class Bytes {
@@ -179,6 +180,25 @@ private fun isbnSection(books: List<Fixture>): ByteArray? {
     return blockIndex(rows.map { it.first().first }, blocks)
 }
 
+private fun libraryCoverSection(books: List<Fixture>): ByteArray? {
+    val rows = books.withIndex()
+        .filter { it.value.libraryIsbn.isNotEmpty() }
+        .map { (local, book) -> local to isbnKey(book.libraryIsbn)!! }
+        .ifEmpty { return null }
+        .chunked(RECORDS_PER_BLOCK)
+    val blocks = rows.map { chunk ->
+        deflate(
+            bytes {
+                chunk.fold(chunk.first().first) { previous, (local, key) ->
+                    varint(local - previous).byte(DNB).varint(key)
+                    local
+                }
+            },
+        )
+    }
+    return blockIndex(rows.map { it.first().first }, blocks)
+}
+
 fun segmentBuffer(
     unsorted: List<Fixture>,
     pack: String = "core",
@@ -250,7 +270,11 @@ fun segmentBuffer(
         ),
         "tags" to table(tagRows),
     )
-    return container(sections + listOfNotNull(isbnSection(books)?.let { "isbns" to it }))
+    val optional = listOfNotNull(
+        isbnSection(books)?.let { "isbns" to it },
+        libraryCoverSection(books)?.let { "library_covers" to it },
+    )
+    return container(sections + optional)
 }
 
 fun numberOf(author: String) = author.hashCode() and Int.MAX_VALUE
@@ -262,7 +286,10 @@ fun segment(
     base: String? = null,
 ) = Segment(segmentBuffer(books, pack, month, base))
 
-fun ranksBuffer(unsorted: List<Fixture>): ByteBuffer {
+fun ranksBuffer(
+    unsorted: List<Fixture>,
+    aliases: List<Pair<Int, Int>> = emptyList(),
+): ByteBuffer {
     val books = unsorted.sortedBy { it.work }
     val terms = terms(books, books.map { it.author }.distinct())
     val blocks = books.chunked(RECORDS_PER_BLOCK)
@@ -285,7 +312,9 @@ fun ranksBuffer(unsorted: List<Fixture>): ByteBuffer {
                 bytes { varint(postings.titles.size).varint(postings.authors.size) }
             },
             "popularity" to blockIndex(blocks.map { it.first().work }, popularity),
-        ),
+        ) + aliases.takeIf { it.isNotEmpty() }?.let {
+            mapOf("aliases" to ints(it.flatMap { (from, to) -> listOf(from, to) }))
+        }.orEmpty(),
     )
 }
 

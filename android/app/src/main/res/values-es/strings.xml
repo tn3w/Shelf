@@ -250,6 +250,8 @@
     <string name="own_sources_hint">Usa un servidor de catálogo o de portadas propio, o importa archivos de catálogo.</string>
     <string name="cover_source">Servidor de portadas</string>
     <string name="cover_source_hint">URL base de un servidor de portadas de Open Library, solo https. Vacío significa el predeterminado.</string>
+    <string name="dnb_cover_source">Servidor de portadas DNB</string>
+    <string name="dnb_cover_source_hint">URL base del servicio de portadas de la Biblioteca Nacional de Alemania, solo https. Vacío significa el predeterminado.</string>
     <string name="catalogue_incomplete">Importa el archivo core y el archivo ranks de un mismo idioma.</string>
     <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
     <string name="open_settings">Abrir ajustes</string>

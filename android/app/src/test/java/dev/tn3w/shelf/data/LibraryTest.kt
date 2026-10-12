@@ -30,6 +30,7 @@ private fun backupOf(preferences: MutablePreferences) = with(preferences) {
 class LibraryTest {
     private val entries = stringPreferencesKey("entries")
     private val settings = stringPreferencesKey("settings")
+    private val dismissed = stringPreferencesKey("dismissed")
 
     @Test
     fun savedIsbnStaysOptionalBothWays() {
@@ -87,9 +88,17 @@ class LibraryTest {
 
     @Test
     fun mergeKeepsSourcesWhenImportedInvalid() {
-        val current = Settings(catalogueSource = "owner/repo", coverSource = "https://a")
+        val current = Settings(
+            catalogueSource = "owner/repo",
+            coverSource = "https://a",
+            dnbCoverSource = "https://c",
+        )
         val preferences = mutablePreferencesOf(settings to json.encodeToString(current))
-        val imported = Settings(catalogueSource = "http://evil", coverSource = "ftp://b")
+        val imported = Settings(
+            catalogueSource = "http://evil",
+            coverSource = "ftp://b",
+            dnbCoverSource = "http://d",
+        )
         preferences.merge(Backup(settings = imported.copy(margin = 12)))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)
         assertEquals(current.copy(margin = 12), merged)
@@ -239,5 +248,28 @@ class LibraryTest {
 
         val remaining = directory.list().orEmpty().sorted()
         assertEquals(listOf("7-cover-5", "7.pdf", "70.epub"), remaining)
+    }
+
+    @Test
+    fun redirectMovesAliasedWorks() {
+        val stored = listOf(Saved(SYNTHETIC + 1, Shelf.Read, 5), Saved(7, Shelf.Want, 1))
+        val preferences = mutablePreferencesOf(
+            entries to json.encodeToString(stored),
+            dismissed to json.encodeToString(setOf(SYNTHETIC + 1)),
+        )
+        preferences.redirect { if (it == SYNTHETIC + 1) 42 else null }
+        val moved = json.decodeFromString<List<Saved>>(preferences[entries]!!)
+        assertEquals(listOf(42, 7), moved.map { it.work })
+        assertEquals(setOf(42), preferences.read<Set<Int>>("dismissed"))
+    }
+
+    @Test
+    fun savedKeepsLibraryCover() {
+        val cover = LibraryCover(DNB, "9783833911316")
+        val book =
+            Book(SYNTHETIC + 1, "T", "", "", emptyList(), 0, 0, emptyList(), null, cover)
+        assertEquals(cover, book.toSaved(Shelf.Want).toBook().libraryCover)
+        val stored = """{"work":1,"shelf":"Read","updated":0}"""
+        assertEquals(null, json.decodeFromString<Saved>(stored).libraryCover)
     }
 }

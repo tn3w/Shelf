@@ -128,6 +128,7 @@ const STATE_MAGIC: &[u8; 4] = b"SHST";
 const STATE_VERSION: u32 = 3;
 const LEGACY_LABEL_BYTES: usize = 10;
 const RECORD_BYTES: usize = 13;
+const ALIAS_MAGIC: &[u8; 4] = b"ALIA";
 pub const RELEASE_URL: &str = "https://github.com/tn3w/Shelf/releases/download";
 
 #[derive(Clone, Copy)]
@@ -140,12 +141,23 @@ pub struct Tracked {
 pub struct State {
     pub base: String,
     pub works: Vec<Tracked>,
+    pub aliases: Vec<(u32, u32)>,
 }
 
 fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(
         bytes.get(offset..offset + 4)?.try_into().ok()?,
     ))
+}
+
+fn aliases(trailer: &[u8]) -> Vec<(u32, u32)> {
+    let Some(body) = trailer.strip_prefix(ALIAS_MAGIC) else {
+        return Vec::new();
+    };
+    let count = u32_at(body, 0).unwrap_or(0) as usize;
+    let at = |index: usize, offset: usize| u32_at(body, offset + 8 * index);
+    let pair = |index: usize| at(index, 4).zip(at(index, 8));
+    (0..count).map_while(pair).collect()
 }
 
 impl State {
@@ -164,7 +176,8 @@ impl State {
         let base = String::from_utf8_lossy(label).into_owned();
         let count = u32_at(&bytes, label_end)? as usize;
         let header = label_end + 4;
-        let records = bytes.get(header..header + count * RECORD_BYTES)?;
+        let end = header + count * RECORD_BYTES;
+        let records = bytes.get(header..end)?;
         let works = records
             .as_chunks::<RECORD_BYTES>()
             .0
@@ -175,7 +188,11 @@ impl State {
                 hash: u64::from_le_bytes(record[5..].try_into().expect("8 bytes")),
             })
             .collect();
-        Some(State { base, works })
+        Some(State {
+            base,
+            works,
+            aliases: aliases(&bytes[end..]),
+        })
     }
 
     pub fn save(&self, path: &Path) {
@@ -189,6 +206,14 @@ impl State {
             bytes.extend_from_slice(&tracked.work.to_le_bytes());
             bytes.push(tracked.pack);
             bytes.extend_from_slice(&tracked.hash.to_le_bytes());
+        }
+        if !self.aliases.is_empty() {
+            bytes.extend_from_slice(ALIAS_MAGIC);
+            bytes.extend_from_slice(&(self.aliases.len() as u32).to_le_bytes());
+            for &(from, to) in &self.aliases {
+                bytes.extend_from_slice(&from.to_le_bytes());
+                bytes.extend_from_slice(&to.to_le_bytes());
+            }
         }
         std::fs::write(path, bytes).expect("write state");
     }
@@ -418,4 +443,45 @@ pub fn write_manifest(
     });
     let text = serde_json::to_string_pretty(&manifest).expect("serialize manifest");
     std::fs::write(output.join("manifest.json"), text + "\n").expect("write manifest");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn saved(state: &State, name: &str) -> (State, Vec<u8>) {
+        let file = format!("{name}-{}.bin", std::process::id());
+        let path = std::env::temp_dir().join(file);
+        state.save(&path);
+        let bytes = std::fs::read(&path).expect("read state");
+        let loaded = State::load(&path).expect("load state");
+        std::fs::remove_file(&path).expect("remove state");
+        (loaded, bytes)
+    }
+
+    #[test]
+    fn aliases_survive_state_round_trip() {
+        let works = vec![Tracked {
+            work: 5,
+            pack: 1,
+            hash: 9,
+        }];
+        let plain = State {
+            base: "base".to_string(),
+            works: works.clone(),
+            aliases: Vec::new(),
+        };
+        let aliased = State {
+            base: "base".to_string(),
+            works,
+            aliases: vec![(1_000_000_001, 5)],
+        };
+        let (loaded, plain_bytes) = saved(&plain, "plain");
+        assert!(loaded.aliases.is_empty());
+        let (loaded, aliased_bytes) = saved(&aliased, "aliased");
+        assert_eq!(loaded.aliases, vec![(1_000_000_001, 5)]);
+        assert_eq!(loaded.works[0].work, 5);
+        assert!(aliased_bytes.starts_with(&plain_bytes));
+        assert_eq!(aliased_bytes.len(), plain_bytes.len() + 4 + 4 + 8);
+    }
 }

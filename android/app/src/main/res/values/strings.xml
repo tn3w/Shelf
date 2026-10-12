@@ -243,6 +243,8 @@
     <string name="own_sources_hint">Use a self-hosted catalogue or cover server, or import catalogue files.</string>
     <string name="cover_source">Cover server</string>
     <string name="cover_source_hint">Base URL of an Open Library covers server, https only. Empty means the default.</string>
+    <string name="dnb_cover_source">DNB cover server</string>
+    <string name="dnb_cover_source_hint">Base URL of the German National Library cover service, https only. Empty means the default.</string>
     <string name="catalogue_incomplete">Import both the core and the ranks file of one language.</string>
     <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
     <string name="open_settings">Open settings</string>
