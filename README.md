@@ -98,8 +98,19 @@ On device, pure Kotlin, no network:
   title/author matching, stop rule over decaying scores
 
 `scan.bin`: `SCAN`, version 3, line height, alphabet, layers (grouped/strided conv,
-8/16-bit weights, squeeze-excite, pool). Export script and bench data: gitignored
-`scanbench/`.
+8/16-bit weights, squeeze-excite, pool). Built from source, byte for byte:
+
+```sh
+apt install python3-onnx python3-yaml python3-numpy   # or pip install onnx pyyaml numpy
+python3 tooling/scan.py [out]                         # default: assets/scan.bin
+```
+
+`tooling/scan.py` downloads `PaddlePaddle/PP-OCRv6_tiny_rec_onnx` at a pinned Hugging
+Face commit, checks SHA-256, folds batch norm, keeps Latin characters, quantizes to
+16 bit. Math in float64 → same bytes across numpy/BLAS versions. CI `scan` job
+rebuilds it on Debian trixie and fails on any diff. F-Droid recipe: `rm` the asset,
+`sudo` installs the three packages, `build: python3 ../../tooling/scan.py`.
+Bench data and training: gitignored `scanbench/`.
 
 ## Switch from Goodreads or StoryGraph
 
@@ -173,7 +184,7 @@ Workflow adds icon, covers and screenshots as WebP, then minifies.
 <tr><th width="1%">Path</th><th width="1%">Role</th></tr>
 <tr><td><code>android/</code></td><td>App</td></tr>
 <tr><td><code>builder/</code></td><td>Catalogue builder</td></tr>
-<tr><td><code>tooling/</code></td><td>Screenshots, translation, promo</td></tr>
+<tr><td><code>tooling/</code></td><td>Screenshots, translation, promo, scanner model</td></tr>
 <tr><td><code>site/</code></td><td>Static website</td></tr>
 </table>
 

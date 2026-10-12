@@ -57,3 +57,15 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
 
       - run: cargo test --locked
+
+  scan:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - run: apt-get update && apt-get install -y python3-onnx python3-yaml python3-numpy
+
+      - run: python3 tooling/scan.py /tmp/scan.bin
+
+      - run: cmp /tmp/scan.bin android/app/src/main/assets/scan.bin
