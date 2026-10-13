@@ -236,7 +236,7 @@ class Searcher(private val catalogue: Catalogue) {
     private fun candidates(perToken: List<TokenScores>): Map<Int, Double> {
         val totalIdf = perToken.sumOf { it.idf }
         val works = perToken.flatMapTo(HashSet()) { it.scores.keys }
-        return works.associateWith { work ->
+        val scored = works.associateWith { work ->
             var matched = 0
             var anchors = 0
             var text = 0.0
@@ -246,10 +246,11 @@ class Searcher(private val catalogue: Catalogue) {
                 if (value >= ANCHOR) anchors++
                 text += value * entry.idf
             }
-            if (anchors == 0 && perToken.size > 1) return@associateWith 0.0
+            if (anchors == 0 && matched < perToken.size) return@associateWith 0.0
             val coverage = matched.toDouble() / perToken.size
             text / totalIdf * coverage * coverage
         }
+        return scored.filterValues { it > 0.0 }
     }
 
     private fun seriesBonus(book: Book, query: String): Double {
@@ -258,8 +259,30 @@ class Searcher(private val catalogue: Catalogue) {
         return if (series.members.firstOrNull() == book.work) SERIES_START else 0.0
     }
 
+    private fun queryOf(book: Book, perToken: List<TokenScores>) =
+        perToken.map { it.terms[book.work] ?: it.token }
+
+    private fun names(book: Book, title: String, perToken: List<TokenScores>): Boolean {
+        val words = tokenize(title).filter { it !in ARTICLES }
+        return words.isNotEmpty() && queryOf(book, perToken).containsAll(words)
+    }
+
+    private fun withoutCompanions(
+        ranked: List<Pair<Book, Double>>,
+        perToken: List<TokenScores>,
+    ): List<Pair<Book, Double>> {
+        val wantsCompanion = isCompanion(perToken.joinToString(" ") { it.token })
+        val knownItem = !wantsCompanion && ranked.any { (book) ->
+            !book.isCompanion && names(book, mainTitle(book.title), perToken)
+        }
+        if (!knownItem) return ranked
+        return ranked.filter { (book) ->
+            !book.isCompanion || names(book, "${book.title} ${book.subtitle}", perToken)
+        }
+    }
+
     private fun bonus(book: Book, perToken: List<TokenScores>): Double {
-        val query = perToken.map { it.terms[book.work] ?: it.token }
+        val query = queryOf(book, perToken)
         val confidence = perToken.sumOf { it.scores[book.work] ?: 0.0 } / perToken.size
         val lastToken = perToken.last().token
         val completing = query.last() != lastToken &&
@@ -369,6 +392,7 @@ class Searcher(private val catalogue: Catalogue) {
                     seriesBonus(book, joined) - penalty
             }
             .sortedByDescending { it.second }
+            .let { withoutCompanions(it, perToken) }
         val best = ranked.firstOrNull()?.second ?: 0.0
         return ranked
             .filter { it.second >= RELEVANCE_FLOOR * best }
@@ -389,18 +413,33 @@ class Searcher(private val catalogue: Catalogue) {
         }
     }
 
-    fun complete(lookup: Lookup, limit: Int = 3): List<String> {
+    private fun completes(word: String, last: String): Boolean {
+        if (word == last) return false
+        return word.startsWith(last) ||
+            (last.length >= 3 && editDistance(word, last, 1) <= 1)
+    }
+
+    fun complete(
+        lookup: Lookup,
+        books: List<Book> = emptyList(),
+        limit: Int = 3,
+    ): List<String> {
         val last = lookup.tokens.lastOrNull()?.takeIf { it.length >= 2 }
             ?: return emptyList()
-        val head = lookup.tokens.dropLast(1).joinToString(" ")
+        val head = lookup.tokens.dropLast(1)
         val matches = lookup.matches.last()
         val terms = matches.filter { it.completion }.ifEmpty {
             matches.filter { it.text != last && !it.completion }
                 .sortedByDescending { it.weight }
         }
-        return terms
+        val fromResults = books
+            .map { tokenize(it.title) }
+            .filter { head.isNotEmpty() && it.containsAll(head) }
+            .flatMap { words -> words.filter { completes(it, last) } }
+        return (fromResults + terms.map { it.text })
+            .distinct()
             .take(limit)
-            .map { if (head.isEmpty()) it.text else "$head ${it.text}" }
+            .map { (head + it).joinToString(" ") }
     }
 
     fun authors(lookup: Lookup, limit: Int = 3, job: Job? = null): List<Author> {

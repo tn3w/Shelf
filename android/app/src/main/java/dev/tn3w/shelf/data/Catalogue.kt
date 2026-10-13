@@ -58,8 +58,16 @@ private val COMPANION = Regex(
     RegexOption.IGNORE_CASE,
 )
 
+private val OMNIBUS = Regex(
+    listOf("The|A|An", "Der|Die|Das", "Le|La|Les", "El|La|Los|Las").joinToString("|") {
+        "^($it) [^,&/;+]+( and| /|;) ($it) \\p{Lu}"
+    },
+)
+
+fun isCompanion(text: String) = COMPANION.containsMatchIn(text)
+
 val Book.isCompanion
-    get() = COMPANION.containsMatchIn("$title $subtitle")
+    get() = isCompanion("$title $subtitle") || OMNIBUS.containsMatchIn(title)
 
 private const val ISBN_BASE = 978_000_000_000L
 private val ISBN_PREFIXES = setOf("978", "979")

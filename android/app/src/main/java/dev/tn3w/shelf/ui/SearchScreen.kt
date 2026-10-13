@@ -63,7 +63,7 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
     val tags = facets(unfiltered.map { it.tags }) + listOfNotNull(filter.tag)
     val refining = filter != SearchFilter()
     return Results(
-        if (refining) emptyList() else searcher.complete(lookup),
+        if (refining) emptyList() else searcher.complete(lookup, unfiltered),
         if (refining) emptyList() else searcher.authors(lookup, job = job),
         listOfNotNull(isbn) + books.filter { it.work != isbn?.work },
         tags.distinct().mapNotNull { catalogue.tags.getOrNull(it) },
