@@ -12,6 +12,7 @@ Search, explore, track reading streaks, read your own files.
 [![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=white)](https://www.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
+[![Translation status](https://hosted.weblate.org/widget/shelf/svg-badge.svg)](https://hosted.weblate.org/engage/shelf/)
 
 <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk"><img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" height="60" alt="Get it on GitHub"></a>
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="60" alt="Get it on Obtainium"></a>
@@ -192,6 +193,12 @@ cd android
 
 `site/` → https://shelf.tn3w.dev via `.github/workflows/pages.yml` on push to `master`.
 Workflow adds icon, covers and screenshots as WebP, then minifies.
+
+## Translate
+
+App strings and store listing are translated on
+[Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
+from its `weblate` branch.
 
 ## Project
 

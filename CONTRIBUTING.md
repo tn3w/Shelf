@@ -30,8 +30,9 @@ Kotlin (configured in `.editorconfig`), `cargo fmt` for Rust.
 
 ## Translations
 
-Strings live in `android/app/src/main/res/values-<lang>/strings.xml`. Add a language by
-copying `values/strings.xml` and translating the values only. Catalogue descriptions are
+Translate on [Hosted Weblate](https://hosted.weblate.org/engage/shelf/): app strings
+(`android/app/src/main/res/values-<lang>/strings.xml`) and store listing
+(`android/app/fastlane/metadata/android/<lang>/`). Catalogue descriptions are
 machine translated by `tooling/translate.py`; corrections belong in the builder pass, not
 in the app.
 
