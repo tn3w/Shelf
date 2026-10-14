@@ -28,6 +28,7 @@ class ShelfApp :
     val session = Random.nextLong()
     val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
+    val ownSources by lazy { OwnSources(this) }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
 

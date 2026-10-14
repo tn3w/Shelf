@@ -158,6 +158,30 @@ class CatalogueTest {
     }
 
     @Test
+    fun isbnsOfListEveryEditionOfAWork() {
+        val base = segment(
+            listOf(
+                Fixture(1, "Old Title", isbns = listOf("9780439023481")),
+                Fixture(3, "Plain"),
+                Fixture(4, "Twin", isbns = listOf("9791032305690", "0306406152")),
+            ),
+        )
+        val delta = Segment(
+            segmentBuffer(
+                listOf(Fixture(1, "New Title")),
+                month = "2000-02",
+                base = "2000-01",
+            ),
+        )
+        val catalogue = Catalogue("en", listOf(base, delta), null)
+        assertEquals(listOf("9780439023481"), catalogue.isbnsOf(1))
+        assertEquals(emptyList<String>(), catalogue.isbnsOf(3))
+        val twins = setOf("9791032305690", "9780306406157")
+        assertEquals(twins, catalogue.isbnsOf(4).toSet())
+        assertEquals(emptyList<String>(), catalogue(BOOKS).isbnsOf(1))
+    }
+
+    @Test
     fun packsWithoutIsbnsFindNothing() {
         assertNull(catalogue(BOOKS).bookOfIsbn("9780439023481"))
     }

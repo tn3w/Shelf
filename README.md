@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 <table>
 <tr><th width="1%">Find</th><th width="1%">Read</th><th width="1%">Track</th></tr>
 <tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · PDF · FB2 · CBZ · TXT · HTML</td><td align="center">Want · Reading · Finished</td></tr>
-<tr><td align="center">Genres, series, authors</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
+<tr><td align="center">Genres, series, authors, free ebooks</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
 <tr><td align="center">Recommendations on device</td><td align="center">Volume and page keys</td><td align="center">Goodreads / StoryGraph import</td></tr>
 </table>
 
@@ -61,8 +61,9 @@ flowchart LR
 <tr><td>First launch</td><td><b>no request</b></td></tr>
 <tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
 <tr><td>Cover scanner</td><td><b>on device</b>, no request, frames never stored</td></tr>
-<tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
+<tr><td>Requests</td><td>https only (own sources: http on local network too), no identifiers, no cookies</td></tr>
 <tr><td>Hosts</td><td>GitHub, Open Library, DNB covers, or <b>your own server</b></td></tr>
+<tr><td>Free books</td><td><b>off</b>, each source opt-in, contacted only on search; own sources are data, no scripts</td></tr>
 </table>
 
 ## Search and sort
@@ -81,6 +82,97 @@ or tap it, in the sheet or on the book page, to pick your own image.
 Library › file icon imports an EPUB, PDF, FB2, CBZ, TXT or HTML file instead. Same file
 twice → same book. Imported files and own covers move along on device transfer; cloud
 backup keeps the library only, so re-import files there.
+
+## Free books
+
+Settings › **Free books**: one switch per source, all off by default. Book page › cloud
+icon (online, no file yet) → sheet. No source on → pick them right there, then Search.
+Only switched-on sources serving the catalogue language are contacted, in parallel.
+
+Per source: search → up to 8 candidates (all title words except articles, a shared author
+word, shortest title first) → optional details lookup per candidate, in parallel (real
+file, size; drops audio books, private files, files over 200 MB) → up to 5 matches with
+cover (if covers are on), author, format, size. Unreachable source → tap to retry.
+Tap a match → EPUB lands in `filesDir/books` like an import, book moves to Reading, reader
+opens. Wrong file type, failed or cancelled (sheet closed) → nothing kept, tap to retry.
+
+<table>
+<tr><th width="1%">Source</th><th width="1%">Search</th><th width="1%">File</th></tr>
+<tr><td><a href="https://standardebooks.org">Standard Ebooks</a></td><td>Atom feed, English</td><td>compatible EPUB</td></tr>
+<tr><td><a href="https://www.gutenberg.org">Project Gutenberg</a></td><td>OPDS search in catalogue language (<code>l.de</code>)</td><td>EPUB 3 with images, from the book's OPDS entry</td></tr>
+<tr><td><a href="https://wikisource.org">Wikisource</a></td><td>MediaWiki search on the language wiki; drops subpages, disambiguation and versions pages</td><td>EPUB 3 via WS Export</td></tr>
+<tr><td><a href="https://archive.org">Internet Archive</a></td><td>advanced search: texts with EPUB in catalogue language, no lending, no community uploads</td><td>EPUB from the item's file list</td></tr>
+</table>
+
+New built-in source: one `object : FeedProvider()` in `data/Providers.kt`, added to
+`PROVIDERS`, plus its `about` string. Pure functions, network stays in `search()`:
+
+| Member | Role |
+|---|---|
+| `id`, `name`, `site`, `about`, `languages` | settings row; empty `languages` = all |
+| `searchUrl(query)` → `offers(body, query)` | search request and parser |
+| `detailsUrl(offer)` → `details(offer, body)` | optional second lookup; `null` drops the offer |
+
+Anything else implements `Provider` (`find`, `complete`, `open`) directly, like own sources.
+Atom/OPDS parse with Jsoup (`xml()`), JSON with kotlinx serialization. Requests send
+`User-Agent: Shelf (https://github.com/tn3w/Shelf)` as Wikimedia asks.
+Checked, not usable: DOAB and OAPEN (API blocks clients), Library of Congress and
+Gallica (Cloudflare challenge), Feedbooks (closed).
+
+### Own sources
+
+Settings › Free books › **Own sources**: any site, local server or API as a JSON *recipe*.
+Data only, nothing executed. Create in the form or File tab, import a `.json` (one recipe or
+a list), export all to `shelf-sources.json`. **Test** runs every step for the first result
+without downloading and traces each request; **Debug test** adds headers, pages and items
+and saves `shelf-source-debug.txt` (header values hidden).
+
+| Key | Meaning |
+|---|---|
+| `name` | shown in settings and the sheet |
+| `search` | `url`, optional `body` (POST), `items` rule, `fields` (`title` required) |
+| `steps` | run in order on download; each adds its `fields` as variables |
+| `download` | file URL; redirects followed |
+| `format`, `languages` | `epub` default; catalogue languages served, empty = all |
+| `headers` | sent with every request, dropped when a redirect changes host |
+
+Rules apply `css` → `json` (dot path) → `attr` → `regex` (first group). `{name}` inserts
+URL-encoded, `{+name}` as is. Search knows `{query}`, `{title}`, `{author}`, `{language}`,
+`{isbn}`, `{isbns}`; with `{isbn}` up to 5 of the book's ISBNs are tried. Relative URLs
+resolve against the previous page. `http://` only for local hosts. Pages 30 s / 5 MB,
+files 120 s, regex 2 s.
+
+```json
+{
+  "name": "Library API",
+  "search": {
+    "url": "https://api.example.org/v2/search",
+    "body": "{\"isbn\":\"{+isbn}\"}",
+    "items": { "json": "data.results" },
+    "fields": {
+      "title": { "json": "name" },
+      "author": { "json": "authors.0" },
+      "id": { "json": "id" }
+    }
+  },
+  "steps": [
+    {
+      "url": "https://api.example.org/v2/books/{id}/tickets",
+      "body": "{\"format\":\"epub\"}",
+      "fields": { "ticket": { "json": "ticket.id" } }
+    },
+    {
+      "url": "https://api.example.org/v2/tickets/{ticket}",
+      "fields": { "file": { "json": "links.epub" } }
+    }
+  ],
+  "download": "{+file}",
+  "headers": { "X-Api-Key": "…", "Content-Type": "application/json" }
+}
+```
+
+ISBN search → order ticket → read signed link → download from the CDN, which gets no API
+key. Recipes stay in `files/sources.json`: no cloud backup, no library export.
 
 ## Scan a cover
 

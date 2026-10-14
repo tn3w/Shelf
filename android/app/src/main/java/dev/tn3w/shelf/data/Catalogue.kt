@@ -180,6 +180,14 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         }
     }
 
+    fun isbnsOf(work: Int) = segments
+        .flatMap { segment ->
+            val local = segment.localOf(work)
+            if (local < 0) emptyList() else segment.isbnsOf(local)
+        }
+        .distinct()
+        .map(::isbnOf)
+
     fun facts(work: Int) = locate(work)?.let { it.segment.facts(it.local) }
 
     fun firstAuthorNumber(work: Int) = locate(work)?.let { (segment, local) ->

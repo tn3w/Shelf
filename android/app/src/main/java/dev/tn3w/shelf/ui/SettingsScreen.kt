@@ -62,6 +62,7 @@ private val THEMES = mapOf(
 enum class SettingsPage {
     Main,
     Catalogue,
+    FreeBooks,
     General,
     Reading,
     Privacy,
@@ -81,6 +82,12 @@ private val CATEGORIES = listOf(
         Icons.Outlined.AutoStories,
         R.string.catalogue,
         R.string.catalogue_hint,
+    ),
+    Category(
+        SettingsPage.FreeBooks,
+        Icons.Outlined.CloudDownload,
+        R.string.free_books,
+        R.string.free_books_hint,
     ),
     Category(
         SettingsPage.General,
@@ -138,6 +145,7 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
         when (page) {
             SettingsPage.Main -> SettingsOverview(navigator)
             SettingsPage.Catalogue -> CatalogueSettings()
+            SettingsPage.FreeBooks -> FreeBookSettings()
             SettingsPage.General -> GeneralSettings(navigator)
             SettingsPage.Reading -> ReadingSettings()
             SettingsPage.Privacy -> PrivacySettings()

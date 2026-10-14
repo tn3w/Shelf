@@ -332,6 +332,20 @@ class Segment(buffer: ByteBuffer) {
         }[key] ?: -1
     }
 
+    fun isbnsOf(local: Int): List<Int> {
+        val index = isbns ?: return emptyList()
+        return (0 until index.blocks.count).flatMap { block ->
+            val reader = ByteReader(inflate(index.blocks[block]))
+            var isbn = index.firsts[block]
+            buildList {
+                while (reader.hasMore) {
+                    isbn += reader.varint()
+                    if (reader.varint() == local) add(isbn)
+                }
+            }
+        }
+    }
+
     fun libraryCover(local: Int): LibraryCover? {
         val index = libraryCovers ?: return null
         val block = index.firsts.lastAtMost(local)

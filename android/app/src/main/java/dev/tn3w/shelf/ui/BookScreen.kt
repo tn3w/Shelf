@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
@@ -132,7 +133,11 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     val scope = rememberCoroutineScope()
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
+    val hasFile by produceState(true, position) { value = app.library.hasFile(position) }
+    val settings by app.library.settings.collectAsStateWithLifecycle(null)
+    val online = settings?.isOffline(LocalContext.current) == false
     var confirmDelete by remember { mutableStateOf(false) }
+    var findFree by remember { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null
     fun place(target: Shelf) = scope.launch {
         app.library.place(book, if (shelf == target) unplaced else target)
@@ -228,11 +233,23 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             ) {
                 if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
             }
+            if (online && !hasFile) {
+                FilledTonalIconButton(onClick = { findFree = true }) {
+                    val label = stringResource(R.string.free_ebook)
+                    Icon(Icons.Outlined.CloudDownload, label)
+                }
+            }
             if (book.isLocal || position != null) {
                 FilledTonalIconButton(onClick = { confirmDelete = true }) {
                     Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
                 }
             }
+        }
+    }
+    if (findFree) {
+        FreeBookSheet(book, onDismiss = { findFree = false }) {
+            findFree = false
+            navigator.reader(book.work)
         }
     }
     if (confirmDelete) {

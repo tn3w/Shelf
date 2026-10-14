@@ -115,6 +115,7 @@ data class Settings(
     val catalogueSource: String = "",
     val coverSource: String = "",
     val dnbCoverSource: String = "",
+    val providers: Set<String> = emptySet(),
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
 ) {
@@ -312,10 +313,32 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     suspend fun importBook(book: Book, uri: Uri): Boolean {
         val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
         val name = copyBook(uri, fileName, book.work) ?: return false
+        startReading(book, name)
+        return true
+    }
+
+    suspend fun download(book: Book, offer: Offer, onProgress: (Float) -> Unit): Boolean {
+        val name = "${book.work}.${offer.format}"
+        val target = bookFile(name).apply { parentFile?.mkdirs() }
+        if (!fetch(offer, target, onProgress)) return false
+        finishBook(target, book.work)
+        startReading(book, name)
+        return true
+    }
+
+    private suspend fun fetch(offer: Offer, target: File, onProgress: (Float) -> Unit) =
+        withContext(Dispatchers.IO) {
+            val report = { progress: Float ->
+                ensureActive()
+                onProgress(progress)
+            }
+            runCatching { replaceFile(target) { fetchBook(offer, it, report) } }.isSuccess
+        }
+
+    private suspend fun startReading(book: Book, name: String) {
         val previous = progress.first()[book.work]?.takeIf { it.file == name }
         saveProgress(book.work, previous ?: Progress(name))
         place(book, Shelf.Reading)
-        return true
     }
 
     suspend fun importFile(uri: Uri): Int? {
