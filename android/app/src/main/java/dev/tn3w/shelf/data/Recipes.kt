@@ -15,17 +15,24 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.io.IOException
-import java.net.HttpURLConnection
 import java.net.URI
 import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+import kotlin.time.TimeSource.Monotonic.ValueTimeMark
 
-private const val MAX_REDIRECTS = 5
+private val FORM = "application/x-www-form-urlencoded".toMediaType()
 private const val MAX_PAGE_BYTES = 5L * 1024 * 1024
-private const val PAGE_TIMEOUT = 30_000
-private const val REGEX_MILLIS = 2_000L
+private val REGEX_TIME = 2.seconds
 private const val DEBUG_ITEMS = 5
 private const val DEBUG_PAGE_CHARACTERS = 100_000
 private val PLACEHOLDER = Regex("""\{(\+?)(\w+)\}""")
@@ -144,10 +151,10 @@ private class Scope(
 
 private class Deadline(
     private val text: CharSequence,
-    private val end: Long = System.nanoTime() + REGEX_MILLIS * 1_000_000,
+    private val end: ValueTimeMark = TimeSource.Monotonic.markNow() + REGEX_TIME,
 ) : CharSequence by text {
     override fun get(index: Int): Char {
-        if (System.nanoTime() > end) throw IOException("regex ran over $REGEX_MILLIS ms")
+        if (end.hasPassedNow()) throw IOException("regex ran over $REGEX_TIME")
         return text[index]
     }
 
@@ -197,10 +204,8 @@ private fun Query.variables() = mapOf(
     "isbns" to isbns.joinToString(","),
 )
 
-private fun HttpURLConnection.text() =
-    inputStream.use { it.readAtMost(MAX_PAGE_BYTES).decodeToString() }
-
-private fun elapsed(started: Long) = "${(System.nanoTime() - started) / 1_000_000} ms"
+private fun elapsed(started: ValueTimeMark) =
+    "${started.elapsedNow().inWholeMilliseconds} ms"
 
 data class OwnSource(
     val recipe: Recipe,
@@ -252,15 +257,13 @@ data class OwnSource(
         val title = fields["title"] ?: return null
         val format = fields["format"]?.lowercase()?.takeIf { it in READABLE_EXTENSIONS }
         val cover = fields["cover"]
-            ?.let { runCatching { URI(resolve(item.base, it)).toURL() }.getOrNull() }
-            ?.takeIf { isPermittedFrom(site, it) }
-            ?.toString()
+            ?.let { runCatching { resolve(item.base, it) }.getOrNull() }
         val author = fields["author"].orEmpty()
         val chosen = format ?: recipe.format
         return Offer(this, title, author, item.base, cover, 0, chosen, variables + fields)
     }
 
-    override fun open(offer: Offer): HttpURLConnection {
+    override fun open(offer: Offer): Response {
         var variables = offer.variables
         var base = offer.link
         recipe.steps.forEach { step ->
@@ -274,10 +277,10 @@ data class OwnSource(
         }
         val url = resolve(base, expand(recipe.download, variables))
         log("GET $url")
-        val started = System.nanoTime()
-        return request(url, null, DOWNLOAD_TIMEOUT).also {
-            val type = it.contentType.orEmpty()
-            log("  ${it.responseCode} · $type · ${elapsed(started)}")
+        val started = TimeSource.Monotonic.markNow()
+        return request(downloads, url, null).also {
+            val type = it.header("Content-Type").orEmpty()
+            log("  ${it.code} · $type · ${elapsed(started)}")
             if (verbose) logHeaders(it)
         }
     }
@@ -291,71 +294,51 @@ data class OwnSource(
         val body = step.body?.let { expand(it, variables) }
         log("${if (body == null) "GET" else "POST"} $url")
         if (verbose && body != null) log("  body: $body")
-        val started = System.nanoTime()
-        val connection = request(url, body, PAGE_TIMEOUT)
-        val text = connection.text()
-        val code = connection.responseCode
-        log("  $code · ${text.length} characters · ${elapsed(started)}")
-        if (verbose) {
-            logHeaders(connection)
-            log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
-        }
-        return Scope(connection.url.toString(), text)
-    }
-
-    private fun logHeaders(connection: HttpURLConnection) =
-        connection.headerFields.forEach { (name, values) ->
-            if (name != null) log("  < $name: ${values.joinToString()}")
-        }
-
-    private fun send(target: URI, body: String?, timeout: Int): HttpURLConnection {
-        val url = target.toURL()
-        if (!isPermittedFrom(site, url)) throw IOException("refusing $url from $site")
-        return connect(url.toString(), local = true).apply {
-            instanceFollowRedirects = false
-            readTimeout = timeout
-            if (target.host.equals(site, ignoreCase = true)) {
-                recipe.headers.forEach { (name, value) ->
-                    setRequestProperty(name, value)
-                }
+        val started = TimeSource.Monotonic.markNow()
+        return request(client, url, body).use { response ->
+            val text = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
+            log("  ${response.code} · ${text.length} characters · ${elapsed(started)}")
+            if (verbose) {
+                logHeaders(response)
+                log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
             }
-            if (body != null) post(body)
+            Scope(response.request.url.toString(), text)
         }
     }
 
-    private fun HttpURLConnection.post(body: String) {
-        requestMethod = "POST"
-        doOutput = true
-        outputStream.use { it.write(body.toByteArray()) }
+    private fun logHeaders(response: Response) =
+        response.headers.forEach { (name, value) -> log("  < $name: $value") }
+
+    private val client by lazy {
+        http.newBuilder().addNetworkInterceptor { chain ->
+            val request = chain.request()
+            if (!request.url.host.equals(site, ignoreCase = true)) {
+                return@addNetworkInterceptor chain.proceed(request)
+            }
+            val signed = request.newBuilder()
+            recipe.headers.forEach { (name, value) -> signed.header(name, value) }
+            chain.proceed(signed.build())
+        }.build()
     }
 
-    private fun request(url: String, body: String?, timeout: Int): HttpURLConnection {
-        var target = URI(url)
-        var payload = body
-        repeat(MAX_REDIRECTS + 1) {
-            val connection = send(target, payload, timeout)
-            val code = connection.responseCode
-            val location = connection.getHeaderField("Location")
-            if (code !in 300..399 || location == null) return checked(connection)
-            connection.disconnect()
-            val next = target.resolve(location)
-            log("  $code → $next")
-            if (code != 307 && code != 308) payload = null
-            target = next
-        }
-        throw IOException("too many redirects from $url")
+    private val downloads by lazy {
+        client.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
     }
 
-    private fun checked(connection: HttpURLConnection): HttpURLConnection {
-        val code = connection.responseCode
-        if (code in 200..299) return connection
+    private fun request(client: OkHttpClient, url: String, body: String?): Response {
+        val request = Request.Builder().url(url)
+        if (body != null) request.post(body.toRequestBody(FORM))
+        val response = client.newCall(request.build()).execute()
+        generateSequence(response) { it.priorResponse }.toList().asReversed()
+            .zipWithNext { prior, next -> log("  ${prior.code} → ${next.request.url}") }
+        if (response.isSuccessful) return response
         if (verbose) {
-            logHeaders(connection)
-            val error = connection.errorStream
-                ?.use { it.readAtMost(MAX_PAGE_BYTES).decodeToString() }
-            log("  page:\n${error.orEmpty().take(DEBUG_PAGE_CHARACTERS)}")
+            logHeaders(response)
+            val error = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
+            log("  page:\n${error.take(DEBUG_PAGE_CHARACTERS)}")
         }
-        throw IOException("HTTP $code from ${connection.url}")
+        response.close()
+        throw HttpException(response.code, response.request.url.toString())
     }
 
     fun probe(query: Query) {
@@ -363,9 +346,10 @@ data class OwnSource(
         offers.take(3).forEach { log("• ${it.title} · ${it.author}") }
         val first = offers.firstOrNull() ?: return log("no item with a title")
         first.variables.forEach { (name, value) -> log("  $name = $value") }
-        val file = open(first)
-        log("file: ${file.contentType.orEmpty()} · ${file.contentLengthLong} bytes")
-        file.disconnect()
+        open(first).use { file ->
+            val bytes = file.body.contentLength()
+            log("file: ${file.header("Content-Type").orEmpty()} · $bytes bytes")
+        }
     }
 }
 
@@ -419,10 +403,8 @@ private fun templateProblem(
     if (!url || template.startsWith("{+")) return null
     val sample = runCatching { URI(expand(template, known.associateWith { "x" })) }
         .getOrNull() ?: return "invalid URL $template"
-    if (!sample.isAbsolute && !absolute) return null
-    val parsed = runCatching { sample.toURL() }.getOrNull()
-    if (parsed != null && isPermitted(parsed, local = true)) return null
-    return "$template must start with https:// (http:// only for local hosts)"
+    if (sample.isAbsolute || !absolute) return null
+    return "$template must be an absolute URL"
 }
 
 val Pick.isEmpty

@@ -5,8 +5,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
@@ -31,7 +29,6 @@ private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
     Regex("(?<!\\p{L})(copyright|colophon|imprint|toc|contents|titlepage)(?!\\p{L})")
 private val WHITESPACE = Regex("\\s+")
-private val UNSAFE_URI_CHARACTER = Regex("""[ \[\]|{}^\\"<>`]""")
 private const val JP2_SIGNATURE = "\u0000\u0000\u0000\u000CjP  \r\n\u0087\n"
 private const val CHUNK_SIZE = 1 shl 22
 private const val ICC_PROFILE_METHOD: Byte = 2
@@ -87,12 +84,14 @@ interface PagedDocument : Document {
 class PdfDocument(file: File) : PagedDocument {
     private val descriptor =
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-    private val renderer = PdfRenderer(descriptor)
-    private val mutex = Mutex()
+    private val renderer =
+        runCatching {
+            PdfRenderer(descriptor)
+        }.onFailure { descriptor.close() }.getOrThrow()
     override val pageCount = renderer.pageCount
 
     override suspend fun render(index: Int, width: Int, height: Int): Bitmap =
-        mutex.withLock {
+        synchronized(renderer) {
             renderer.openPage(index).use { page ->
                 val (fitWidth, fitHeight) = fit(page.width, page.height, width, height)
                 Bitmap.createBitmap(fitWidth, fitHeight, Bitmap.Config.ARGB_8888).also {
@@ -102,11 +101,9 @@ class PdfDocument(file: File) : PagedDocument {
             }
         }
 
-    override fun close() = runBlocking {
-        mutex.withLock {
-            renderer.close()
-            descriptor.close()
-        }
+    override fun close() = synchronized(renderer) {
+        renderer.close()
+        descriptor.close()
     }
 }
 
@@ -181,9 +178,9 @@ class ComicDocument(file: File) : PagedDocument {
 }
 
 private fun isComicPage(name: String): Boolean {
-    val fileName = name.substringAfterLast('/')
-    if (name.startsWith("__MACOSX/") || fileName.startsWith(".")) return false
-    return fileName.substringAfterLast('.').lowercase() in IMAGE_EXTENSIONS
+    val file = File(name)
+    if (name.startsWith("__MACOSX/") || file.name.startsWith(".")) return false
+    return file.extension.lowercase() in IMAGE_EXTENSIONS
 }
 
 internal fun naturalSortKey(name: String) =
@@ -196,9 +193,11 @@ private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<In
         (height * scale).roundToInt().coerceAtLeast(1)
 }
 
-private fun sampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Int {
+internal fun sampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Int {
+    val fitWidth = maxWidth.coerceAtLeast(1)
+    val fitHeight = maxHeight.coerceAtLeast(1)
     var size = 1
-    while (width / (size * 2) >= maxWidth || height / (size * 2) >= maxHeight) size *= 2
+    while (width / (size * 2) >= fitWidth || height / (size * 2) >= fitHeight) size *= 2
     return size
 }
 
@@ -413,6 +412,13 @@ private fun ZipFile.bytes(entry: ZipEntry): ByteArray {
     return getInputStream(entry).use { it.readAtMost(MAX_ENTRY_BYTES) }
 }
 
+internal fun resolvePath(base: String, href: String): String {
+    val link = href.substringBefore('#')
+    val decoded = runCatching { URI(link).path }.getOrNull() ?: link
+    val path = File(base).resolveSibling(decoded).normalize().invariantSeparatorsPath
+    return path.removePrefix("/")
+}
+
 private class Epub(private val zip: ZipFile) {
     val opfPath
         get() = xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
@@ -424,29 +430,22 @@ private class Epub(private val zip: ZipFile) {
     fun xml(path: String) =
         bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }
 
-    fun resolve(base: String, href: String): String {
-        val clean = href.substringBefore('#').replace(UNSAFE_URI_CHARACTER) {
-            "%%%02X".format(it.value.single().code)
-        }
-        return URI(null, null, "/$base", null).resolve(clean).path.removePrefix("/")
-    }
-
     fun titles(items: List<Element>, opfPath: String): Map<String, String> {
         val nav = items.firstOrNull { "nav" in it.attr("properties").split(" ") }
-        val navPath = nav?.let { resolve(opfPath, it.attr("href")) }
+        val navPath = nav?.let { resolvePath(opfPath, it.attr("href")) }
         val links = navPath?.let { xml(it) }?.select("nav a[href]").orEmpty()
         if (navPath != null && links.isNotEmpty()) {
             return links.reversed().associate {
-                resolve(navPath, it.attr("href")) to it.text()
+                resolvePath(navPath, it.attr("href")) to it.text()
             }
         }
         val ncx =
             items.firstOrNull { it.attr("media-type") == "application/x-dtbncx+xml" }
                 ?: return emptyMap()
-        val ncxPath = resolve(opfPath, ncx.attr("href"))
+        val ncxPath = resolvePath(opfPath, ncx.attr("href"))
         return xml(ncxPath)?.select("navPoint").orEmpty().reversed().associate { point ->
             val source = point.selectFirst("content")?.attr("src").orEmpty()
-            resolve(ncxPath, source) to
+            resolvePath(ncxPath, source) to
                 point.selectFirst("navLabel text")?.text().orEmpty()
         }
     }
@@ -465,7 +464,7 @@ private fun readEpub(zip: ZipFile): TextDocument {
     val titles = epub.titles(manifest.values.toList(), opfPath)
     val parts = opf.select("spine > itemref").mapNotNull { reference ->
         val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
-        val path = epub.resolve(opfPath, item.attr("href"))
+        val path = resolvePath(opfPath, item.attr("href"))
         val body =
             epub.bytes(path)?.let { Jsoup.parse(it.inputStream(), null, "").body() }
                 ?: return@mapNotNull null
@@ -474,7 +473,7 @@ private fun readEpub(zip: ZipFile): TextDocument {
         val isFrontMatter =
             FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
         if (isFrontMatter) return@mapNotNull null
-        titles[path] to htmlBlocks(body) { epub.resolve(path, it).takeIf(epub::has) }
+        titles[path] to htmlBlocks(body) { resolvePath(path, it).takeIf(epub::has) }
     }
     return assemble(parts, zip)
 }

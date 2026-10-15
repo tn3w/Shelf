@@ -106,7 +106,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
     val title = saved.firstOrNull { it.work == work }?.title.orEmpty()
     val opened by produceState<Opened?>(null, work) {
-        value = withContext(Dispatchers.IO) {
+        val result = withContext(NonCancellable + Dispatchers.IO) {
             runCatching {
                 val progress = app.library.progress.first().getValue(work)
                 Opened.Ready(
@@ -115,11 +115,12 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
             }
                 .getOrDefault(Opened.Failed)
         }
-    }
-    val document = (opened as? Opened.Ready)?.document
-    DisposableEffect(document) {
-        onDispose {
-            if (document != null) app.scope.launch(Dispatchers.IO) { document.close() }
+        value = result
+        val document = (result as? Opened.Ready)?.document ?: return@produceState
+        try {
+            awaitCancellation()
+        } finally {
+            app.scope.launch(Dispatchers.IO) { document.close() }
         }
     }
     val view = LocalView.current
@@ -147,13 +148,7 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
         when (val current = opened) {
             null -> Loading()
 
-            Opened.Failed ->
-                Column(Modifier.windowInsetsPadding(WindowInsets.systemBars)) {
-                    BackBar(navigator::back)
-                    EmptyState(
-                        Icons.Outlined.ErrorOutline, stringResource(R.string.open_failed),
-                    )
-                }
+            Opened.Failed -> OpenFailed(navigator)
 
             is Opened.Ready ->
                 when (val document = current.document) {
@@ -164,6 +159,14 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
                         PagedReader(state, document, current.progress)
                 }
         }
+    }
+}
+
+@Composable
+private fun OpenFailed(navigator: Navigator) {
+    Column(Modifier.windowInsetsPadding(WindowInsets.systemBars)) {
+        BackBar(navigator::back)
+        EmptyState(Icons.Outlined.ErrorOutline, stringResource(R.string.open_failed))
     }
 }
 
@@ -282,6 +285,7 @@ private fun TextReader(
             }
         }
         val current = pages ?: return@BoxWithConstraints Loading()
+        if (current.isEmpty()) return@BoxWithConstraints OpenFailed(state.navigator)
         val initial = remember(current) {
             val (_, section, offset) = position
             current
@@ -330,7 +334,8 @@ private fun PageImage(document: TextDocument, path: String) {
         val height = constraints.maxHeight
         val bitmap by produceState<ImageBitmap?>(null, path, width, height) {
             value = withContext(Dispatchers.Default) {
-                document.image(path)?.let { decodeImage(it, width, height) }
+                val bytes = document.image(path)
+                bytes?.let { runCatching { decodeImage(it, width, height) }.getOrNull() }
                     ?.asImageBitmap()
             }
         }

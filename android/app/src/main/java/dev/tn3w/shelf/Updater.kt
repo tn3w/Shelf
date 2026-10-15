@@ -11,13 +11,9 @@ import android.os.Build
 import androidx.core.content.IntentCompat
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
-import java.io.FileNotFoundException
 import java.io.IOException
-import java.security.DigestInputStream
-import java.security.MessageDigest
 
 private const val APK_NAME = "shelf-fdroid.apk"
-private const val CHECKSUMS_NAME = "SHA256SUMS"
 
 private val STORE_INSTALLERS = setOf(
     "org.fdroid.fdroid",
@@ -60,8 +56,7 @@ object Updater {
             .decodeFromString<List<Release>>(fetchText(RELEASES))
             .firstOrNull { it.tag.startsWith("v") && !it.draft && !it.prerelease }
         val names = release?.assets.orEmpty().map { it.name }
-        val complete = APK_NAME in names && CHECKSUMS_NAME in names
-        release?.takeIf { complete && isNewer(it.version) }
+        release?.takeIf { APK_NAME in names && isNewer(it.version) }
     }
 
     fun isAvailable(release: Release) = isNewer(release.version)
@@ -74,10 +69,11 @@ object Updater {
         val url = "https://api.github.com/repos/$REPOSITORY/releases/tags/${release.tag}"
         val current = try {
             json.decodeFromString<Release>(fetchText(url))
-        } catch (_: FileNotFoundException) {
+        } catch (error: HttpException) {
+            if (error.code != 404) throw error
             null
         }
-        return release.isUnchanged(current, setOf(APK_NAME, CHECKSUMS_NAME))
+        return release.isUnchanged(current, setOf(APK_NAME))
     }
 
     suspend fun install(
@@ -90,18 +86,15 @@ object Updater {
             runCatching { check(app) }
             throw ReleaseChanged()
         }
-        val expected = checksum(fetchText(release.assetUrl(CHECKSUMS_NAME)), APK_NAME)
         val installer = context.packageManager.packageInstaller
         val sessionId =
             installer.createSession(SessionParams(SessionParams.MODE_FULL_INSTALL))
         installer.openSession(sessionId).use { session ->
             try {
-                val digest = MessageDigest.getInstance("SHA-256")
-                write(session, digest, release.assetUrl(APK_NAME)) { copied, total ->
+                write(session, release.assetUrl(APK_NAME)) { copied, total ->
                     ensureActive()
                     if (total > 0) onProgress(copied.toFloat() / total)
                 }
-                check(sha256(digest) == expected) { "checksum mismatch" }
             } catch (exception: Throwable) {
                 session.abandon()
                 throw exception
@@ -112,32 +105,18 @@ object Updater {
         }
     }
 
-    private fun checksum(sums: String, name: String): String = sums
-        .lines()
-        .map { it.trim().split(Regex("\\s+"), limit = 2) }
-        .firstOrNull { it.size == 2 && it[1].removePrefix("*") == name }
-        ?.first()
-        ?.lowercase()
-        ?: error("no checksum for $name")
-
     private fun write(
         session: PackageInstaller.Session,
-        digest: MessageDigest,
         url: String,
         onProgress: (Long, Long) -> Unit,
-    ) {
-        val connection = connect(url).apply {
-            setRequestProperty("Accept", "application/octet-stream")
-            setRequestProperty("Accept-Encoding", "identity")
-        }
-        val status = connection.responseCode
-        if (status != 200) error("download failed: $status")
-        val total = connection.contentLengthLong
-        DigestInputStream(connection.inputStream, digest).use { input ->
-            session.openWrite(APK_NAME, 0, total).use { output ->
-                copyWithProgress(input, output) { onProgress(it, total) }
-                session.fsync(output)
-            }
+    ) = downloadClient.fetch(url) {
+        header("Accept", "application/octet-stream")
+        header("Accept-Encoding", "identity")
+    }.use { response ->
+        val total = response.body.contentLength()
+        session.openWrite(APK_NAME, 0, total).use { output ->
+            copyWithProgress(response.stream, output) { onProgress(it, total) }
+            session.fsync(output)
         }
     }
 

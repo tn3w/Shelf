@@ -95,8 +95,8 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
                         val result = runCatching {
                             Updater.install(context, release) { progress = it }
                         }
+                        if (result.isSuccess) return@launch onDismiss()
                         failure = when (result.exceptionOrNull()) {
-                            null -> null
                             is ReleaseChanged -> R.string.update_changed
                             else -> R.string.update_failed
                         }

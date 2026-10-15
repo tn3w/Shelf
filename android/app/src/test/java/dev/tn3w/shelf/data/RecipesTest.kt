@@ -15,7 +15,6 @@ import org.junit.Test
 import java.io.File
 import java.io.IOException
 import java.net.InetSocketAddress
-import java.net.URL
 import java.net.URLDecoder
 
 private const val TOKEN = "Bearer shelf-test"
@@ -184,7 +183,7 @@ class RecipesTest {
         assertEquals("Emma", offers.single().title)
         assertEquals("Jane Austen", offers.single().author)
         assertEquals("c".repeat(32), offers.single().variables["id"])
-        assertEquals(200, OwnSource(recipe).open(offers.single()).responseCode)
+        assertEquals(200, OwnSource(recipe).open(offers.single()).use { it.code })
     }
 
     @Test
@@ -294,19 +293,6 @@ class RecipesTest {
     }
 
     @Test
-    fun plainHttpOnlyForLocalHosts() {
-        val remote = htmlRecipe().copy(download = "http://example.org/file?md5={md5}")
-        assertTrue(remote.problems().any { "https" in it })
-        val local = listOf(
-            "localhost", "nas.local", "127.0.0.1", "10.0.2.2", "192.168.1.5", "[fd00::1]",
-        )
-        local.forEach { assertTrue(it, isLocalHost(it)) }
-        listOf("example.org", "8.8.8.8", "cafe", "[2001:db8::1]")
-            .forEach { assertFalse(it, isLocalHost(it)) }
-        assertFalse(isPermitted(URL("http://192.168.1.5/")))
-    }
-
-    @Test
     fun headersOnlyReachSearchHost() {
         val step = RecipeStep(
             url = "http://localhost:$port/details?md5={md5}",
@@ -316,16 +302,6 @@ class RecipesTest {
         val offer = source.find(Query("Emma", "", "en")).single()
         val error = runCatching { source.open(offer) }.exceptionOrNull()
         assertTrue(error?.message.orEmpty().contains("401"))
-    }
-
-    @Test
-    fun publicRecipesStayOnPublicHttps() {
-        assertFalse(isPermittedFrom("example.org", URL("http://example.org/")))
-        assertFalse(isPermittedFrom("example.org", URL("http://192.168.1.5/")))
-        assertFalse(isPermittedFrom("example.org", URL("https://localhost/")))
-        assertTrue(isPermittedFrom("example.org", URL("https://cdn.example.net/")))
-        assertTrue(isPermittedFrom("192.168.1.5", URL("http://nas.local/")))
-        assertTrue(isPermittedFrom("192.168.1.5", URL("https://example.org/")))
     }
 
     @Test

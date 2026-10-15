@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.LruCache
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
@@ -206,10 +207,10 @@ fun identity(catalogue: Catalogue, work: Int) = catalogue.book(work)?.let { book
 } ?: listOf(work.toString())
 
 class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) {
-    private val hits = Cache<String, Map<Int, Double>>(CACHE_SIZE)
-    private val profiles = Cache<Int, BookProfile>(CACHE_SIZE)
-    private val weights = Cache<String, Double>(CACHE_SIZE)
-    private val frequencies = Cache<String, Int>(CACHE_SIZE)
+    private val hits = LruCache<String, Map<Int, Double>>(CACHE_SIZE)
+    private val profiles = LruCache<Int, BookProfile>(CACHE_SIZE)
+    private val weights = LruCache<String, Double>(CACHE_SIZE)
+    private val frequencies = LruCache<String, Int>(CACHE_SIZE)
     private val total = (catalogue.ranks?.works ?: catalogue.workCount).toDouble()
 
     private fun words(readings: List<Reading>): List<Word> {
@@ -237,7 +238,7 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
     }
 
     private fun matches(word: String) =
-        hits.get(word) { searcher.matches(word, word.length >= 4) }
+        hits.getOrPut(word) { searcher.matches(word, word.length >= 4) }
 
     private fun close(word: String) = matches(word).isNotEmpty()
 
@@ -245,14 +246,14 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
         catalogue.popularity(work).takeIf { it.isFinite() } ?: 0.0
 
     private fun frequency(token: String) =
-        frequencies.get(token) { searcher.frequency(token) }
+        frequencies.getOrPut(token) { searcher.frequency(token) }
 
-    private fun weight(token: String) = weights.get(token) {
+    private fun weight(token: String) = weights.getOrPut(token) {
         ln((total + 1) / (frequency(token) + 1)) + 1
     }
 
     private fun profile(work: Int) = catalogue.book(work)?.let { book ->
-        profiles.get(work) { buildProfile(work, book) }
+        profiles.getOrPut(work) { buildProfile(work, book) }
     }
 
     private fun buildProfile(work: Int, book: Book): BookProfile {

@@ -297,6 +297,7 @@
     <string name="free_books_add">Create source</string>
     <string name="free_books_import">Import file</string>
     <string name="free_books_export">Export file</string>
+    <string name="free_books_export_headers">Includes saved headers such as cookies or tokens</string>
     <string name="free_books_form">Form</string>
     <string name="free_books_file">File</string>
     <string name="free_books_name">Name</string>

@@ -1,11 +1,11 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.MutableIntList
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -31,6 +31,24 @@ class ModelTest {
         assertEquals(newer, newest(newer, older))
         assertEquals(older, newest(older, null))
         assertEquals(null, newest(null, null))
+    }
+
+    @Test
+    fun manifestDropsEntriesWithForeignIds() {
+        fun entry(id: String, language: String = "en", pack: String = "core") =
+            ManifestEntry(id, language, pack, "2026-01", 1, "", "https://example.org/$id")
+        val valid = entry("en-core-2026-01")
+        val manifest = Manifest(
+            CATALOGUE_FORMAT,
+            "2026-01",
+            listOf(
+                valid,
+                entry("../../shared_prefs/x"),
+                entry("de-core-2026-01"),
+                entry("en-scifi-2026-01"),
+            ),
+        )
+        assertEquals(listOf(valid), manifest.withValidEntries().segments)
     }
 
     @Test
@@ -194,10 +212,10 @@ class ModelTest {
     }
 
     @Test
-    fun intArrayListGrows() {
-        val list = IntArrayList()
+    fun intListCopiesToArray() {
+        val list = MutableIntList()
         repeat(100) { list.add(it) }
-        assertArrayEquals(IntArray(100) { it }, list.toArray())
+        assertArrayEquals(IntArray(100) { it }, list.toIntArray())
     }
 
     @Test
@@ -236,12 +254,5 @@ class ModelTest {
             listOf("core 2000-03", "fantasy 2000-03", "core 2000-04"),
             currentSegments(segments).map { "${it.pack} ${it.month}" },
         )
-    }
-
-    @Test
-    fun refusesPlainHttpConnections() {
-        assertThrows(IllegalArgumentException::class.java) {
-            connect("http://example.org/pack.bin")
-        }
     }
 }

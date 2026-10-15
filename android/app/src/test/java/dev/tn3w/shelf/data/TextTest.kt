@@ -186,6 +186,12 @@ class TextTest {
     }
 
     @Test
+    fun readsLoneCarriageReturnRows() {
+        val csv = "Title,Author\rDune,Frank Herbert\rEmma,Jane Austen"
+        assertEquals(listOf("Dune", "Emma"), csvBooks(csv).map { it.title })
+    }
+
+    @Test
     fun importClampsRating() {
         val csv = "Title,My Rating\nHigh,9\nLow,-3"
         assertEquals(listOf(5, 0), csvBooks(csv).map { it.rating })

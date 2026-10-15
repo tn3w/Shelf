@@ -58,7 +58,7 @@ private fun parseCsv(text: String): List<List<String>> {
                 row.clear()
             }
 
-            character != '\r' -> field.append(character)
+            else -> field.append(character)
         }
     }
     if (field.isNotEmpty() || row.isNotEmpty()) {
@@ -69,7 +69,8 @@ private fun parseCsv(text: String): List<List<String>> {
 }
 
 fun csvBooks(text: String): List<CsvBook> {
-    val rows = parseCsv(text.trimStart('\uFEFF'))
+    val lines = text.trimStart('\uFEFF').replace("\r\n", "\n").replace('\r', '\n')
+    val rows = parseCsv(lines)
     val header = rows.firstOrNull()?.map { it.trim().lowercase() } ?: return emptyList()
     fun column(vararg names: String): (List<String>) -> String {
         val index = names.map(header::indexOf).firstOrNull { it >= 0 } ?: -1

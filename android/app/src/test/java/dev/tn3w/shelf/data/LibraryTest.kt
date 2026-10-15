@@ -101,9 +101,9 @@ class LibraryTest {
             coverSource = "https://evil.example",
             providers = setOf(Gutenberg.id),
         )
-        preferences.merge(Backup(settings = imported.copy(margin = 12)))
+        preferences.merge(Backup(settings = imported.copy(margin = 44)))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)
-        assertEquals(current.copy(margin = 12), merged)
+        assertEquals(current.copy(margin = 44), merged)
     }
 
     @Test
@@ -128,8 +128,38 @@ class LibraryTest {
         preferences.merge(Backup(settings = imported))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)
         assertEquals(FONT_SCALES.endInclusive, merged.fontScale)
-        assertEquals(1f, merged.lineSpacing)
-        assertEquals(0, merged.margin)
+        assertEquals(SPACING_RANGE.start, merged.lineSpacing)
+        assertEquals(MARGIN_RANGE.first, merged.margin)
+        preferences.merge(Backup(settings = Settings(lineSpacing = 50f, margin = 9999)))
+        val large = json.decodeFromString<Settings>(preferences[settings]!!)
+        assertEquals(SPACING_RANGE.endInclusive, large.lineSpacing)
+        assertEquals(MARGIN_RANGE.last, large.margin)
+    }
+
+    @Test
+    fun redirectMovesCustomCovers() {
+        val directory = Files.createTempDirectory("books").toFile()
+        directory.resolve("5-cover-100").writeText("cover")
+        directory.resolve("6-cover-200").writeText("other")
+        moveCovers(directory) { if (it == 5) -9 else null }
+        assertEquals(
+            listOf("-9-cover-100", "6-cover-200"),
+            directory.list()!!.sorted(),
+        )
+        directory.deleteRecursively()
+    }
+
+    @Test
+    fun oversizedBookExtractionStops() {
+        val directory = Files.createTempDirectory("books").toFile()
+        val endless = object : InputStream() {
+            override fun read() = 1
+
+            override fun read(buffer: ByteArray, offset: Int, length: Int) = length
+        }
+        runCatching { extractBook(directory, "books/3.epub", endless, limit = 1024) }
+        assertEquals(emptyList<String>(), directory.list()!!.toList())
+        directory.deleteRecursively()
     }
 
     @Test

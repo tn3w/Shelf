@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.MutableIntList
 import kotlinx.serialization.Serializable
 import java.util.BitSet
 import java.util.PriorityQueue
@@ -214,17 +215,17 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun visibleWorks(segment: Segment, locals: IntArray): IntArray {
         val bits = visible[order.getValue(segment)]
-        val result = IntArrayList()
+        val result = MutableIntList()
         locals.forEach { if (bits.get(it)) result.add(segment.work(it)) }
-        return result.toArray()
+        return result.toIntArray()
     }
 
     fun tagWorks(tag: Int): IntArray {
-        val result = IntArrayList()
+        val result = MutableIntList()
         segments.forEach { segment ->
             visibleWorks(segment, segment.tagWorks(tag)).forEach(result::add)
         }
-        return result.toArray()
+        return result.toIntArray()
     }
 
     fun popularWorks(limit: Int, tag: Int? = null) =
@@ -243,7 +244,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 
     private fun allWorks(): IntArray {
-        val result = IntArrayList()
+        val result = MutableIntList()
         segments.forEachIndexed { index, segment ->
             val bits = visible[index]
             var local = bits.nextSetBit(0)
@@ -252,7 +253,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
                 local = bits.nextSetBit(local + 1)
             }
         }
-        return result.toArray().also { it.sort() }
+        return result.toIntArray().also { it.sort() }
     }
 
     private fun authorRecords(author: Author): Sequence<Pair<Segment, AuthorRecord>> {

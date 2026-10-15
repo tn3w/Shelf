@@ -12,17 +12,21 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import java.io.File
-import java.net.HttpURLConnection
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 private const val OFFER_LIMIT = 5
 private const val CANDIDATE_LIMIT = 8
-internal const val DOWNLOAD_TIMEOUT = 120_000
-private const val MAX_BOOK_BYTES = 200L * 1024 * 1024
+const val MAX_BOOK_BYTES = 200L * 1024 * 1024
+const val DOWNLOAD_MINUTES = 2L
+val downloadClient by lazy {
+    http.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
+}
 private const val EPUB_TYPE = "application/epub+zip"
 private val SIGNATURES = mapOf("epub" to "PK", "pdf" to "%PDF")
 
@@ -63,7 +67,7 @@ interface Provider {
 
     fun complete(offer: Offer): Offer? = offer
 
-    fun open(offer: Offer) = connect(offer.link).apply { readTimeout = DOWNLOAD_TIMEOUT }
+    fun open(offer: Offer) = downloadClient.fetch(offer.link)
 }
 
 abstract class FeedProvider : Provider {
@@ -122,23 +126,14 @@ internal fun rank(
 }
 
 fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) {
-    val connection = offer.provider.open(offer)
-    try {
-        download(connection, target, onProgress)
-    } finally {
-        connection.disconnect()
-    }
+    offer.provider.open(offer).use { download(it, target, onProgress) }
     check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
 }
 
-private fun download(
-    connection: HttpURLConnection,
-    target: File,
-    onProgress: (Float) -> Unit,
-) {
-    val total = connection.contentLengthLong
+private fun download(response: Response, target: File, onProgress: (Float) -> Unit) {
+    val total = response.body.contentLength()
     check(total <= MAX_BOOK_BYTES) { "book too large" }
-    connection.inputStream.use { input ->
+    response.stream.use { input ->
         target.outputStream().use { output ->
             copyWithProgress(input, output) { copied ->
                 check(copied <= MAX_BOOK_BYTES) { "book too large" }

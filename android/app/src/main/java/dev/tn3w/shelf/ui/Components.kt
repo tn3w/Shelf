@@ -78,7 +78,7 @@ private val PlaceholderHues =
     listOf(0xFF8C4A2F, 0xFF3F5B73, 0xFF5E6B3A, 0xFF7A3E5C, 0xFF4B4E6D, 0xFF9A6B2F)
 
 private fun placeholderColor(work: Int) =
-    Color(PlaceholderHues[Math.floorMod(work, PlaceholderHues.size)])
+    Color(PlaceholderHues[work.mod(PlaceholderHues.size)])
 
 @Composable
 fun IconLabel(icon: ImageVector, @StringRes label: Int) {

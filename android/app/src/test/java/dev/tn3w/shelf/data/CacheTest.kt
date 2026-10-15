@@ -1,14 +1,15 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.LruCache
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CacheTest {
     @Test
     fun evictsLeastRecentlyUsedBeyondCapacity() {
-        val cache = Cache<Int, Int>(2)
+        val cache = LruCache<Int, Int>(2)
         var loads = 0
-        fun read(key: Int) = cache.get(key) {
+        fun read(key: Int) = cache.getOrPut(key) {
             loads++
             key
         }

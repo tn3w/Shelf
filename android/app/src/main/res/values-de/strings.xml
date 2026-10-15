@@ -296,6 +296,7 @@
     <string name="free_books_add">Quelle erstellen</string>
     <string name="free_books_import">Datei importieren</string>
     <string name="free_books_export">Datei exportieren</string>
+    <string name="free_books_export_headers">Enthält gespeicherte Header wie Cookies oder Tokens</string>
     <string name="free_books_form">Formular</string>
     <string name="free_books_file">Datei</string>
     <string name="free_books_name">Name</string>

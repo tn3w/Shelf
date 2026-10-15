@@ -61,7 +61,7 @@ flowchart LR
 <tr><td>First launch</td><td><b>no request</b></td></tr>
 <tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
 <tr><td>Cover scanner</td><td><b>on device</b>, no request, frames never stored</td></tr>
-<tr><td>Requests</td><td>https only (own sources: http on local network too), no identifiers, no cookies</td></tr>
+<tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
 <tr><td>Hosts</td><td>GitHub, Open Library, DNB covers, or <b>your own server</b></td></tr>
 <tr><td>Free books</td><td><b>off</b>, each source opt-in, contacted only on search; own sources are data, no scripts</td></tr>
 </table>
@@ -134,12 +134,12 @@ and saves `shelf-source-debug.txt` (header values hidden).
 | `steps` | run in order on download; each adds its `fields` as variables |
 | `download` | file URL; redirects followed |
 | `format`, `languages` | `epub` default; catalogue languages served, empty = all |
-| `headers` | sent with every request, dropped when a redirect changes host |
+| `headers` | sent only to the search host, also after redirects |
 
 Rules apply `css` → `json` (dot path) → `attr` → `regex` (first group). `{name}` inserts
 URL-encoded, `{+name}` as is. Search knows `{query}`, `{title}`, `{author}`, `{language}`,
 `{isbn}`, `{isbns}`; with `{isbn}` up to 5 of the book's ISBNs are tried. Relative URLs
-resolve against the previous page. `http://` only for local hosts. Pages 30 s / 5 MB,
+resolve against the previous page. https only. Pages 30 s / 5 MB,
 files 120 s, regex 2 s.
 
 ```json
@@ -182,7 +182,7 @@ dots on the read title, sheet with book, shelf picker, **Scan again**. Tap → c
 with a lower threshold. ISBN barcodes (EAN-13, QR) are read with ZXing and looked up in
 every installed catalogue.
 
-On device, pure Kotlin, no network:
+On device, pure Kotlin, no network; camera via CameraX:
 
 - `data/Lines.kt`: 1280×960 grayscale, deskew, edge-based line finding, 48 px crops
 - `data/Recognizer.kt`: CNN for `assets/scan.bin` (PP-OCRv6 tiny, Apache-2.0,

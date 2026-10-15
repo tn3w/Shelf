@@ -11,9 +11,6 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import okhttp3.CookieJar
-import okhttp3.OkHttpClient
-import java.io.IOException
 import kotlin.random.Random
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
@@ -48,27 +45,8 @@ class ShelfApp :
 
     // Coil type-checks the Application for this; dropping it restores its default client.
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(context)
-        .components { add(OkHttpNetworkFetcherFactory({ anonymousClient })) }
+        .components { add(OkHttpNetworkFetcherFactory({ http })) }
         .build()
-
-    private val anonymousClient by lazy {
-        OkHttpClient.Builder()
-            .cookieJar(CookieJar.NO_COOKIES)
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .header("User-Agent", USER_AGENT)
-                    .header("Accept", "image/*")
-                    .build()
-                chain.proceed(request)
-            }
-            .addNetworkInterceptor { chain ->
-                val origin = chain.call().request().url.host
-                val url = chain.request().url.toUrl()
-                if (!isPermittedFrom(origin, url)) throw IOException("refusing $url")
-                chain.proceed(chain.request())
-            }
-            .build()
-    }
 
     fun systemLanguage(): String {
         val locales = LocaleList.getDefault()

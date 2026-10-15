@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.LruCache
+import androidx.collection.MutableIntList
 import dev.tn3w.shelf.BuildConfig
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
@@ -145,9 +147,9 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
     private val table = Table(buffer)
     val count = table.count
     private val firstTerms = List(count) { table.leadingText(it, skip = 1) }
-    private val cache = Cache<Int, List<Term>>(512)
+    private val cache = LruCache<Int, List<Term>>(512)
 
-    fun block(index: Int) = cache.get(index) {
+    fun block(index: Int) = cache.getOrPut(index) {
         val reader = ByteReader(table[index])
         var previous = ""
         buildList {
@@ -224,11 +226,11 @@ class Segment(buffer: ByteBuffer) {
     }
     private val isbns = sections["isbns"]?.let(::BlockIndex)
     private val libraryCovers = sections["library_covers"]?.let(::BlockIndex)
-    private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
-    private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
-    private val isbnBlocks = Cache<Int, Map<Int, Int>>(16)
-    private val editionIsbns = Cache<Int, List<Int>>(16)
-    private val coverBlocks = Cache<Int, Map<Int, LibraryCover>>(16)
+    private val blocks = LruCache<Pair<Table, Int>, List<ByteArray>>(256)
+    private val descriptionBlocks = LruCache<Int, Map<Int, Description>>(64)
+    private val isbnBlocks = LruCache<Int, Map<Int, Int>>(16)
+    private val editionIsbns = LruCache<Int, List<Int>>(16)
+    private val coverBlocks = LruCache<Int, Map<Int, LibraryCover>>(16)
 
     private fun section(name: String) = sections.getValue(name)
 
@@ -251,7 +253,7 @@ class Segment(buffer: ByteBuffer) {
 
     private fun record(table: Table, index: Int, dictionary: ByteArray = ByteArray(0)) =
         blocks
-            .get(table to index / recordsPerBlock) { (source, block) ->
+            .getOrPut(table to index / recordsPerBlock) { (source, block) ->
                 lengthPrefixed(inflate(source[block], dictionary))
             }[index % recordsPerBlock]
 
@@ -302,7 +304,7 @@ class Segment(buffer: ByteBuffer) {
         val block = descriptions.firsts.lastAtMost(local)
         if (block < 0) return Description("", false)
         return descriptionBlocks
-            .get(block) {
+            .getOrPut(block) {
                 val reader = ByteReader(inflate(descriptions.blocks[it], textDictionary))
                 val first = descriptions.firsts[it]
                 buildMap {
@@ -321,12 +323,12 @@ class Segment(buffer: ByteBuffer) {
         val index = isbns ?: return -1
         val block = index.firsts.lastAtMost(key)
         if (block < 0) return -1
-        return isbnBlocks.get(block) { isbnBlock(index, it) }[key] ?: -1
+        return isbnBlocks.getOrPut(block) { isbnBlock(index, it) }[key] ?: -1
     }
 
     fun isbnsOf(local: Int): List<Int> {
         val index = isbns ?: return emptyList()
-        return editionIsbns.get(local) {
+        return editionIsbns.getOrPut(local) {
             (0 until index.blocks.count).flatMap { block ->
                 isbnBlock(index, block).filterValues { it == local }.keys
             }
@@ -348,7 +350,7 @@ class Segment(buffer: ByteBuffer) {
         val index = libraryCovers ?: return null
         val block = index.firsts.lastAtMost(local)
         if (block < 0) return null
-        return coverBlocks.get(block) {
+        return coverBlocks.getOrPut(block) {
             val reader = ByteReader(inflate(index.blocks[it]))
             var covered = index.firsts[it]
             buildMap {
@@ -404,7 +406,7 @@ class Ranks(buffer: ByteBuffer) {
     private val aliases = sections["aliases"]?.asIntBuffer()
         ?.let { IntArray(it.limit(), it::get) }
         ?: IntArray(0)
-    private val cache = Cache<Int, PopularityBlock>(64)
+    private val cache = LruCache<Int, PopularityBlock>(64)
 
     fun frequency(text: String) = terms.find(text)?.frequency ?: 0
 
@@ -426,14 +428,14 @@ class Ranks(buffer: ByteBuffer) {
     fun popularity(work: Int): Popularity? {
         val index = popularityIndex.firsts.lastAtMost(work)
         if (index < 0) return null
-        val block = cache.get(index, ::decode)
+        val block = cache.getOrPut(index, ::decode)
         val position = block.works.binarySearch(work)
         return if (position < 0) null else block.rows[position]
     }
 
     private fun decode(index: Int): PopularityBlock {
         val reader = ByteReader(inflate(popularityIndex.blocks[index]))
-        val works = IntArrayList()
+        val works = MutableIntList()
         val rows = mutableListOf<Popularity>()
         var work = popularityIndex.firsts[index]
         while (reader.hasMore) {
@@ -445,6 +447,6 @@ class Ranks(buffer: ByteBuffer) {
             rows +=
                 Popularity(score, readers, ratings, reader.byte() / 20.0, reader.byte())
         }
-        return PopularityBlock(works.toArray(), rows.toTypedArray())
+        return PopularityBlock(works.toIntArray(), rows.toTypedArray())
     }
 }

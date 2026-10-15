@@ -41,6 +41,8 @@ private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
 private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
 val FONT_SCALES = 0.7f..1.8f
+val SPACING_RANGE = 1.35f..1.8f
+val MARGIN_RANGE = 16..44
 
 enum class Shelf {
     Reading,
@@ -360,8 +362,10 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     }
 
     suspend fun importFile(uri: Uri): Int? {
-        val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
-        if (!isReadable(fileName)) return null
+        val fileName = withContext(Dispatchers.IO) {
+            runCatching { context.displayName(uri) }.getOrNull()
+        }
+        if (fileName == null || !isReadable(fileName)) return null
         val temporary = File.createTempFile("import", ".tmp", booksDir.apply { mkdirs() })
         val work = context.readFrom(uri) { input ->
             temporary.outputStream().use { contentWork(input, it) }
@@ -398,8 +402,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         deleteOtherFormats(booksDir, work, keep = file.name)
     }
 
-    private fun extensionOf(fileName: String) =
-        fileName.substringAfterLast('.', "").lowercase()
+    private fun extensionOf(fileName: String) = File(fileName).extension.lowercase()
 
     private fun isReadable(fileName: String) =
         extensionOf(fileName) in READABLE_EXTENSIONS
@@ -515,6 +518,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val works =
             saved.first().map { it.work } + progress.first().keys + dismissed.first()
         if (works.none { alias(it) != null }) return
+        moveCovers(booksDir, alias)
         store.edit { it.redirect(alias) }
     }
 
@@ -563,16 +567,33 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     private suspend fun merge(backup: Backup) = store.edit { it.merge(backup) }
 }
 
-internal fun extractBook(directory: File, entry: String, input: InputStream) {
+internal fun extractBook(
+    directory: File,
+    entry: String,
+    input: InputStream,
+    limit: Long = MAX_BOOK_BYTES,
+) {
     val name = entry.removePrefix(BOOKS_PREFIX)
     if (!BOOK_FILE.matches(name)) return
     val target = directory.resolve(name).apply { parentFile?.mkdirs() }
-    if (target.exists()) return
+    if (target.exists() || directory.usableSpace < limit) return
     replaceFile(target) { file ->
-        file.outputStream().use(input::copyTo)
+        file.outputStream().use { output ->
+            copyWithProgress(input, output) { size ->
+                check(size <= limit) { "$name is too large" }
+            }
+        }
         if (name.endsWith(".pdf")) replaceJpegIccProfiles(file)
     }
 }
+
+internal fun moveCovers(directory: File, alias: (Int) -> Int?) =
+    directory.listFiles().orEmpty().forEach { file ->
+        val work = file.name.substringBefore("-cover-", "").toIntOrNull()
+        val target = work?.let(alias) ?: return@forEach
+        val cover = file.name.substringAfter("-cover-")
+        file.renameTo(directory.resolve("$target-cover-$cover"))
+    }
 
 private fun Preferences.toBackup() = Backup(
     decode(ENTRIES, emptyList()),
@@ -597,8 +618,8 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     language = imported.language.takeIf { it.isEmpty() || it in LANGUAGES }
         ?: current.language,
     fontScale = imported.fontScale.coerceIn(FONT_SCALES),
-    lineSpacing = imported.lineSpacing.coerceAtLeast(1f),
-    margin = imported.margin.coerceAtLeast(0),
+    lineSpacing = imported.lineSpacing.coerceIn(SPACING_RANGE),
+    margin = imported.margin.coerceIn(MARGIN_RANGE),
     offline = current.offline,
     onlineCovers = current.onlineCovers,
     authorImages = current.authorImages,

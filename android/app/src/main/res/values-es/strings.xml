@@ -304,6 +304,7 @@
     <string name="free_books_add">Crear fuente</string>
     <string name="free_books_import">Importar archivo</string>
     <string name="free_books_export">Exportar archivo</string>
+    <string name="free_books_export_headers">Incluye encabezados guardados como cookies o tokens</string>
     <string name="free_books_form">Formulario</string>
     <string name="free_books_file">Archivo</string>
     <string name="free_books_name">Nombre</string>

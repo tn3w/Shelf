@@ -3,6 +3,7 @@ package dev.tn3w.shelf.data
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -263,5 +264,21 @@ class DocumentTest {
         val file = epub(folder.newFile("odd.epub"), "<p>Body</p>", "a[1]|{b}^ c")
         val texts = blocks(openDocument(file)).map { it.text }
         assertEquals(listOf("Body"), texts)
+    }
+
+    @Test
+    fun hrefWithLiteralPercentResolves() {
+        val opf = "OEBPS/content.opf"
+        assertEquals("OEBPS/100%.xhtml", resolvePath(opf, "100%.xhtml#top"))
+        assertEquals("images/a b.png", resolvePath(opf, "../images/a%20b.png"))
+        assertEquals("images/1%.png", resolvePath(opf, "../images/1%.png"))
+        assertEquals("cover.xhtml", resolvePath("content.opf", "./cover.xhtml"))
+    }
+
+    @Test
+    fun sampleSizeSurvivesEmptyBounds() {
+        assertEquals(1, sampleSize(100, 100, 200, 200))
+        assertEquals(4, sampleSize(1000, 1000, 200, 200))
+        assertTrue(sampleSize(1000, 1000, 0, 0) > 0)
     }
 }

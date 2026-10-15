@@ -77,7 +77,12 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
         importer.launch(SOURCE_TYPES)
     }
     if (recipes.isNotEmpty()) {
-        val exportStatus = stringResource(R.string.export_failed).takeIf { exportFailed }
+        val secrets = recipes.any { it.headers.isNotEmpty() }
+        val exportStatus = when {
+            exportFailed -> stringResource(R.string.export_failed)
+            secrets -> stringResource(R.string.free_books_export_headers)
+            else -> null
+        }
         ActionRow(R.string.free_books_export, Icons.Outlined.Upload, exportStatus) {
             exporter.launch(SOURCES_FILE)
         }

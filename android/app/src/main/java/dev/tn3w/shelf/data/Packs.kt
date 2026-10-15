@@ -102,6 +102,12 @@ private fun parseName(name: String): LocalFile? {
     return LocalFile(name.removeSuffix(".bin"), pack, release)
 }
 
+internal val ManifestEntry.isValid
+    get() = parseName("$id.bin")?.let { it.language == language && it.pack == pack } ==
+        true
+
+internal fun Manifest.withValidEntries() = copy(segments = segments.filter { it.isValid })
+
 private fun mapFile(file: File): ByteBuffer = RandomAccessFile(file, "r").use {
     it.channel.map(FileChannel.MapMode.READ_ONLY, 0, it.length())
 }
@@ -178,6 +184,7 @@ class Packs(private val context: Context) {
         runCatching { json.decodeFromString<Manifest>(text) }
             .getOrNull()
             ?.takeIf { it.format == CATALOGUE_FORMAT }
+            ?.withValidEntries()
 
     private fun downloaded() =
         directory.listFiles().orEmpty().mapNotNull { parseName(it.name) }
@@ -277,7 +284,7 @@ class Packs(private val context: Context) {
 
     suspend fun refreshManifest(): Manifest = withContext(Dispatchers.IO) {
         val text = fetchText(manifestUrl())
-        val manifest = json.decodeFromString<Manifest>(text)
+        val manifest = json.decodeFromString<Manifest>(text).withValidEntries()
         check(manifest.format == CATALOGUE_FORMAT) {
             "catalogue format ${manifest.format} is no longer supported"
         }
@@ -368,8 +375,13 @@ class Packs(private val context: Context) {
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->
             val digest = MessageDigest.getInstance("SHA-256")
-            DigestInputStream(connect(entry.url).inputStream, digest).use { input ->
-                temporary.outputStream().use { copyWithProgress(input, it, onBytes) }
+            DigestInputStream(http.fetch(entry.url).stream, digest).use { input ->
+                temporary.outputStream().use { output ->
+                    copyWithProgress(input, output) { bytes ->
+                        check(bytes <= entry.size) { "${entry.id} is larger than listed" }
+                        onBytes(bytes)
+                    }
+                }
             }
             check(sha256(digest) == entry.sha256) { "checksum mismatch for ${entry.id}" }
         }
