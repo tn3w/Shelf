@@ -53,7 +53,7 @@ fun LibraryScreen(navigator: Navigator) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
     val saved by app.library.saved.collectAsStateWithLifecycle(null)
-    val settings by app.library.settings.collectAsStateWithLifecycle(null)
+    val settings = loadedSettings()
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf<Shelf?>(null) }

@@ -217,15 +217,9 @@ internal fun literaryShape(cover: CoverCanvas): Typeset = with(cover) {
                 val y = top + index * spacing
                 var x = 0f
                 while (x <= width) {
-                    val offset =
-                        sin(x / width * TAU * frequency + index * 0.7f) * amplitude
-                    if (x ==
-                        0f
-                    ) {
-                        wave.moveTo(x, y + offset)
-                    } else {
-                        wave.lineTo(x, y + offset)
-                    }
+                    val waveY =
+                        y + sin(x / width * TAU * frequency + index * 0.7f) * amplitude
+                    if (x == 0f) wave.moveTo(x, waveY) else wave.lineTo(x, waveY)
                     x += width / 160f
                 }
                 canvas.drawPath(

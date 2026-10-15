@@ -33,7 +33,7 @@
     <string name="daily_goal_hint">Pages to read each day to keep your streak. 0 hides the widget.</string>
     <string name="download">Download</string>
     <string name="download_all">All (%s)</string>
-    <string name="download_pack">Download %s</string>
+    <string name="download_item">Download %s</string>
     <string name="explore">Explore</string>
     <string name="finished">Finished</string>
     <string name="for_you">For you</string>
@@ -85,7 +85,7 @@
     <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
     <string name="resume">Continue</string>
-    <string name="retry_pack">Retry %s</string>
+    <string name="retry_item">Retry %s</string>
     <string name="search">Search</string>
     <string name="search_hint">Books and authors</string>
     <string name="settings">Settings</string>
@@ -300,6 +300,8 @@
     <string name="free_books_body">POST body (optional)</string>
     <string name="free_books_items">Items</string>
     <string name="free_books_variable_add">Add variable</string>
+    <string name="free_books_variable_invalid">Letters, digits and _ only</string>
+    <string name="free_books_variable_taken">Name already in use</string>
     <string name="free_books_step">Step %d</string>
     <string name="free_books_step_add">Add step</string>
     <string name="free_books_headers">Headers</string>

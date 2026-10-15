@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -80,10 +81,9 @@ private fun placeholderColor(work: Int) =
     Color(PlaceholderHues[Math.floorMod(work, PlaceholderHues.size)])
 
 @Composable
-private fun loadedSettings(): Settings? {
-    val settings by
-        shelfApp().library.settings.collectAsStateWithLifecycle<Settings?>(null)
-    return settings
+fun IconLabel(icon: ImageVector, @StringRes label: Int) {
+    Icon(icon, null, Modifier.size(18.dp))
+    Text(stringResource(label), Modifier.padding(start = 8.dp))
 }
 
 @Composable

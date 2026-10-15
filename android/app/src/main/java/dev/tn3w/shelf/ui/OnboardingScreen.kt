@@ -48,7 +48,7 @@ private fun AboutText(text: String) {
 @Composable
 fun OnboardingScreen() {
     val app = shelfApp()
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     var language by remember { mutableStateOf(app.systemLanguage()) }
     val selected = remember(language) { mutableStateListOf<String>() }
@@ -188,7 +188,7 @@ private fun CoreRow(info: PackInfo?, download: Download?) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                stringResource(PACK_LABELS.getValue("core")),
+                stringResource(PACKS.getValue("core")),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -233,7 +233,7 @@ private fun OnboardingPacks(
             val checked = info.pack in selected
             val size = if (info.bytes > 0) bytes(info.bytes) else "–"
             SettingRow(
-                stringResource(PACK_LABELS.getValue(info.pack)),
+                stringResource(PACKS.getValue(info.pack)),
                 size,
                 onClick = {
                     if (checked) selected.remove(info.pack) else selected.add(info.pack)

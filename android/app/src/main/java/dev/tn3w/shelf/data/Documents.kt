@@ -38,8 +38,8 @@ private val BOLD_TAGS = setOf("b", "strong")
 private val ITALIC_TAGS = setOf("i", "em", "cite")
 private val IMAGE_TAGS = setOf("img", "image")
 
-val READABLE_EXTENSIONS =
-    setOf("epub", "pdf", "txt", "md", "html", "htm", "xhtml", "fb2", "cbz")
+val BOOK_FORMATS = listOf("epub", "pdf", "fb2", "cbz", "txt")
+val READABLE_EXTENSIONS = BOOK_FORMATS + listOf("md", "html", "htm", "xhtml")
 
 data class Span(val start: Int, val end: Int, val bold: Boolean, val italic: Boolean)
 

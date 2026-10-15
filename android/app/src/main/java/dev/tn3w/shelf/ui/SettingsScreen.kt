@@ -125,10 +125,16 @@ fun bytes(value: Long) = Formatter.formatShortFileSize(LocalContext.current, val
 typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
 
 @Composable
-fun rememberSettings(): Pair<Settings, SettingsUpdate> {
+fun loadedSettings(): Settings? {
+    val settings by shelfApp().library.settings.collectAsStateWithLifecycle(null)
+    return settings
+}
+
+@Composable
+fun rememberSettings(): Pair<Settings, SettingsUpdate>? {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
-    val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
+    val settings = loadedSettings() ?: return null
     return settings to { change -> scope.launch { app.library.updateSettings(change) } }
 }
 
@@ -209,7 +215,7 @@ private fun LibraryStats(onOpen: () -> Unit) {
 @Composable
 private fun GeneralSettings(navigator: Navigator) {
     val app = shelfApp()
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     SettingsGroup(stringResource(R.string.appearance)) {
         OptionChoice(THEMES, settings.theme) { mode -> update { it.copy(theme = mode) } }
         SwitchRow(
@@ -240,7 +246,7 @@ private fun GeneralSettings(navigator: Navigator) {
 
 @Composable
 private fun ReadingSettings() {
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     var scale by remember(settings.fontScale) { mutableFloatStateOf(settings.fontScale) }
     SettingsGroup(
         stringResource(R.string.daily_goal), stringResource(R.string.daily_goal_hint),
@@ -373,7 +379,7 @@ private fun <T> OptionChoice(
 @Composable
 private fun PrivacySettings() {
     val context = LocalContext.current
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(context)
     SettingsGroup(hint = stringResource(R.string.privacy_note)) {
         OfflineRow(settings, update)
@@ -602,7 +608,7 @@ fun OfflineRow(settings: Settings, update: SettingsUpdate) {
 private fun AboutRows() {
     val uri = LocalUriHandler.current
     val context = LocalContext.current
-    val (settings, _) = rememberSettings()
+    val settings = loadedSettings() ?: return
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }

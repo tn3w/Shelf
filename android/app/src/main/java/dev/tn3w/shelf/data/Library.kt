@@ -211,7 +211,9 @@ private fun localWork(hash: Int) = -1 - (hash and Int.MAX_VALUE)
 fun ownBook(title: String, author: String) =
     bookOf(localWork((title + author).hashCode()), title, author)
 
-private const val IMPORT_TEMPORARY = "import.tmp"
+private val TEMPORARY_EXTENSIONS = setOf("part", "tmp")
+
+private fun File.isTemporary() = extension in TEMPORARY_EXTENSIONS
 
 internal fun contentWork(input: InputStream, output: OutputStream? = null): Int {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -236,6 +238,17 @@ fun Context.displayName(uri: Uri): String {
     val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(type)
     return if (extension == null) name else "$name.$extension"
 }
+
+suspend fun <T> Context.readFrom(uri: Uri, read: (InputStream) -> T): T? =
+    withContext(Dispatchers.IO) {
+        runCatching { contentResolver.openInputStream(uri)?.use(read) }.getOrNull()
+    }
+
+suspend fun Context.writeTo(uri: Uri, write: (OutputStream) -> Unit) =
+    withContext(Dispatchers.IO) {
+        runCatching { contentResolver.openOutputStream(uri)?.use(write) != null }
+            .getOrDefault(false)
+    }
 
 private inline fun <reified T> decodeOrNull(text: String) =
     runCatching { json.decodeFromString<T>(text) }.getOrNull()
@@ -306,6 +319,10 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         store.edit { it[PDFS_NORMALISED] = true }
     }
 
+    suspend fun deleteTemporaryFiles() = withContext(Dispatchers.IO) {
+        booksDir.listFiles(File::isTemporary).orEmpty().forEach(File::delete)
+    }
+
     suspend fun hasFile(progress: Progress?) = withContext(Dispatchers.IO) {
         progress != null && bookFile(progress.file).exists()
     }
@@ -344,16 +361,15 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     suspend fun importFile(uri: Uri): Int? {
         val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
         if (!isReadable(fileName)) return null
-        val temporary = bookFile(IMPORT_TEMPORARY).apply { parentFile?.mkdirs() }
-        val work = readFrom(uri) { input ->
+        val temporary = File.createTempFile("import", ".tmp", booksDir.apply { mkdirs() })
+        val work = context.readFrom(uri) { input ->
             temporary.outputStream().use { contentWork(input, it) }
         }
-        if (work == null) {
+        val name = "$work.${extensionOf(fileName)}"
+        if (work == null || !temporary.renameTo(bookFile(name))) {
             temporary.delete()
             return null
         }
-        val name = "$work.${extensionOf(fileName)}"
-        temporary.renameTo(bookFile(name))
         finishBook(bookFile(name), work)
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
@@ -370,8 +386,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         if (!isReadable(fileName)) return null
         val name = "$work.${extensionOf(fileName)}"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
-        val copied = readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
-        if (copied == null) {
+        if (copy(uri, target) == null) {
             target.delete()
             return null
         }
@@ -396,7 +411,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val cover = (System.currentTimeMillis() / 1000).toInt()
         val name = "$work-cover-$cover"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
-        if (readFrom(uri) { input -> target.outputStream().use(input::copyTo) } == null) {
+        if (copy(uri, target) == null) {
             target.delete()
             return null
         }
@@ -409,19 +424,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         .orEmpty()
         .forEach { it.delete() }
 
-    private suspend fun <T> readFrom(uri: Uri, read: (InputStream) -> T): T? =
-        withContext(Dispatchers.IO) {
-            runCatching { context.contentResolver.openInputStream(uri)?.use(read) }
-                .getOrNull()
-        }
-
-    private suspend fun writeTo(uri: Uri, write: (OutputStream) -> Unit) =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                context.contentResolver.openOutputStream(uri)?.use(write) != null
-            }
-                .getOrDefault(false)
-        }
+    private suspend fun copy(uri: Uri, target: File) =
+        context.readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
 
     suspend fun deleteBook(work: Int, keepShelves: Boolean = false) {
         progress.first()[work]?.let { bookFile(it.file).delete() }
@@ -456,7 +460,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         loaded: Loaded?,
         onProgress: (Float) -> Unit,
     ): CsvReport? {
-        val text = readFrom(uri) { it.readBytes().decodeToString() } ?: return null
+        val text =
+            context.readFrom(uri) { it.readBytes().decodeToString() } ?: return null
         val books = csvBooks(text).ifEmpty { return null }
         val missing = mutableListOf<String>()
         val entries = withContext(Dispatchers.Default) {
@@ -481,7 +486,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun exportCsv(uri: Uri): Boolean {
         val entries = saved.first()
-        return writeTo(uri) { it.write(csvOf(entries).toByteArray()) }
+        return context.writeTo(uri) { it.write(csvOf(entries).toByteArray()) }
     }
 
     suspend fun saveProgress(work: Int, progress: Progress, pagesRead: Int = 0) =
@@ -518,7 +523,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun exportTo(uri: Uri): Boolean {
         val backup = data.first().toBackup()
-        return writeTo(uri) { writeArchive(it, backup) }
+        return context.writeTo(uri) { writeArchive(it, backup) }
     }
 
     private fun writeArchive(output: OutputStream, backup: Backup) =
@@ -526,7 +531,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             archive.putNextEntry(ZipEntry(BACKUP_ENTRY))
             archive.write(json.encodeToString(backup).toByteArray())
             archive.closeEntry()
-            booksDir.listFiles().orEmpty().forEach { file ->
+            val files = booksDir.listFiles().orEmpty().filterNot(File::isTemporary)
+            files.forEach { file ->
                 archive.putNextEntry(ZipEntry("$BOOKS_PREFIX${file.name}"))
                 file.inputStream().use { it.copyTo(archive) }
                 archive.closeEntry()
@@ -534,7 +540,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         }
 
     suspend fun importFrom(uri: Uri): Boolean {
-        val backup = readFrom(uri, ::readArchive) ?: return false
+        val backup = context.readFrom(uri, ::readArchive) ?: return false
         merge(backup)
         return true
     }

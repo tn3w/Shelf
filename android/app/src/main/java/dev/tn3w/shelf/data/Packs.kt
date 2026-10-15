@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.data
 
 import android.content.Context
+import dev.tn3w.shelf.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.*
@@ -15,16 +16,16 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 
 val LANGUAGES = listOf("en", "de", "fr", "es")
-val PACKS = listOf(
-    "core",
-    "fantasy",
-    "scifi",
-    "mystery",
-    "romance",
-    "kids",
-    "young-adult",
-    "nonfiction",
-    "general",
+val PACKS = mapOf(
+    "core" to R.string.pack_core,
+    "fantasy" to R.string.pack_fantasy,
+    "scifi" to R.string.pack_scifi,
+    "mystery" to R.string.pack_mystery,
+    "romance" to R.string.pack_romance,
+    "kids" to R.string.pack_kids,
+    "young-adult" to R.string.pack_young_adult,
+    "nonfiction" to R.string.pack_nonfiction,
+    "general" to R.string.pack_general,
 )
 private fun labelParts(label: String) = label.split("-").map { it.toIntOrNull() ?: 0 }
 
@@ -117,7 +118,7 @@ internal fun currentSegments(segments: List<Segment>) = segments
     .sortedWith(
         compareBy<Segment, String>(releaseOrder) { it.month }
             .thenBy { !it.isBase }
-            .thenBy { PACKS.indexOf(it.pack) },
+            .thenBy { PACKS.keys.indexOf(it.pack) },
     )
 
 internal fun newest(vararg manifests: Manifest?) = manifests
@@ -247,7 +248,7 @@ class Packs(private val context: Context) {
         val offered = entries.map { it.pack }.toSet()
         val missingRanks =
             entries.filter { it.pack == "ranks" && it.id !in ids }.sumOf { it.size }
-        val listed = if (manifest == null) PACKS else PACKS.filter { it in offered }
+        val listed = PACKS.keys.filter { manifest == null || it in offered }
         return listed.map { pack ->
             val needed = entries.filter { it.pack == pack }
             val present = files.filter { it.pack == pack }

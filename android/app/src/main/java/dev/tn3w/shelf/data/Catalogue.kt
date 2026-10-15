@@ -91,6 +91,11 @@ fun normalizedIsbn(text: String): String? {
     return isbn.takeIf { cleaned.length == 10 || it == cleaned }
 }
 
+fun isbnsFor(book: Book, saved: String, catalogue: List<String>) =
+    (listOf(saved, book.libraryCover?.isbn.orEmpty()) + catalogue)
+        .mapNotNull(::normalizedIsbn)
+        .distinct()
+
 fun isbnKey(isbn: String) =
     normalizedIsbn(isbn)?.let { (it.take(12).toLong() - ISBN_BASE).toInt() }
 
@@ -180,13 +185,16 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         }
     }
 
-    fun isbnsOf(work: Int) = segments
-        .flatMap { segment ->
-            val local = segment.localOf(work)
-            if (local < 0) emptyList() else segment.isbnsOf(local)
-        }
-        .distinct()
-        .map(::isbnOf)
+    fun isbnsOf(work: Int): List<String> {
+        val target = if (find(work) != null) work else alias(work) ?: return emptyList()
+        return segments
+            .flatMap { segment ->
+                val local = segment.localOf(target)
+                if (local < 0) emptyList() else segment.isbnsOf(local)
+            }
+            .distinct()
+            .map(::isbnOf)
+    }
 
     fun facts(work: Int) = locate(work)?.let { it.segment.facts(it.local) }
 

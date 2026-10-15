@@ -3,6 +3,8 @@ package dev.tn3w.shelf.data
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -13,6 +15,7 @@ import org.junit.Test
 import java.io.File
 import java.io.IOException
 import java.net.InetSocketAddress
+import java.net.URL
 import java.net.URLDecoder
 
 private const val TOKEN = "Bearer shelf-test"
@@ -90,8 +93,8 @@ class RecipesTest {
         }
         server.createContext("/api/search") { exchange ->
             val body = exchange.requestBody.readBytes().decodeToString()
-            val found = Regex(""""q":"([^"]*)"""").find(body)
-            val query = found?.groupValues?.get(1).orEmpty()
+            val request = json.parseToJsonElement(body).jsonObject
+            val query = request.getValue("q").jsonPrimitive.content
             val results = matching(query).joinToString(",") {
                 """{"name":"${it.first}","authors":["${it.second}"],"id":"${it.third}"}"""
             }
@@ -118,11 +121,7 @@ class RecipesTest {
         steps = listOf(
             RecipeStep(
                 url = "/details?md5={md5}",
-                fields = mapOf(
-                    "key" to Pick(
-                        regex = KEY_PATTERN,
-                    ),
-                ),
+                fields = mapOf("key" to Pick(regex = KEY_PATTERN)),
             ),
         ),
         download = "http://127.0.0.1:$port/download?md5={md5}&key={key}",
@@ -191,7 +190,7 @@ class RecipesTest {
     @Test
     fun probeTracesEveryRequest() {
         val lines = mutableListOf<String>()
-        val source = OwnSource(htmlRecipe()).apply { log = { lines += it } }
+        val source = OwnSource(htmlRecipe(), log = { lines += it })
         source.probe(Query("Emma", "Jane Austen", "en"))
         assertTrue(lines.any { it.startsWith("GET http://127.0.0.1:$port/search") })
         assertTrue(lines.any { it.trim() == "key = $KEY" })
@@ -201,7 +200,7 @@ class RecipesTest {
     @Test
     fun traceShowsEachRequestBeforeItsAnswerAndEveryRedirect() {
         val lines = mutableListOf<String>()
-        OwnSource(htmlRecipe()).apply { log = { lines += it } }
+        OwnSource(htmlRecipe(), log = { lines += it })
             .probe(Query("Emma", "", "en"))
         val request = lines.indexOfFirst {
             it.startsWith("GET http://127.0.0.1:$port/search")
@@ -214,10 +213,8 @@ class RecipesTest {
     @Test
     fun debugTraceAddsHeadersPagesAndItems() {
         val lines = mutableListOf<String>()
-        OwnSource(htmlRecipe()).apply {
-            log = { lines += it }
-            verbose = true
-        }.probe(Query("Pride", "", "en"))
+        OwnSource(htmlRecipe(), log = { lines += it }, verbose = true)
+            .probe(Query("Pride", "", "en"))
         assertTrue(lines.any { it.startsWith("  < Content-length: ") })
         assertTrue(lines.any { it.startsWith("  page:") && "<li class=\"book\">" in it })
         assertTrue(lines.any { it.startsWith("item 2: ") && "Illustrated" in it })
@@ -242,7 +239,7 @@ class RecipesTest {
     @Test
     fun isbnSearchTriesEachIsbnAndKeepsExactMatches() {
         val lines = mutableListOf<String>()
-        val source = OwnSource(isbnRecipe()).apply { log = { lines += it } }
+        val source = OwnSource(isbnRecipe(), log = { lines += it })
         val query = PRIDE_QUERY.copy(isbns = listOf("9780439023481", "9780306406157"))
         val offers = runBlocking { source.search(query) }
         assertEquals(listOf("Other Edition"), offers.map { it.title })
@@ -254,21 +251,16 @@ class RecipesTest {
     @Test
     fun isbnSearchWithoutIsbnFindsNothing() {
         val lines = mutableListOf<String>()
-        val source = OwnSource(isbnRecipe()).apply { log = { lines += it } }
+        val source = OwnSource(isbnRecipe(), log = { lines += it })
         assertTrue(source.find(PRIDE_QUERY).isEmpty())
         assertEquals(listOf("no ISBN known"), lines)
         assertFalse(OwnSource(htmlRecipe()).usesIsbn)
     }
 
     @Test
-    fun isbnsForPrefersOwnThenLibraryThenCatalogue() {
-        val book = Book(
-            1, "Emma", "", "", emptyList(), 0, 0, emptyList(), null,
-            LibraryCover(DNB, "9783161484100"),
-        )
-        val catalogue = listOf("9783161484100", "bad", "9780439023481")
-        val isbns = isbnsFor(book, "0306406152", catalogue)
-        assertEquals(listOf("9780306406157", "9783161484100", "9780439023481"), isbns)
+    fun ownSourcesWithSameRecipeAreEqualKeys() {
+        val results = mapOf<Provider, Int>(OwnSource(htmlRecipe()) to 1)
+        assertEquals(1, results[OwnSource(htmlRecipe())])
     }
 
     @Test
@@ -305,13 +297,13 @@ class RecipesTest {
     fun plainHttpOnlyForLocalHosts() {
         val remote = htmlRecipe().copy(download = "http://example.org/file?md5={md5}")
         assertTrue(remote.problems().any { "https" in it })
-        val local =
-            listOf("localhost", "nas.local", "192.168.1.5", "10.0.2.2", "[fd00::1]")
-        (local + "127.0.0.1")
-            .forEach { assertTrue(it, isLocalHost(it)) }
+        val local = listOf(
+            "localhost", "nas.local", "127.0.0.1", "10.0.2.2", "192.168.1.5", "[fd00::1]",
+        )
+        local.forEach { assertTrue(it, isLocalHost(it)) }
         listOf("example.org", "8.8.8.8", "cafe", "[2001:db8::1]")
             .forEach { assertFalse(it, isLocalHost(it)) }
-        assertFalse(isPermitted(java.net.URL("http://192.168.1.5/")))
+        assertFalse(isPermitted(URL("http://192.168.1.5/")))
     }
 
     @Test

@@ -31,7 +31,7 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun FreeBookSettings() {
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     SettingsGroup(hint = stringResource(R.string.free_books_note)) {
         PROVIDERS.forEach { ProviderSwitch(it, settings, update, enabled = !offline) }
@@ -69,26 +69,28 @@ fun ProviderSwitch(
 @Composable
 fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
     val app = shelfApp()
-    val (_, update) = rememberSettings()
-    val loaded by app.library.settings.collectAsStateWithLifecycle(null)
-    val settings = loaded ?: return
+    val (settings, update) = rememberSettings() ?: return
     var choosing by remember { mutableStateOf(settings.providers.isEmpty()) }
     val own by app.ownSources.recipes.collectAsStateWithLifecycle()
-    val providers = PROVIDERS + own.map(::OwnSource)
-    val needsIsbn = settings.enabledProviders(own).any { it is OwnSource && it.usesIsbn }
-    val isbns = bookIsbns(book, needsIsbn)
     val language = app.bookLanguage(settings)
+    val enabled = settings.enabledProviders(own).filter { it.serves(language) }
+    val isbns = bookIsbns(book, enabled.any { it is OwnSource && it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
     ModalBottomSheet(onDismiss, sheetState = rememberModalBottomSheetState(true)) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             SheetTitle(book) { if (!choosing) SourcesButton { choosing = true } }
             if (!choosing) {
-                if (isbns == null) Loading()
-                if (isbns != null) Offers(book, query, settings, own, onReady)
+                if (isbns == null) {
+                    Loading()
+                } else {
+                    Offers(book, query, enabled, settings.onlineCovers, onReady)
+                }
                 return@Column
             }
             SettingsGroup(hint = stringResource(R.string.free_books_choose)) {
-                providers.forEach { ProviderSwitch(it, settings, update, enabled = true) }
+                allProviders(own).forEach {
+                    ProviderSwitch(it, settings, update, enabled = true)
+                }
             }
             SearchButton(settings.providers.isNotEmpty()) { choosing = false }
         }
@@ -105,12 +107,12 @@ private fun bookIsbns(book: Book, catalogue: Boolean): List<String>? {
     val entries = saved ?: return null
     val own = entries.firstOrNull { it.work == book.work }?.isbn.orEmpty()
     return produceState<List<String>?>(null, book.work, own, catalogue) {
-        val editions = if (!catalogue) {
-            emptyList()
-        } else {
+        val editions = if (catalogue) {
             withContext(Dispatchers.IO) {
                 app.loaded.value?.catalogueOf(book.work)?.isbnsOf(book.work).orEmpty()
             }
+        } else {
+            emptyList()
         }
         value = isbnsFor(book, own, editions)
     }.value
@@ -140,8 +142,7 @@ private fun SheetTitle(book: Book, action: @Composable () -> Unit) {
 
 @Composable
 private fun SourcesButton(onClick: () -> Unit) = TextButton(onClick = onClick) {
-    Icon(Icons.Outlined.Tune, null, Modifier.size(18.dp))
-    Text(stringResource(R.string.free_books_sources), Modifier.padding(start = 8.dp))
+    IconLabel(Icons.Outlined.Tune, R.string.free_books_sources)
 }
 
 @Composable
@@ -150,21 +151,19 @@ private fun SearchButton(enabled: Boolean, onClick: () -> Unit) = Button(
     enabled = enabled,
     modifier = Modifier.fillMaxWidth().padding(ScreenPadding, 16.dp),
 ) {
-    Icon(Icons.Outlined.Search, null, Modifier.size(18.dp))
-    Text(stringResource(R.string.search), Modifier.padding(start = 8.dp))
+    IconLabel(Icons.Outlined.Search, R.string.search)
 }
 
 @Composable
 private fun Offers(
     book: Book,
     query: Query,
-    settings: Settings,
-    own: List<Recipe>,
+    providers: List<Provider>,
+    covers: Boolean,
     onReady: () -> Unit,
 ) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
-    val providers = settings.enabledProviders(own).filter { it.serves(query.language) }
     val results = remember { mutableStateMapOf<Provider, Result<List<Offer>>>() }
     val downloads = remember { mutableStateMapOf<Offer, Download>() }
     var attempts by remember { mutableIntStateOf(0) }
@@ -179,13 +178,12 @@ private fun Offers(
     }
     fun download(offer: Offer) {
         if (downloads.values.any { it is Download.Running }) return
-        downloads[offer] = Download.Running(0f)
+        fun report(progress: Float) {
+            downloads[offer] = Download.Running(progress)
+        }
+        report(0f)
         scope.launch {
-            val report = { progress: Float ->
-                downloads[offer] =
-                    Download.Running(progress)
-            }
-            if (app.library.download(book, offer, report)) return@launch onReady()
+            if (app.library.download(book, offer, ::report)) return@launch onReady()
             downloads[offer] = Download.Failed
         }
     }
@@ -196,7 +194,7 @@ private fun Offers(
             ProviderResult(
                 results[provider],
                 downloads,
-                settings.onlineCovers,
+                covers,
                 onRetry = { retry(provider) },
                 onDownload = ::download,
             )
@@ -241,7 +239,7 @@ private fun OfferRow(
         listOfNotNull(offer.author.ifBlank { null }, offer.format.uppercase(), size)
     val failure = stringResource(R.string.free_books_failed)
     val icon = if (failed) Icons.Outlined.ErrorOutline else Icons.Outlined.Download
-    val action = if (failed) R.string.retry_pack else R.string.download_pack
+    val action = if (failed) R.string.retry_item else R.string.download_item
     val label = stringResource(action, offer.title)
     ListItem(
         headlineContent = {

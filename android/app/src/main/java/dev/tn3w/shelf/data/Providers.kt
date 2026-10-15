@@ -16,6 +16,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import java.io.File
+import java.net.HttpURLConnection
 import java.net.URLEncoder
 
 private const val OFFER_LIMIT = 5
@@ -84,8 +85,10 @@ abstract class FeedProvider : Provider {
 
 val PROVIDERS = listOf(StandardEbooks, Gutenberg, Wikisource, InternetArchive)
 
+fun allProviders(own: List<Recipe>) = PROVIDERS + own.map(::OwnSource)
+
 fun Settings.enabledProviders(own: List<Recipe> = emptyList()) =
-    (PROVIDERS + own.map(::OwnSource)).filter { it.id in providers }
+    allProviders(own).filter { it.id in providers }
 
 fun Provider.serves(language: String) = languages.isEmpty() || language in languages
 
@@ -107,11 +110,9 @@ internal fun rank(
     val wanted = tokenize(mainTitle(query.title)).filterNot { it in ARTICLES }
     val authors = tokenize(query.author).toSet()
     fun matches(offer: Offer): Boolean {
+        if (wanted.isEmpty() || !tokenize(offer.title).containsAll(wanted)) return false
         val writers = tokenize(offer.author)
-        val byAuthor =
-            writers.isEmpty() || authors.isEmpty() || writers.any { it in authors }
-        return wanted.isNotEmpty() && tokenize(offer.title).containsAll(wanted) &&
-            byAuthor
+        return writers.isEmpty() || authors.isEmpty() || writers.any { it in authors }
     }
     return offers
         .filter { exact || matches(it) }
@@ -122,6 +123,19 @@ internal fun rank(
 
 fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) {
     val connection = offer.provider.open(offer)
+    try {
+        download(connection, target, onProgress)
+    } finally {
+        connection.disconnect()
+    }
+    check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
+}
+
+private fun download(
+    connection: HttpURLConnection,
+    target: File,
+    onProgress: (Float) -> Unit,
+) {
     val total = connection.contentLengthLong
     check(total <= MAX_BOOK_BYTES) { "book too large" }
     connection.inputStream.use { input ->
@@ -132,14 +146,13 @@ fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) {
             }
         }
     }
-    check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
 }
 
 internal fun isFormat(file: File, format: String): Boolean {
     val signature = SIGNATURES[format] ?: return true
     val header = ByteArray(signature.length)
-    file.inputStream().use { it.read(header) }
-    return header.decodeToString() == signature
+    val read = file.inputStream().use { it.read(header) }
+    return read == header.size && header.decodeToString() == signature
 }
 
 internal fun encode(text: String) = URLEncoder.encode(text, "UTF-8").replace("+", "%20")

@@ -23,18 +23,6 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
-val PACK_LABELS = mapOf(
-    "core" to R.string.pack_core,
-    "fantasy" to R.string.pack_fantasy,
-    "scifi" to R.string.pack_scifi,
-    "mystery" to R.string.pack_mystery,
-    "romance" to R.string.pack_romance,
-    "kids" to R.string.pack_kids,
-    "young-adult" to R.string.pack_young_adult,
-    "nonfiction" to R.string.pack_nonfiction,
-    "general" to R.string.pack_general,
-)
-
 @Composable
 fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
     val app = shelfApp()
@@ -50,7 +38,7 @@ fun packInfos(language: String, refreshes: Int = 0): List<PackInfo>? {
 @Composable
 fun CatalogueSettings() {
     val app = shelfApp()
-    val (settings, update) = rememberSettings()
+    val (settings, update) = rememberSettings() ?: return
     val language = app.bookLanguage(settings)
     var refreshes by remember { mutableIntStateOf(0) }
     val packs = packInfos(language, refreshes)
@@ -215,7 +203,7 @@ fun SourceRows(
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
         scope.launch {
             val imported = app.importCatalogue(language, uris)
-            val complete = (listOf(language) + LANGUAGES).firstOrNull {
+            val complete = (listOf(language) + (LANGUAGES - language)).firstOrNull {
                 withContext(Dispatchers.IO) { app.packs.isComplete(it) }
             }
             status = when {
@@ -295,7 +283,7 @@ private fun PackRow(
     onDownload: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    val label = stringResource(PACK_LABELS.getValue(info.pack))
+    val label = stringResource(PACKS.getValue(info.pack))
     val state = when (info.state) {
         PackState.Installed -> R.string.pack_installed
         PackState.Update -> R.string.pack_update
@@ -333,10 +321,10 @@ private fun PackAction(
         offline -> remove.takeIf { removable }
 
         download is Download.Failed ->
-            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_pack, onDownload)
+            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_item, onDownload)
 
         state == PackState.Available ->
-            PackButton(Icons.Outlined.Download, R.string.download_pack, onDownload)
+            PackButton(Icons.Outlined.Download, R.string.download_item, onDownload)
 
         state == PackState.Update ->
             PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)

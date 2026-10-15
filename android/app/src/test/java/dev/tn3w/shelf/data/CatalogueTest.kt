@@ -182,6 +182,26 @@ class CatalogueTest {
     }
 
     @Test
+    fun isbnsOfFollowsAliases() {
+        val books = listOf(Fixture(42, "Moved", isbns = listOf("9780439023481")))
+        val aliases = listOf(SYNTHETIC + 1 to 42)
+        val catalogue =
+            Catalogue("en", listOf(segment(books)), Ranks(ranksBuffer(books, aliases)))
+        assertEquals(listOf("9780439023481"), catalogue.isbnsOf(SYNTHETIC + 1))
+    }
+
+    @Test
+    fun isbnsForPrefersOwnThenLibraryThenCatalogue() {
+        val book = Book(
+            1, "Emma", "", "", emptyList(), 0, 0, emptyList(), null,
+            LibraryCover(DNB, "9783161484100"),
+        )
+        val catalogue = listOf("9783161484100", "bad", "9780439023481")
+        val isbns = isbnsFor(book, "0306406152", catalogue)
+        assertEquals(listOf("9780306406157", "9783161484100", "9780439023481"), isbns)
+    }
+
+    @Test
     fun packsWithoutIsbnsFindNothing() {
         assertNull(catalogue(BOOKS).bookOfIsbn("9780439023481"))
     }

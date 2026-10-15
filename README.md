@@ -172,7 +172,7 @@ files 120 s, regex 2 s.
 ```
 
 ISBN search → order ticket → read signed link → download from the CDN, which gets no API
-key. Recipes stay in `files/sources.json`: no cloud backup, no library export.
+key. Recipes stay in `files/shelf-sources.json`: no cloud backup, no library export.
 
 ## Scan a cover
 

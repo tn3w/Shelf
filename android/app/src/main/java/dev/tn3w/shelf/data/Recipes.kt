@@ -5,6 +5,8 @@ import android.net.Uri
 import dev.tn3w.shelf.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -29,7 +31,7 @@ private const val DEBUG_ITEMS = 5
 private const val DEBUG_PAGE_CHARACTERS = 100_000
 private val PLACEHOLDER = Regex("""\{(\+?)(\w+)\}""")
 private val HOST = Regex("""://([^/:?#{]+)""")
-private val QUERY_VARIABLES =
+val QUERY_VARIABLES =
     setOf("query", "title", "author", "language", "isbn", "isbns")
 private val ISBN_VARIABLE = Regex("""\{\+?isbns?\}""")
 private val SINGLE_ISBN = Regex("""\{\+?isbn\}""")
@@ -190,11 +192,6 @@ private fun Query.variables() = mapOf(
     "isbns" to isbns.joinToString(","),
 )
 
-fun isbnsFor(book: Book, saved: String, catalogue: List<String>) =
-    (listOf(saved, book.libraryCover?.isbn.orEmpty()) + catalogue)
-        .mapNotNull(::normalizedIsbn)
-        .distinct()
-
 private fun HttpURLConnection.text(): String {
     val output = ByteArrayOutputStream()
     inputStream.use { input ->
@@ -207,9 +204,11 @@ private fun HttpURLConnection.text(): String {
 
 private fun elapsed(started: Long) = "${(System.nanoTime() - started) / 1_000_000} ms"
 
-data class OwnSource(val recipe: Recipe) : Provider {
-    var log: (String) -> Unit = {}
-    var verbose = false
+data class OwnSource(
+    val recipe: Recipe,
+    private val log: (String) -> Unit = {},
+    private val verbose: Boolean = false,
+) : Provider {
     override val id
         get() = recipe.id
     override val name
@@ -229,7 +228,10 @@ data class OwnSource(val recipe: Recipe) : Provider {
     override fun find(query: Query): List<Offer> {
         val variables = query.variables()
         if (!usesIsbn) return search(variables)
-        if (query.isbns.isEmpty()) return emptyList<Offer>().also { log("no ISBN known") }
+        if (query.isbns.isEmpty()) {
+            log("no ISBN known")
+            return emptyList()
+        }
         val single = searchTemplates.any { SINGLE_ISBN.containsMatchIn(it) }
         val tries = if (single) ISBN_TRIES else 1
         query.isbns.take(tries).forEach { isbn ->
@@ -278,7 +280,7 @@ data class OwnSource(val recipe: Recipe) : Provider {
         return request(url, null, DOWNLOAD_TIMEOUT).also {
             val type = it.contentType.orEmpty()
             log("  ${it.responseCode} · $type · ${elapsed(started)}")
-            if (verbose) headers(it)
+            if (verbose) logHeaders(it)
         }
     }
 
@@ -297,26 +299,26 @@ data class OwnSource(val recipe: Recipe) : Provider {
         val code = connection.responseCode
         log("  $code · ${text.length} characters · ${elapsed(started)}")
         if (verbose) {
-            headers(connection)
+            logHeaders(connection)
             log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
         }
         return Scope(text, connection.url.toString())
     }
 
-    private fun headers(connection: HttpURLConnection) =
+    private fun logHeaders(connection: HttpURLConnection) =
         connection.headerFields.forEach { (name, values) ->
             if (name != null) log("  < $name: ${values.joinToString()}")
         }
 
     private fun send(
         url: String,
-        sent: Map<String, String>,
+        headers: Map<String, String>,
         body: String?,
         timeout: Int,
     ) = connect(url, local = true).apply {
         instanceFollowRedirects = false
         readTimeout = timeout
-        sent.forEach { (name, value) -> setRequestProperty(name, value) }
+        headers.forEach { (name, value) -> setRequestProperty(name, value) }
         if (body == null) return@apply
         requestMethod = "POST"
         doOutput = true
@@ -325,17 +327,17 @@ data class OwnSource(val recipe: Recipe) : Provider {
 
     private fun request(url: String, body: String?, timeout: Int): HttpURLConnection {
         var target = URI(url)
-        var sent = recipe.headers
+        var headers = recipe.headers
         var payload = body
         repeat(MAX_REDIRECTS + 1) {
-            val connection = send(target.toString(), sent, payload, timeout)
+            val connection = send(target.toString(), headers, payload, timeout)
             val code = connection.responseCode
             val location = connection.getHeaderField("Location")
             if (code !in 300..399 || location == null) return checked(connection)
             connection.disconnect()
             val next = target.resolve(location)
             log("  $code → $next")
-            if (next.host != target.host) sent = emptyMap()
+            if (next.host != target.host) headers = emptyMap()
             if (code != 307 && code != 308) payload = null
             target = next
         }
@@ -346,7 +348,7 @@ data class OwnSource(val recipe: Recipe) : Provider {
         val code = connection.responseCode
         if (code in 200..299) return connection
         if (verbose) {
-            headers(connection)
+            logHeaders(connection)
             val error = connection.errorStream?.use { it.readBytes().decodeToString() }
             log("  page:\n${error.orEmpty().take(DEBUG_PAGE_CHARACTERS)}")
         }
@@ -400,19 +402,26 @@ private fun templateProblem(
     return "$template must start with https:// (http:// only for local hosts)"
 }
 
+val Pick.isEmpty
+    get() = listOfNotNull(css, json, attr, regex).isEmpty()
+
+fun firstLine(error: Throwable) =
+    error.message?.lineSequence()?.firstOrNull().orEmpty().take(200)
+
 private fun Pick.problem(): String? {
-    if (listOfNotNull(css, json, attr, regex).isEmpty()) return "empty rule"
+    if (isEmpty) return "empty rule"
     val error = runCatching {
         css?.let { Jsoup.parse("").select(it) }
         regex?.let { Regex(it) }
     }.exceptionOrNull() ?: return null
-    return "invalid rule: ${error.message?.lineSequence()?.first()}"
+    return "invalid rule: ${firstLine(error)}"
 }
 
 data class Imported(val added: List<Recipe>, val total: Int)
 
 class OwnSources(private val context: Context) {
-    private val file = context.filesDir.resolve("sources.json")
+    private val file = context.filesDir.resolve(SOURCES_FILE)
+    private val writing = Mutex()
     val recipes = MutableStateFlow(read())
 
     private fun read() =
@@ -427,13 +436,8 @@ class OwnSources(private val context: Context) {
     suspend fun remove(id: String) = write { recipes -> recipes.filter { it.id != id } }
 
     suspend fun import(uri: Uri): Imported? {
-        val text = withContext(Dispatchers.IO) {
-            runCatching {
-                context.contentResolver.openInputStream(uri)?.use {
-                    it.readBytes().decodeToString()
-                }
-            }.getOrNull()
-        } ?: return null
+        val text =
+            context.readFrom(uri) { it.readBytes().decodeToString() } ?: return null
         val found = parseRecipes(text).getOrNull() ?: return null
         val added = found.filter { it.problems().isEmpty() }
             .map { it.copy(id = UUID.randomUUID().toString()) }
@@ -441,18 +445,14 @@ class OwnSources(private val context: Context) {
         return Imported(added, found.size)
     }
 
-    suspend fun export(uri: Uri) = withContext(Dispatchers.IO) {
-        runCatching {
-            context.contentResolver.openOutputStream(uri)?.use {
-                it.write(recipesText(recipes.value).toByteArray())
-            } != null
-        }.getOrDefault(false)
-    }
+    suspend fun export(uri: Uri) =
+        context.writeTo(uri) { it.write(recipesText(recipes.value).toByteArray()) }
 
-    private suspend fun write(change: (List<Recipe>) -> List<Recipe>) =
+    private suspend fun write(change: (List<Recipe>) -> List<Recipe>) = writing.withLock {
         withContext(Dispatchers.IO) {
             val next = change(recipes.value)
             replaceFile(file) { it.writeText(json.encodeToString(next)) }
             recipes.value = next
         }
+    }
 }

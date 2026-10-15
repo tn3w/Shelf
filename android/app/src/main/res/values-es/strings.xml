@@ -32,7 +32,7 @@
     <string name="daily_goal_hint">Páginas diarias para mantener la racha. 0 oculta el widget.</string>
     <string name="download">Descargar</string>
     <string name="download_all">Todo (%s)</string>
-    <string name="download_pack">Descargar %s</string>
+    <string name="download_item">Descargar %s</string>
     <string name="explore">Explorar</string>
     <string name="finished">Leídos</string>
     <string name="for_you">Para ti</string>
@@ -84,7 +84,7 @@
     <string name="recent">Búsquedas recientes</string>
     <string name="remove_pack">Eliminar %s</string>
     <string name="resume">Continuar</string>
-    <string name="retry_pack">Reintentar %s</string>
+    <string name="retry_item">Reintentar %s</string>
     <string name="search">Buscar</string>
     <string name="search_hint">Libros y autores</string>
     <string name="settings">Ajustes</string>
@@ -307,6 +307,8 @@
     <string name="free_books_body">Cuerpo POST (opcional)</string>
     <string name="free_books_items">Elementos</string>
     <string name="free_books_variable_add">Añadir variable</string>
+    <string name="free_books_variable_invalid">Solo letras, dígitos y _</string>
+    <string name="free_books_variable_taken">Nombre ya en uso</string>
     <string name="free_books_step">Paso %d</string>
     <string name="free_books_step_add">Añadir paso</string>
     <string name="free_books_headers">Cabeceras</string>

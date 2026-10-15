@@ -32,7 +32,7 @@
     <string name="daily_goal_hint">Seiten pro Tag, um die Serie zu halten. 0 blendet das Widget aus.</string>
     <string name="download">Herunterladen</string>
     <string name="download_all">Alle (%s)</string>
-    <string name="download_pack">%s herunterladen</string>
+    <string name="download_item">%s herunterladen</string>
     <string name="explore">Entdecken</string>
     <string name="finished">Gelesen</string>
     <string name="for_you">Für dich</string>
@@ -84,7 +84,7 @@
     <string name="recent">Zuletzt gesucht</string>
     <string name="remove_pack">%s entfernen</string>
     <string name="resume">Weiterlesen</string>
-    <string name="retry_pack">%s erneut versuchen</string>
+    <string name="retry_item">%s erneut versuchen</string>
     <string name="search">Suche</string>
     <string name="search_hint">Bücher und Autoren</string>
     <string name="settings">Einstellungen</string>
@@ -299,6 +299,8 @@
     <string name="free_books_body">POST-Inhalt (optional)</string>
     <string name="free_books_items">Einträge</string>
     <string name="free_books_variable_add">Variable hinzufügen</string>
+    <string name="free_books_variable_invalid">Nur Buchstaben, Ziffern und _</string>
+    <string name="free_books_variable_taken">Name bereits vergeben</string>
     <string name="free_books_step">Schritt %d</string>
     <string name="free_books_step_add">Schritt hinzufügen</string>
     <string name="free_books_headers">Header</string>

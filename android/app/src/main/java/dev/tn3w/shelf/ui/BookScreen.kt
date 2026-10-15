@@ -134,8 +134,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
     val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
     val hasFile by produceState(true, position) { value = app.library.hasFile(position) }
-    val settings by app.library.settings.collectAsStateWithLifecycle(null)
-    val online = settings?.isOffline(LocalContext.current) == false
+    val online = loadedSettings()?.isOffline(LocalContext.current) == false
     var confirmDelete by remember { mutableStateOf(false) }
     var findFree by remember { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null

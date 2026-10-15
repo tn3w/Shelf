@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -23,15 +22,16 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.BuildConfig
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.time.OffsetDateTime
 import java.util.UUID
 
-private val FORMATS = listOf("epub", "pdf", "fb2", "cbz", "txt")
 private val SOURCE_TYPES =
     arrayOf("application/json", "text/plain", "application/octet-stream")
 private val SEARCH_FIELDS = listOf("title", "author", "cover")
@@ -49,6 +49,7 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
     val recipes by app.ownSources.recipes.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Recipe?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
+    var exportFailed by remember { mutableStateOf(false) }
     val failed = stringResource(R.string.import_failed)
     val importer = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -66,7 +67,7 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
         }
     }
     val exporter = rememberLauncherForActivityResult(CreateDocument("application/json")) {
-        if (it != null) scope.launch { app.ownSources.export(it) }
+        if (it != null) scope.launch { exportFailed = !app.ownSources.export(it) }
     }
 
     recipes.forEach { recipe ->
@@ -77,7 +78,8 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
         importer.launch(SOURCE_TYPES)
     }
     if (recipes.isNotEmpty()) {
-        ActionRow(R.string.free_books_export, Icons.Outlined.Upload) {
+        val exportStatus = stringResource(R.string.export_failed).takeIf { exportFailed }
+        ActionRow(R.string.free_books_export, Icons.Outlined.Upload, exportStatus) {
             exporter.launch(SOURCES_FILE)
         }
     }
@@ -129,10 +131,7 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
                     if (asFile) {
                         RecipeText(text) { text = it }
                     } else {
-                        RecipeForm(recipe) {
-                            recipe =
-                                it
-                        }
+                        RecipeForm(recipe) { recipe = it }
                     }
                     problems.forEach { Problem(it) }
                     TestPanel(parsed.getOrNull()?.takeIf { problems.isEmpty() })
@@ -147,9 +146,6 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
 private fun codeStyle() =
     MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
 
-private fun firstLine(error: Throwable) =
-    error.message?.lineSequence()?.firstOrNull().orEmpty().take(200)
-
 @Composable
 private fun EditorBar(
     recipe: Recipe,
@@ -162,8 +158,8 @@ private fun EditorBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconAction(Icons.Outlined.Close, stringResource(R.string.cancel), onClose)
-        val title = R.string.free_books_add.takeIf { recipe.id.isEmpty() }
-            ?: R.string.provider_own
+        val isNew = recipe.id.isEmpty()
+        val title = if (isNew) R.string.free_books_add else R.string.provider_own
         Text(
             stringResource(title),
             style = MaterialTheme.typography.titleLarge,
@@ -191,45 +187,24 @@ private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
     StepForm(recipe.search, SEARCH_FIELDS) { onChange(recipe.copy(search = it)) }
     recipe.steps.forEachIndexed { index, step ->
         Heading(stringResource(R.string.free_books_step, index + 1)) {
-            onChange(
-                recipe.copy(
-                    steps = recipe.steps.filterIndexed { at, _ ->
-                        at != index
-                    },
-                ),
-            )
+            val steps = recipe.steps.toMutableList().apply { removeAt(index) }
+            onChange(recipe.copy(steps = steps))
         }
         StepForm(step, emptyList()) { changed ->
-            onChange(
-                recipe.copy(
-                    steps = recipe.steps.mapIndexed { at, it ->
-                        if (at ==
-                            index
-                        ) {
-                            changed
-                        } else {
-                            it
-                        }
-                    },
-                ),
-            )
+            val steps = recipe.steps.toMutableList().apply { set(index, changed) }
+            onChange(recipe.copy(steps = steps))
         }
     }
     AddButton(R.string.free_books_step_add) {
-        onChange(
-            recipe.copy(
-                steps =
-                recipe.steps + RecipeStep(""),
-            ),
-        )
+        onChange(recipe.copy(steps = recipe.steps + RecipeStep("")))
     }
     Heading(R.string.download)
     TextInput(R.string.free_books_url, recipe.download, monospace = true) {
         onChange(recipe.copy(download = it))
     }
-    Choice(FORMATS, recipe.format, {
-        onChange(recipe.copy(format = it))
-    }) { it.uppercase() }
+    Choice(BOOK_FORMATS, recipe.format, { onChange(recipe.copy(format = it)) }) {
+        it.uppercase()
+    }
     LanguageChips(recipe.languages) { onChange(recipe.copy(languages = it)) }
     Heading(R.string.free_books_headers)
     HeaderRows(recipe.headers) { onChange(recipe.copy(headers = it)) }
@@ -258,22 +233,13 @@ private fun StepForm(
         }
     }
     fun change(name: String, pick: Pick?) {
-        val others = step.fields - name
-        onChange(
-            step.copy(
-                fields = if (pick ==
-                    null
-                ) {
-                    others
-                } else {
-                    step.fields + (name to pick)
-                },
-            ),
-        )
+        val fields = step.fields.toMutableMap()
+        if (pick == null) fields.remove(name) else fields[name] = pick
+        onChange(step.copy(fields = fields))
     }
     fixed.forEach { name ->
         RuleInput(name, step.fields[name] ?: Pick()) {
-            change(name, it.takeIf(Pick::isSet))
+            change(name, it.takeUnless(Pick::isEmpty))
         }
     }
     step.fields.keys.filterNot { it in fixed }.forEach { name ->
@@ -283,9 +249,6 @@ private fun StepForm(
     }
     VariableAdder(step.fields.keys + fixed) { change(it, Pick()) }
 }
-
-private val Pick.isSet
-    get() = listOfNotNull(css, json, attr, regex).isNotEmpty()
 
 @Composable
 private fun RuleInput(
@@ -370,20 +333,25 @@ private fun Heading(title: String, onRemove: (() -> Unit)? = null) {
 
 @Composable
 private fun AddButton(@StringRes label: Int, onClick: () -> Unit) =
-    TextButton(onClick = onClick) {
-        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp))
-        Text(stringResource(label), Modifier.padding(start = 8.dp))
-    }
+    TextButton(onClick = onClick) { IconLabel(Icons.Outlined.Add, label) }
 
 @Composable
 private fun VariableAdder(taken: Set<String>, onAdd: (String) -> Unit) {
     var adding by remember { mutableStateOf(false) }
+    val invalid = stringResource(R.string.free_books_variable_invalid)
+    val duplicate = stringResource(R.string.free_books_variable_taken)
+    fun problem(name: String) = when {
+        !VARIABLE_NAME.matches(name) -> invalid
+        name in taken || name in QUERY_VARIABLES -> duplicate
+        else -> null
+    }
     AddButton(R.string.free_books_variable_add) { adding = true }
     if (!adding) return
-    NameDialog(R.string.free_books_variable_add, onDismiss = {
-        adding = false
-    }) { name, _ ->
-        if (!VARIABLE_NAME.matches(name) || name in taken) return@NameDialog
+    NameDialog(
+        R.string.free_books_variable_add,
+        problem = ::problem,
+        onDismiss = { adding = false },
+    ) { name, _ ->
         adding = false
         onAdd(name)
     }
@@ -395,28 +363,40 @@ private val VARIABLE_NAME = Regex("""\w+""")
 private fun NameDialog(
     @StringRes title: Int,
     @StringRes valueLabel: Int? = null,
+    problem: (String) -> String? = { null },
     onDismiss: () -> Unit,
     onConfirm: (name: String, value: String) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var value by remember { mutableStateOf("") }
+    val trimmed = name.trim()
+    val error = problem(trimmed).takeIf { trimmed.isNotEmpty() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(name, { name = it.trim() }, singleLine = true, label = {
-                    Text(stringResource(R.string.free_books_name))
-                })
+                OutlinedTextField(
+                    name,
+                    { name = it },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.free_books_name)) },
+                    isError = error != null,
+                    supportingText = error?.let { { Text(it) } },
+                )
                 valueLabel?.let { label ->
-                    OutlinedTextField(value, { value = it }, singleLine = true, label = {
-                        Text(stringResource(label))
-                    })
+                    OutlinedTextField(
+                        value,
+                        { value = it },
+                        singleLine = true,
+                        label = { Text(stringResource(label)) },
+                    )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name, value) }) {
+            val valid = trimmed.isNotEmpty() && error == null
+            TextButton(onClick = { onConfirm(trimmed, value) }, enabled = valid) {
                 Text(stringResource(R.string.save))
             }
         },
@@ -446,7 +426,6 @@ private fun HeaderRows(
         R.string.free_books_header_value,
         onDismiss = { adding = false },
     ) { name, value ->
-        if (name.isEmpty()) return@NameDialog
         adding = false
         onChange(headers + (name to value))
     }
@@ -484,7 +463,7 @@ private fun Problem(text: String) = Text(
 private fun TestPanel(recipe: Recipe?) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
-    val (settings, _) = rememberSettings()
+    val settings = loadedSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     var title by remember { mutableStateOf("Pride and Prejudice") }
     var author by remember { mutableStateOf("Jane Austen") }
@@ -497,7 +476,7 @@ private fun TestPanel(recipe: Recipe?) {
         val text = report
         if (uri == null || text == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val done = app.writeText(uri, text)
+            val done = app.writeTo(uri) { it.write(text.toByteArray()) }
             saved = if (done) R.string.free_books_debug_saved else R.string.export_failed
         }
     }
@@ -506,16 +485,10 @@ private fun TestPanel(recipe: Recipe?) {
         running = true
         saved = null
         lines.clear()
-        val source = OwnSource(ready).apply {
-            log = { lines += it }
-            verbose = debug
-        }
         val isbns = listOf(isbn.trim()).filter { it.isNotEmpty() }
             .map { normalizedIsbn(it) ?: it }
         val query = Query(title, author, app.bookLanguage(settings), isbns)
-        withContext(Dispatchers.IO) {
-            runCatching { source.probe(query) }.onFailure { lines += "✕ ${describe(it)}" }
-        }
+        trace(ready, query, debug).collect { lines += it }
         running = false
         if (!debug) return@launch
         report = debugReport(ready, query, lines.toList())
@@ -556,14 +529,10 @@ private fun RunButton(
     filled: Boolean,
     onClick: () -> Unit,
 ) {
-    val content: @Composable RowScope.() -> Unit = {
-        Icon(icon, null, Modifier.size(18.dp))
-        Text(stringResource(label), Modifier.padding(start = 8.dp))
-    }
     if (filled) {
-        Button(onClick, enabled = enabled, content = content)
+        Button(onClick, enabled = enabled) { IconLabel(icon, label) }
     } else {
-        OutlinedButton(onClick, enabled = enabled, content = content)
+        OutlinedButton(onClick, enabled = enabled) { IconLabel(icon, label) }
     }
 }
 
@@ -582,19 +551,15 @@ private fun debugReport(recipe: Recipe, query: Query, lines: List<String>) = bui
     lines.forEach(::appendLine)
 }
 
-private suspend fun ShelfApp.writeText(uri: Uri, text: String) =
-    withContext(Dispatchers.IO) {
-        runCatching {
-            val output = contentResolver.openOutputStream(uri)
-            output?.use { it.write(text.toByteArray()) } != null
-        }.getOrDefault(false)
-    }
+private fun trace(recipe: Recipe, query: Query, verbose: Boolean) = channelFlow {
+    val source = OwnSource(recipe, log = { trySend(it) }, verbose = verbose)
+    runCatching { source.probe(query) }.onFailure { send("✕ ${describe(it)}") }
+}.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 
 @Composable
 private fun RemoveButton(onClick: () -> Unit) = OutlinedButton(
     onClick = onClick,
     modifier = Modifier.padding(top = 12.dp),
 ) {
-    Icon(Icons.Outlined.Delete, null, Modifier.size(18.dp))
-    Text(stringResource(R.string.remove), Modifier.padding(start = 8.dp))
+    IconLabel(Icons.Outlined.Delete, R.string.remove)
 }

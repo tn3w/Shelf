@@ -197,8 +197,7 @@ private fun ScanSheet(book: Book, navigator: Navigator, onAgain: () -> Unit) {
             OutlinedButton(
                 onAgain, Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
             ) {
-                Icon(Icons.Outlined.DocumentScanner, null, Modifier.size(18.dp))
-                Text(stringResource(R.string.scan_again), Modifier.padding(start = 8.dp))
+                IconLabel(Icons.Outlined.DocumentScanner, R.string.scan_again)
             }
         }
     }
