@@ -4,25 +4,37 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
+import com.github.junrar.Archive
+import org.apache.commons.compress.archivers.sevenz.SevenZFile
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.parser.Parser
 import java.io.File
+import java.io.FilterOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.io.RandomAccessFile
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.util.Base64
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import kotlin.math.roundToInt
 
 private const val SECTION_CHARACTERS = 40_000
+private const val TITLE_LENGTH = 80
+private val CHAPTER_HEADINGS = 1..3
 const val MAX_ENTRY_BYTES = 64L * 1024 * 1024
+private const val MAX_EXTRACTED_BYTES = 2L * 1024 * 1024 * 1024
+const val EXTRACTED_PREFIX = "comic"
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
 private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
@@ -36,9 +48,52 @@ private const val GREYSCALE = 17
 private val BOLD_TAGS = setOf("b", "strong")
 private val ITALIC_TAGS = setOf("i", "em", "cite")
 private val IMAGE_TAGS = setOf("img", "image")
+private val PARAGRAPH_TAGS = setOf("text:p", "text:h")
+private val SWITCHED_OFF = setOf("0", "false", "none")
+private val DOCX_HEADING = Regex("heading\\s*(\\d)")
+private val WINDOWS_1252 = Charset.forName("windows-1252")
+private val COMIC_FORMATS = setOf("cbz", "cbr", "cb7", "cbt")
+private val PLAIN_TEXT = setOf("txt", "text", "md", "markdown")
+private val HTML = setOf("html", "htm", "xhtml")
+private val SIGNATURES = mapOf(
+    0 to "PK\u0003\u0004" to "zip",
+    0 to "%PDF" to "pdf",
+    0 to "Rar!\u001A\u0007" to "rar",
+    0 to "7z\u00BC\u00AF\u0027\u001C" to "7z",
+    0 to "{\\rtf" to "rtf",
+    60 to "BOOKMOBI" to "mobi",
+    60 to "TEXtREAd" to "mobi",
+    257 to "ustar" to "tar",
+)
+private val CONTAINERS = mapOf(
+    "zip" to setOf("epub", "kepub", "cbz", "fbz", "docx", "odt", "htmlz", "txtz", "zip"),
+    "mobi" to setOf("mobi", "azw", "azw3", "kf8", "prc", "pdb"),
+    "pdf" to setOf("pdf"),
+    "rar" to setOf("cbr"),
+    "7z" to setOf("cb7"),
+    "tar" to setOf("cbt"),
+    "rtf" to setOf("rtf"),
+)
+private val RTF_TOKEN = Regex(
+    """\\([a-zA-Z]+)(-?\d+)? ?|\\'([0-9a-fA-F]{2})|\\([^a-zA-Z])""" +
+        """|([{}])|([\r\n]+)|[^\\{}\r\n]+""",
+)
+private val RTF_SKIPPED = setOf(
+    "fonttbl", "colortbl", "stylesheet", "info", "pict", "header", "footer", "object",
+    "themedata", "datastore", "listtable", "listoverridetable", "rsidtbl", "xmlnstbl",
+    "latentstyles", "fldinst", "generator",
+)
+private val RTF_WORDS = mapOf(
+    "par" to "\n\n", "sect" to "\n\n", "page" to "\n\n", "line" to "\n", "tab" to " ",
+    "emdash" to "\u2014", "endash" to "\u2013", "bullet" to "\u2022",
+    "lquote" to "\u2018", "rquote" to "\u2019", "ldblquote" to "\u201C",
+    "rdblquote" to "\u201D",
+)
+private val RTF_SYMBOLS =
+    mapOf("~" to "\u00A0", "-" to "", "_" to "\u2011", "\n" to "\n\n", "\r" to "\n\n")
 
 val BOOK_FORMATS = listOf("epub", "pdf", "fb2", "cbz", "txt")
-val READABLE_EXTENSIONS = BOOK_FORMATS + listOf("md", "html", "htm", "xhtml")
+val READABLE_EXTENSIONS = CONTAINERS.values.flatten() + "fb2" + HTML + PLAIN_TEXT
 
 data class Span(val start: Int, val end: Int, val bold: Boolean, val italic: Boolean)
 
@@ -56,17 +111,20 @@ sealed interface Document : AutoCloseable {
     override fun close() {}
 }
 
+fun interface Resources : AutoCloseable {
+    fun bytes(path: String): ByteArray?
+
+    override fun close() {}
+}
+
 class TextDocument(
     val sections: List<List<Block>>,
     val chapters: List<Chapter>,
-    private val archive: ZipFile? = null,
+    private val resources: Resources = Resources { null },
 ) : Document {
-    fun image(path: String) =
-        runCatching { archive?.run { getEntry(path)?.let { bytes(it) } } }.getOrNull()
+    fun image(path: String) = runCatching { resources.bytes(path) }.getOrNull()
 
-    override fun close() {
-        archive?.close()
-    }
+    override fun close() = resources.close()
 }
 
 interface PagedDocument : Document {
@@ -145,18 +203,78 @@ private fun boxes(buffer: ByteBuffer, start: Int, end: Int) =
             Box(String(type), it, it + buffer.getInt(it))
         }
 
-class ComicDocument(file: File) : PagedDocument {
-    private val zip = ZipFile(file)
-    private val entries = zip.entries()
-        .asSequence()
-        .filter { isComicPage(it.name) }
-        .sortedBy { naturalSortKey(it.name) }
-        .toList()
-    override val pageCount = entries.size
+class ComicDocument(names: List<String>, private val resources: Resources) :
+    PagedDocument {
+    private val pages = names.filter(::isComicPage).sortedBy(::naturalSortKey)
+    override val pageCount = pages.size
 
-    override fun page(index: Int, width: Int, height: Int) = zip.bytes(entries[index])
+    override fun page(index: Int, width: Int, height: Int) =
+        checkNotNull(resources.bytes(pages[index])) { "missing page" }
 
-    override fun close() = zip.close()
+    override fun close() = resources.close()
+}
+
+private class ExtractedPages : Resources {
+    private val directory = Files.createTempDirectory(EXTRACTED_PREFIX).toFile()
+    private val files = mutableMapOf<String, File>()
+    private var remaining = MAX_EXTRACTED_BYTES
+
+    val names
+        get() = files.keys.toList()
+
+    fun add(name: String, write: (OutputStream) -> Unit) {
+        if (!isComicPage(name)) return
+        val file = directory.resolve("${files.size}")
+        file.outputStream().use { write(Limited(it)) }
+        files[name] = file
+    }
+
+    override fun bytes(path: String) =
+        files[path]?.takeIf { it.length() <= MAX_ENTRY_BYTES }?.readBytes()
+
+    override fun close() {
+        directory.deleteRecursively()
+    }
+
+    private inner class Limited(output: OutputStream) : FilterOutputStream(output) {
+        override fun write(bytes: ByteArray, offset: Int, length: Int) {
+            remaining -= length
+            if (remaining < 0) throw IOException("comic too large")
+            out.write(bytes, offset, length)
+        }
+
+        override fun write(byte: Int) = write(byteArrayOf(byte.toByte()), 0, 1)
+    }
+}
+
+private fun extractComic(read: (ExtractedPages) -> Unit): ComicDocument {
+    val pages = ExtractedPages()
+    runCatching { read(pages) }.onFailure { pages.close() }.getOrThrow()
+    return ComicDocument(pages.names, pages)
+}
+
+private fun rarComic(file: File) = extractComic { pages ->
+    Archive(file).use { archive ->
+        archive.filterNot { it.isDirectory }.forEach { header ->
+            pages.add(header.fileName) { archive.extractFile(header, it) }
+        }
+    }
+}
+
+private fun sevenZipComic(file: File) = extractComic { pages ->
+    SevenZFile.builder().setFile(file).get().use { archive ->
+        archive.entries.filterNot { it.isDirectory }.forEach { entry ->
+            pages.add(entry.name) { archive.getInputStream(entry).copyTo(it) }
+        }
+    }
+}
+
+private fun tarComic(file: File) = extractComic { pages ->
+    TarArchiveInputStream(file.inputStream().buffered()).use { archive ->
+        generateSequence { archive.nextEntry }.filter { it.isFile }.forEach { entry ->
+            pages.add(entry.name) { archive.copyTo(it) }
+        }
+    }
 }
 
 private fun isComicPage(name: String): Boolean {
@@ -177,26 +295,49 @@ private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<In
 
 data class Metadata(val title: String, val author: String)
 
+internal fun signatureOf(file: File): String? {
+    val header = file.inputStream().use { input ->
+        ByteArray(512).let { it.copyOf(input.read(it).coerceAtLeast(0)) }
+    }
+    val text = String(header, Charsets.ISO_8859_1)
+    return SIGNATURES.entries.firstOrNull { (signature, _) ->
+        text.startsWith(signature.second, signature.first)
+    }?.value
+}
+
+private fun formatOf(file: File) = signatureOf(file) ?: file.extension.lowercase()
+
+internal fun isFormat(file: File, format: String): Boolean {
+    val container = CONTAINERS.entries.firstOrNull { format in it.value } ?: return true
+    return signatureOf(file) == container.key
+}
+
 fun readMetadata(file: File): Metadata? = runCatching {
-    when (file.extension.lowercase()) {
-        "epub" -> ZipFile(file).use { epubMetadata(Epub(it)) }
-        "fb2" -> fictionBookMetadata(file)
+    when (formatOf(file)) {
+        "zip" -> ZipBook(file).use(::zipMetadata)
+        "mobi" -> mobiMetadata(file)
+        "fb2" -> fictionBookMetadata(file.inputStream())
         else -> null
     }
 }
     .getOrNull()
     ?.takeIf { it.title.isNotBlank() }
 
-private fun epubMetadata(epub: Epub): Metadata? {
-    val opf = epub.opfPath?.let(epub::xml) ?: return null
+private fun zipMetadata(book: ZipBook): Metadata? {
+    book.find("fb2")?.let { return book.stream(it)?.let(::fictionBookMetadata) }
+    val path = book.opfPath
+        ?: book.find("opf")
+        ?: listOf("docProps/core.xml", "meta.xml").firstOrNull(book::has)
+        ?: return null
+    val xml = book.xml(path) ?: return null
     return Metadata(
-        opf.selectFirst("dc|title")?.text().orEmpty(),
-        opf.selectFirst("dc|creator")?.text().orEmpty(),
+        xml.selectFirst("dc|title")?.text().orEmpty(),
+        xml.selectFirst("dc|creator")?.text().orEmpty(),
     )
 }
 
-private fun fictionBookMetadata(file: File): Metadata? {
-    val document = Jsoup.parse(file, null, "", Parser.xmlParser())
+private fun fictionBookMetadata(input: InputStream): Metadata? {
+    val document = input.use { Jsoup.parse(it, null, "", Parser.xmlParser()) }
     val info = document.selectFirst("title-info") ?: return null
     val author = info.selectFirst("author")?.let { author ->
         author.select("> first-name, > last-name").joinToString(" ") { it.text() }
@@ -204,33 +345,61 @@ private fun fictionBookMetadata(file: File): Metadata? {
     return Metadata(info.selectFirst("book-title")?.text().orEmpty(), author.orEmpty())
 }
 
-fun openDocument(file: File): Document = when (file.extension.lowercase()) {
-    "epub" -> readEpub(file)
-
+fun openDocument(file: File): Document = when (val format = formatOf(file)) {
+    "zip" -> openZip(file)
     "pdf" -> PdfDocument(file.also(::replaceJpegIccProfiles))
-
-    "cbz" -> ComicDocument(file)
-
-    "fb2" -> readFictionBook(file)
-
-    "html",
-    "htm",
-    "xhtml",
-    -> byHeadings(htmlBlocks(Jsoup.parse(file).body()) { null })
-
-    else -> byHeadings(plainBlocks(decodeText(file.readBytes())))
+    "mobi" -> readMobi(file)
+    "rar" -> rarComic(file)
+    "7z" -> sevenZipComic(file)
+    "tar" -> tarComic(file)
+    "rtf" -> textDocument(rtfText(file.readText(Charsets.ISO_8859_1)))
+    "fb2" -> readFictionBook(file.inputStream())
+    in HTML -> byHeadings(htmlBlocks(Jsoup.parse(file).body()) { null })
+    in PLAIN_TEXT -> textDocument(decodeText(file.readBytes()))
+    else -> error("unsupported format $format")
 }
 
-private fun decodeText(bytes: ByteArray): String = try {
+private fun openZip(file: File): Document {
+    val book = ZipBook(file)
+    val extension = file.extension.lowercase()
+    return runCatching { readZip(book, extension) }
+        .onFailure { book.close() }
+        .getOrThrow()
+}
+
+private fun readZip(book: ZipBook, extension: String): Document {
+    if (extension in COMIC_FORMATS) return ComicDocument(book.names, book)
+    book.opfPath?.let { return readEpub(book, it) }
+    if (book.has("word/document.xml")) return readDocx(book)
+    if (book.has("content.xml")) return readOpenDocument(book)
+    book.find("fb2")?.let { path ->
+        return book.use { readFictionBook(checkNotNull(it.stream(path))) }
+    }
+    book.find(*HTML.toTypedArray())?.let { return readHtml(book, it) }
+    if (book.names.any(::isComicPage)) return ComicDocument(book.names, book)
+    book.find(*PLAIN_TEXT.toTypedArray())?.let { path ->
+        return book.use { textDocument(decodeText(checkNotNull(it.bytes(path)))) }
+    }
+    error("no book in archive")
+}
+
+internal fun Regex.scan(input: CharSequence) = sequence {
+    val matcher = toPattern().matcher(input)
+    while (matcher.find()) yield(matcher.toMatchResult())
+}
+
+internal fun textDocument(text: String) = byHeadings(plainBlocks(text))
+
+internal fun decodeText(bytes: ByteArray): String = try {
     val text = Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()
     text.removePrefix("\uFEFF")
 } catch (_: CharacterCodingException) {
-    String(bytes, Charset.forName("windows-1252"))
+    String(bytes, WINDOWS_1252)
 }
 
-private fun assemble(
+internal fun assemble(
     parts: List<Pair<String?, List<Block>>>,
-    archive: ZipFile? = null,
+    resources: Resources = Resources { null },
 ): TextDocument {
     val sections = mutableListOf<List<Block>>()
     val chapters = mutableListOf<Chapter>()
@@ -238,7 +407,7 @@ private fun assemble(
         title?.takeIf { it.isNotBlank() }?.let { chapters += Chapter(it, sections.size) }
         sections += split(blocks)
     }
-    return TextDocument(sections, chapters, archive)
+    return TextDocument(sections, chapters, resources)
 }
 
 private fun split(blocks: List<Block>): List<List<Block>> {
@@ -255,14 +424,21 @@ private fun split(blocks: List<Block>): List<List<Block>> {
     return parts
 }
 
-private fun titled(blocks: List<Block>) =
-    blocks.firstOrNull { it.heading in 1..2 }?.text to blocks
+internal fun titled(blocks: List<Block>): Pair<String?, List<Block>> {
+    val heading = blocks.firstOrNull { it.heading in CHAPTER_HEADINGS }?.text
+    val first = blocks.firstOrNull { it.text.isNotBlank() }
+    val centered = first?.takeIf { it.centered && it.text.length <= TITLE_LENGTH }?.text
+    return (heading ?: centered) to blocks
+}
 
-private fun byHeadings(blocks: List<Block>): TextDocument {
+internal fun byHeadings(blocks: List<Block>, resources: Resources = Resources { null }) =
+    assemble(headingParts(blocks), resources)
+
+internal fun headingParts(blocks: List<Block>): List<Pair<String?, List<Block>>> {
     val parts = mutableListOf<Pair<String?, List<Block>>>()
     var current = mutableListOf<Block>()
     for (block in blocks) {
-        val starts = block.heading in 1..2 && current.any { it.heading == 0 }
+        val starts = block.heading in CHAPTER_HEADINGS && current.any { it.heading == 0 }
         if (starts) {
             parts += titled(current)
             current = mutableListOf()
@@ -270,7 +446,7 @@ private fun byHeadings(blocks: List<Block>): TextDocument {
         current += block
     }
     parts += titled(current)
-    return assemble(parts)
+    return parts
 }
 
 private fun plainBlocks(text: String) = text
@@ -282,8 +458,12 @@ private fun plainBlocks(text: String) = text
         Block(it.drop(level).trim(), heading = level, centered = level > 0)
     }
 
-private class HtmlReader(private val imagePath: (String) -> String?) {
+private class HtmlReader(
+    private val imagePath: (String) -> String?,
+    private val anchors: Set<String> = emptySet(),
+) {
     val blocks = mutableListOf<Block>()
+    val marks = mutableMapOf<String, Int>()
     private val text = StringBuilder()
     private val spans = mutableListOf<Span>()
 
@@ -300,6 +480,7 @@ private class HtmlReader(private val imagePath: (String) -> String?) {
     private fun visit(node: Node, block: Element, bold: Boolean, italic: Boolean) {
         if (node is TextNode) return append(node.wholeText, bold, italic)
         if (node !is Element) return
+        if (node.id() in anchors) marks.putIfAbsent(node.id(), blocks.size)
         val tag = node.tagName().lowercase()
         when {
             tag == "br" -> if (text.isNotEmpty()) text.append('\n')
@@ -359,10 +540,11 @@ private fun isCentered(element: Element) = generateSequence(element) { it.parent
     .take(3)
     .any {
         "center" in it.className() ||
+            it.attr("align").equals("center", ignoreCase = true) ||
             "text-align:center" in it.attr("style").replace(" ", "")
     }
 
-private fun htmlBlocks(root: Element, imagePath: (String) -> String?) =
+internal fun htmlBlocks(root: Element, imagePath: (String) -> String?) =
     HtmlReader(imagePath).apply {
         read(root)
     }.blocks.ifEmpty { plainBlocks(root.wholeText()) }
@@ -379,84 +561,254 @@ internal fun resolvePath(base: String, href: String): String {
     return path.removePrefix("/")
 }
 
-private class Epub(private val zip: ZipFile) {
+private class ZipBook(file: File) : Resources {
+    private val zip = ZipFile(file)
+    val names = zip.entries().toList().filterNot { it.isDirectory }.map { it.name }
+
     val opfPath
         get() = xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
 
     fun has(path: String) = zip.getEntry(path) != null
 
-    fun bytes(path: String) = zip.getEntry(path)?.let(zip::bytes)
+    fun find(vararg extensions: String) =
+        names.firstOrNull { File(it).extension.lowercase() in extensions }
+
+    override fun bytes(path: String) = zip.getEntry(path)?.let(zip::bytes)
+
+    fun stream(path: String) = bytes(path)?.inputStream()
 
     fun xml(path: String) =
         bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }
 
-    fun titles(items: List<Element>, opfPath: String): Map<String, String> {
+    fun tableOfContents(
+        items: List<Element>,
+        opfPath: String,
+    ): List<Pair<String, String>> {
         val nav = items.firstOrNull { "nav" in it.attr("properties").split(" ") }
         val navPath = nav?.let { resolvePath(opfPath, it.attr("href")) }
-        val links = navPath?.let { xml(it) }?.select("nav a[href]").orEmpty()
+        val navs = navPath?.let { xml(it) }?.select("nav").orEmpty()
+        val toc = navs.firstOrNull { it.attr("epub:type") == "toc" } ?: navs.firstOrNull()
+        val links = toc?.select("a[href]").orEmpty()
         if (navPath != null && links.isNotEmpty()) {
-            return links.reversed().associate {
-                resolvePath(navPath, it.attr("href")) to it.text()
-            }
+            return links.map { target(navPath, it.attr("href")) to it.text() }
         }
         val ncx =
             items.firstOrNull { it.attr("media-type") == "application/x-dtbncx+xml" }
-                ?: return emptyMap()
+                ?: return emptyList()
         val ncxPath = resolvePath(opfPath, ncx.attr("href"))
-        return xml(ncxPath)?.select("navPoint").orEmpty().reversed().associate { point ->
+        return xml(ncxPath)?.select("navPoint").orEmpty().map { point ->
             val source = point.selectFirst("content")?.attr("src").orEmpty()
-            resolvePath(ncxPath, source) to
+            target(ncxPath, source) to
                 point.selectFirst("navLabel text")?.text().orEmpty()
         }
     }
+
+    override fun close() = zip.close()
 }
 
-private fun readEpub(file: File): TextDocument {
-    val zip = ZipFile(file)
-    return runCatching { readEpub(zip) }.onFailure { zip.close() }.getOrThrow()
+private fun target(base: String, href: String): String {
+    val fragment = href.substringAfter('#', "")
+    return resolvePath(base, href) + if (fragment.isEmpty()) "" else "#$fragment"
 }
 
-private fun readEpub(zip: ZipFile): TextDocument {
-    val epub = Epub(zip)
-    val opfPath = epub.opfPath ?: return assemble(emptyList(), zip)
-    val opf = epub.xml(opfPath) ?: return assemble(emptyList(), zip)
+private fun readEpub(epub: ZipBook, opfPath: String): TextDocument {
+    val opf = epub.xml(opfPath) ?: return assemble(emptyList(), epub)
     val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
-    val titles = epub.titles(manifest.values.toList(), opfPath)
-    val parts = opf.select("spine > itemref").mapNotNull { reference ->
-        val item = manifest[reference.attr("idref")] ?: return@mapNotNull null
+    val contents = epub.tableOfContents(manifest.values.toList(), opfPath)
+    val parts = opf.select("spine > itemref").flatMap { reference ->
+        val item = manifest[reference.attr("idref")] ?: return@flatMap emptyList()
         val path = resolvePath(opfPath, item.attr("href"))
         val body =
             epub.bytes(path)?.let { Jsoup.parse(it.inputStream(), null, "").body() }
-                ?: return@mapNotNull null
-        val hints = "${titles[path].orEmpty()} ${path.substringAfterLast('/')}"
-            .lowercase()
+                ?: return@flatMap emptyList()
+        val entries = contents.filter { it.first.substringBefore('#') == path }
+            .map { it.first.substringAfter('#', "") to it.second }
+        val title = entries.firstOrNull()?.second.orEmpty()
+        val hints = "$title ${path.substringAfterLast('/')}".lowercase()
         val isFrontMatter =
             FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
-        if (isFrontMatter) return@mapNotNull null
-        titles[path] to htmlBlocks(body) { resolvePath(path, it).takeIf(epub::has) }
+        if (isFrontMatter) return@flatMap emptyList()
+        anchoredParts(body, entries) { resolvePath(path, it).takeIf(epub::has) }
     }
-    return assemble(parts, zip)
+    return assemble(parts, epub)
 }
 
-private fun readFictionBook(file: File): TextDocument {
-    val document = Jsoup.parse(file, null, "", Parser.xmlParser())
+private fun anchoredParts(
+    body: Element,
+    entries: List<Pair<String, String>>,
+    imagePath: (String) -> String?,
+): List<Pair<String?, List<Block>>> {
+    val anchors = entries.map { it.first }.filter { it.isNotEmpty() }.toSet()
+    val reader = HtmlReader(imagePath, anchors).apply { read(body) }
+    val starts = entries
+        .map { (anchor, title) ->
+            (reader.marks[anchor] ?: 0) to title
+        }
+        .plus(0 to null)
+        .sortedBy { it.first }
+        .distinctBy { it.first }
+    return starts.mapIndexed { index, (start, title) ->
+        val end = starts.getOrNull(index + 1)?.first ?: reader.blocks.size
+        title to reader.blocks.subList(start, end)
+    }
+}
+
+private fun readHtml(book: ZipBook, path: String): TextDocument {
+    val body = Jsoup.parse(checkNotNull(book.stream(path)), null, "").body()
+    return byHeadings(htmlBlocks(body) { resolvePath(path, it).takeIf(book::has) }, book)
+}
+
+private fun headingTag(level: Int) = if (level > 0) "h${level.coerceAtMost(6)}" else "p"
+
+private fun headingLevel(name: String, properties: Element?): Int? {
+    val outline = properties?.selectFirst("w|outlineLvl")?.attr("w:val")?.toIntOrNull()
+    if (outline != null) return (outline + 1).takeIf { it < 10 }
+    if (name.lowercase() == "title") return 1
+    return DOCX_HEADING.find(name.lowercase())?.groupValues?.get(1)?.toInt()
+}
+
+private fun docxStyles(book: ZipBook) =
+    book.xml("word/styles.xml")?.select("w|style").orEmpty().mapNotNull { style ->
+        val name = style.selectFirst("w|name")?.attr("w:val").orEmpty()
+        headingLevel(name, style.selectFirst("w|pPr"))?.let {
+            style.attr("w:styleId") to
+                it
+        }
+    }.toMap()
+
+private fun docxLevel(paragraph: Element, styles: Map<String, Int>): Int {
+    val properties = paragraph.selectFirst("w|pPr")
+    val style = properties?.selectFirst("w|pStyle")?.attr("w:val").orEmpty()
+    return headingLevel("", properties) ?: styles[style] ?: headingLevel(style, null) ?: 0
+}
+
+private fun Element.isSwitchedOn(tag: String) =
+    selectFirst("w|rPr > $tag")?.attr("w:val")?.let { it !in SWITCHED_OFF } ?: false
+
+private fun readDocx(book: ZipBook): TextDocument {
+    val document = checkNotNull(book.xml("word/document.xml"))
+    val links = book.xml("word/_rels/document.xml.rels")?.select("Relationship").orEmpty()
+        .associate {
+            it.attr("Id") to resolvePath("word/document.xml", it.attr("Target"))
+        }
+    val styles = docxStyles(book)
+    val body = Element("body")
+    for (paragraph in document.select("w|body w|p")) {
+        val block = body.appendElement(headingTag(docxLevel(paragraph, styles)))
+        for (run in paragraph.select("w|r")) {
+            var target = block
+            if (run.isSwitchedOn("w|b")) target = target.appendElement("b")
+            if (run.isSwitchedOn("w|i")) target = target.appendElement("i")
+            target.appendText(
+                run.select("w|t, w|tab, w|br, w|cr")
+                    .joinToString("") {
+                        if (it.tagName() ==
+                            "w:t"
+                        ) {
+                            it.wholeText()
+                        } else {
+                            " "
+                        }
+                    },
+            )
+            run.select("a|blip").mapNotNull { links[it.attr("r:embed")] }
+                .forEach { block.appendElement("img").attr("src", it) }
+        }
+    }
+    return byHeadings(htmlBlocks(body) { it.takeIf(book::has) }, book)
+}
+
+private fun readOpenDocument(book: ZipBook): TextDocument {
+    val document = checkNotNull(book.xml("content.xml"))
+    document.select("office|annotation, text|tracked-changes").remove()
+    document.select("text|s, text|tab, text|line-break").forEach {
+        it.replaceWith(TextNode(" "))
+    }
+    val body = Element("body")
+    document.select("text|h, text|p")
+        .filter { paragraph ->
+            paragraph.parents().none { it.tagName() in PARAGRAPH_TAGS }
+        }
+        .forEach { paragraph ->
+            val isHeading = paragraph.tagName() == "text:h"
+            val level = paragraph.attr("text:outline-level").toIntOrNull() ?: 1
+            body.appendElement(headingTag(if (isHeading) level else 0))
+                .appendText(paragraph.wholeText())
+            paragraph.select("draw|image")
+                .forEach { body.appendElement("img").attr("src", it.attr("xlink:href")) }
+        }
+    return byHeadings(htmlBlocks(body) { it.takeIf(book::has) }, book)
+}
+
+private fun windowsCharacter(hex: String) =
+    String(byteArrayOf(hex.toInt(16).toByte()), WINDOWS_1252)
+
+internal fun rtfText(source: String): String {
+    val text = StringBuilder()
+    val groups = ArrayDeque<Boolean>()
+    var skipping = false
+    var fallback = 0
+    for (match in RTF_TOKEN.scan(source)) {
+        val parts = (1..6).map { match.group(it).orEmpty() }
+        val (word, argument, hex, symbol, brace) = parts
+        val lineBreak = parts[5]
+        when {
+            brace == "{" -> groups.addLast(skipping)
+
+            brace == "}" -> skipping = groups.removeLastOrNull() ?: false
+
+            skipping -> Unit
+
+            symbol == "*" || word in RTF_SKIPPED -> skipping = true
+
+            word == "u" -> {
+                text.append((argument.toIntOrNull() ?: 0).toChar())
+                fallback = 1
+            }
+
+            word.isNotEmpty() -> text.append(RTF_WORDS[word].orEmpty())
+
+            hex.isNotEmpty() && fallback > 0 -> fallback--
+
+            hex.isNotEmpty() -> text.append(windowsCharacter(hex))
+
+            symbol.isNotEmpty() -> text.append(RTF_SYMBOLS[symbol] ?: symbol)
+
+            lineBreak.isNotEmpty() -> Unit
+
+            else -> {
+                text.append(match.group().drop(fallback))
+                fallback = 0
+            }
+        }
+    }
+    return text.toString()
+}
+
+private fun readFictionBook(input: InputStream): TextDocument {
+    val document = input.use { Jsoup.parse(it, null, "", Parser.xmlParser()) }
+    val binaries = document.select("binary").associate { it.id() to it.text() }
+    val images =
+        Resources { path -> binaries[path]?.let { Base64.getMimeDecoder().decode(it) } }
     val body = document.selectFirst("body") ?: return assemble(emptyList())
     val sections =
         body.children().filter { it.tagName() == "section" }.ifEmpty { listOf(body) }
-    return assemble(
-        sections.map { section ->
-            val title = section.selectFirst("> title")?.text()
-            val blocks = section.select("p, v, subtitle").mapNotNull { paragraph ->
-                val (text, spans) = HtmlReader { null }.inline(paragraph)
-                val isTitle = paragraph.parents().any { it.tagName() == "title" }
-                val level = when {
-                    isTitle -> 1
-                    paragraph.tagName() == "subtitle" -> 3
-                    else -> 0
-                }
-                Block(text, level, level > 0, spans).takeIf { text.isNotEmpty() }
-            }
-            title to blocks
-        },
-    )
+    val parts = sections.map { it.selectFirst("> title")?.text() to fictionBlocks(it) }
+    return assemble(parts, images)
 }
+
+private fun fictionBlocks(section: Element) =
+    section.select("p, v, subtitle, image").mapNotNull { element ->
+        if (element.tagName() == "image") {
+            val link = element.attributes().firstOrNull { it.key.endsWith("href") }?.value
+            return@mapNotNull link?.let { Block("", image = it.removePrefix("#")) }
+        }
+        val (text, spans) = HtmlReader({ null }).inline(element)
+        val isTitle = element.parents().any { it.tagName() == "title" }
+        val level = when {
+            isTitle -> 1
+            element.tagName() == "subtitle" -> 3
+            else -> 0
+        }
+        Block(text, level, level > 0, spans).takeIf { text.isNotEmpty() }
+    }

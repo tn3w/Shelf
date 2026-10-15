@@ -101,7 +101,7 @@
     <string name="theme_system">System</string>
     <string name="topics">Topics</string>
     <string name="trending">Trending</string>
-    <string name="unsupported_file">Unsupported file. Try EPUB, PDF, TXT, HTML, FB2 or CBZ.</string>
+    <string name="unsupported_file">Unsupported file. Try EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT or HTML.</string>
     <string name="up_to_date">Shelf is up to date.</string>
     <string name="update_available">Shelf %s available</string>
     <string name="update_failed">Update failed.</string>

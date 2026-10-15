@@ -14,7 +14,7 @@ import java.util.zip.ZipOutputStream
 private val FIRST_IMAGE = byteArrayOf(1, 2, 3)
 private val SECOND_IMAGE = byteArrayOf(4, 5, 6)
 
-private fun zip(file: File, entries: Map<String, ByteArray>) = file.apply {
+internal fun zip(file: File, entries: Map<String, ByteArray>) = file.apply {
     ZipOutputStream(outputStream()).use { archive ->
         entries.forEach { (name, bytes) ->
             archive.putNextEntry(ZipEntry(name))
@@ -179,7 +179,7 @@ class DocumentTest {
                 "notes.txt" to image,
             ),
         )
-        ComicDocument(file).use { assertEquals(2, it.pageCount) }
+        (openDocument(file) as PagedDocument).use { assertEquals(2, it.pageCount) }
     }
 
     @Test
@@ -209,6 +209,37 @@ class DocumentTest {
         )
         val expected = listOf(Chapter("Opening", 0), Chapter("Ending", 1))
         assertEquals(expected, (document as TextDocument).chapters)
+    }
+
+    @Test
+    fun epubChaptersSplitOneFileAtNavAnchorsAndIgnorePageList() {
+        val nav = """
+            <html><body>
+              <nav epub:type="toc"><ol>
+                <li><a href="book.xhtml#one">One</a></li>
+                <li><a href="book.xhtml#two">Two</a></li>
+              </ol></nav>
+              <nav epub:type="page-list"><ol><li><a href="book.xhtml#page">7</a></li></ol></nav>
+            </body></html>
+        """
+        val body = """<html><body><p>Front</p><h2 id="one">One</h2><p id="page">A</p>
+            <div id="two"><h2>Two</h2><p>B</p></div></body></html>"""
+        val opf = """
+            <manifest><item id="nav" href="nav.xhtml" properties="nav"/>
+              <item id="book" href="book.xhtml"/></manifest>
+            <spine><itemref idref="book"/></spine>
+        """
+        val files = mapOf("nav.xhtml" to nav, "book.xhtml" to body)
+            .mapValues { it.value.toByteArray() }
+        val document = openDocument(epubOf(folder.newFile("one.epub"), opf, files))
+        val expected = listOf(Chapter("One", 1), Chapter("Two", 2))
+        assertEquals(expected, (document as TextDocument).chapters)
+        assertEquals(
+            listOf("Front", "One", "A", "Two", "B"),
+            blocks(document).map {
+                it.text
+            },
+        )
     }
 
     @Test

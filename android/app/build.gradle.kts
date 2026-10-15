@@ -79,6 +79,9 @@ android {
         jniLibs {
             keepDebugSymbols += "**/*.so"
         }
+        resources {
+            excludes += "org/apache/commons/codec/**"
+        }
     }
 
     testOptions {
@@ -197,6 +200,9 @@ dependencies {
     implementation(libs.coil.network)
     implementation(libs.jsoup)
     implementation(libs.zxing.core)
+    implementation(libs.junrar)
+    implementation(libs.commons.compress)
+    implementation(libs.xz)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
 }

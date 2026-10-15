@@ -8,7 +8,7 @@ Shelf ist ein Offline-Buchkatalog auf Basis von Open Library.
 * Goodreads- und StoryGraph-CSV-Import und -Export
 * Tagesziel und Leseserien
 * Persönliche Empfehlungen, direkt auf dem Gerät berechnet
-* Reader für EPUB, PDF, TXT, HTML, FB2 und CBZ, importiert oder aus jeder App geöffnet
+* Reader für EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, CB7, DOCX, ODT, RTF, TXT und HTML, importiert oder aus jeder App geöffnet
 * Lesekomfort: Schriftgröße, Abstände, Ränder, Schriftart, Papier- und Nachtseiten, Blättertasten
 * Kataloge auf Englisch, Deutsch, Französisch und Spanisch mit optionalen Genre-Paketen
 * Selbst hostbar: eigene Katalogquelle und Cover-Server oder Import von Katalogdateien

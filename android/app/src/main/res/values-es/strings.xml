@@ -100,7 +100,7 @@
     <string name="theme_system">Sistema</string>
     <string name="topics">Temas</string>
     <string name="trending">Tendencias</string>
-    <string name="unsupported_file">Archivo no compatible. Prueba EPUB, PDF, TXT, HTML, FB2 o CBZ.</string>
+    <string name="unsupported_file">Archivo no compatible. Prueba EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT o HTML.</string>
     <string name="up_to_date">Shelf está actualizado.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Error al actualizar.</string>

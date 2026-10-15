@@ -143,8 +143,17 @@ private class Scope(
         return Scope(base, absolute.ifEmpty { element?.attr(name).orEmpty() })
     }
 
-    fun match(regex: Regex) = regex.findAll(Deadline(source)).map { found ->
-        Scope(base, found.groupValues.getOrElse(1) { found.value })
+    fun match(regex: Regex) = regex.scan(Deadline(source)).map { found ->
+        Scope(
+            base,
+            if (found.groupCount() >
+                0
+            ) {
+                found.group(1).orEmpty()
+            } else {
+                found.group()
+            },
+        )
     }.toList()
 }
 

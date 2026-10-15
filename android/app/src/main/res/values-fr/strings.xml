@@ -100,7 +100,7 @@
     <string name="theme_system">Système</string>
     <string name="topics">Sujets</string>
     <string name="trending">Tendances</string>
-    <string name="unsupported_file">Fichier non pris en charge. Essayez EPUB, PDF, TXT, HTML, FB2 ou CBZ.</string>
+    <string name="unsupported_file">Fichier non pris en charge. Essayez EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT ou HTML.</string>
     <string name="up_to_date">Shelf est à jour.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Échec de la mise à jour.</string>

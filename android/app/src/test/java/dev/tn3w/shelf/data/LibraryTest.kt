@@ -271,6 +271,14 @@ class LibraryTest {
     }
 
     @Test
+    fun reimportUnderNewExtensionPointsProgressAtKeptFile() {
+        val progress = mapOf(7 to Progress("7.cbr", section = 2, page = 5))
+        val updated = importedProgress(progress, work = 7, name = "7.cbz")
+        assertEquals(Progress("7.cbz", section = 2, page = 5), updated[7])
+        assertEquals(Progress("8.epub"), importedProgress(progress, 8, "8.epub")[8])
+    }
+
+    @Test
     fun deleteOtherFormatsKeepsOnlyNewFileAndOtherWorks() {
         val directory = Files.createTempDirectory("books").toFile()
         val names = listOf("7.epub", "7.pdf", "70.epub", "7-cover-5")

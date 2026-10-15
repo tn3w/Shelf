@@ -46,6 +46,20 @@
                 <data android:mimeType="application/x-fictionbook" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/vnd.amazon.mobi8-ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/vnd.palm" />
+                <data android:mimeType="application/x-palm-database" />
+                <data android:mimeType="application/x-zip-compressed-fb2" />
+                <data android:mimeType="application/vnd.comicbook-rar" />
+                <data android:mimeType="application/x-cbr" />
+                <data android:mimeType="application/x-cb7" />
+                <data android:mimeType="application/x-cbt" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="application/vnd.oasis.opendocument.text" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -55,6 +69,7 @@
                 <data android:mimeType="text/markdown" />
                 <data android:mimeType="text/html" />
                 <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="text/rtf" />
             </intent-filter>
         </activity>
 

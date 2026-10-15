@@ -8,7 +8,7 @@ Shelf is an offline book catalogue built from Open Library.
 * Goodreads and StoryGraph CSV import and export
 * Daily reading goal and streaks
 * Personal recommendations computed on the device
-* Reader for EPUB, PDF, TXT, HTML, FB2 and CBZ files, imported or opened from any app
+* Reader for EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, CB7, DOCX, ODT, RTF, TXT and HTML files, imported or opened from any app
 * Reader comfort: text size, spacing, margins, typeface, paper and night pages, page keys
 * Catalogues in English, German, French and Spanish with optional genre packs
 * Self-hostable: own catalogue source and cover server, or import catalogue files

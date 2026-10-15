@@ -14,6 +14,9 @@ coil = "3.6.3"
 jsoup = "1.23.2"
 junit = "4.13.2"
 zxing = "3.5.3"
+junrar = "8.1.2"
+commonsCompress = "1.28.0"
+xz = "1.12"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -36,6 +39,9 @@ coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", versi
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+junrar = { group = "com.github.junrar", name = "junrar", version.ref = "junrar" }
+commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
+xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

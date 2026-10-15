@@ -28,7 +28,6 @@ val downloadClient by lazy {
     http.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
 }
 private const val EPUB_TYPE = "application/epub+zip"
-private val SIGNATURES = mapOf("epub" to "PK", "pdf" to "%PDF")
 
 data class Query(
     val title: String,
@@ -141,13 +140,6 @@ private fun download(response: Response, target: File, onProgress: (Float) -> Un
             }
         }
     }
-}
-
-internal fun isFormat(file: File, format: String): Boolean {
-    val signature = SIGNATURES[format] ?: return true
-    val header = ByteArray(signature.length)
-    val read = file.inputStream().use { it.read(header) }
-    return read == header.size && header.decodeToString() == signature
 }
 
 internal fun encode(text: String) = URLEncoder.encode(text, "UTF-8").replace("+", "%20")

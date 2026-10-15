@@ -269,6 +269,9 @@ internal fun <T> MutablePreferences.update(slot: Slot<T>, change: (T) -> T) {
     this[slot.key] = slot.encode(change(current))
 }
 
+internal fun importedProgress(progress: Map<Int, Progress>, work: Int, name: String) =
+    progress + (work to (progress[work]?.copy(file = name) ?: Progress(name)))
+
 internal fun deleteOtherFormats(directory: File, work: Int, keep: String) = directory
     .listFiles { file -> file.name != keep && file.nameWithoutExtension == "$work" }
     .orEmpty()
@@ -307,6 +310,9 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun deleteTemporaryFiles() = withContext(Dispatchers.IO) {
         booksDir.listFiles(File::isTemporary).orEmpty().forEach(File::delete)
+        context.cacheDir.listFiles { file -> file.name.startsWith(EXTRACTED_PREFIX) }
+            .orEmpty()
+            .forEach(File::deleteRecursively)
     }
 
     suspend fun hasFile(progress: Progress?) = withContext(Dispatchers.IO) {
@@ -361,9 +367,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         deleteOtherFormats(booksDir, work, keep = name)
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
-        edit(PROGRESS) {
-            if (work in it) it else it + (work to Progress(name))
-        }
+        edit(PROGRESS) { importedProgress(it, work, name) }
         val existing = saved.first().firstOrNull { it.work == work }
         val book = bookOf(work, title, metadata?.author.orEmpty(), existing?.cover ?: 0)
         place(book, existing?.shelf ?: Shelf.Reading)

@@ -38,7 +38,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 <table>
 <tr><th width="1%">Find</th><th width="1%">Read</th><th width="1%">Track</th></tr>
-<tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · PDF · FB2 · CBZ · TXT · HTML</td><td align="center">Want · Reading · Finished</td></tr>
+<tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · CBR · DOCX · RTF · <a href="#formats">more</a></td><td align="center">Want · Reading · Finished</td></tr>
 <tr><td align="center">Genres, series, authors, free ebooks</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
 <tr><td align="center">Recommendations on device</td><td align="center">Volume and page keys</td><td align="center">Goodreads / StoryGraph import</td></tr>
 </table>
@@ -79,9 +79,35 @@ list). Genres group books automatically, no collections to maintain.
 Book missing from the catalogue? Library › **+**, or search it and tap
 **Add "…" as own book**. Title, author and shelf stay on device. Cover drawn on device,
 or tap it, in the sheet or on the book page, to pick your own image.
-Library › file icon imports an EPUB, PDF, FB2, CBZ, TXT or HTML file instead. Same file
+Library › file icon imports a book file instead (see [Formats](#formats)). Same file
 twice → same book. Imported files and own covers move along on device transfer; cloud
 backup keeps the library only, so re-import files there.
+
+## Formats
+
+Detected by content (magic bytes), extension only as fallback: a CBR that is really a ZIP
+still opens. Title and author read on import where the format has them. Without a table
+of contents, chapters start at `h1`–`h3` headings or a short centered first line. Same
+file under another extension → same book, progress kept.
+
+<table>
+<tr><th width="1%">Kind</th><th width="1%">Extensions</th><th width="1%">Reads</th></tr>
+<tr><td>EPUB</td><td><code>epub</code> <code>kepub</code></td><td>spine, nav/NCX chapters (also <code>#anchors</code> inside one file), images, styles</td></tr>
+<tr><td>Kindle</td><td><code>mobi</code> <code>azw</code> <code>azw3</code> <code>kf8</code> <code>prc</code></td><td>MOBI 6 and KF8 (also joint files), PalmDOC and HUFF/CDIC, images, EXTH metadata; DRM refused. Chapters: MOBI 6 guide TOC, else page breaks</td></tr>
+<tr><td>Palm</td><td><code>pdb</code></td><td>PalmDOC text or HTML, MOBI</td></tr>
+<tr><td>FictionBook</td><td><code>fb2</code> <code>fbz</code> <code>fb2.zip</code></td><td>sections, styles, embedded images</td></tr>
+<tr><td>PDF</td><td><code>pdf</code></td><td>pages via <code>PdfRenderer</code></td></tr>
+<tr><td>Comics</td><td><code>cbz</code> <code>cbr</code> <code>cb7</code> <code>cbt</code></td><td>image pages, natural order; RAR up to v7</td></tr>
+<tr><td>Office</td><td><code>docx</code> <code>odt</code> <code>rtf</code></td><td>headings (any Word language), bold/italic (DOCX), images (DOCX, ODT); comments skipped</td></tr>
+<tr><td>Web, text</td><td><code>html</code> <code>htm</code> <code>xhtml</code> <code>htmlz</code> <code>txt</code> <code>txtz</code> <code>md</code></td><td>headings, styles; UTF-8 or Windows-1252</td></tr>
+</table>
+
+A plain `zip` opens as whatever it holds: EPUB, DOCX, ODT, FB2, HTML, images or text.
+ZIP, RAR, 7z and tar via `java.util.zip`, [junrar](https://github.com/junrar/junrar) and
+[Commons Compress](https://commons.apache.org/proper/commons-compress/); RAR, 7z and tar
+pages unpack to the cache while open (2 GB cap), cleared on start. Kindle reader in
+`data/Mobi.kt`, everything else in `data/Documents.kt`. Long scans use one `Matcher`
+(`Regex.scan`): `findAll` re-copies the input per match on Android.
 
 ## Free books
 
