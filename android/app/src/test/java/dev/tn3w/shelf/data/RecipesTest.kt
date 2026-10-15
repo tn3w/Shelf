@@ -307,6 +307,58 @@ class RecipesTest {
     }
 
     @Test
+    fun headersOnlyReachSearchHost() {
+        val step = RecipeStep(
+            url = "http://localhost:$port/details?md5={md5}",
+            fields = mapOf("key" to Pick(regex = KEY_PATTERN)),
+        )
+        val source = OwnSource(htmlRecipe().copy(steps = listOf(step)))
+        val offer = source.find(Query("Emma", "", "en")).single()
+        val error = runCatching { source.open(offer) }.exceptionOrNull()
+        assertTrue(error?.message.orEmpty().contains("401"))
+    }
+
+    @Test
+    fun publicRecipesStayOnPublicHttps() {
+        assertFalse(isPermittedFrom("example.org", URL("http://example.org/")))
+        assertFalse(isPermittedFrom("example.org", URL("http://192.168.1.5/")))
+        assertFalse(isPermittedFrom("example.org", URL("https://localhost/")))
+        assertTrue(isPermittedFrom("example.org", URL("https://cdn.example.net/")))
+        assertTrue(isPermittedFrom("192.168.1.5", URL("http://nas.local/")))
+        assertTrue(isPermittedFrom("192.168.1.5", URL("https://example.org/")))
+    }
+
+    @Test
+    fun readsStopAtLimit() {
+        assertEquals(3, "abc".byteInputStream().readAtMost(3).size)
+        val error = runCatching {
+            "abcd".byteInputStream().readAtMost(3)
+        }.exceptionOrNull()
+        assertTrue(error is IOException)
+    }
+
+    @Test
+    fun debugReportHidesSecrets() {
+        val recipe = htmlRecipe().copy(
+            search = htmlRecipe().search.copy(body = "secret=b0dy"),
+            download = "https://example.org/get?apikey=abc123&md5={md5}",
+        )
+        val trace = listOf(
+            "GET https://example.org/get?apikey=abc123&md5=emma",
+            "  body: secret=b0dy",
+            "  < Set-Cookie: session=s3cret",
+            "  < Content-Type: text/html",
+            "  page: echo $TOKEN",
+        ).map(recipe::redact)
+        val text = recipe.redacted().toText() + trace
+        listOf("abc123", "emma", "b0dy", "s3cret", TOKEN).forEach {
+            assertFalse(it, it in text)
+        }
+        assertTrue("Content-Type: text/html" in text)
+        assertTrue("md5={md5}" in text)
+    }
+
+    @Test
     fun recipeFilesHoldOneOrManySources() {
         val text = recipesText(listOf(htmlRecipe(), STARTER_RECIPE))
         val parsed = parseRecipes(text).getOrThrow()

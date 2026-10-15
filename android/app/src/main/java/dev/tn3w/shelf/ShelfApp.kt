@@ -13,6 +13,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
+import java.io.IOException
 import kotlin.random.Random
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
@@ -29,6 +30,7 @@ class ShelfApp :
     val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
     val ownSources by lazy { OwnSources(this) }
+    val recognizer by lazy { assets.open("scan.bin").use { Recognizer(it.readBytes()) } }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
 
@@ -58,6 +60,12 @@ class ShelfApp :
                     .header("Accept", "image/*")
                     .build()
                 chain.proceed(request)
+            }
+            .addNetworkInterceptor { chain ->
+                val origin = chain.call().request().url.host
+                val url = chain.request().url.toUrl()
+                if (!isPermittedFrom(origin, url)) throw IOException("refusing $url")
+                chain.proceed(chain.request())
             }
             .build()
     }

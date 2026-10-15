@@ -19,7 +19,7 @@
     <string name="catalogue_hint">Packs hors ligne, mises à jour et sources perso.</string>
     <string name="catalogue_language">Langue des livres</string>
     <string name="check_updates">Mises à jour de l\'appli</string>
-    <string name="check_updates_hint">Vérifier GitHub une fois par jour.</string>
+    <string name="check_updates_hint">Vérifie GitHub chaque jour. Les nouvelles versions sont proposées un jour après leur sortie.</string>
     <string name="choose_packs">Packs supplémentaires</string>
     <string name="clear">Effacer</string>
     <string name="contents">Sommaire</string>
@@ -43,6 +43,7 @@
     <string name="home">Accueil</string>
     <string name="import_to_start">Importer un fichier</string>
     <string name="install">Installer</string>
+    <string name="install_anyway">Installer quand même</string>
     <string name="larger_text">Texte plus grand</string>
     <string name="later">Plus tard</string>
     <string name="next">Continuer</string>
@@ -104,6 +105,9 @@
     <string name="up_to_date">Shelf est à jour.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Échec de la mise à jour.</string>
+    <string name="update_changed">Cette version a été modifiée ou retirée, elle n’a donc pas été installée.</string>
+    <string name="update_waiting">%1$s, prête %2$s</string>
+    <string name="update_wait_note">Publiée %s. Shelf propose les mises à jour un jour après leur sortie, afin qu’une version compromise puisse être repérée et retirée avant.</string>
     <string name="update_pack">Mettre à jour %s</string>
     <string name="version">Version %1$s (%2$s)</string>
     <string name="want_to_read">À lire</string>

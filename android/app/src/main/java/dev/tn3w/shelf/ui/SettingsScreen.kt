@@ -605,7 +605,17 @@ fun OfflineRow(settings: Settings, update: SettingsUpdate) {
 }
 
 @Composable
+private fun updateSummary(release: Release): String {
+    val now = currentMillis()
+    val ready = stringResource(R.string.update_available, release.version)
+    if (now >= release.readyAt) return ready
+    val wait = relativeTime(release.readyAt, now)
+    return stringResource(R.string.update_waiting, ready, wait)
+}
+
+@Composable
 private fun AboutRows() {
+    val app = shelfApp()
     val uri = LocalUriHandler.current
     val context = LocalContext.current
     val settings = loadedSettings() ?: return
@@ -613,9 +623,11 @@ private fun AboutRows() {
     var checking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<Int?>(null) }
     var release by remember { mutableStateOf<Release?>(null) }
+    val available = settings.availableUpdate?.takeIf(Updater::isAvailable)
     val version =
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
-    val summary = listOfNotNull(version, status?.let { stringResource(it) })
+    val found = available?.let { updateSummary(it) }
+    val summary = listOfNotNull(version, found ?: status?.let { stringResource(it) })
 
     if (Updater.supported(context) && !settings.isOffline(context)) {
         ActionRow(
@@ -624,9 +636,13 @@ private fun AboutRows() {
             summary.joinToString(" · "),
             checking,
         ) {
+            if (available != null) {
+                release = available
+                return@ActionRow
+            }
             checking = true
             scope.launch {
-                runCatching { Updater.latest() }
+                runCatching { Updater.check(app) }
                     .onSuccess {
                         release = it
                         status = if (it == null) R.string.up_to_date else null

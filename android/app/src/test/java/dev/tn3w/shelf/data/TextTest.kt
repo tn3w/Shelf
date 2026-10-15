@@ -179,6 +179,13 @@ class TextTest {
     }
 
     @Test
+    fun exportGuardsTabAndCarriageReturnStarts() {
+        val entries = listOf(Saved(1, Shelf.Read, 0, "\t=1", "\r=2"))
+        val row = csvOf(entries).split("\n")[1]
+        assertTrue(row.startsWith("\"'\t=1\",\"'\r=2\""))
+    }
+
+    @Test
     fun importClampsRating() {
         val csv = "Title,My Rating\nHigh,9\nLow,-3"
         assertEquals(listOf(5, 0), csvBooks(csv).map { it.rating })

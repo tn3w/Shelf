@@ -72,9 +72,7 @@ fun ScanScreen(navigator: Navigator) {
     val app = shelfApp()
     val loaded by app.loaded.collectAsStateWithLifecycle()
     val recognizer by produceState<Recognizer?>(null) {
-        value = withContext(Dispatchers.IO) {
-            app.assets.open("scan.bin").use { Recognizer(it.readBytes()) }
-        }
+        value = withContext(Dispatchers.IO) { app.recognizer }
     }
     var found by remember { mutableStateOf<Found?>(null) }
     var frozen by remember { mutableStateOf<Found?>(null) }
@@ -250,6 +248,7 @@ private class Camera(
     private var degrees = 0
     private var generation = 0
     private var retried = false
+    private var shown = false
 
     @Volatile
     private var tappedAt = 0L
@@ -260,6 +259,7 @@ private class Camera(
 
     fun open() {
         running = true
+        shown = false
         if (!view.isAvailable) {
             view.surfaceTextureListener = this
             return
@@ -459,5 +459,9 @@ private class Camera(
 
     override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
 
-    override fun onSurfaceTextureUpdated(texture: SurfaceTexture) = onShown()
+    override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
+        if (shown) return
+        shown = true
+        onShown()
+    }
 }

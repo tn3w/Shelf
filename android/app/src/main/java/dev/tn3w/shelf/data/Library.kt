@@ -112,6 +112,7 @@ data class Settings(
     val checkUpdates: Boolean = true,
     val lastCatalogueCheck: Long = 0,
     val lastAppCheck: Long = 0,
+    val availableUpdate: Release? = null,
     val catalogueSource: String = "",
     val coverSource: String = "",
     val dnbCoverSource: String = "",
@@ -549,8 +550,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         var backup: Backup? = null
         generateSequence { archive.nextEntry }.forEach { entry ->
             when {
-                entry.name == BACKUP_ENTRY ->
-                    backup = json.decodeFromString(archive.readBytes().decodeToString())
+                entry.name == BACKUP_ENTRY -> backup = readBackup(archive)
 
                 entry.name.startsWith(BOOKS_PREFIX) ->
                     extractBook(booksDir, entry.name, archive)
@@ -558,6 +558,9 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         }
         backup
     }
+
+    private fun readBackup(archive: ZipInputStream): Backup =
+        json.decodeFromString(archive.readAtMost(MAX_ENTRY_BYTES).decodeToString())
 
     private suspend fun merge(backup: Backup) = store.edit { it.merge(backup) }
 }
@@ -590,23 +593,27 @@ internal fun MutablePreferences.merge(imported: Backup) {
     updateJson(SETTINGS, Settings()) { restoredSettings(imported.settings, it) }
 }
 
-private fun restoredSettings(imported: Settings, current: Settings): Settings {
-    val catalogue = imported.catalogueSource.takeIf(::isValidSource)
-    val covers = imported.coverSource.takeIf(::isValidCoverSource)
-    val dnbCovers = imported.dnbCoverSource.takeIf(::isValidCoverSource)
-    return imported.copy(
-        onboarded = current.onboarded,
-        dailyGoal = imported.dailyGoal.coerceIn(0, MAX_DAILY_GOAL),
-        language = imported.language.takeIf { it.isEmpty() || it in LANGUAGES }
-            ?: current.language,
-        fontScale = imported.fontScale.coerceIn(FONT_SCALES),
-        lineSpacing = imported.lineSpacing.coerceAtLeast(1f),
-        margin = imported.margin.coerceAtLeast(0),
-        catalogueSource = catalogue ?: current.catalogueSource,
-        coverSource = covers ?: current.coverSource,
-        dnbCoverSource = dnbCovers ?: current.dnbCoverSource,
-    )
-}
+private fun restoredSettings(imported: Settings, current: Settings) = imported.copy(
+    onboarded = current.onboarded,
+    dailyGoal = imported.dailyGoal.coerceIn(0, MAX_DAILY_GOAL),
+    language = imported.language.takeIf { it.isEmpty() || it in LANGUAGES }
+        ?: current.language,
+    fontScale = imported.fontScale.coerceIn(FONT_SCALES),
+    lineSpacing = imported.lineSpacing.coerceAtLeast(1f),
+    margin = imported.margin.coerceAtLeast(0),
+    offline = current.offline,
+    onlineCovers = current.onlineCovers,
+    authorImages = current.authorImages,
+    catalogueUpdates = current.catalogueUpdates,
+    checkUpdates = current.checkUpdates,
+    lastCatalogueCheck = current.lastCatalogueCheck,
+    lastAppCheck = current.lastAppCheck,
+    availableUpdate = current.availableUpdate,
+    catalogueSource = current.catalogueSource,
+    coverSource = current.coverSource,
+    dnbCoverSource = current.dnbCoverSource,
+    providers = current.providers,
+)
 
 internal fun MutablePreferences.redirect(alias: (Int) -> Int?) {
     fun moved(work: Int) = alias(work) ?: work

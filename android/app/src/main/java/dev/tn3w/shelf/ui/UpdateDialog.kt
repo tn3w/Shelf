@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.ui
 
+import android.text.format.DateUtils
+import android.text.format.DateUtils.MINUTE_IN_MILLIS
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,17 +30,32 @@ fun UpdatePrompt(settings: Settings) {
             !settings.isOffline(context)
         if (!allowed || !due) return@LaunchedEffect
         app.library.updateSettings { it.copy(lastAppCheck = now) }
-        release = runCatching { Updater.latest() }.getOrNull()
+        val found = runCatching { Updater.check(app) }.getOrNull()
+        release = found?.takeIf { now >= it.readyAt }
     }
     release?.let { UpdateDialog(it) { release = null } }
 }
+
+@Composable
+fun currentMillis() = produceState(System.currentTimeMillis()) {
+    while (true) {
+        delay(MINUTE_IN_MILLIS)
+        value = System.currentTimeMillis()
+    }
+}.value
+
+fun relativeTime(time: Long, now: Long) =
+    DateUtils.getRelativeTimeSpanString(time, now, MINUTE_IN_MILLIS).toString()
+        .replaceFirstChar { it.lowercase() }
 
 @Composable
 fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var progress by remember { mutableStateOf<Float?>(null) }
-    var failed by remember { mutableStateOf(false) }
+    var failure by remember { mutableStateOf<Int?>(null) }
+    val now = currentMillis()
+    val waiting = now < release.readyAt
     val language = LocalConfiguration.current.locales[0].language
     val notes by produceState("", release, language) {
         val url = release.changelogUrl(language) ?: return@produceState
@@ -57,8 +74,16 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
                             .verticalScroll(rememberScrollState()),
                     )
                 }
+                if (waiting) {
+                    val changed = relativeTime(release.changedAt, now)
+                    Text(
+                        stringResource(R.string.update_wait_note, changed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 progress?.let { value -> LinearProgressIndicator(progress = { value }) }
-                if (failed) Text(stringResource(R.string.update_failed))
+                failure?.let { Text(stringResource(it)) }
             }
         },
         confirmButton = {
@@ -70,11 +95,18 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
                         val result = runCatching {
                             Updater.install(context, release) { progress = it }
                         }
-                        failed = result.isFailure
+                        failure = when (result.exceptionOrNull()) {
+                            null -> null
+                            is ReleaseChanged -> R.string.update_changed
+                            else -> R.string.update_failed
+                        }
                         progress = null
                     }
                 },
-            ) { Text(stringResource(R.string.install)) }
+            ) {
+                val label = if (waiting) R.string.install_anyway else R.string.install
+                Text(stringResource(label))
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.later)) }

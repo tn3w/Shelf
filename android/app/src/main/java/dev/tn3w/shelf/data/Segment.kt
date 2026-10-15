@@ -227,6 +227,7 @@ class Segment(buffer: ByteBuffer) {
     private val blocks = Cache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = Cache<Int, Map<Int, Description>>(64)
     private val isbnBlocks = Cache<Int, Map<Int, Int>>(16)
+    private val editionIsbns = Cache<Int, List<Int>>(16)
     private val coverBlocks = Cache<Int, Map<Int, LibraryCover>>(16)
 
     private fun section(name: String) = sections.getValue(name)
@@ -320,28 +321,25 @@ class Segment(buffer: ByteBuffer) {
         val index = isbns ?: return -1
         val block = index.firsts.lastAtMost(key)
         if (block < 0) return -1
-        return isbnBlocks.get(block) {
-            val reader = ByteReader(inflate(index.blocks[it]))
-            var isbn = index.firsts[it]
-            buildMap {
-                while (reader.hasMore) {
-                    isbn += reader.varint()
-                    put(isbn, reader.varint())
-                }
-            }
-        }[key] ?: -1
+        return isbnBlocks.get(block) { isbnBlock(index, it) }[key] ?: -1
     }
 
     fun isbnsOf(local: Int): List<Int> {
         val index = isbns ?: return emptyList()
-        return (0 until index.blocks.count).flatMap { block ->
-            val reader = ByteReader(inflate(index.blocks[block]))
-            var isbn = index.firsts[block]
-            buildList {
-                while (reader.hasMore) {
-                    isbn += reader.varint()
-                    if (reader.varint() == local) add(isbn)
-                }
+        return editionIsbns.get(local) {
+            (0 until index.blocks.count).flatMap { block ->
+                isbnBlock(index, block).filterValues { it == local }.keys
+            }
+        }
+    }
+
+    private fun isbnBlock(index: BlockIndex, block: Int): Map<Int, Int> {
+        val reader = ByteReader(inflate(index.blocks[block]))
+        var isbn = index.firsts[block]
+        return buildMap {
+            while (reader.hasMore) {
+                isbn += reader.varint()
+                put(isbn, reader.varint())
             }
         }
     }

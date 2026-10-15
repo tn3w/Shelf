@@ -59,11 +59,10 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
                 status = failed
                 return@launch
             }
-            val ids = imported.added.map { it.id }
-            update { it.copy(providers = it.providers + ids) }
+            val added = imported.added.size
             val total = imported.total
             status = app.resources
-                .getQuantityString(R.plurals.free_books_imported, total, ids.size, total)
+                .getQuantityString(R.plurals.free_books_imported, total, added, total)
         }
     }
     val exporter = rememberLauncherForActivityResult(CreateDocument("application/json")) {
@@ -93,8 +92,12 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
     var recipe by remember { mutableStateOf(initial) }
     var text by remember { mutableStateOf(initial.toText()) }
     var asFile by remember { mutableStateOf(false) }
-    val parsed = if (asFile) parseRecipe(text) else Result.success(recipe)
-    val problems = parsed.fold({ it.problems() }, { listOf(firstLine(it)) })
+    val parsed = remember(text, recipe, asFile) {
+        if (asFile) parseRecipe(text) else Result.success(recipe)
+    }
+    val problems = remember(parsed) {
+        parsed.fold({ it.problems() }, { listOf(firstLine(it)) })
+    }
 
     fun save() = scope.launch {
         val ready = parsed.getOrNull() ?: return@launch
@@ -544,11 +547,11 @@ private fun debugReport(recipe: Recipe, query: Query, lines: List<String>) = bui
     appendLine("Time: ${OffsetDateTime.now()}")
     appendLine("Query: ${query.title} · ${query.author} · ${query.language}")
     appendLine()
-    appendLine("Recipe (header values hidden):")
+    appendLine("Recipe (headers, query values, bodies and cookies hidden):")
     appendLine(recipe.redacted().toText())
     appendLine()
     appendLine("Trace:")
-    lines.forEach(::appendLine)
+    lines.forEach { appendLine(recipe.redact(it)) }
 }
 
 private fun trace(recipe: Recipe, query: Query, verbose: Boolean) = channelFlow {

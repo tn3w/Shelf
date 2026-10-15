@@ -11,6 +11,8 @@ import android.os.Build
 import androidx.core.content.IntentCompat
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
@@ -48,6 +50,8 @@ private fun isNewer(version: String): Boolean {
     return candidate.getOrElse(differing) { 0 } > installed.getOrElse(differing) { 0 }
 }
 
+class ReleaseChanged : IOException("release changed or withdrawn")
+
 object Updater {
     fun supported(context: Context) = !isStoreInstaller(installerOf(context))
 
@@ -60,11 +64,32 @@ object Updater {
         release?.takeIf { complete && isNewer(it.version) }
     }
 
+    fun isAvailable(release: Release) = isNewer(release.version)
+
+    suspend fun check(app: ShelfApp) = latest().also { found ->
+        app.library.updateSettings { it.copy(availableUpdate = found) }
+    }
+
+    private fun stillPublished(release: Release): Boolean {
+        val url = "https://api.github.com/repos/$REPOSITORY/releases/tags/${release.tag}"
+        val current = try {
+            json.decodeFromString<Release>(fetchText(url))
+        } catch (_: FileNotFoundException) {
+            null
+        }
+        return release.isUnchanged(current, setOf(APK_NAME, CHECKSUMS_NAME))
+    }
+
     suspend fun install(
         context: Context,
         release: Release,
         onProgress: (Float) -> Unit,
     ) = withContext(Dispatchers.IO) {
+        val app = context.applicationContext as ShelfApp
+        if (!stillPublished(release)) {
+            runCatching { check(app) }
+            throw ReleaseChanged()
+        }
         val expected = checksum(fetchText(release.assetUrl(CHECKSUMS_NAME)), APK_NAME)
         val installer = context.packageManager.packageInstaller
         val sessionId =
@@ -82,7 +107,7 @@ object Updater {
                 throw exception
             }
             ensureActive()
-            (context.applicationContext as ShelfApp).packs.copyBundled()
+            app.packs.copyBundled()
             session.commit(statusReceiver(context, sessionId).intentSender)
         }
     }

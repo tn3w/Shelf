@@ -17,7 +17,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
@@ -31,6 +30,11 @@ private const val DEBUG_ITEMS = 5
 private const val DEBUG_PAGE_CHARACTERS = 100_000
 private val PLACEHOLDER = Regex("""\{(\+?)(\w+)\}""")
 private val HOST = Regex("""://([^/:?#{]+)""")
+private const val HIDDEN = "<hidden>"
+private val QUERY_VALUE = Regex("""([?&][^=&\s"]+=)[^&\s#"{][^&\s#"]*""")
+private val SECRET_HEADER =
+    Regex("""(?im)^(\s*< (?:set-cookie|cookie|authorization|proxy-authorization):).*$""")
+private val BODY_LINE = Regex("""(?m)^(\s*body:).*$""")
 val QUERY_VARIABLES =
     setOf("query", "title", "author", "language", "isbn", "isbns")
 private val ISBN_VARIABLE = Regex("""\{\+?isbns?\}""")
@@ -106,34 +110,35 @@ fun recipesText(recipes: List<Recipe>) =
     recipeJson.encodeToString(recipes.map { it.copy(id = "") })
 
 private class Scope(
-    val source: String,
     val base: String,
-    val element: Element? = null,
-    val node: JsonElement? = null,
+    private val text: String? = null,
+    private val element: Element? = null,
+    private val node: JsonElement? = null,
 ) {
+    private val source by lazy { text ?: element?.outerHtml() ?: node.toString() }
+    private val document by lazy { element ?: Jsoup.parse(source, base) }
+    private val root by lazy { node ?: json.parseToJsonElement(source) }
+
     val value
         get() = element?.text() ?: (node as? JsonPrimitive)?.content ?: source
 
-    fun select(css: String) = (element ?: Jsoup.parse(source, base)).select(css).map {
-        Scope(it.outerHtml(), base, element = it)
-    }
+    fun select(css: String) = document.select(css).map { Scope(base, element = it) }
 
     fun at(path: String): List<Scope> {
-        val root = node ?: json.parseToJsonElement(source)
         val found = path.split('.').filter { it.isNotEmpty() }
             .fold<String, JsonElement?>(root) { current, key -> current.child(key) }
             ?: return emptyList()
         val nodes = if (found is JsonArray) found.toList() else listOf(found)
-        return nodes.map { Scope(it.toString(), base, node = it) }
+        return nodes.map { Scope(base, node = it) }
     }
 
     fun attribute(name: String): Scope {
         val absolute = element?.absUrl(name).orEmpty()
-        return Scope(absolute.ifEmpty { element?.attr(name).orEmpty() }, base)
+        return Scope(base, absolute.ifEmpty { element?.attr(name).orEmpty() })
     }
 
     fun match(regex: Regex) = regex.findAll(Deadline(source)).map { found ->
-        Scope(found.groupValues.getOrElse(1) { found.value }, base)
+        Scope(base, found.groupValues.getOrElse(1) { found.value })
     }.toList()
 }
 
@@ -192,15 +197,8 @@ private fun Query.variables() = mapOf(
     "isbns" to isbns.joinToString(","),
 )
 
-private fun HttpURLConnection.text(): String {
-    val output = ByteArrayOutputStream()
-    inputStream.use { input ->
-        copyWithProgress(input, output) { size ->
-            check(size <= MAX_PAGE_BYTES) { "page too large" }
-        }
-    }
-    return output.toByteArray().decodeToString()
-}
+private fun HttpURLConnection.text() =
+    inputStream.use { it.readAtMost(MAX_PAGE_BYTES).decodeToString() }
 
 private fun elapsed(started: Long) = "${(System.nanoTime() - started) / 1_000_000} ms"
 
@@ -255,7 +253,7 @@ data class OwnSource(
         val format = fields["format"]?.lowercase()?.takeIf { it in READABLE_EXTENSIONS }
         val cover = fields["cover"]
             ?.let { runCatching { URI(resolve(item.base, it)).toURL() }.getOrNull() }
-            ?.takeIf { isPermitted(it, local = true) }
+            ?.takeIf { isPermittedFrom(site, it) }
             ?.toString()
         val author = fields["author"].orEmpty()
         val chosen = format ?: recipe.format
@@ -302,7 +300,7 @@ data class OwnSource(
             logHeaders(connection)
             log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
         }
-        return Scope(text, connection.url.toString())
+        return Scope(connection.url.toString(), text)
     }
 
     private fun logHeaders(connection: HttpURLConnection) =
@@ -310,16 +308,22 @@ data class OwnSource(
             if (name != null) log("  < $name: ${values.joinToString()}")
         }
 
-    private fun send(
-        url: String,
-        headers: Map<String, String>,
-        body: String?,
-        timeout: Int,
-    ) = connect(url, local = true).apply {
-        instanceFollowRedirects = false
-        readTimeout = timeout
-        headers.forEach { (name, value) -> setRequestProperty(name, value) }
-        if (body == null) return@apply
+    private fun send(target: URI, body: String?, timeout: Int): HttpURLConnection {
+        val url = target.toURL()
+        if (!isPermittedFrom(site, url)) throw IOException("refusing $url from $site")
+        return connect(url.toString(), local = true).apply {
+            instanceFollowRedirects = false
+            readTimeout = timeout
+            if (target.host.equals(site, ignoreCase = true)) {
+                recipe.headers.forEach { (name, value) ->
+                    setRequestProperty(name, value)
+                }
+            }
+            if (body != null) post(body)
+        }
+    }
+
+    private fun HttpURLConnection.post(body: String) {
         requestMethod = "POST"
         doOutput = true
         outputStream.use { it.write(body.toByteArray()) }
@@ -327,17 +331,15 @@ data class OwnSource(
 
     private fun request(url: String, body: String?, timeout: Int): HttpURLConnection {
         var target = URI(url)
-        var headers = recipe.headers
         var payload = body
         repeat(MAX_REDIRECTS + 1) {
-            val connection = send(target.toString(), headers, payload, timeout)
+            val connection = send(target, payload, timeout)
             val code = connection.responseCode
             val location = connection.getHeaderField("Location")
             if (code !in 300..399 || location == null) return checked(connection)
             connection.disconnect()
             val next = target.resolve(location)
             log("  $code → $next")
-            if (next.host != target.host) headers = emptyMap()
             if (code != 307 && code != 308) payload = null
             target = next
         }
@@ -349,7 +351,8 @@ data class OwnSource(
         if (code in 200..299) return connection
         if (verbose) {
             logHeaders(connection)
-            val error = connection.errorStream?.use { it.readBytes().decodeToString() }
+            val error = connection.errorStream
+                ?.use { it.readAtMost(MAX_PAGE_BYTES).decodeToString() }
             log("  page:\n${error.orEmpty().take(DEBUG_PAGE_CHARACTERS)}")
         }
         throw IOException("HTTP $code from ${connection.url}")
@@ -366,7 +369,27 @@ data class OwnSource(
     }
 }
 
-fun Recipe.redacted() = copy(headers = headers.mapValues { "<hidden>" })
+private fun hideQuery(url: String) = url.replace(QUERY_VALUE, "$1$HIDDEN")
+
+private fun RecipeStep.redacted() = copy(
+    url = hideQuery(url),
+    body = body?.let {
+        HIDDEN
+    },
+)
+
+fun Recipe.redacted() = copy(
+    headers = headers.mapValues { HIDDEN },
+    search = search.redacted(),
+    steps = steps.map { it.redacted() },
+    download = hideQuery(download),
+)
+
+fun Recipe.redact(text: String) = headers.values.filter { it.isNotBlank() }
+    .fold(text) { result, secret -> result.replace(secret, HIDDEN) }
+    .let(::hideQuery)
+    .replace(SECRET_HEADER, "$1 $HIDDEN")
+    .replace(BODY_LINE, "$1 $HIDDEN")
 
 fun Recipe.problems(): List<String> = buildList {
     if (name.isBlank()) add("name is empty")

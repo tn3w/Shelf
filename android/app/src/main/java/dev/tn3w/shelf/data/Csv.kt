@@ -10,7 +10,7 @@ private val DATE = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val EXPORT_COLUMNS = listOf(
     "Title", "Author", "ISBN", "My Rating", "Date Read", "Date Added", "Exclusive Shelf",
 )
-private val FORMULA_STARTS = setOf('=', '+', '-', '@')
+private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
     Shelf.Reading to "currently-reading",

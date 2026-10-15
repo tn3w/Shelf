@@ -8,6 +8,7 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
@@ -70,6 +71,35 @@ class ModelTest {
         assertFalse(app.draft)
         assertEquals("https://host/shelf.apk", app.assetUrl("shelf.apk"))
         assertEquals(Release("catalogue-2026-10"), releases[1])
+    }
+
+    @Test
+    fun releaseIsReadyOneDayAfterLastChange() {
+        val release = Release(
+            "v9.8.7",
+            assets = listOf(Asset("shelf.apk", "https://host/a", "2026-01-03T00:00:00Z")),
+            published = "2026-01-01T00:00:00Z",
+        )
+        val changed = Instant.parse("2026-01-03T00:00:00Z").toEpochMilli()
+        assertEquals(changed, release.changedAt)
+        assertEquals(changed + UPDATE_DELAY_MILLIS, release.readyAt)
+    }
+
+    @Test
+    fun releaseMustStayUnchangedBeforeInstall() {
+        val files = setOf("shelf.apk", "SHA256SUMS")
+        val assets = files.mapIndexed { index, name ->
+            Asset(name, "https://host/$name", "2026-01-01T00:00:00Z", index.toLong(), 9)
+        }
+        val release =
+            Release("v9.8.7", assets = assets, published = "2026-01-01T00:00:00Z")
+        assertTrue(release.isUnchanged(release, files))
+        assertFalse(release.isUnchanged(null, files))
+        assertFalse(release.isUnchanged(release.copy(draft = true), files))
+        val swapped = assets.map { if (it.name == "shelf.apk") it.copy(id = 99) else it }
+        assertFalse(release.isUnchanged(release.copy(assets = swapped), files))
+        val missing = release.copy(assets = assets.drop(1))
+        assertFalse(missing.isUnchanged(missing, files))
     }
 
     @Test

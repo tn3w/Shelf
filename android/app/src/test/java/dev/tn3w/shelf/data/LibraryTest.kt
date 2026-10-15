@@ -87,17 +87,19 @@ class LibraryTest {
     }
 
     @Test
-    fun mergeKeepsSourcesWhenImportedInvalid() {
+    fun mergeKeepsNetworkAndPrivacySettings() {
         val current = Settings(
+            offline = true,
+            onlineCovers = false,
+            checkUpdates = false,
             catalogueSource = "owner/repo",
             coverSource = "https://a",
-            dnbCoverSource = "https://c",
         )
         val preferences = mutablePreferencesOf(settings to json.encodeToString(current))
         val imported = Settings(
-            catalogueSource = "http://evil",
-            coverSource = "ftp://b",
-            dnbCoverSource = "http://d",
+            catalogueSource = "https://evil.example/manifest.json",
+            coverSource = "https://evil.example",
+            providers = setOf(Gutenberg.id),
         )
         preferences.merge(Backup(settings = imported.copy(margin = 12)))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)

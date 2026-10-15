@@ -13,16 +13,19 @@ import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
 import org.jsoup.parser.Parser
 import java.io.File
+import java.io.IOException
 import java.io.RandomAccessFile
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import kotlin.math.roundToInt
 
 private const val SECTION_CHARACTERS = 40_000
+const val MAX_ENTRY_BYTES = 64L * 1024 * 1024
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
 private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
@@ -65,7 +68,7 @@ class TextDocument(
     fun image(path: String) = runCatching {
         archive?.let { zip ->
             zip.getEntry(path)?.let { entry ->
-                zip.getInputStream(entry).use { it.readBytes() }
+                zip.bytes(entry)
             }
         }
     }.getOrNull()
@@ -405,15 +408,18 @@ private fun htmlBlocks(root: Element, imagePath: (String) -> String?) =
         read(root)
     }.blocks.ifEmpty { plainBlocks(root.wholeText()) }
 
+private fun ZipFile.bytes(entry: ZipEntry): ByteArray {
+    if (entry.size > MAX_ENTRY_BYTES) throw IOException("${entry.name} is too large")
+    return getInputStream(entry).use { it.readAtMost(MAX_ENTRY_BYTES) }
+}
+
 private class Epub(private val zip: ZipFile) {
     val opfPath
         get() = xml("META-INF/container.xml")?.selectFirst("rootfile")?.attr("full-path")
 
     fun has(path: String) = zip.getEntry(path) != null
 
-    fun bytes(path: String) = zip.getEntry(path)?.let { entry ->
-        zip.getInputStream(entry).use { it.readBytes() }
-    }
+    fun bytes(path: String) = zip.getEntry(path)?.let(zip::bytes)
 
     fun xml(path: String) =
         bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }

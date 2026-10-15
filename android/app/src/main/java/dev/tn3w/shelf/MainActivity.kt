@@ -1,5 +1,6 @@
 package dev.tn3w.shelf
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -105,13 +106,16 @@ class Navigator(private val controller: NavHostController) {
     }
 }
 
-private fun openedFile(intent: Intent): Uri? = when (intent.action) {
-    Intent.ACTION_VIEW -> intent.data
+private fun openedFile(intent: Intent): Uri? {
+    val uri = when (intent.action) {
+        Intent.ACTION_VIEW -> intent.data
 
-    Intent.ACTION_SEND ->
-        IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+        Intent.ACTION_SEND ->
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
 
-    else -> null
+        else -> null
+    }
+    return uri?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
 }
 
 private fun ComponentActivity.transparentBars(style: SystemBarStyle) =
