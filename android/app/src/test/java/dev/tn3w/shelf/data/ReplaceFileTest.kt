@@ -22,4 +22,14 @@ class ReplaceFileTest {
         assertEquals(listOf("cover.webp"), directory.list()!!.toList())
         directory.deleteRecursively()
     }
+
+    @Test
+    fun failedReplaceKeepsExistingFile() {
+        val directory = Files.createTempDirectory("replace").toFile()
+        val target = directory.resolve("1.epub").apply { writeText("book") }
+        runCatching { replaceFile(target) { error("copy failed") } }
+        assertEquals("book", target.readText())
+        assertEquals(listOf("1.epub"), directory.list()!!.toList())
+        directory.deleteRecursively()
+    }
 }

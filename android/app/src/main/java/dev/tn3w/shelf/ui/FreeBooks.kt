@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.SheetValue.Hidden
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
@@ -25,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -76,14 +78,18 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
     val enabled = settings.enabledProviders(own).filter { it.serves(language) }
     val isbns = bookIsbns(book, enabled.any { it is OwnSource && it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
-    ModalBottomSheet(onDismiss, sheetState = rememberModalBottomSheetState(true)) {
+    var downloading by remember { mutableStateOf(false) }
+    val sheet = rememberModalBottomSheetState(true) { it != Hidden || !downloading }
+    ModalBottomSheet({ if (!downloading) onDismiss() }, sheetState = sheet) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             SheetTitle(book) { if (!choosing) SourcesButton { choosing = true } }
             if (!choosing) {
                 if (isbns == null) {
                     Loading()
                 } else {
-                    Offers(book, query, enabled, settings.onlineCovers, onReady)
+                    Offers(book, query, enabled, settings.onlineCovers, onReady) {
+                        downloading = it
+                    }
                 }
                 return@Column
             }
@@ -161,20 +167,24 @@ private fun Offers(
     providers: List<Provider>,
     covers: Boolean,
     onReady: () -> Unit,
+    onDownloading: (Boolean) -> Unit,
 ) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
     val results = remember { mutableStateMapOf<Provider, Result<List<Offer>>>() }
     val downloads = remember { mutableStateMapOf<Offer, Download>() }
-    var attempts by remember { mutableIntStateOf(0) }
-    LaunchedEffect(providers, attempts) {
-        providers.filterNot { it in results }.forEach { provider ->
-            launch { results[provider] = runCatching { provider.search(query) } }
+    val attempts = remember { mutableStateMapOf<Provider, Int>() }
+    providers.forEach { provider ->
+        key(provider) {
+            LaunchedEffect(attempts[provider]) {
+                results[provider] = runCatching { provider.search(query) }
+                    .onFailure { if (it is CancellationException) throw it }
+            }
         }
     }
     fun retry(provider: Provider) {
         results.remove(provider)
-        attempts++
+        attempts[provider] = (attempts[provider] ?: 0) + 1
     }
     fun download(offer: Offer) {
         if (downloads.values.any { it is Download.Running }) return
@@ -182,8 +192,11 @@ private fun Offers(
             downloads[offer] = Download.Running(progress)
         }
         report(0f)
+        onDownloading(true)
         scope.launch {
-            if (app.library.download(book, offer, ::report)) return@launch onReady()
+            val done = app.library.download(book, offer, ::report)
+            onDownloading(false)
+            if (done) return@launch onReady()
             downloads[offer] = Download.Failed
         }
     }

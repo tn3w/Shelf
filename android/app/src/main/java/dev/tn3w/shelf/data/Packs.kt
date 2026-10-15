@@ -378,7 +378,7 @@ class Packs(private val context: Context) {
         replaceFile(target) { it.writeBytes(bytes) }
 }
 
-fun replaceFile(target: File, write: (File) -> Unit) {
+inline fun replaceFile(target: File, write: (File) -> Unit) {
     val temporary = File.createTempFile(target.name, ".part", target.parentFile)
     try {
         write(temporary)

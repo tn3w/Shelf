@@ -387,10 +387,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         if (!isReadable(fileName)) return null
         val name = "$work.${extensionOf(fileName)}"
         val target = bookFile(name).apply { parentFile?.mkdirs() }
-        if (copy(uri, target) == null) {
-            target.delete()
-            return null
-        }
+        val copied = runCatching { replaceFile(target) { checkNotNull(copy(uri, it)) } }
+        if (copied.isFailure) return null
         finishBook(target, work)
         return name
     }

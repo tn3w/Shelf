@@ -269,6 +269,14 @@ private class Camera(
         ) {
             return onFailed(R.string.camera_denied)
         }
+        try {
+            configure()
+        } catch (_: CameraAccessException) {
+            onFailed(R.string.camera_failed)
+        }
+    }
+
+    private fun configure() {
         val id = manager.cameraIdList.firstOrNull {
             manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
                 CameraCharacteristics.LENS_FACING_BACK
