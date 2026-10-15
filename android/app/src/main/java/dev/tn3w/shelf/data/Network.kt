@@ -6,11 +6,11 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.ByteArrayOutputStream
+import okio.buffer
+import okio.source
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.security.MessageDigest
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
@@ -91,12 +91,9 @@ fun fetchText(url: String, accept: String = "application/vnd.github+json") =
     http.fetch(url) { header("Accept", accept) }
         .use { it.stream.readAtMost(MAX_TEXT_BYTES).decodeToString() }
 
-fun InputStream.readAtMost(limit: Long): ByteArray {
-    val output = ByteArrayOutputStream()
-    copyWithProgress(this, output) { size ->
-        if (size > limit) throw IOException("more than $limit bytes")
-    }
-    return output.toByteArray()
+fun InputStream.readAtMost(limit: Long) = source().buffer().run {
+    if (request(limit + 1)) throw IOException("more than $limit bytes")
+    readByteArray()
 }
 
 fun copyWithProgress(input: InputStream, output: OutputStream, onBytes: (Long) -> Unit) {
@@ -110,5 +107,3 @@ fun copyWithProgress(input: InputStream, output: OutputStream, onBytes: (Long) -
         onBytes(copied)
     }
 }
-
-fun sha256(digest: MessageDigest) = digest.digest().toHexString()

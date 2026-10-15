@@ -192,10 +192,7 @@ class CatalogueTest {
 
     @Test
     fun isbnsForPrefersOwnThenLibraryThenCatalogue() {
-        val book = Book(
-            1, "Emma", "", "", emptyList(), 0, 0, emptyList(), null,
-            LibraryCover(DNB, "9783161484100"),
-        )
+        val book = Book(1, "Emma", libraryCover = LibraryCover(DNB, "9783161484100"))
         val catalogue = listOf("9783161484100", "bad", "9780439023481")
         val isbns = isbnsFor(book, "0306406152", catalogue)
         assertEquals(listOf("9780306406157", "9783161484100", "9780439023481"), isbns)
@@ -208,7 +205,7 @@ class CatalogueTest {
 
     @Test
     fun coverUrlPrefersOpenLibraryThenLibrary() {
-        val book = Book(1, "T", "", "", emptyList(), 0, 0, emptyList(), null)
+        val book = Book(1, "T")
         val dnb = LibraryCover(DNB, "9783833911316")
         assertNull(book.coverUrl(COVERS, "L"))
         assertEquals(

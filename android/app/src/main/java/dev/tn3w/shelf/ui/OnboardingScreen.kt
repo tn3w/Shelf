@@ -199,9 +199,8 @@ private fun CoreRow(info: PackInfo?, download: Download?) {
         }
         DownloadBar(download)
         if (download is Download.Failed) {
-            Text(
+            Hint(
                 stringResource(R.string.pack_failed),
-                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
         }
@@ -223,10 +222,7 @@ private fun OnboardingPacks(
     selected: MutableList<String>,
     skip: String?,
 ) {
-    if (packs == null) {
-        LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
-        return
-    }
+    if (packs == null) return LoadingBar()
     packs
         .filter { it.state == PackState.Available && it.pack != skip }
         .forEach { info ->

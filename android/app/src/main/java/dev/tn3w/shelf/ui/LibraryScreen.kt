@@ -31,23 +31,6 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 
-private val FILTERS = listOf(
-    R.string.all to null,
-    R.string.reading to Shelf.Reading,
-    R.string.want_to_read to Shelf.Want,
-    R.string.finished to Shelf.Read,
-)
-
-private val SORTS = listOf(
-    R.string.sort_added to LibrarySort.Added,
-    R.string.title to LibrarySort.Title,
-    R.string.author to LibrarySort.Author,
-    R.string.sort_rating to LibrarySort.Rating,
-    R.string.sort_finished to LibrarySort.Finished,
-)
-
-private fun shelfLabel(shelf: Shelf) = FILTERS.first { it.second == shelf }.first
-
 @Composable
 fun LibraryScreen(navigator: Navigator) {
     val app = shelfApp()
@@ -90,7 +73,10 @@ fun LibraryScreen(navigator: Navigator) {
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         LargeTitle(stringResource(R.string.library)) {
-            if (!saved.isNullOrEmpty()) SearchToggle(searching, ::toggleSearch)
+            if (!saved.isNullOrEmpty()) {
+                val icon = with(Icons.Outlined) { if (searching) SearchOff else Search }
+                IconAction(icon, stringResource(R.string.search_library), ::toggleSearch)
+            }
             IconAction(Icons.Outlined.Add, stringResource(R.string.own_book)) {
                 addingOwn = true
             }
@@ -108,12 +94,11 @@ fun LibraryScreen(navigator: Navigator) {
         }
         if (!saved.isNullOrEmpty()) {
             FilterRow(actions = { OptionsButton(tag != null) { options = true } }) {
-                FILTERS.forEach { (label, value) ->
-                    if (value == null) return@forEach
+                Shelf.entries.forEach { value ->
                     FilterChip(
                         selected = value == shelf,
                         onClick = { shelf = value.takeIf { it != shelf } },
-                        label = { Text(stringResource(label)) },
+                        label = { Text(stringResource(value.label)) },
                     )
                 }
             }
@@ -166,12 +151,6 @@ fun FilterRow(
 }
 
 @Composable
-private fun SearchToggle(searching: Boolean, onToggle: () -> Unit) {
-    val icon = if (searching) Icons.Outlined.SearchOff else Icons.Outlined.Search
-    IconAction(icon, stringResource(R.string.search_library), onToggle)
-}
-
-@Composable
 private fun OptionsButton(active: Boolean, onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         BadgedBox(badge = { if (active) Badge() }) {
@@ -197,7 +176,7 @@ private fun LibraryOptions(
             Modifier.padding(horizontal = ScreenPadding).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            val sorts = SORTS.map { (label, value) -> stringResource(label) to value }
+            val sorts = LibrarySort.entries.map { stringResource(it.label) to it }
             OptionGroup(stringResource(R.string.sort), sorts, sort, onSort)
             if (genres.isNotEmpty()) {
                 val labels = genres.map { it.label to it.id }
@@ -251,7 +230,7 @@ private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
         items(entries, key = { it.work }) { saved ->
             val detail = listOfNotNull(
                 saved.author.ifEmpty { null },
-                stringResource(shelfLabel(saved.shelf)),
+                stringResource(saved.shelf.label),
                 saved.rating.takeIf { it > 0 }?.let { "★ $it" },
             )
             Column(Modifier.animateItem()) {
@@ -364,14 +343,13 @@ private fun OwnBookField(
 
 @Composable
 fun ShelfPicker(selected: Shelf?, onSelect: (Shelf) -> Unit) {
-    val shelves = FILTERS.mapNotNull { (label, shelf) -> shelf?.let { label to it } }
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        shelves.forEachIndexed { index, (label, shelf) ->
+        Shelf.entries.forEachIndexed { index, shelf ->
             SegmentedButton(
                 selected = shelf == selected,
                 onClick = { onSelect(shelf) },
-                shape = SegmentedButtonDefaults.itemShape(index, shelves.size),
-                label = { Text(stringResource(label), maxLines = 1) },
+                shape = SegmentedButtonDefaults.itemShape(index, Shelf.entries.size),
+                label = { Text(stringResource(shelf.label), maxLines = 1) },
             )
         }
     }

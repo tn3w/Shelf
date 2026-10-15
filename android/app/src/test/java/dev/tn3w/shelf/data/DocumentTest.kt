@@ -274,11 +274,4 @@ class DocumentTest {
         assertEquals("images/1%.png", resolvePath(opf, "../images/1%.png"))
         assertEquals("cover.xhtml", resolvePath("content.opf", "./cover.xhtml"))
     }
-
-    @Test
-    fun sampleSizeSurvivesEmptyBounds() {
-        assertEquals(1, sampleSize(100, 100, 200, 200))
-        assertEquals(4, sampleSize(1000, 1000, 200, 200))
-        assertTrue(sampleSize(1000, 1000, 0, 0) > 0)
-    }
 }

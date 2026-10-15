@@ -47,73 +47,31 @@ private val MARGINS =
 private val TYPEFACES = mapOf(
     true to R.string.typeface_serif, false to R.string.typeface_sans,
 )
-private val PAGE_COLORS = mapOf(
-    PageColor.Theme to R.string.page_app,
-    PageColor.Paper to R.string.page_paper,
-    PageColor.Night to R.string.page_night,
-)
-private val THEMES = mapOf(
-    ThemeMode.System to R.string.theme_system,
-    ThemeMode.Light to R.string.theme_light,
-    ThemeMode.Dark to R.string.theme_dark,
-)
+private val PAGE_COLORS = PageColor.entries.associateWith { it.label }
+private val THEMES = ThemeMode.entries.associateWith { it.label }
 
 @Keep
-enum class SettingsPage {
-    Main,
-    Catalogue,
-    FreeBooks,
-    General,
-    Reading,
-    Privacy,
-    Data,
-}
-
-private class Category(
-    val page: SettingsPage,
+enum class SettingsPage(
     val icon: ImageVector,
     @StringRes val title: Int,
     @StringRes val summary: Int,
-)
-
-private val CATEGORIES = listOf(
-    Category(
-        SettingsPage.Catalogue,
-        Icons.Outlined.AutoStories,
-        R.string.catalogue,
-        R.string.catalogue_hint,
-    ),
-    Category(
-        SettingsPage.FreeBooks,
+) {
+    Main(Icons.Outlined.Settings, R.string.settings, R.string.settings),
+    Catalogue(Icons.Outlined.AutoStories, R.string.catalogue, R.string.catalogue_hint),
+    FreeBooks(
         Icons.Outlined.CloudDownload,
         R.string.free_books,
         R.string.free_books_hint,
     ),
-    Category(
-        SettingsPage.General,
-        Icons.Outlined.Palette,
-        R.string.general,
-        R.string.general_hint,
-    ),
-    Category(
-        SettingsPage.Reading,
+    General(Icons.Outlined.Palette, R.string.general, R.string.general_hint),
+    Reading(
         Icons.AutoMirrored.Outlined.MenuBook,
         R.string.reading_settings,
         R.string.reading_hint,
     ),
-    Category(
-        SettingsPage.Privacy,
-        Icons.Outlined.Shield,
-        R.string.privacy,
-        R.string.privacy_hint,
-    ),
-    Category(
-        SettingsPage.Data,
-        Icons.Outlined.Inventory2,
-        R.string.your_data,
-        R.string.your_data_hint,
-    ),
-)
+    Privacy(Icons.Outlined.Shield, R.string.privacy, R.string.privacy_hint),
+    Data(Icons.Outlined.Inventory2, R.string.your_data, R.string.your_data_hint),
+}
 
 fun nativeName(language: String) = Locale.forLanguageTag(language).let {
     it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
@@ -140,14 +98,13 @@ fun rememberSettings(): Pair<Settings, SettingsUpdate>? {
 
 @Composable
 fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
-    val title = CATEGORIES.firstOrNull { it.page == page }?.title ?: R.string.settings
     Column(
         Modifier.windowInsetsPadding(WindowInsets.systemBars)
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp),
     ) {
         BackBar(navigator::back)
-        LargeTitle(stringResource(title))
+        LargeTitle(stringResource(page.title))
         when (page) {
             SettingsPage.Main -> SettingsOverview(navigator)
             SettingsPage.Catalogue -> CatalogueSettings()
@@ -164,12 +121,10 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
 private fun SettingsOverview(navigator: Navigator) {
     LibraryStats(navigator::library)
     SettingsGroup {
-        CATEGORIES.forEach { category ->
-            LinkRow(
-                stringResource(category.title),
-                stringResource(category.summary),
-                category.icon,
-            ) { navigator.settings(category.page) }
+        SettingsPage.entries.drop(1).forEach { page ->
+            LinkRow(stringResource(page.title), stringResource(page.summary), page.icon) {
+                navigator.settings(page)
+            }
         }
     }
     SettingsGroup(
@@ -201,11 +156,7 @@ private fun LibraryStats(onOpen: () -> Unit) {
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
-                    Text(
-                        stringResource(label),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Hint(stringResource(label))
                 }
             }
         }
@@ -435,14 +386,7 @@ fun SettingsGroup(
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
         ) { Column(Modifier.padding(vertical = 4.dp), content = content) }
-        hint?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-            )
-        }
+        hint?.let { Hint(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) }
     }
 }
 
@@ -467,13 +411,7 @@ fun SettingRow(
         icon?.let { IconBadge(it) }
         Column(Modifier.weight(1f).alpha(if (enabled) 1f else 0.5f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            summary?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            summary?.let { Hint(it) }
         }
         Box(Modifier.widthIn(min = 48.dp), contentAlignment = Alignment.Center) {
             trailing()

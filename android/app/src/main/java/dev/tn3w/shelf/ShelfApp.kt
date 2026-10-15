@@ -37,7 +37,6 @@ class ShelfApp :
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
             library.deleteTemporaryFiles()
-            library.normaliseStoredPdfs()
             showLanguage(bookLanguage(settings))
             if (settings.onboarded) checkCatalogue()
         }
@@ -48,12 +47,8 @@ class ShelfApp :
         .components { add(OkHttpNetworkFetcherFactory({ http })) }
         .build()
 
-    fun systemLanguage(): String {
-        val locales = LocaleList.getDefault()
-        return (0 until locales.size())
-            .map { locales[it].language }
-            .firstOrNull { it in LANGUAGES } ?: "en"
-    }
+    fun systemLanguage() = LocaleList.getDefault().getFirstMatch(LANGUAGES.toTypedArray())
+        ?.language?.takeIf { it in LANGUAGES } ?: "en"
 
     fun bookLanguage(settings: Settings) = settings.language.ifEmpty { systemLanguage() }
 
@@ -96,20 +91,11 @@ class ShelfApp :
             .onFailure { downloads.update { it + (key to Download.Failed) } }
     }
 
-    fun remove(language: String, pack: String) = scope.launch(Dispatchers.IO) {
-        packs.remove(language, pack)
-        reload(language)
-    }
-
-    fun removeAll(language: String) = scope.launch(Dispatchers.IO) {
-        packs.removeAll(language)
-        reload(language)
-    }
-
-    fun removeEverything(language: String) = scope.launch(Dispatchers.IO) {
-        packs.removeAll()
-        reload(language)
-    }
+    fun removePacks(language: String, pack: String? = null, everywhere: Boolean = false) =
+        scope.launch(Dispatchers.IO) {
+            packs.remove(language.takeUnless { everywhere }, pack)
+            reload(language)
+        }
 
     suspend fun changeSource(source: String) {
         val custom = if (source == REPOSITORY) "" else source
@@ -119,15 +105,8 @@ class ShelfApp :
     }
 
     suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {
-        val imported = withContext(Dispatchers.IO) {
-            uris.count { uri ->
-                runCatching {
-                    contentResolver.openInputStream(uri)?.use {
-                        packs.importFile(displayName(uri), it)
-                    } == true
-                }
-                    .getOrDefault(false)
-            }
+        val imported = uris.count { uri ->
+            readFrom(uri) { packs.importFile(displayName(uri), it) } == true
         }
         reload(language)
         return imported == uris.size

@@ -27,13 +27,13 @@ data class LibraryCover(val source: Int, val isbn: String) {
 data class Book(
     val work: Int,
     val title: String,
-    val subtitle: String,
-    val alternate: String,
-    val authors: List<Author>,
-    val year: Int,
-    val cover: Int,
-    val tags: List<Int>,
-    val popularity: Popularity?,
+    val subtitle: String = "",
+    val alternate: String = "",
+    val authors: List<Author> = emptyList(),
+    val year: Int = 0,
+    val cover: Int = 0,
+    val tags: List<Int> = emptyList(),
+    val popularity: Popularity? = null,
     val libraryCover: LibraryCover? = null,
 ) {
     val author
@@ -108,27 +108,20 @@ data class Series(val name: String, val members: List<Int>)
 
 data class Location(val segment: Segment, val local: Int)
 
-private class Scores(val works: IntArray, val values: FloatArray) {
-    fun of(work: Int): Double {
-        val at = works.binarySearch(work)
-        return if (at < 0) 0.0 else values[at].toDouble()
-    }
-}
-
 class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ranks?) {
     private val visible = visibility(segments)
     private val order = segments.withIndex().associate { (index, it) -> it to index }
     val workCount = visible.sumOf { it.cardinality() }
     val tags = segments.firstOrNull()?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
-    private val maxScore by lazy { scores.values.maxOrNull()?.toDouble() ?: 1.0 }
+    private val maxScore by lazy { scores.maxOrNull()?.toDouble() ?: 1.0 }
     private val tagCounts by lazy {
         tags.associate { tag -> tag.id to segments.sumOf { it.tagCount(tag.id) } }
     }
 
+    private val works by lazy { allWorks() }
     private val scores by lazy {
-        val works = allWorks()
-        Scores(works, FloatArray(works.size) { rawScore(works[it]).toFloat() })
+        FloatArray(works.size) { ranks?.popularity(works[it])?.score?.toFloat() ?: 0f }
     }
 
     fun warmUp() = maxScore
@@ -146,9 +139,8 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun alias(work: Int) = ranks?.alias(work)
 
-    private fun rawScore(work: Int) = ranks?.popularity(work)?.score ?: 0.0
-
-    fun score(work: Int) = scores.of(work)
+    fun score(work: Int) =
+        works.binarySearch(work).let { if (it < 0) 0.0 else scores[it].toDouble() }
 
     fun popularity(work: Int) = ln(1 + score(work)) / ln(1 + maxScore)
 
@@ -229,7 +221,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 
     fun popularWorks(limit: Int, tag: Int? = null) =
-        topWorks(if (tag == null) scores.works else tagWorks(tag), limit)
+        topWorks(if (tag == null) works else tagWorks(tag), limit)
 
     fun topWorks(works: IntArray, limit: Int): List<Int> {
         if (limit <= 0) return emptyList()
@@ -246,12 +238,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     private fun allWorks(): IntArray {
         val result = MutableIntList()
         segments.forEachIndexed { index, segment ->
-            val bits = visible[index]
-            var local = bits.nextSetBit(0)
-            while (local >= 0) {
-                result.add(segment.work(local))
-                local = bits.nextSetBit(local + 1)
-            }
+            visible[index].stream().forEach { result.add(segment.work(it)) }
         }
         return result.toIntArray().also { it.sort() }
     }

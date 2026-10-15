@@ -63,66 +63,44 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         item { BackBar(navigator::back) }
         if (book == null) return@LazyColumn
         item { BookHeader(book, entry?.shelf, origin, navigator) }
-        details
-            ?.tags
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { tags -> item { TagFlow(tags, navigator) } }
-        details
-            ?.description
-            ?.takeIf { it.text.isNotBlank() }
-            ?.let { description ->
-                item { SectionHeader(stringResource(R.string.about_book)) }
-                item { DescriptionText(description) }
+        val tags = details?.tags.orEmpty()
+        if (tags.isNotEmpty()) item { TagFlow(tags, navigator) }
+        val description = details?.description?.takeIf { it.text.isNotBlank() }
+        if (description != null) {
+            item { SectionHeader(stringResource(R.string.about_book)) }
+            item { DescriptionText(description) }
+        }
+        val series = related?.series?.takeIf { it.second.size > 1 }
+        if (series != null) {
+            item {
+                val (name, books) = series
+                val size = books.size
+                val count = pluralStringResource(R.plurals.books_in_series, size, size)
+                val more = { navigator.series(work) }
+                BookSection(
+                    name, books, "series", navigator::book, count, more, shared = false,
+                )
             }
-        related
-            ?.series
-            ?.takeIf { it.second.size > 1 }
-            ?.let { (name, books) ->
-                item {
-                    BookSection(
-                        name,
-                        books,
-                        "series",
-                        navigator::book,
-                        subtitle =
-                        pluralStringResource(
-                            R.plurals.books_in_series, books.size, books.size,
-                        ),
-                        onMore = { navigator.series(work) },
-                        shared = false,
-                    )
-                }
-            }
-        related
-            ?.byAuthor
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { books ->
+        }
+        val byAuthor = related?.byAuthor.orEmpty()
+        if (byAuthor.isNotEmpty()) {
+            item {
                 val author = book.authors.first()
-                item {
-                    BookSection(
-                        stringResource(R.string.more_by, author.name),
-                        books,
-                        "author",
-                        navigator::book,
-                        onMore = { navigator.author(author) },
-                        shared = false,
-                    )
-                }
+                val title = stringResource(R.string.more_by, author.name)
+                val more = { navigator.author(author) }
+                BookSection(
+                    title, byAuthor, "author", navigator::book,
+                    onMore = more, shared = false,
+                )
             }
-        related
-            ?.similar
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { books ->
-                item {
-                    BookSection(
-                        stringResource(R.string.similar),
-                        books,
-                        "similar",
-                        navigator::book,
-                        shared = false,
-                    )
-                }
+        }
+        val similar = related?.similar.orEmpty()
+        if (similar.isNotEmpty()) {
+            item {
+                val title = stringResource(R.string.similar)
+                BookSection(title, similar, "similar", navigator::book, shared = false)
             }
+        }
         item { Spacer(Modifier.height(24.dp)) }
     }
 }
@@ -192,12 +170,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
                 modifier = Modifier.padding(vertical = 8.dp),
             )
         }
-        Text(
-            facts(book),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Hint(facts(book), textAlign = TextAlign.Center)
         FlowRow(
             Modifier.padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -318,12 +291,8 @@ private fun DescriptionText(description: Description) {
             modifier = Modifier.animateContentSize().clickable { expanded = !expanded },
         )
         if (description.translated) {
-            Text(
-                stringResource(R.string.machine_translated),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            val translated = stringResource(R.string.machine_translated)
+            Hint(translated, Modifier.padding(top = 4.dp))
         }
     }
 }

@@ -2,7 +2,6 @@
     <string name="app_name" translatable="false">Shelf</string>
     <string name="about">About</string>
     <string name="about_book">About this book</string>
-    <string name="all">All</string>
     <string name="app_language">App language</string>
     <string name="appearance">Appearance</string>
     <string name="audience">Age group</string>

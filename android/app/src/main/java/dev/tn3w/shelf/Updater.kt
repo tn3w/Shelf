@@ -34,17 +34,8 @@ private fun installerOf(context: Context): String? {
     }
 }
 
-private fun numbers(version: String) = version.split(".").map { it.toIntOrNull() ?: 0 }
-
-private fun isNewer(version: String): Boolean {
-    val candidate = numbers(version)
-    val installed = numbers(BuildConfig.VERSION_NAME)
-    val length = maxOf(candidate.size, installed.size)
-    val differing = (0 until length).firstOrNull {
-        candidate.getOrElse(it) { 0 } != installed.getOrElse(it) { 0 }
-    } ?: return false
-    return candidate.getOrElse(differing) { 0 } > installed.getOrElse(differing) { 0 }
-}
+private fun isNewer(version: String) =
+    releaseOrder.compare(version, BuildConfig.VERSION_NAME) > 0
 
 class ReleaseChanged : IOException("release changed or withdrawn")
 

@@ -1,7 +1,6 @@
 package dev.tn3w.shelf.data
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -62,13 +61,8 @@ class TextDocument(
     val chapters: List<Chapter>,
     private val archive: ZipFile? = null,
 ) : Document {
-    fun image(path: String) = runCatching {
-        archive?.let { zip ->
-            zip.getEntry(path)?.let { entry ->
-                zip.bytes(entry)
-            }
-        }
-    }.getOrNull()
+    fun image(path: String) =
+        runCatching { archive?.run { getEntry(path)?.let { bytes(it) } } }.getOrNull()
 
     override fun close() {
         archive?.close()
@@ -78,7 +72,7 @@ class TextDocument(
 interface PagedDocument : Document {
     val pageCount: Int
 
-    suspend fun render(index: Int, width: Int, height: Int): Bitmap
+    fun page(index: Int, width: Int, height: Int): Any
 }
 
 class PdfDocument(file: File) : PagedDocument {
@@ -90,7 +84,7 @@ class PdfDocument(file: File) : PagedDocument {
         }.onFailure { descriptor.close() }.getOrThrow()
     override val pageCount = renderer.pageCount
 
-    override suspend fun render(index: Int, width: Int, height: Int): Bitmap =
+    override fun page(index: Int, width: Int, height: Int): Bitmap =
         synchronized(renderer) {
             renderer.openPage(index).use { page ->
                 val (fitWidth, fitHeight) = fit(page.width, page.height, width, height)
@@ -160,19 +154,7 @@ class ComicDocument(file: File) : PagedDocument {
         .toList()
     override val pageCount = entries.size
 
-    override suspend fun render(index: Int, width: Int, height: Int): Bitmap {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        decode(index, bounds)
-        val options = BitmapFactory.Options().apply {
-            inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, width, height)
-        }
-        return decode(index, options) ?: error("Unreadable image ${entries[index].name}")
-    }
-
-    private fun decode(index: Int, options: BitmapFactory.Options) =
-        zip.getInputStream(entries[index]).use {
-            BitmapFactory.decodeStream(it, null, options)
-        }
+    override fun page(index: Int, width: Int, height: Int) = zip.bytes(entries[index])
 
     override fun close() = zip.close()
 }
@@ -191,24 +173,6 @@ private fun fit(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Pair<In
     val scale = minOf(maxWidth.toFloat() / width, maxHeight.toFloat() / height)
     return (width * scale).roundToInt().coerceAtLeast(1) to
         (height * scale).roundToInt().coerceAtLeast(1)
-}
-
-internal fun sampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Int {
-    val fitWidth = maxWidth.coerceAtLeast(1)
-    val fitHeight = maxHeight.coerceAtLeast(1)
-    var size = 1
-    while (width / (size * 2) >= fitWidth || height / (size * 2) >= fitHeight) size *= 2
-    return size
-}
-
-fun decodeImage(bytes: ByteArray, width: Int, height: Int): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-    val options = BitmapFactory.Options().apply {
-        inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, width, height)
-    }
-    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
 }
 
 data class Metadata(val title: String, val author: String)
@@ -243,7 +207,7 @@ private fun fictionBookMetadata(file: File): Metadata? {
 fun openDocument(file: File): Document = when (file.extension.lowercase()) {
     "epub" -> readEpub(file)
 
-    "pdf" -> PdfDocument(file)
+    "pdf" -> PdfDocument(file.also(::replaceJpegIccProfiles))
 
     "cbz" -> ComicDocument(file)
 
@@ -338,7 +302,7 @@ private class HtmlReader(private val imagePath: (String) -> String?) {
         if (node !is Element) return
         val tag = node.tagName().lowercase()
         when {
-            tag == "br" -> text.append('\n')
+            tag == "br" -> if (text.isNotEmpty()) text.append('\n')
 
             tag in IMAGE_TAGS -> addImage(node, block)
 
@@ -356,7 +320,7 @@ private class HtmlReader(private val imagePath: (String) -> String?) {
     private fun append(words: String, bold: Boolean, italic: Boolean) {
         val normalized = words.replace(WHITESPACE, " ")
         val start = text.length
-        val atBreak = text.endsWith(" ") || text.endsWith("\n")
+        val atBreak = text.isEmpty() || text.endsWith(" ") || text.endsWith("\n")
         text.append(if (atBreak) normalized.trimStart() else normalized)
         if ((bold || italic) && text.length > start) {
             spans += Span(start, text.length, bold, italic)
@@ -382,16 +346,12 @@ private class HtmlReader(private val imagePath: (String) -> String?) {
     }
 
     private fun take(): Pair<String, List<Span>> {
-        val leading = text.length - text.trimStart().length
-        val trimmed = text.trim().toString()
-        val shifted = spans.mapNotNull { span ->
-            val start = (span.start - leading).coerceIn(0, trimmed.length)
-            val end = (span.end - leading).coerceIn(0, trimmed.length)
-            if (end > start) span.copy(start = start, end = end) else null
-        }
+        val trimmed = text.trimEnd().toString()
+        val kept = spans.filter { it.start < trimmed.length }
+            .map { it.copy(end = minOf(it.end, trimmed.length)) }
         text.clear()
         spans.clear()
-        return trimmed to shifted
+        return trimmed to kept
     }
 }
 

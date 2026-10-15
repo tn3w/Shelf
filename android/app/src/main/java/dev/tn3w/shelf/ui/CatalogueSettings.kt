@@ -67,34 +67,28 @@ private fun PackList(
 ) {
     val app = shelfApp()
     val downloads by app.downloads.collectAsStateWithLifecycle()
-    val storage by produceState(0L, packs, language) {
-        value = withContext(Dispatchers.IO) { app.packs.storageBytes(language) }
-    }
-    val totalStorage by produceState(0L, packs) {
-        value = withContext(Dispatchers.IO) { app.packs.storageBytes() }
-    }
-    val release by produceState<String?>(null, packs) {
-        value = withContext(Dispatchers.IO) { app.packs.months()[language] }
-    }
+    val (storage, total, release) = produceState(Triple(0L, 0L, ""), packs, language) {
+        value = withContext(Dispatchers.IO) {
+            val month = app.packs.months()[language].orEmpty()
+            Triple(app.packs.storageBytes(language), app.packs.storageBytes(), month)
+        }
+    }.value
     val details = listOfNotNull(
-        release?.let { stringResource(R.string.release_date, it) },
+        release.ifEmpty { null }?.let { stringResource(R.string.release_date, it) },
         stringResource(R.string.storage_used, bytes(storage)),
     )
     val note = stringResource(R.string.open_library_note)
     val hint = details.joinToString(" · ") + "\n" + note
     val title = "${stringResource(R.string.packs)} · ${nativeName(language)}"
     SettingsGroup(title, hint) {
-        if (packs == null) {
-            LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
-            return@SettingsGroup
-        }
+        if (packs == null) return@SettingsGroup LoadingBar()
         packs.forEach { info ->
             PackRow(
                 info,
                 downloads["$language-${info.pack}"],
                 offline,
                 onDownload = { app.download(language, info.pack) },
-                onRemove = { app.remove(language, info.pack) },
+                onRemove = { app.removePacks(language, info.pack) },
             )
         }
         val pending = packs.filter { it.state != PackState.Installed }
@@ -108,12 +102,12 @@ private fun PackList(
             ) { pending.forEach { app.download(language, it.pack) } }
         } else if (storage > 0) {
             ActionRow(R.string.delete_all, Icons.Outlined.Delete) {
-                app.removeAll(language)
+                app.removePacks(language)
             }
         }
-        if (totalStorage > storage) {
+        if (total > storage) {
             ActionRow(R.string.delete_all_languages, Icons.Outlined.Delete) {
-                app.removeEverything(language)
+                app.removePacks(language, everywhere = true)
             }
         }
         if (!offline) CatalogueCheck(language, onChecked)
@@ -284,13 +278,8 @@ private fun PackRow(
     onRemove: () -> Unit,
 ) {
     val label = stringResource(PACKS.getValue(info.pack))
-    val state = when (info.state) {
-        PackState.Installed -> R.string.pack_installed
-        PackState.Update -> R.string.pack_update
-        PackState.Available -> R.string.pack_available
-    }
     val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
-    SettingRow(label, stringResource(state) + size) {
+    SettingRow(label, stringResource(info.state.label) + size) {
         PackAction(label, download, info.state, info.pack, offline, onDownload, onRemove)
     }
 }

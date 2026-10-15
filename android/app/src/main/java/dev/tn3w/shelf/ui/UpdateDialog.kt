@@ -76,11 +76,7 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
                 }
                 if (waiting) {
                     val changed = relativeTime(release.changedAt, now)
-                    Text(
-                        stringResource(R.string.update_wait_note, changed),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Hint(stringResource(R.string.update_wait_note, changed))
                 }
                 progress?.let { value -> LinearProgressIndicator(progress = { value }) }
                 failure?.let { Text(stringResource(it)) }

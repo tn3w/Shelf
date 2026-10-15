@@ -45,7 +45,7 @@ class LibraryTest {
     fun updateKeepsUndecodableData() {
         val stored = """[{"work":1,"shelf":"Unknown","updated":0}]"""
         val preferences = mutablePreferencesOf(entries to stored)
-        preferences.updateJson(entries, emptyList<Saved>()) {
+        preferences.update(ENTRIES) {
             it + Saved(2, Shelf.Read, 0)
         }
         assertEquals(stored, preferences[entries])
@@ -54,7 +54,7 @@ class LibraryTest {
     @Test
     fun updateStartsFromFallbackWhenMissing() {
         val preferences = mutablePreferencesOf()
-        preferences.updateJson(entries, emptyList<Saved>()) {
+        preferences.update(ENTRIES) {
             it + Saved(2, Shelf.Read, 0)
         }
         assertEquals(
@@ -172,7 +172,7 @@ class LibraryTest {
     fun settingsSurviveUnknownValues() {
         val preferences =
             mutablePreferencesOf(settings to """{"theme":"Sepia","serif":false}""")
-        preferences.updateJson(settings, Settings()) { it.copy(margin = 12) }
+        preferences.update(SETTINGS) { it.copy(margin = 12) }
         val decoded = json.decodeFromString<Settings>(preferences[settings]!!)
         assertEquals(Settings(serif = false, margin = 12), decoded)
     }
@@ -298,8 +298,7 @@ class LibraryTest {
     @Test
     fun savedKeepsLibraryCover() {
         val cover = LibraryCover(DNB, "9783833911316")
-        val book =
-            Book(SYNTHETIC + 1, "T", "", "", emptyList(), 0, 0, emptyList(), null, cover)
+        val book = Book(SYNTHETIC + 1, "T", libraryCover = cover)
         assertEquals(cover, book.toSaved(Shelf.Want).toBook().libraryCover)
         val stored = """{"work":1,"shelf":"Read","updated":0}"""
         assertEquals(null, json.decodeFromString<Saved>(stored).libraryCover)

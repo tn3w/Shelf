@@ -31,26 +31,28 @@ class IccProfileTest {
     }.toByteArray()
 
     @Test
-    fun restoredPdfHasIccProfileReplaced() {
-        val directory = Files.createTempDirectory("icc").toFile()
+    fun iccProfileIsReplacedInPlace() {
+        val file = Files.createTempFile("icc", ".pdf").toFile()
         val original = jpeg2000WithIccProfile()
+        file.writeBytes(original)
 
-        extractBook(directory, "books/-3.pdf", original.inputStream())
+        replaceJpegIccProfiles(file)
 
-        val stored = directory.resolve("-3.pdf").readBytes()
+        val stored = file.readBytes()
         assertEquals(original.size, stored.size)
         assertFalse(original.contentEquals(stored))
-        directory.deleteRecursively()
+        file.delete()
     }
 
     @Test
-    fun restoredNonPdfIsLeftUntouched() {
-        val directory = Files.createTempDirectory("icc").toFile()
-        val original = jpeg2000WithIccProfile()
+    fun fileWithoutJpeg2000IsLeftUntouched() {
+        val file = Files.createTempFile("icc", ".pdf").toFile()
+        val original = "%PDF-1.7 no images".toByteArray()
+        file.writeBytes(original)
 
-        extractBook(directory, "books/-3.epub", original.inputStream())
+        replaceJpegIccProfiles(file)
 
-        assertArrayEquals(original, directory.resolve("-3.epub").readBytes())
-        directory.deleteRecursively()
+        assertArrayEquals(original, file.readBytes())
+        file.delete()
     }
 }

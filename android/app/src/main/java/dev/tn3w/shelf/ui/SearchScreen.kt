@@ -37,13 +37,6 @@ import kotlinx.coroutines.*
 private const val RESULT_LIMIT = 50
 private const val LIBRARY_LIMIT = 3
 
-private val RESULT_SORTS = listOf(
-    R.string.relevance to ResultSort.Relevance,
-    R.string.popular to ResultSort.Popular,
-    R.string.newest to ResultSort.Newest,
-    R.string.oldest to ResultSort.Oldest,
-)
-
 private data class Results(
     val completions: List<String>,
     val authors: List<Author>,
@@ -208,7 +201,7 @@ private fun ResultFilters(
     onEra: (Int?) -> Unit,
     onSort: (ResultSort) -> Unit,
 ) {
-    val sorts = RESULT_SORTS.map { (label, value) -> stringResource(label) to value }
+    val sorts = ResultSort.entries.map { stringResource(it.label) to it }
     FilterRow(actions = { SortMenu(sorts, filter.sort, onSort) }) {
         if (facets.isNotEmpty()) GenreChip(facets, filter.tag, onTag)
         FilterMenuChip(

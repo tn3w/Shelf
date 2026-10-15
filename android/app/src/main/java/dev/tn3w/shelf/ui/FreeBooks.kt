@@ -85,7 +85,7 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
             SheetTitle(book) { if (!choosing) SourcesButton { choosing = true } }
             if (!choosing) {
                 if (isbns == null) {
-                    Loading()
+                    LoadingBar()
                 } else {
                     Offers(book, query, enabled, settings.onlineCovers, onReady) {
                         downloading = it
@@ -102,9 +102,6 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
         }
     }
 }
-
-@Composable
-private fun Loading() = LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
 
 @Composable
 private fun bookIsbns(book: Book, catalogue: Boolean): List<String>? {
@@ -226,7 +223,7 @@ private fun ProviderResult(
 ) {
     val offers = result?.getOrNull()
     when {
-        result == null -> Loading()
+        result == null -> LoadingBar()
         offers == null -> RetryRow(onRetry)
         offers.isEmpty() -> SettingRow(stringResource(R.string.free_books_none))
         else -> offers.forEach { OfferRow(it, downloads[it], covers) { onDownload(it) } }
@@ -304,9 +301,7 @@ private fun DownloadProgress(value: Float) {
 }
 
 @Composable
-private fun Note(@StringRes text: Int) = Text(
+private fun Note(@StringRes text: Int) = Hint(
     stringResource(text),
-    style = MaterialTheme.typography.bodySmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant,
-    modifier = Modifier.padding(horizontal = ScreenPadding + 16.dp).padding(top = 16.dp),
+    Modifier.padding(horizontal = ScreenPadding + 16.dp).padding(top = 16.dp),
 )

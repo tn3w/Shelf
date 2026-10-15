@@ -216,11 +216,7 @@ private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
     LanguageChips(recipe.languages) { onChange(recipe.copy(languages = it)) }
     Heading(R.string.free_books_headers)
     HeaderRows(recipe.headers) { onChange(recipe.copy(headers = it)) }
-    Text(
-        stringResource(R.string.free_books_form_help),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Hint(stringResource(R.string.free_books_form_help))
 }
 
 @Composable
@@ -461,11 +457,7 @@ private fun LanguageChips(selected: Set<String>, onChange: (Set<String>) -> Unit
 }
 
 @Composable
-private fun Problem(text: String) = Text(
-    text,
-    style = MaterialTheme.typography.bodySmall,
-    color = MaterialTheme.colorScheme.error,
-)
+private fun Problem(text: String) = Hint(text, color = MaterialTheme.colorScheme.error)
 
 @Composable
 private fun TestPanel(recipe: Recipe?) {
@@ -504,44 +496,26 @@ private fun TestPanel(recipe: Recipe?) {
     }
 
     Heading(R.string.free_books_test)
-    Text(
-        stringResource(R.string.free_books_test_hint),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Hint(stringResource(R.string.free_books_test_hint))
     TextInput(R.string.title, title) { title = it }
     TextInput(R.string.author, author) { author = it }
     TextInput(R.string.free_books_isbn, isbn, monospace = true) { isbn = it }
     val ready = recipe?.takeIf {
         !offline && !running && (title.isNotBlank() || isbn.isNotBlank())
     }
-    val enabled = ready != null
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        RunButton(R.string.free_books_test, Icons.Outlined.PlayArrow, enabled, true) {
-            ready?.let { run(it, debug = false) }
+        Button({ ready?.let { run(it, debug = false) } }, enabled = ready != null) {
+            IconLabel(Icons.Outlined.PlayArrow, R.string.free_books_test)
         }
-        RunButton(R.string.free_books_debug, Icons.Outlined.BugReport, enabled, false) {
+        OutlinedButton({
             ready?.let { run(it, debug = true) }
+        }, enabled = ready != null) {
+            IconLabel(Icons.Outlined.BugReport, R.string.free_books_debug)
         }
     }
     if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
     saved?.let { Text(stringResource(it), style = MaterialTheme.typography.bodySmall) }
     lines.forEach { Text(it.take(TRACE_LINE_CHARACTERS), style = codeStyle()) }
-}
-
-@Composable
-private fun RunButton(
-    @StringRes label: Int,
-    icon: ImageVector,
-    enabled: Boolean,
-    filled: Boolean,
-    onClick: () -> Unit,
-) {
-    if (filled) {
-        Button(onClick, enabled = enabled) { IconLabel(icon, label) }
-    } else {
-        OutlinedButton(onClick, enabled = enabled) { IconLabel(icon, label) }
-    }
 }
 
 private fun describe(error: Throwable) =

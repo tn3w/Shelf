@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.graphics.Bitmap
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -26,6 +25,7 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -329,23 +329,15 @@ private fun TextReader(
 
 @Composable
 private fun PageImage(document: TextDocument, path: String) {
-    BoxWithConstraints(Modifier.fillMaxSize().padding(PAGE_PADDING)) {
-        val width = constraints.maxWidth
-        val height = constraints.maxHeight
-        val bitmap by produceState<ImageBitmap?>(null, path, width, height) {
-            value = withContext(Dispatchers.Default) {
-                val bytes = document.image(path)
-                bytes?.let { runCatching { decodeImage(it, width, height) }.getOrNull() }
-                    ?.asImageBitmap()
-            }
-        }
-        Image(
-            bitmap ?: return@BoxWithConstraints,
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
-        )
+    val image by produceState<ByteArray?>(null, path) {
+        value = withContext(Dispatchers.IO) { document.image(path) }
     }
+    AsyncImage(
+        image,
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.fillMaxSize().padding(PAGE_PADDING),
+    )
 }
 
 @Composable
@@ -364,20 +356,25 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             emptyList(),
             save = { progress.copy(page = it, pages = count) },
         ) {
-            val rendered by produceState<Result<Bitmap>?>(null, it, width, height) {
+            val page by produceState<Result<Any>?>(null, it, width, height) {
                 value = withContext(Dispatchers.IO) {
-                    runCatching { document.render(it, width, height) }
+                    runCatching { document.page(it, width, height) }
                 }
             }
+            var failed by remember(page) { mutableStateOf(false) }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                val result = rendered ?: return@Box CircularProgressIndicator()
-                val image = result.getOrNull() ?: return@Box EmptyState(
-                    Icons.Outlined.BrokenImage, stringResource(R.string.page_failed),
-                )
-                Image(
-                    image.asImageBitmap(),
+                val image = page?.getOrNull()
+                if (page == null) return@Box CircularProgressIndicator()
+                if (image == null || failed) {
+                    return@Box EmptyState(
+                        Icons.Outlined.BrokenImage, stringResource(R.string.page_failed),
+                    )
+                }
+                AsyncImage(
+                    image,
                     contentDescription = stringResource(R.string.page_of, it + 1, count),
                     contentScale = ContentScale.Fit,
+                    onError = { failed = true },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

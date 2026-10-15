@@ -3,10 +3,11 @@ package dev.tn3w.shelf.data
 import androidx.collection.LruCache
 import androidx.collection.MutableIntList
 import dev.tn3w.shelf.BuildConfig
-import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.IntBuffer
 import java.util.zip.Inflater
+import java.util.zip.InflaterInputStream
 
 private const val MAGIC = "SHLF"
 const val CATALOGUE_FORMAT = BuildConfig.CATALOGUE_FORMAT
@@ -63,20 +64,12 @@ private fun inflate(
     dictionary: ByteArray = ByteArray(0),
 ): ByteArray {
     val inflater = Inflater(true)
-    val output = ByteArrayOutputStream(compressed.size * 4)
-    val chunk = ByteArray(16384)
-    try {
-        if (dictionary.isNotEmpty()) inflater.setDictionary(dictionary)
-        inflater.setInput(compressed)
-        while (!inflater.finished()) {
-            val read = inflater.inflate(chunk)
-            if (read == 0 && inflater.needsInput()) break
-            output.write(chunk, 0, read)
-        }
+    if (dictionary.isNotEmpty()) inflater.setDictionary(dictionary)
+    return try {
+        InflaterInputStream(compressed.inputStream(), inflater).readBytes()
     } finally {
         inflater.end()
     }
-    return output.toByteArray()
 }
 
 private fun lengthPrefixed(raw: ByteArray): List<ByteArray> {
@@ -403,27 +396,15 @@ class Ranks(buffer: ByteBuffer) {
     val works = readMeta(sections.getValue("meta")).getValue("works").toInt()
     private val terms = TermBlocks(sections.getValue("terms"), withPostings = false)
     private val popularityIndex = BlockIndex(sections.getValue("popularity"))
-    private val aliases = sections["aliases"]?.asIntBuffer()
-        ?.let { IntArray(it.limit(), it::get) }
-        ?: IntArray(0)
+    private val aliases = sections["aliases"]?.asIntBuffer() ?: IntBuffer.allocate(0)
+    private val aliasFrom = IntArray(aliases.limit() / 2) { aliases[2 * it] }
+    private val aliasTo = IntArray(aliasFrom.size) { aliases[2 * it + 1] }
     private val cache = LruCache<Int, PopularityBlock>(64)
 
     fun frequency(text: String) = terms.find(text)?.frequency ?: 0
 
-    fun alias(work: Int): Int? {
-        var low = 0
-        var high = aliases.size / 2 - 1
-        while (low <= high) {
-            val middle = (low + high) ushr 1
-            val from = aliases[2 * middle]
-            when {
-                from < work -> low = middle + 1
-                from > work -> high = middle - 1
-                else -> return aliases[2 * middle + 1]
-            }
-        }
-        return null
-    }
+    fun alias(work: Int) =
+        aliasFrom.binarySearch(work).takeIf { it >= 0 }?.let(aliasTo::get)
 
     fun popularity(work: Int): Popularity? {
         val index = popularityIndex.firsts.lastAtMost(work)

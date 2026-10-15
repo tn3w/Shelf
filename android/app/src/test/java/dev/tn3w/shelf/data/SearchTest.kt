@@ -49,8 +49,7 @@ private fun works(query: String) = searcher.search(query).map { it.work }
 
 private fun trustedWorks(query: String) = trusted.search(query).map { it.work }
 
-private fun isCompanion(title: String) =
-    Book(1, title, "", "", emptyList(), 0, 0, emptyList(), null).isCompanion
+private fun isCompanion(title: String) = Book(1, title).isCompanion
 
 class SearchTest {
     @Test

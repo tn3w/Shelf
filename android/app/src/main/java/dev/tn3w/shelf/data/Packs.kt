@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.data
 
 import android.content.Context
+import androidx.annotation.StringRes
 import dev.tn3w.shelf.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -27,7 +28,8 @@ val PACKS = mapOf(
     "nonfiction" to R.string.pack_nonfiction,
     "general" to R.string.pack_general,
 )
-private fun labelParts(label: String) = label.split("-").map { it.toIntOrNull() ?: 0 }
+private fun labelParts(label: String) =
+    label.split('-', '.').map { it.toIntOrNull() ?: 0 }
 
 val releaseOrder = Comparator<String> { first, second ->
     val left = labelParts(first)
@@ -68,10 +70,10 @@ data class ManifestEntry(
 @Serializable
 data class Manifest(val format: Int, val month: String, val segments: List<ManifestEntry>)
 
-enum class PackState {
-    Installed,
-    Update,
-    Available,
+enum class PackState(@StringRes val label: Int) {
+    Installed(R.string.pack_installed),
+    Update(R.string.pack_update),
+    Available(R.string.pack_available),
 }
 
 data class PackInfo(val pack: String, val state: PackState, val bytes: Long)
@@ -150,27 +152,17 @@ class Packs(private val context: Context) {
     val manifest: Manifest?
         get() = newest(stored(), bundledManifest.takeIf { source.isEmpty() })
 
-    @Volatile
-    private var storedManifest: Manifest? = null
-
-    fun forgetManifest() {
-        storedManifest = null
-        manifestFile.delete()
-    }
+    fun forgetManifest() = manifestFile.delete()
 
     private fun stored(): Manifest? {
-        storedManifest?.let { return it }
         if (!manifestFile.exists()) return null
         val manifest = parseManifest(manifestFile.readText())
         if (manifest == null) manifestFile.delete()
-        storedManifest = manifest
         return manifest
     }
 
-    private fun storeManifest(bytes: ByteArray) {
-        writeAtomically(manifestFile, bytes)
-        storedManifest = null
-    }
+    private fun storeManifest(bytes: ByteArray) =
+        replaceFile(manifestFile) { it.writeBytes(bytes) }
 
     private val bundledManifest by lazy {
         runCatching {
@@ -366,11 +358,12 @@ class Packs(private val context: Context) {
         )
     }
 
-    fun remove(language: String, pack: String) =
-        deleteAll(downloaded().filter { it.language == language && it.pack == pack })
-
-    fun removeAll(language: String? = null) =
-        deleteAll(downloaded().filter { language == null || it.language == language })
+    fun remove(language: String?, pack: String?) = deleteAll(
+        downloaded().filter {
+            (language == null || it.language == language) &&
+                (pack == null || it.pack == pack)
+        },
+    )
 
     private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->
@@ -383,11 +376,9 @@ class Packs(private val context: Context) {
                     }
                 }
             }
-            check(sha256(digest) == entry.sha256) { "checksum mismatch for ${entry.id}" }
+            val checksum = digest.digest().toHexString()
+            check(checksum == entry.sha256) { "checksum mismatch for ${entry.id}" }
         }
-
-    private fun writeAtomically(target: File, bytes: ByteArray) =
-        replaceFile(target) { it.writeBytes(bytes) }
 }
 
 inline fun replaceFile(target: File, write: (File) -> Unit) {

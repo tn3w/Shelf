@@ -8,6 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
@@ -20,6 +21,15 @@ class ModelTest {
         assertEquals(
             listOf("2025-12", "2026-09-30", "2026-09-30-2", "2026-10", "2026-10-01"),
             labels.sortedWith(releaseOrder),
+        )
+    }
+
+    @Test
+    fun appVersionsSortByNumbers() {
+        val versions = listOf("1.10.0", "1.9.2", "1.3.1", "2.0.0")
+        assertEquals(
+            listOf("1.3.1", "1.9.2", "1.10.0", "2.0.0"),
+            versions.sortedWith(releaseOrder),
         )
     }
 
@@ -173,19 +183,20 @@ class ModelTest {
 
     @Test
     fun importedFilesGetContentIds() {
-        val first = contentWork("first book".byteInputStream())
-        assertEquals(first, contentWork("first book".byteInputStream()))
-        assertNotEquals(first, contentWork("second book".byteInputStream()))
+        fun work(text: String) =
+            contentWork(text.byteInputStream(), ByteArrayOutputStream())
+        val first = work("first book")
+        assertEquals(first, work("first book"))
+        assertNotEquals(first, work("second book"))
         assertTrue(first < 0)
         assertNotEquals(first, ownBook("first book", "").work)
     }
 
     @Test
     fun contentWorkCopiesInputWhileHashing() {
-        val output = java.io.ByteArrayOutputStream()
-        val work = contentWork("some book".byteInputStream(), output)
+        val output = ByteArrayOutputStream()
+        contentWork("some book".byteInputStream(), output)
         assertEquals("some book", output.toString())
-        assertEquals(contentWork("some book".byteInputStream()), work)
     }
 
     @Test

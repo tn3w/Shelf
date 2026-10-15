@@ -219,6 +219,23 @@ private fun CoverPlaceholder(book: Book) {
 }
 
 @Composable
+fun Hint(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textAlign: TextAlign? = null,
+) = Text(
+    text,
+    modifier,
+    color,
+    style = MaterialTheme.typography.bodySmall,
+    textAlign = textAlign,
+)
+
+@Composable
+fun LoadingBar() = LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
+
+@Composable
 fun LargeTitle(text: String, action: @Composable () -> Unit = {}) {
     Row(
         Modifier.fillMaxWidth()
@@ -321,20 +338,18 @@ fun BookRow(
     shared: Boolean = true,
     onDismiss: ((Book) -> Unit)? = null,
 ) {
-    SkeletonAlphaProvider(books == null) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            userScrollEnabled = books != null,
-        ) {
-            if (books == null) {
-                items(6) { SkeletonTile() }
-                return@LazyRow
-            }
-            items(books, key = { it.work }) {
-                Box(Modifier.animateItem()) {
-                    BookTile(it, origin, onOpen, shared = shared, onDismiss = onDismiss)
-                }
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        userScrollEnabled = books != null,
+    ) {
+        if (books == null) {
+            items(6) { SkeletonTile() }
+            return@LazyRow
+        }
+        items(books, key = { it.work }) {
+            Box(Modifier.animateItem()) {
+                BookTile(it, origin, onOpen, shared = shared, onDismiss = onDismiss)
             }
         }
     }
@@ -355,32 +370,16 @@ fun BookSection(
     BookRow(books, origin, onOpen, shared, onDismiss)
 }
 
-private val LocalSkeletonAlpha = staticCompositionLocalOf<State<Float>> {
-    mutableFloatStateOf(0.6f)
-}
-
-@Composable
-private fun SkeletonAlphaProvider(loading: Boolean, content: @Composable () -> Unit) {
-    val animated = loading && !LocalReducedMotion.current
-    val alpha =
-        if (animated) {
-            rememberInfiniteTransition()
-                .animateFloat(
-                    initialValue = 0.35f,
-                    targetValue = 0.8f,
-                    animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
-                )
-        } else {
-            remember { mutableFloatStateOf(0.6f) }
-        }
-    CompositionLocalProvider(LocalSkeletonAlpha provides alpha, content = content)
-}
-
 @Composable
 fun SkeletonTile(modifier: Modifier = Modifier.width(TileWidth)) {
     val color = MaterialTheme.colorScheme.surfaceContainerHigh
-    val alpha = LocalSkeletonAlpha.current
-    Column(modifier.graphicsLayer { this.alpha = alpha.value }) {
+    val reduced = LocalReducedMotion.current
+    val pulse = rememberInfiniteTransition().animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
+    )
+    Column(modifier.graphicsLayer { alpha = if (reduced) 0.6f else pulse.value }) {
         Box(
             Modifier.fillMaxWidth()
                 .aspectRatio(2f / 3f)
@@ -606,21 +605,15 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
 }
 
 @Composable
-private fun TileGrid(
-    loading: Boolean,
-    header: LazyGridScope.() -> Unit,
-    body: LazyGridScope.() -> Unit,
-) {
-    SkeletonAlphaProvider(loading) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(GridTileWidth),
-            contentPadding = PaddingValues(ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            header()
-            body()
-        }
+private fun TileGrid(header: LazyGridScope.() -> Unit, body: LazyGridScope.() -> Unit) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(GridTileWidth),
+        contentPadding = PaddingValues(ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        header()
+        body()
     }
 }
 
@@ -641,7 +634,7 @@ fun BookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(books == null, header) {
+) = TileGrid(header) {
     if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
 }
 
@@ -651,7 +644,7 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(groups == null, header) {
+) = TileGrid(header) {
     if (groups == null) return@TileGrid skeletonTiles()
     val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
     groups.forEach { group ->

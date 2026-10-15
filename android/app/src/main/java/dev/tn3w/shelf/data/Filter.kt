@@ -1,20 +1,23 @@
 package dev.tn3w.shelf.data
 
+import androidx.annotation.StringRes
+import dev.tn3w.shelf.R
+
 private const val FACET_LIMIT = 5
 
-enum class LibrarySort {
-    Added,
-    Title,
-    Author,
-    Rating,
-    Finished,
+enum class LibrarySort(@StringRes val label: Int) {
+    Added(R.string.sort_added),
+    Title(R.string.title),
+    Author(R.string.author),
+    Rating(R.string.sort_rating),
+    Finished(R.string.sort_finished),
 }
 
-enum class ResultSort {
-    Relevance,
-    Popular,
-    Newest,
-    Oldest,
+enum class ResultSort(@StringRes val label: Int) {
+    Relevance(R.string.relevance),
+    Popular(R.string.popular),
+    Newest(R.string.newest),
+    Oldest(R.string.oldest),
 }
 
 val ERAS = listOf(1..1899, 1900..1999, 2000..2019, 2020..9999)

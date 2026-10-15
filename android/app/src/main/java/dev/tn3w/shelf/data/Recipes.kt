@@ -42,8 +42,7 @@ private val QUERY_VALUE = Regex("""([?&][^=&\s"]+=)[^&\s#"{][^&\s#"]*""")
 private val SECRET_HEADER =
     Regex("""(?im)^(\s*< (?:set-cookie|cookie|authorization|proxy-authorization):).*$""")
 private val BODY_LINE = Regex("""(?m)^(\s*body:).*$""")
-val QUERY_VARIABLES =
-    setOf("query", "title", "author", "language", "isbn", "isbns")
+val QUERY_VARIABLES = Query("", "", "").variables().keys
 private val ISBN_VARIABLE = Regex("""\{\+?isbns?\}""")
 private val SINGLE_ISBN = Regex("""\{\+?isbn\}""")
 private const val ISBN_TRIES = 5

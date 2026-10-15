@@ -139,13 +139,7 @@ private fun CsvReportDialog(report: CsvReport, onDismiss: () -> Unit) {
                     stringResource(R.string.csv_missing),
                     Modifier.padding(top = 8.dp, bottom = 4.dp),
                 )
-                report.missing.forEach {
-                    Text(
-                        it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                report.missing.forEach { Hint(it) }
             }
         },
         confirmButton = {

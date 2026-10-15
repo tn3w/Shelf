@@ -6,17 +6,22 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import androidx.annotation.StringRes
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import dev.tn3w.shelf.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
+import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.util.zip.ZipEntry
@@ -30,13 +35,12 @@ private val Context.dataStore by preferencesDataStore(
     "library",
     corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
 )
-private val ENTRIES = stringPreferencesKey("entries")
-private val RECENT = stringPreferencesKey("recent")
-private val PROGRESS = stringPreferencesKey("progress")
-private val ACTIVITY = stringPreferencesKey("activity")
-private val SETTINGS = stringPreferencesKey("settings")
-private val DISMISSED = stringPreferencesKey("dismissed")
-private val PDFS_NORMALISED = booleanPreferencesKey("pdfsNormalised")
+internal val ENTRIES = slot("entries", emptyList<Saved>())
+internal val RECENT = slot("recent", emptyList<String>())
+internal val PROGRESS = slot("progress", emptyMap<Int, Progress>())
+internal val ACTIVITY = slot("activity", emptyMap<String, Int>())
+internal val SETTINGS = slot("settings", Settings())
+internal val DISMISSED = slot("dismissed", emptySet<Int>())
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
 private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
@@ -44,10 +48,10 @@ val FONT_SCALES = 0.7f..1.8f
 val SPACING_RANGE = 1.35f..1.8f
 val MARGIN_RANGE = 16..44
 
-enum class Shelf {
-    Reading,
-    Want,
-    Read,
+enum class Shelf(@StringRes val label: Int) {
+    Reading(R.string.reading),
+    Want(R.string.want_to_read),
+    Read(R.string.finished),
 }
 
 @Serializable
@@ -78,16 +82,16 @@ data class Progress(
         get() = if (pages > 0) (page + 1f) / pages else null
 }
 
-enum class ThemeMode {
-    System,
-    Light,
-    Dark,
+enum class ThemeMode(@StringRes val label: Int) {
+    System(R.string.theme_system),
+    Light(R.string.theme_light),
+    Dark(R.string.theme_dark),
 }
 
-enum class PageColor {
-    Theme,
-    Paper,
-    Night,
+enum class PageColor(@StringRes val label: Int) {
+    Theme(R.string.page_app),
+    Paper(R.string.page_paper),
+    Night(R.string.page_night),
 }
 
 @Serializable
@@ -196,14 +200,9 @@ private fun bookOf(
 ) = Book(
     work,
     title,
-    "",
-    "",
-    listOf(Author(0, author)),
-    0,
-    cover,
-    emptyList(),
-    null,
-    libraryCover,
+    authors = listOf(Author(0, author)),
+    cover = cover,
+    libraryCover = libraryCover,
 )
 
 val Book.isLocal
@@ -218,13 +217,9 @@ private val TEMPORARY_EXTENSIONS = setOf("part", "tmp")
 
 private fun File.isTemporary() = extension in TEMPORARY_EXTENSIONS
 
-internal fun contentWork(input: InputStream, output: OutputStream? = null): Int {
+internal fun contentWork(input: InputStream, output: OutputStream): Int {
     val digest = MessageDigest.getInstance("SHA-256")
-    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-    generateSequence { input.read(buffer).takeIf { it >= 0 } }.forEach {
-        digest.update(buffer, 0, it)
-        output?.write(buffer, 0, it)
-    }
+    DigestInputStream(input, digest).copyTo(output)
     return localWork(ByteBuffer.wrap(digest.digest()).int)
 }
 
@@ -253,22 +248,25 @@ suspend fun Context.writeTo(uri: Uri, write: (OutputStream) -> Unit) =
             .getOrDefault(false)
     }
 
-private inline fun <reified T> decodeOrNull(text: String) =
-    runCatching { json.decodeFromString<T>(text) }.getOrNull()
+class Slot<T>(name: String, val fallback: T, private val serializer: KSerializer<T>) {
+    val key = stringPreferencesKey(name)
 
-private inline fun <reified T> Preferences.decode(
-    key: Preferences.Key<String>,
-    fallback: T,
-): T = this[key]?.let { decodeOrNull<T>(it) } ?: fallback
+    fun decode(text: String) =
+        runCatching { json.decodeFromString(serializer, text) }.getOrNull()
 
-internal inline fun <reified T> MutablePreferences.updateJson(
-    key: Preferences.Key<String>,
-    fallback: T,
-    change: (T) -> T,
-) {
-    val stored = this[key]
-    val current = if (stored == null) fallback else decodeOrNull<T>(stored) ?: return
-    this[key] = json.encodeToString(change(current))
+    fun encode(value: T) = json.encodeToString(serializer, value)
+}
+
+private inline fun <reified T> slot(name: String, fallback: T) =
+    Slot(name, fallback, serializer<T>())
+
+operator fun <T> Preferences.get(slot: Slot<T>) =
+    this[slot.key]?.let(slot::decode) ?: slot.fallback
+
+internal fun <T> MutablePreferences.update(slot: Slot<T>, change: (T) -> T) {
+    val stored = this[slot.key]
+    val current = if (stored == null) slot.fallback else slot.decode(stored) ?: return
+    this[slot.key] = slot.encode(change(current))
 }
 
 internal fun deleteOtherFormats(directory: File, work: Int, keep: String) = directory
@@ -288,39 +286,24 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         .flowOn(Dispatchers.Default)
         .shareIn(scope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
-    val saved = data.map { preferences ->
-        preferences.decode(ENTRIES, emptyList<Saved>()).sortedByDescending {
-            it.updated
-        }
-    }.shared()
+    val saved = data.map { it[ENTRIES].sortedByDescending(Saved::updated) }.shared()
 
-    val recentSearches = data.map { it.decode(RECENT, emptyList<String>()) }.shared()
+    val recentSearches = data.map { it[RECENT] }.shared()
 
-    val dismissed = data.map { it.decode(DISMISSED, emptySet<Int>()) }.shared()
+    val dismissed = data.map { it[DISMISSED] }.shared()
 
-    val progress = data.map { it.decode(PROGRESS, emptyMap<Int, Progress>()) }.shared()
+    val progress = data.map { it[PROGRESS] }.shared()
 
-    val settings = data.map { it.decode(SETTINGS, Settings()) }.shared()
+    val settings = data.map { it[SETTINGS] }.shared()
 
     val habit = combine(data, dates()) { preferences, today ->
-        val goal = preferences.decode(SETTINGS, Settings()).dailyGoal
-        habitOf(preferences.decode(ACTIVITY, emptyMap()), goal, today)
+        habitOf(preferences[ACTIVITY], preferences[SETTINGS].dailyGoal, today)
     }.shared()
 
     private val booksDir
         get() = context.filesDir.resolve("books")
 
     fun bookFile(name: String) = booksDir.resolve(name)
-
-    suspend fun normaliseStoredPdfs() {
-        if (data.first()[PDFS_NORMALISED] == true) return
-        withContext(Dispatchers.IO) {
-            booksDir.listFiles { file -> file.extension == "pdf" }
-                .orEmpty()
-                .forEach(::replaceJpegIccProfiles)
-        }
-        store.edit { it[PDFS_NORMALISED] = true }
-    }
 
     suspend fun deleteTemporaryFiles() = withContext(Dispatchers.IO) {
         booksDir.listFiles(File::isTemporary).orEmpty().forEach(File::delete)
@@ -332,33 +315,33 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun importBook(book: Book, uri: Uri): Boolean {
         val fileName = withContext(Dispatchers.IO) { context.displayName(uri) }
-        val name = copyBook(uri, fileName, book.work) ?: return false
-        startReading(book, name)
-        return true
+        if (!isReadable(fileName)) return false
+        val name = "${book.work}.${extensionOf(fileName)}"
+        return attach(book, name) { checkNotNull(copy(uri, it)) }
     }
 
-    suspend fun download(book: Book, offer: Offer, onProgress: (Float) -> Unit): Boolean {
-        val name = "${book.work}.${offer.format}"
-        val target = bookFile(name).apply { parentFile?.mkdirs() }
-        if (!fetch(offer, target, onProgress)) return false
-        finishBook(target, book.work)
-        startReading(book, name)
-        return true
-    }
-
-    private suspend fun fetch(offer: Offer, target: File, onProgress: (Float) -> Unit) =
-        withContext(Dispatchers.IO) {
-            val report = { progress: Float ->
-                ensureActive()
-                onProgress(progress)
+    suspend fun download(book: Book, offer: Offer, onProgress: (Float) -> Unit) =
+        attach(book, "${book.work}.${offer.format}") { target ->
+            withContext(Dispatchers.IO) {
+                fetchBook(offer, target) { progress ->
+                    ensureActive()
+                    onProgress(progress)
+                }
             }
-            runCatching { replaceFile(target) { fetchBook(offer, it, report) } }.isSuccess
         }
 
-    private suspend fun startReading(book: Book, name: String) {
+    private suspend fun attach(
+        book: Book,
+        name: String,
+        write: suspend (File) -> Unit,
+    ): Boolean {
+        val target = bookFile(name).apply { parentFile?.mkdirs() }
+        if (runCatching { replaceFile(target) { write(it) } }.isFailure) return false
+        deleteOtherFormats(booksDir, book.work, keep = name)
         val previous = progress.first()[book.work]?.takeIf { it.file == name }
         saveProgress(book.work, previous ?: Progress(name))
         place(book, Shelf.Reading)
+        return true
     }
 
     suspend fun importFile(uri: Uri): Int? {
@@ -375,31 +358,16 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             temporary.delete()
             return null
         }
-        finishBook(bookFile(name), work)
+        deleteOtherFormats(booksDir, work, keep = name)
         val metadata = withContext(Dispatchers.IO) { readMetadata(bookFile(name)) }
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
-        update(PROGRESS, emptyMap<Int, Progress>()) {
+        edit(PROGRESS) {
             if (work in it) it else it + (work to Progress(name))
         }
         val existing = saved.first().firstOrNull { it.work == work }
         val book = bookOf(work, title, metadata?.author.orEmpty(), existing?.cover ?: 0)
         place(book, existing?.shelf ?: Shelf.Reading)
         return work
-    }
-
-    private suspend fun copyBook(uri: Uri, fileName: String, work: Int): String? {
-        if (!isReadable(fileName)) return null
-        val name = "$work.${extensionOf(fileName)}"
-        val target = bookFile(name).apply { parentFile?.mkdirs() }
-        val copied = runCatching { replaceFile(target) { checkNotNull(copy(uri, it)) } }
-        if (copied.isFailure) return null
-        finishBook(target, work)
-        return name
-    }
-
-    private fun finishBook(file: File, work: Int) {
-        if (file.extension == "pdf") replaceJpegIccProfiles(file)
-        deleteOtherFormats(booksDir, work, keep = file.name)
     }
 
     private fun extensionOf(fileName: String) = File(fileName).extension.lowercase()
@@ -431,31 +399,27 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun deleteBook(work: Int, keepShelves: Boolean = false) {
         progress.first()[work]?.let { bookFile(it.file).delete() }
-        update(PROGRESS, emptyMap<Int, Progress>()) { it - work }
+        edit(PROGRESS) { it - work }
         if (keepShelves) return
         deleteCovers(work)
-        update(ENTRIES, emptyList<Saved>()) { entries ->
+        edit(ENTRIES) { entries ->
             entries.filter { it.work != work }
         }
     }
 
-    private suspend inline fun <reified T> update(
-        key: Preferences.Key<String>,
-        fallback: T,
-        crossinline change: (T) -> T,
-    ) = store.edit { it.updateJson(key, fallback, change) }
+    private suspend fun <T> edit(slot: Slot<T>, change: (T) -> T) =
+        store.edit { it.update(slot, change) }
 
-    suspend fun place(book: Book, shelf: Shelf?) =
-        update(ENTRIES, emptyList<Saved>()) { entries ->
-            val previous = entries.firstOrNull { it.work == book.work }
-            val others = entries.filter { it.work != book.work }
-            val placed = shelf?.let(book::toSaved)?.copy(
-                rating = previous?.rating ?: 0,
-                isbn = previous?.isbn.orEmpty(),
-                added = previous?.added?.takeIf { it > 0 } ?: System.currentTimeMillis(),
-            )
-            placed?.let { others + it } ?: others
-        }
+    suspend fun place(book: Book, shelf: Shelf?) = edit(ENTRIES) { entries ->
+        val previous = entries.firstOrNull { it.work == book.work }
+        val others = entries.filter { it.work != book.work }
+        val placed = shelf?.let(book::toSaved)?.copy(
+            rating = previous?.rating ?: 0,
+            isbn = previous?.isbn.orEmpty(),
+            added = previous?.added?.takeIf { it > 0 } ?: System.currentTimeMillis(),
+        )
+        placed?.let { others + it } ?: others
+    }
 
     suspend fun importCsv(
         uri: Uri,
@@ -482,7 +446,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                     )
             }
         }
-        update(ENTRIES, emptyList<Saved>()) { newestPerWork(it + entries) }
+        edit(ENTRIES) { newestPerWork(it + entries) }
         return CsvReport(books.size, missing)
     }
 
@@ -493,26 +457,25 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun saveProgress(work: Int, progress: Progress, pagesRead: Int = 0) =
         store.edit {
-            it.updateJson(PROGRESS, emptyMap<Int, Progress>()) { all ->
+            it.update(PROGRESS) { all ->
                 all + (work to progress)
             }
             if (pagesRead > 0) {
-                it.updateJson(ACTIVITY, emptyMap<String, Int>()) { activity ->
+                it.update(ACTIVITY) { activity ->
                     val today = LocalDate.now().toString()
                     activity + (today to (activity[today] ?: 0) + pagesRead)
                 }
             }
         }
 
-    suspend fun updateSettings(change: (Settings) -> Settings) =
-        update(SETTINGS, Settings(), change)
+    suspend fun updateSettings(change: (Settings) -> Settings) = edit(SETTINGS, change)
 
-    suspend fun remember(query: String) = update(RECENT, emptyList<String>()) { recent ->
+    suspend fun remember(query: String) = edit(RECENT) { recent ->
         val trimmed = query.trim()
         (listOf(trimmed) + recent.filter { it != trimmed }).take(RECENT_LIMIT)
     }
 
-    suspend fun clearSearches() = store.edit { it.remove(RECENT) }
+    suspend fun clearSearches() = store.edit { it.remove(RECENT.key) }
 
     suspend fun redirect(alias: (Int) -> Int?) {
         val works =
@@ -522,7 +485,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         store.edit { it.redirect(alias) }
     }
 
-    suspend fun dismiss(work: Int) = update(DISMISSED, emptySet<Int>()) { it + work }
+    suspend fun dismiss(work: Int) = edit(DISMISSED) { it + work }
 
     suspend fun exportTo(uri: Uri): Boolean {
         val backup = data.first().toBackup()
@@ -583,7 +546,6 @@ internal fun extractBook(
                 check(size <= limit) { "$name is too large" }
             }
         }
-        if (name.endsWith(".pdf")) replaceJpegIccProfiles(file)
     }
 }
 
@@ -596,20 +558,20 @@ internal fun moveCovers(directory: File, alias: (Int) -> Int?) =
     }
 
 private fun Preferences.toBackup() = Backup(
-    decode(ENTRIES, emptyList()),
-    decode(PROGRESS, emptyMap()),
-    decode(ACTIVITY, emptyMap()),
-    decode(DISMISSED, emptySet()),
-    decode(SETTINGS, Settings()),
+    this[ENTRIES],
+    this[PROGRESS],
+    this[ACTIVITY],
+    this[DISMISSED],
+    this[SETTINGS],
 )
 
 internal fun MutablePreferences.merge(imported: Backup) {
-    updateJson(ENTRIES, emptyList<Saved>()) { newestPerWork(it + imported.entries) }
+    update(ENTRIES) { newestPerWork(it + imported.entries) }
     val progress = imported.progress.filterValues { BOOK_FILE.matches(it.file) }
-    updateJson(PROGRESS, emptyMap<Int, Progress>()) { progress + it }
-    updateJson(ACTIVITY, emptyMap<String, Int>()) { maxPerDay(imported.activity, it) }
-    updateJson(DISMISSED, emptySet<Int>()) { it + imported.dismissed }
-    updateJson(SETTINGS, Settings()) { restoredSettings(imported.settings, it) }
+    update(PROGRESS) { progress + it }
+    update(ACTIVITY) { maxPerDay(imported.activity, it) }
+    update(DISMISSED) { it + imported.dismissed }
+    update(SETTINGS) { restoredSettings(imported.settings, it) }
 }
 
 private fun restoredSettings(imported: Settings, current: Settings) = imported.copy(
@@ -636,13 +598,13 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
 
 internal fun MutablePreferences.redirect(alias: (Int) -> Int?) {
     fun moved(work: Int) = alias(work) ?: work
-    updateJson(ENTRIES, emptyList<Saved>()) { entries ->
+    update(ENTRIES) { entries ->
         newestPerWork(entries.map { it.copy(work = moved(it.work)) })
     }
-    updateJson(PROGRESS, emptyMap<Int, Progress>()) { all ->
+    update(PROGRESS) { all ->
         all.mapKeys { moved(it.key) }
     }
-    updateJson(DISMISSED, emptySet<Int>()) { dismissed ->
+    update(DISMISSED) { dismissed ->
         dismissed.mapTo(HashSet(), ::moved)
     }
 }
