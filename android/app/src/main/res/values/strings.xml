@@ -285,10 +285,6 @@
     <string name="free_books_no_source">No chosen source has books in this language.</string>
     <string name="free_books_rights">Public domain differs by country. Check your local laws.</string>
     <string name="free_ebook">Free ebook</string>
-    <string name="provider_standard_ebooks">Carefully formatted classics</string>
-    <string name="provider_gutenberg">Public domain books in many languages</string>
-    <string name="provider_wikisource">Transcribed texts from Wikimedia</string>
-    <string name="provider_internet_archive">Scanned public domain books</string>
     <string name="free_books_retry">Try again</string>
     <string name="provider_own">Own source</string>
     <string name="free_books_own">Own sources</string>
@@ -316,7 +312,7 @@
     <string name="free_books_header_value">Value</string>
     <string name="free_books_languages">Languages</string>
     <string name="free_books_attribute">Attribute</string>
-    <string name="free_books_form_help">{name} inserts a variable URL-encoded, {+name} as is. Search knows {query}, {title}, {author}, {language}, {isbn} and {isbns}; each rule adds its name. A search with {isbn} tries the book\'s ISBNs one by one and keeps every result. Rules run CSS, then JSON path, then attribute, then regex (first group). Relative links resolve against the previous page.</string>
+    <string name="free_books_form_help">{name} inserts a variable URL-encoded, {+name} as is. Search knows {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} and {isbns}; each rule adds its name. A search with {isbn} tries the book\'s ISBNs one by one and keeps every result. Rules run CSS, then JSON path, then attribute, then regex (first group); XML pages parse as XML. Rules named size (bytes) and format describe the file, skip drops the item. Relative links resolve against the previous page.</string>
     <string name="free_books_test">Test</string>
     <string name="free_books_test_hint">Searches, runs every step for the first item and opens the file without downloading it. Debug test also logs headers, pages and every item, then saves the log; header values are hidden, check URLs before sharing.</string>
     <plurals name="free_books_imported">

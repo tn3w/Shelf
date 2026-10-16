@@ -284,10 +284,6 @@
     <string name="free_books_no_source">Keine gewählte Quelle hat Bücher in dieser Sprache.</string>
     <string name="free_books_rights">Gemeinfreiheit unterscheidet sich je nach Land. Prüfe dein lokales Recht.</string>
     <string name="free_ebook">Freies E-Book</string>
-    <string name="provider_standard_ebooks">Sorgfältig gesetzte Klassiker</string>
-    <string name="provider_gutenberg">Gemeinfreie Bücher in vielen Sprachen</string>
-    <string name="provider_wikisource">Transkribierte Texte von Wikimedia</string>
-    <string name="provider_internet_archive">Gescannte gemeinfreie Bücher</string>
     <string name="free_books_retry">Erneut versuchen</string>
     <string name="provider_own">Eigene Quelle</string>
     <string name="free_books_own">Eigene Quellen</string>
@@ -315,7 +311,7 @@
     <string name="free_books_header_value">Wert</string>
     <string name="free_books_languages">Sprachen</string>
     <string name="free_books_attribute">Attribut</string>
-    <string name="free_books_form_help">{name} fügt eine Variable URL-kodiert ein, {+name} unverändert. Die Suche kennt {query}, {title}, {author}, {language}, {isbn} und {isbns}; jede Regel fügt ihren Namen hinzu. Eine Suche mit {isbn} probiert die ISBNs des Buchs nacheinander und behält alle Treffer. Regeln wenden CSS, dann JSON-Pfad, dann Attribut, dann Regex (erste Gruppe) an. Relative Links beziehen sich auf die vorige Seite.</string>
+    <string name="free_books_form_help">{name} fügt eine Variable URL-kodiert ein, {+name} unverändert. Die Suche kennt {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} und {isbns}; jede Regel fügt ihren Namen hinzu. Eine Suche mit {isbn} probiert die ISBNs des Buchs nacheinander und behält alle Treffer. Regeln wenden CSS, dann JSON-Pfad, dann Attribut, dann Regex (erste Gruppe) an; XML-Seiten werden als XML gelesen. Regeln namens size (Bytes) und format beschreiben die Datei, skip verwirft den Eintrag. Relative Links beziehen sich auf die vorige Seite.</string>
     <string name="free_books_test">Testen</string>
     <string name="free_books_test_hint">Sucht, führt alle Schritte für den ersten Eintrag aus und öffnet die Datei, ohne sie herunterzuladen. Der Debug-Test protokolliert zusätzlich Header, Seiten und jeden Eintrag und speichert das Protokoll; Header-Werte sind verborgen, prüfe URLs vor dem Teilen.</string>
     <plurals name="free_books_imported">

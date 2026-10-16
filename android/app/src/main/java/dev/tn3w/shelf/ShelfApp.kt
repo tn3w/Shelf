@@ -26,7 +26,7 @@ class ShelfApp :
     val session = Random.nextLong()
     val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
-    val ownSources by lazy { OwnSources(this) }
+    val sources by lazy { Sources(this) }
     val recognizer by lazy { assets.open("scan.bin").use { Recognizer(it.readBytes()) } }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())

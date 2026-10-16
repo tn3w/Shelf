@@ -1,0 +1,29 @@
+{
+  "name": "Project Gutenberg",
+  "about": {
+    "en": "Public domain books in many languages",
+    "de": "Gemeinfreie Bücher in vielen Sprachen",
+    "fr": "Livres du domaine public en de nombreuses langues",
+    "es": "Libros de dominio público en muchos idiomas"
+  },
+  "search": {
+    "url": "https://www.gutenberg.org/ebooks/search.opds/?query={query}%20l.{language}",
+    "items": { "css": "entry" },
+    "fields": {
+      "title": { "css": "title", "regex": ">(.*?)(?: \\(\\p{Lu}\\p{Ll}+\\))?<" },
+      "author": { "css": "content" },
+      "number": { "css": "id", "regex": "/ebooks/(\\d+)\\.opds<" }
+    }
+  },
+  "steps": [
+    {
+      "url": "https://www.gutenberg.org/ebooks/{number}.opds",
+      "fields": {
+        "file": { "css": "link[href$=.epub3.images]", "attr": "href" },
+        "size": { "css": "link[href$=.epub3.images]", "attr": "length" }
+      }
+    }
+  ],
+  "download": "{+file}",
+  "cover": "https://www.gutenberg.org/cache/epub/{number}/pg{number}.cover.small.jpg"
+}

@@ -46,7 +46,7 @@ private val EDITOR_MODES = mapOf(
 fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) {
     val app = shelfApp()
     val scope = rememberCoroutineScope()
-    val recipes by app.ownSources.recipes.collectAsStateWithLifecycle()
+    val recipes by app.sources.own.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Recipe?>(null) }
     var status by remember { mutableStateOf<String?>(null) }
     var exportFailed by remember { mutableStateOf(false) }
@@ -54,7 +54,7 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
     val importer = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val imported = app.ownSources.import(uri)
+            val imported = app.sources.import(uri)
             if (imported == null) {
                 status = failed
                 return@launch
@@ -66,11 +66,11 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
         }
     }
     val exporter = rememberLauncherForActivityResult(CreateDocument("application/json")) {
-        if (it != null) scope.launch { exportFailed = !app.ownSources.export(it) }
+        if (it != null) scope.launch { exportFailed = !app.sources.export(it) }
     }
 
     recipes.forEach { recipe ->
-        ProviderSwitch(OwnSource(recipe), settings, update, enabled) { editing = recipe }
+        ProviderSwitch(Provider(recipe), settings, update, enabled) { editing = recipe }
     }
     ActionRow(R.string.free_books_add, Icons.Outlined.Add) { editing = STARTER_RECIPE }
     ActionRow(R.string.free_books_import, Icons.Outlined.FileOpen, status) {
@@ -107,12 +107,12 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
     fun save() = scope.launch {
         val ready = parsed.getOrNull() ?: return@launch
         val id = initial.id.ifEmpty { UUID.randomUUID().toString() }
-        app.ownSources.save(ready.copy(id = id))
+        app.sources.save(ready.copy(id = id))
         if (initial.id.isEmpty()) update { it.copy(providers = it.providers + id) }
         onClose()
     }
     fun remove() = scope.launch {
-        app.ownSources.remove(initial.id)
+        app.sources.remove(initial.id)
         update { it.copy(providers = it.providers - initial.id) }
         onClose()
     }
@@ -534,7 +534,7 @@ private fun debugReport(recipe: Recipe, query: Query, lines: List<String>) = bui
 }
 
 private fun trace(recipe: Recipe, query: Query, verbose: Boolean) = channelFlow {
-    val source = OwnSource(recipe, log = { trySend(it) }, verbose = verbose)
+    val source = Provider(recipe, log = { trySend(it) }, verbose = verbose)
     runCatching { source.probe(query) }.onFailure { send("✕ ${describe(it)}") }
 }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 

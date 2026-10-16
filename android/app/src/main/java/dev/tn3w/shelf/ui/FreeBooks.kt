@@ -18,6 +18,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,7 +40,9 @@ fun FreeBookSettings() {
     val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     SettingsGroup(hint = stringResource(R.string.free_books_note)) {
-        PROVIDERS.forEach { ProviderSwitch(it, settings, update, enabled = !offline) }
+        shelfApp().sources.bundled.forEach {
+            ProviderSwitch(Provider(it), settings, update, enabled = !offline)
+        }
     }
     SettingsGroup(
         stringResource(R.string.free_books_own),
@@ -57,10 +60,10 @@ private fun InstantSourceRows(
     update: SettingsUpdate,
     enabled: Boolean,
 ) {
-    val own by shelfApp().ownSources.recipes.collectAsStateWithLifecycle()
-    val selected = settings.instantProvider(own)?.id.orEmpty()
+    val recipes = allRecipes()
+    val selected = settings.instantProvider(recipes)?.id.orEmpty()
     val options = listOf("" to stringResource(R.string.instant_source_off)) +
-        allProviders(own).map { it.id to it.name }
+        recipes.map { it.id to it.name }
     options.forEach { (id, name) ->
         fun select() = update { it.copy(instantSource = id) }
         SettingRow(name, enabled = enabled, onClick = ::select) {
@@ -74,10 +77,11 @@ suspend fun ShelfApp.downloadInstantly(
     settings: Settings,
     onProgress: (Float) -> Unit,
 ): Boolean {
-    val provider = settings.instantProvider(ownSources.recipes.value) ?: return false
+    val recipes = sources.bundled + sources.own.value
+    val provider = settings.instantProvider(recipes) ?: return false
     val language = bookLanguage(settings)
     if (!provider.serves(language)) return false
-    val isbns = isbnsOf(book, catalogue = provider is OwnSource && provider.usesIsbn)
+    val isbns = isbnsOf(book, catalogue = provider.usesIsbn)
     val query = Query(book.title, book.author, language, isbns)
     val offer = runCatching { provider.search(query) }
         .onFailure { if (it is CancellationException) throw it }
@@ -100,8 +104,12 @@ fun ProviderSwitch(
         val others = it.providers - provider.id
         it.copy(providers = if (value) others + provider.id else others)
     }
-    val languages = provider.languages.map(::nativeName)
-    val about = listOf(stringResource(provider.about)) + languages + provider.site
+    val language = LocalConfiguration.current.locales[0].language
+    val descriptions = provider.recipe.about
+    val description = descriptions[language] ?: descriptions["en"]
+        ?: stringResource(R.string.provider_own)
+    val languages = provider.recipe.languages.map(::nativeName)
+    val about = listOf(description) + languages + provider.site
     SettingRow(
         provider.name,
         about.filter { it.isNotEmpty() }.joinToString(" · "),
@@ -116,10 +124,10 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
     val app = shelfApp()
     val (settings, update) = rememberSettings() ?: return
     var choosing by remember { mutableStateOf(settings.providers.isEmpty()) }
-    val own by app.ownSources.recipes.collectAsStateWithLifecycle()
+    val recipes = allRecipes()
     val language = app.bookLanguage(settings)
-    val enabled = settings.enabledProviders(own).filter { it.serves(language) }
-    val isbns = bookIsbns(book, enabled.any { it is OwnSource && it.usesIsbn })
+    val enabled = settings.enabledProviders(recipes).filter { it.serves(language) }
+    val isbns = bookIsbns(book, enabled.any { it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
     var downloading by remember { mutableStateOf(false) }
     val sheet = rememberModalBottomSheetState(true) { it != Hidden || !downloading }
@@ -137,13 +145,20 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
                 return@Column
             }
             SettingsGroup(hint = stringResource(R.string.free_books_choose)) {
-                allProviders(own).forEach {
-                    ProviderSwitch(it, settings, update, enabled = true)
+                recipes.forEach {
+                    ProviderSwitch(Provider(it), settings, update, enabled = true)
                 }
             }
             SearchButton(settings.providers.isNotEmpty()) { choosing = false }
         }
     }
+}
+
+@Composable
+private fun allRecipes(): List<Recipe> {
+    val sources = shelfApp().sources
+    val own by sources.own.collectAsStateWithLifecycle()
+    return sources.bundled + own
 }
 
 @Composable

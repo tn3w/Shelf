@@ -1,24 +1,39 @@
 package dev.tn3w.shelf.data
 
-import androidx.annotation.StringRes
-import dev.tn3w.shelf.R
+import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import java.io.File
+import java.io.IOException
+import java.net.URI
 import java.net.URLEncoder
+import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+import kotlin.time.TimeSource.Monotonic.ValueTimeMark
 
 private const val OFFER_LIMIT = 5
 private const val CANDIDATE_LIMIT = 8
@@ -27,7 +42,26 @@ const val DOWNLOAD_MINUTES = 2L
 val downloadClient by lazy {
     http.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
 }
-private const val EPUB_TYPE = "application/epub+zip"
+private val FORM = "application/x-www-form-urlencoded".toMediaType()
+private const val MAX_PAGE_BYTES = 5L * 1024 * 1024
+private val REGEX_TIME = 2.seconds
+private const val DEBUG_ITEMS = 5
+private const val DEBUG_PAGE_CHARACTERS = 100_000
+private val PLACEHOLDER = Regex("""\{(\+?)(\w+)\}""")
+private val URL_ATTRIBUTES = setOf("href", "src", "url", "action", "poster")
+private val HOST = Regex("""://(?:\{\w+\}\.)?([^/:?#{]+)""")
+private const val HIDDEN = "<hidden>"
+private val QUERY_VALUE = Regex("""([?&][^=&\s"]+=)[^&\s#"{][^&\s#"]*""")
+private val SECRET_HEADER =
+    Regex("""(?im)^(\s*< (?:set-cookie|cookie|authorization|proxy-authorization):).*$""")
+private val BODY_LINE = Regex("""(?m)^(\s*body:).*$""")
+private val ISBN_VARIABLE = Regex("""\{\+?isbns?\}""")
+private val SINGLE_ISBN = Regex("""\{\+?isbn\}""")
+private const val ISBN_TRIES = 5
+private const val BUNDLED_SOURCES = "sources"
+private val BIBLIOGRAPHIC_CODES = mapOf("de" to "ger", "fr" to "fre")
+private val recipeJson = Json { prettyPrint = true }
+const val SOURCES_FILE = "shelf-sources.json"
 
 data class Query(
     val title: String,
@@ -38,6 +72,8 @@ data class Query(
     val words
         get() = "${mainTitle(title).trim()} $author".trim()
 }
+
+val QUERY_VARIABLES = Query("", "", "").variables().keys
 
 data class Offer(
     val provider: Provider,
@@ -50,61 +86,260 @@ data class Offer(
     val variables: Map<String, String> = emptyMap(),
 )
 
-interface Provider {
-    val id: String
-    val name: String
-    val site: String
+@Serializable
+data class Pick(
+    val css: String? = null,
+    val json: String? = null,
+    val attr: String? = null,
+    val regex: String? = null,
+)
 
-    @get:StringRes
-    val about: Int
-    val languages: Set<String>
-        get() = emptySet()
-    val exact: Boolean
-        get() = false
+@Serializable
+data class RecipeStep(
+    val url: String,
+    val body: String? = null,
+    val items: Pick? = null,
+    val fields: Map<String, Pick> = emptyMap(),
+)
 
-    fun find(query: Query): List<Offer>
+@Serializable
+data class Recipe(
+    val name: String,
+    val about: Map<String, String> = emptyMap(),
+    val search: RecipeStep,
+    val steps: List<RecipeStep> = emptyList(),
+    val download: String,
+    val cover: String = "",
+    val format: String = "epub",
+    val languages: Set<String> = emptySet(),
+    val headers: Map<String, String> = emptyMap(),
+    val id: String = "",
+)
 
-    fun complete(offer: Offer): Offer? = offer
+val STARTER_RECIPE = Recipe(
+    name = "Project Gutenberg (HTML)",
+    search = RecipeStep(
+        url = "https://www.gutenberg.org/ebooks/search/?query={query}",
+        items = Pick(css = "li.booklink"),
+        fields = mapOf(
+            "title" to Pick(css = ".title"),
+            "author" to Pick(css = ".subtitle"),
+            "cover" to Pick(css = "img.cover-thumb", attr = "src"),
+            "page" to Pick(css = "a.link", attr = "href"),
+        ),
+    ),
+    steps = listOf(
+        RecipeStep(
+            url = "{+page}",
+            fields = mapOf("file" to Pick(css = "a[href$=.epub3.images]", attr = "href")),
+        ),
+    ),
+    download = "{+file}",
+)
 
-    fun open(offer: Offer) = downloadClient.fetch(offer.link)
-}
+fun parseRecipe(text: String) = runCatching { recipeJson.decodeFromString<Recipe>(text) }
 
-abstract class FeedProvider : Provider {
-    abstract fun searchUrl(query: Query): String
-
-    abstract fun offers(body: String, query: Query): List<Offer>
-
-    open fun detailsUrl(offer: Offer): String? = null
-
-    open fun details(offer: Offer, body: String): Offer? = offer
-
-    override fun find(query: Query) = offers(fetchText(searchUrl(query), "*/*"), query)
-
-    override fun complete(offer: Offer): Offer? {
-        val url = detailsUrl(offer) ?: return offer
-        return details(offer, fetchText(url, "*/*"))
+fun parseRecipes(text: String) = runCatching {
+    val element = recipeJson.parseToJsonElement(text)
+    if (element is JsonArray) {
+        recipeJson.decodeFromJsonElement<List<Recipe>>(element)
+    } else {
+        listOf(recipeJson.decodeFromJsonElement<Recipe>(element))
     }
 }
 
-val PROVIDERS = listOf(StandardEbooks, Gutenberg, Wikisource, InternetArchive)
+fun Recipe.toText() = recipeJson.encodeToString(copy(id = ""))
 
-fun allProviders(own: List<Recipe>) = PROVIDERS + own.map(::OwnSource)
+fun recipesText(recipes: List<Recipe>) =
+    recipeJson.encodeToString(recipes.map { it.copy(id = "") })
 
-fun Settings.enabledProviders(own: List<Recipe> = emptyList()) =
-    allProviders(own).filter { it.id in providers }
+fun Settings.enabledProviders(recipes: List<Recipe>) =
+    recipes.filter { it.id in providers }.map(::Provider)
 
-fun Settings.instantProvider(own: List<Recipe> = emptyList()) =
-    allProviders(own).firstOrNull { it.id == instantSource }
+fun Settings.instantProvider(recipes: List<Recipe>) =
+    recipes.firstOrNull { it.id == instantSource }?.let(::Provider)
 
-fun Provider.serves(language: String) = languages.isEmpty() || language in languages
+data class Provider(
+    val recipe: Recipe,
+    private val log: (String) -> Unit = {},
+    private val verbose: Boolean = false,
+) {
+    val id
+        get() = recipe.id
+    val name
+        get() = recipe.name
+    val site
+        get() = HOST.find(recipe.search.url)?.groupValues?.get(1).orEmpty()
+    private val searchTemplates
+        get() = listOfNotNull(recipe.search.url, recipe.search.body)
+    val usesIsbn
+        get() = searchTemplates.any { ISBN_VARIABLE.containsMatchIn(it) }
 
-suspend fun Provider.search(query: Query) = withContext(Dispatchers.IO) {
-    rank(query, find(query), CANDIDATE_LIMIT, exact)
-        .map { async { runCatching { complete(it) }.getOrNull() } }
-        .awaitAll()
-        .filterNotNull()
-        .filter { it.bytes <= MAX_BOOK_BYTES }
-        .take(OFFER_LIMIT)
+    fun serves(language: String) =
+        recipe.languages.isEmpty() || language in recipe.languages
+
+    suspend fun search(query: Query) = withContext(Dispatchers.IO) {
+        val completed = rank(query, find(query), CANDIDATE_LIMIT, exact = usesIsbn)
+            .map { async { runCatching { complete(it) } } }
+            .awaitAll()
+        val offers = completed.mapNotNull { it.getOrNull() }
+            .filter { it.bytes <= MAX_BOOK_BYTES }
+        val error = completed.firstNotNullOfOrNull { it.exceptionOrNull() }
+        if (offers.isEmpty() && error != null) throw error
+        offers.take(OFFER_LIMIT)
+    }
+
+    fun find(query: Query): List<Offer> {
+        val variables = query.variables()
+        if (!usesIsbn) return items(variables)
+        if (query.isbns.isEmpty()) {
+            log("no ISBN known")
+            return emptyList()
+        }
+        val single = searchTemplates.any { SINGLE_ISBN.containsMatchIn(it) }
+        val tries = if (single) ISBN_TRIES else 1
+        query.isbns.take(tries).forEach { isbn ->
+            val offers = items(variables + ("isbn" to isbn))
+            if (offers.isNotEmpty()) return offers
+        }
+        return emptyList()
+    }
+
+    private fun items(variables: Map<String, String>): List<Offer> {
+        val page = fetch(recipe.search, variables, base = null)
+        val items = recipe.search.items?.all(page).orEmpty()
+        log("${items.size} items")
+        return items.mapIndexedNotNull { index, item -> offer(item, variables, index) }
+    }
+
+    private fun offer(item: Scope, variables: Map<String, String>, index: Int): Offer? {
+        val fields = recipe.search.fields.extract(item)
+        if (verbose && index < DEBUG_ITEMS) log("item ${index + 1}: $fields")
+        if ("skip" in fields) return null
+        val title = fields["title"] ?: return null
+        val format = fields["format"]?.lowercase()?.takeIf { it in READABLE_EXTENSIONS }
+        val cover = fields["cover"]
+            ?.let { runCatching { resolve(item.base, it) }.getOrNull() }
+        val author = fields["author"].orEmpty()
+        val chosen = format ?: recipe.format
+        return Offer(this, title, author, item.base, cover, 0, chosen, variables + fields)
+    }
+
+    fun complete(offer: Offer): Offer? {
+        var variables = offer.variables
+        var base = offer.link
+        recipe.steps.forEach { step ->
+            if (lacks(variables, step.url, step.body)) return null
+            val page = fetch(step, variables, base)
+            val found = step.fields.extract(page)
+            found.forEach { (name, value) -> log("  $name = $value") }
+            val missing = step.fields.keys.firstOrNull { it !in found }
+            if (missing !=
+                null
+            ) {
+                return null.also { log("$missing not found on ${page.base}") }
+            }
+            variables = variables + found
+            base = page.base
+        }
+        if (lacks(variables, recipe.download)) return null
+        val cover = recipe.cover.takeUnless { it.isEmpty() || lacks(variables, it) }
+            ?.let { resolve(base, expand(it, variables)) }
+        return offer.copy(
+            link = resolve(base, expand(recipe.download, variables)),
+            cover = cover ?: offer.cover,
+            bytes = variables["size"]?.toLongOrNull() ?: 0,
+            variables = variables,
+        )
+    }
+
+    private fun lacks(
+        variables: Map<String, String>,
+        vararg templates: String?,
+    ): Boolean {
+        val name = templates.filterNotNull().flatMap(::placeholders)
+            .firstOrNull { it !in variables } ?: return false
+        log("{$name} not found")
+        return true
+    }
+
+    fun open(offer: Offer): Response {
+        log("GET ${offer.link}")
+        val started = TimeSource.Monotonic.markNow()
+        return request(downloads, offer.link, null).also {
+            val type = it.header("Content-Type").orEmpty()
+            log("  ${it.code} · $type · ${elapsed(started)}")
+            if (verbose) logHeaders(it)
+        }
+    }
+
+    private fun fetch(
+        step: RecipeStep,
+        variables: Map<String, String>,
+        base: String?,
+    ): Scope {
+        val url = resolve(base, expand(step.url, variables))
+        val body = step.body?.let { expand(it, variables) }
+        log("${if (body == null) "GET" else "POST"} $url")
+        if (verbose && body != null) log("  body: $body")
+        val started = TimeSource.Monotonic.markNow()
+        return request(client, url, body).use { response ->
+            val text = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
+            log("  ${response.code} · ${text.length} characters · ${elapsed(started)}")
+            if (verbose) {
+                logHeaders(response)
+                log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
+            }
+            Scope(response.request.url.toString(), text)
+        }
+    }
+
+    private fun logHeaders(response: Response) =
+        response.headers.forEach { (name, value) -> log("  < $name: $value") }
+
+    private val client by lazy {
+        http.newBuilder().addNetworkInterceptor { chain ->
+            val request = chain.request()
+            if (!request.url.host.equals(site, ignoreCase = true)) {
+                return@addNetworkInterceptor chain.proceed(request)
+            }
+            val signed = request.newBuilder()
+            recipe.headers.forEach { (name, value) -> signed.header(name, value) }
+            chain.proceed(signed.build())
+        }.build()
+    }
+
+    private val downloads by lazy {
+        client.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
+    }
+
+    private fun request(client: OkHttpClient, url: String, body: String?): Response {
+        val request = Request.Builder().url(url)
+        if (body != null) request.post(body.toRequestBody(FORM))
+        val response = client.newCall(request.build()).execute()
+        generateSequence(response) { it.priorResponse }.toList().asReversed()
+            .zipWithNext { prior, next -> log("  ${prior.code} → ${next.request.url}") }
+        if (response.isSuccessful) return response
+        if (verbose) {
+            logHeaders(response)
+            val error = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
+            log("  page:\n${error.take(DEBUG_PAGE_CHARACTERS)}")
+        }
+        response.close()
+        throw HttpException(response.code, response.request.url.toString())
+    }
+
+    fun probe(query: Query) {
+        val offers = find(query)
+        offers.take(3).forEach { log("• ${it.title} · ${it.author}") }
+        val first = offers.firstOrNull() ?: return log("no item with a title")
+        val ready = complete(first) ?: return
+        ready.variables.forEach { (name, value) -> log("  $name = $value") }
+        open(ready).use { file ->
+            val bytes = file.body.contentLength()
+            log("file: ${file.header("Content-Type").orEmpty()} · $bytes bytes")
+        }
+    }
 }
 
 internal fun rank(
@@ -147,197 +382,228 @@ private fun download(response: Response, target: File, onProgress: (Float) -> Un
 
 internal fun encode(text: String) = URLEncoder.encode(text, "UTF-8").replace("+", "%20")
 
-private fun xml(body: String) = Jsoup.parse(body, "", Parser.xmlParser())
-
-private fun Element.epubLinks() = select("link").filter { it.attr("type") == EPUB_TYPE }
-
-object StandardEbooks : FeedProvider() {
-    override val id = "standard-ebooks"
-    override val name = "Standard Ebooks"
-    override val site = "standardebooks.org"
-    override val about = R.string.provider_standard_ebooks
-    override val languages = setOf("en")
-
-    override fun searchUrl(query: Query) =
-        "https://standardebooks.org/feeds/atom/all?query=${encode(query.words)}"
-
-    override fun offers(body: String, query: Query) =
-        xml(body).select("entry").mapNotNull { entry ->
-            val epub = entry.epubLinks().firstOrNull() ?: return@mapNotNull null
-            Offer(
-                this,
-                entry.selectFirst("title")?.text().orEmpty(),
-                entry.selectFirst("author name")?.text().orEmpty(),
-                epub.attr("href"),
-                entry.selectFirst("media|thumbnail")?.attr("url"),
-                epub.attr("length").toLongOrNull() ?: 0,
-            )
-        }
-}
-
-private val LANGUAGE_NOTE = Regex(""" \(\p{Lu}\p{Ll}+\)$""")
-private const val GUTENBERG_COVERS = "https://www.gutenberg.org/cache/epub"
-private val GUTENBERG_BOOK = Regex("""^https://www\.gutenberg\.org/ebooks/(\d+)\.opds$""")
-
-object Gutenberg : FeedProvider() {
-    override val id = "gutenberg"
-    override val name = "Project Gutenberg"
-    override val site = "gutenberg.org"
-    override val about = R.string.provider_gutenberg
-
-    override fun searchUrl(query: Query) =
-        "https://www.gutenberg.org/ebooks/search.opds/" +
-            "?query=${encode("${query.words} l.${query.language}")}"
-
-    override fun offers(body: String, query: Query) =
-        xml(body).select("entry").mapNotNull { entry ->
-            val page = entry.selectFirst("id")?.text().orEmpty()
-            val number = GUTENBERG_BOOK.find(page)?.groupValues?.get(1)
-                ?: return@mapNotNull null
-            val cover = "$GUTENBERG_COVERS/$number/pg$number.cover.small.jpg"
-            val title = entry.selectFirst("title")?.text().orEmpty()
-            val author = entry.selectFirst("content")?.text().orEmpty()
-            Offer(this, title.replace(LANGUAGE_NOTE, ""), author, page, cover)
-        }
-
-    override fun detailsUrl(offer: Offer) = offer.link
-
-    override fun details(offer: Offer, body: String): Offer? {
-        val epubs = xml(body).epubLinks()
-        val epub = epubs.firstOrNull { it.attr("href").endsWith(".epub3.images") }
-            ?: epubs.firstOrNull()
-            ?: return null
-        return offer.copy(
-            link = epub.attr("href"),
-            bytes = epub.attr("length").toLongOrNull() ?: 0,
-        )
-    }
-}
-
-private val VERSION_PAGES =
-    listOf("Versions pages", "Versiones", "Éditions multiples").joinToString("|") {
-        "Category:$it"
-    }
-
-@Serializable
-private class WikiResponse(val query: WikiPages = WikiPages())
-
-@Serializable
-private class WikiPages(val pages: List<WikiPage> = emptyList())
-
-@Serializable
-private class WikiPage(
-    val title: String,
-    val index: Int = 0,
-    val pageprops: Map<String, String> = emptyMap(),
-    val categories: List<JsonElement> = emptyList(),
+private class Scope(
+    val base: String,
+    private val text: String? = null,
+    private val element: Element? = null,
+    private val node: JsonElement? = null,
 ) {
-    val isWork
-        get() = '/' !in title && pageprops.isEmpty() && categories.isEmpty()
-}
+    private val source by lazy {
+        text ?: element?.outerHtml() ?: (node as? JsonPrimitive)?.content
+            ?: node.toString()
+    }
+    private val document by lazy { element ?: Jsoup.parse(source, base, parser()) }
+    private val root by lazy { node ?: json.parseToJsonElement(source) }
 
-object Wikisource : FeedProvider() {
-    override val id = "wikisource"
-    override val name = "Wikisource"
-    override val site = "wikisource.org"
-    override val about = R.string.provider_wikisource
+    val value
+        get() = element?.text() ?: (node as? JsonPrimitive)?.content ?: source
 
-    override fun searchUrl(query: Query) =
-        "https://${query.language}.wikisource.org/w/api.php?action=query&format=json" +
-            "&formatversion=2&generator=search&gsrnamespace=0&gsrlimit=20" +
-            "&prop=${encode("pageprops|categories")}&ppprop=disambiguation" +
-            "&clcategories=${encode(VERSION_PAGES)}&gsrsearch=${encode(query.words)}"
+    fun select(css: String) = document.select(css).map { Scope(base, element = it) }
 
-    override fun offers(body: String, query: Query) =
-        json.decodeFromString<WikiResponse>(body).query.pages
-            .filter { it.isWork }
-            .sortedBy { it.index }
-            .map { page ->
-                val link = "https://ws-export.wmcloud.org/?format=epub-3" +
-                    "&lang=${query.language}&page=${encode(page.title)}"
-                Offer(this, page.title, "", link)
-            }
-}
-
-private const val ARCHIVE_FILTER = " AND mediatype:texts AND format:EPUB" +
-    " AND NOT access-restricted-item:true AND NOT collection:opensource"
-
-private val ARCHIVE_LANGUAGES = mapOf(
-    "en" to listOf("eng", "English"),
-    "de" to listOf("ger", "deu", "German"),
-    "fr" to listOf("fre", "fra", "French"),
-    "es" to listOf("spa", "Spanish"),
-)
-
-@Serializable
-private class ArchiveSearch(val response: ArchiveDocuments)
-
-@Serializable
-private class ArchiveDocuments(val docs: List<ArchiveDocument>)
-
-@Serializable
-private class ArchiveDocument(
-    val identifier: String,
-    val title: JsonElement? = null,
-    val creator: JsonElement? = null,
-)
-
-@Serializable
-private class ArchiveFiles(val result: List<ArchiveFile>)
-
-@Serializable
-private class ArchiveFile(
-    val name: String,
-    val size: String = "",
-    @SerialName("private") val hidden: String = "",
-)
-
-private val CATALOGUE_NOTES =
-    Regex(""",\s*(\d{4}\??-(\d{4}\??)?|author|editor|translator|illustrator)\.?""")
-
-private fun JsonElement?.texts(): List<String> = when (this) {
-    is JsonArray -> map { it.jsonPrimitive.content }
-    is JsonPrimitive -> listOf(content)
-    else -> emptyList()
-}
-
-private fun ArchiveDocument.offer(provider: Provider): Offer {
-    val name = title.texts().firstOrNull().orEmpty().trimEnd(' ', ';', ':', '/', ',', '.')
-    val creators = creator.texts().map { it.replace(CATALOGUE_NOTES, "") }
-    val cover = "https://archive.org/services/img/$identifier"
-    return Offer(provider, name, creators.joinToString(" & "), identifier, cover)
-}
-
-object InternetArchive : FeedProvider() {
-    override val id = "internet-archive"
-    override val name = "Internet Archive"
-    override val site = "archive.org"
-    override val about = R.string.provider_internet_archive
-
-    override fun searchUrl(query: Query): String {
-        val title = tokenize(mainTitle(query.title)).joinToString(" ")
-        val author = tokenize(query.author).lastOrNull()?.let { " AND creator:($it)" }
-        val languages = ARCHIVE_LANGUAGES[query.language].orEmpty() + query.language
-        val language = " AND language:(${languages.joinToString(" OR ")})"
-        val search = encode("title:($title)${author.orEmpty()}$language$ARCHIVE_FILTER")
-        return "https://archive.org/advancedsearch.php?q=$search" +
-            "&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator&rows=20&output=json"
+    fun at(path: String): List<Scope> {
+        val found = path.split('.').filter { it.isNotEmpty() }
+            .fold<String, JsonElement?>(root) { current, key -> current.child(key) }
+            ?: return emptyList()
+        val nodes = if (found is JsonArray) found.toList() else listOf(found)
+        return nodes.map { Scope(base, node = it) }
     }
 
-    override fun offers(body: String, query: Query) =
-        json.decodeFromString<ArchiveSearch>(body).response.docs.map { it.offer(this) }
+    fun attribute(name: String): Scope {
+        val absolute = element?.takeIf { name in URL_ATTRIBUTES }?.absUrl(name).orEmpty()
+        return Scope(base, absolute.ifEmpty { element?.attr(name).orEmpty() })
+    }
 
-    override fun detailsUrl(offer: Offer) =
-        "https://archive.org/metadata/${offer.link}/files"
+    fun match(regex: Regex) = regex.scan(Deadline(source)).map { found ->
+        val text = if (found.groupCount() > 0) found.group(1).orEmpty() else found.group()
+        Scope(base, if (element == null) text else Parser.unescapeEntities(text, false))
+    }.toList()
 
-    override fun details(offer: Offer, body: String): Offer? {
-        val epub = json.decodeFromString<ArchiveFiles>(body).result
-            .firstOrNull { it.name.endsWith(".epub") && it.hidden != "true" }
-            ?: return null
-        val path = epub.name.split("/").joinToString("/", transform = ::encode)
-        return offer.copy(
-            link = "https://archive.org/download/${offer.link}/$path",
-            bytes = epub.size.toLongOrNull() ?: 0,
-        )
+    private fun parser(): Parser {
+        val xml = source.trimStart().startsWith("<?xml")
+        return if (xml) Parser.xmlParser() else Parser.htmlParser()
+    }
+}
+
+private class Deadline(
+    private val text: CharSequence,
+    private val end: ValueTimeMark = TimeSource.Monotonic.markNow() + REGEX_TIME,
+) : CharSequence by text {
+    override fun get(index: Int): Char {
+        if (end.hasPassedNow()) throw IOException("regex ran over $REGEX_TIME")
+        return text[index]
+    }
+
+    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence =
+        Deadline(text.subSequence(startIndex, endIndex), end)
+
+    override fun toString() = text.toString()
+}
+
+private fun JsonElement?.child(key: String) = when (this) {
+    is JsonObject -> this[key]
+    is JsonArray -> key.toIntOrNull()?.let(::getOrNull)
+    else -> null
+}
+
+private fun Pick.all(scope: Scope): List<Scope> {
+    var scopes = listOf(scope)
+    css?.let { selector -> scopes = scopes.flatMap { it.select(selector) } }
+    json?.let { path -> scopes = scopes.flatMap { it.at(path) } }
+    attr?.let { name -> scopes = scopes.map { it.attribute(name) } }
+    regex?.let { pattern -> scopes = scopes.flatMap { it.match(Regex(pattern)) } }
+    return scopes
+}
+
+private fun Pick.first(scope: Scope) =
+    all(scope).firstOrNull()?.value?.trim()?.takeIf { it.isNotEmpty() }
+
+private fun Map<String, Pick>.extract(scope: Scope) =
+    mapNotNull { (name, pick) -> pick.first(scope)?.let { name to it } }.toMap()
+
+internal fun expand(template: String, variables: Map<String, String>) =
+    PLACEHOLDER.replace(template) { match ->
+        val (raw, name) = match.destructured
+        val value = requireNotNull(variables[name]) { "unknown variable {$name}" }
+        if (raw.isEmpty()) encode(value) else value
+    }
+
+private fun resolve(base: String?, url: String) =
+    if (base == null) url else URI(base).resolve(url).toString()
+
+private fun placeholders(template: String) =
+    PLACEHOLDER.findAll(template).map { it.groupValues[2] }.toList()
+
+private fun Query.variables(): Map<String, String> {
+    val locale = Locale.forLanguageTag(language)
+    return mapOf(
+        "query" to words,
+        "title" to title,
+        "author" to author,
+        "titleWords" to tokenize(mainTitle(title)).joinToString(" "),
+        "surname" to tokenize(author).lastOrNull().orEmpty(),
+        "language" to language,
+        "language3" to (BIBLIOGRAPHIC_CODES[language] ?: locale.isO3Language),
+        "languageName" to locale.getDisplayLanguage(Locale.ENGLISH),
+        "isbn" to isbns.firstOrNull().orEmpty(),
+        "isbns" to isbns.joinToString(","),
+    )
+}
+
+private fun elapsed(started: ValueTimeMark) =
+    "${started.elapsedNow().inWholeMilliseconds} ms"
+
+private fun hideQuery(url: String) = url.replace(QUERY_VALUE, "$1$HIDDEN")
+
+private fun RecipeStep.redacted() = copy(
+    url = hideQuery(url),
+    body = body?.let {
+        HIDDEN
+    },
+)
+
+fun Recipe.redacted() = copy(
+    headers = headers.mapValues { HIDDEN },
+    search = search.redacted(),
+    steps = steps.map { it.redacted() },
+    download = hideQuery(download),
+)
+
+fun Recipe.redact(text: String) = headers.values.filter { it.isNotBlank() }
+    .fold(text) { result, secret -> result.replace(secret, HIDDEN) }
+    .let(::hideQuery)
+    .replace(SECRET_HEADER, "$1 $HIDDEN")
+    .replace(BODY_LINE, "$1 $HIDDEN")
+
+fun Recipe.problems(): List<String> = buildList {
+    if (name.isBlank()) add("name is empty")
+    if (search.items == null) add("search needs items")
+    if ("title" !in search.fields) add("search needs a title field")
+    if (format !in READABLE_EXTENSIONS) add("format $format cannot be read")
+    var known = QUERY_VARIABLES
+    (listOf(search) + steps).forEachIndexed { index, step ->
+        templateProblem(step.url, known, url = true, absolute = index == 0)?.let(::add)
+        step.body?.let { templateProblem(it, known, url = false) }?.let(::add)
+        (step.fields.values + listOfNotNull(step.items)).mapNotNull { it.problem() }
+            .forEach(::add)
+        known = known + step.fields.keys
+    }
+    templateProblem(download, known, url = true)?.let(::add)
+    if (cover.isNotEmpty()) templateProblem(cover, known, url = true)?.let(::add)
+}
+
+private fun templateProblem(
+    template: String,
+    known: Set<String>,
+    url: Boolean,
+    absolute: Boolean = false,
+): String? {
+    val unknown = placeholders(template).firstOrNull { it !in known }
+    if (unknown != null) return "unknown variable {$unknown} in $template"
+    if (!url || template.startsWith("{+")) return null
+    val sample = runCatching { URI(expand(template, known.associateWith { "x" })) }
+        .getOrNull() ?: return "invalid URL $template"
+    if (sample.isAbsolute || !absolute) return null
+    return "$template must be an absolute URL"
+}
+
+val Pick.isEmpty
+    get() = listOfNotNull(css, json, attr, regex).isEmpty()
+
+fun firstLine(error: Throwable) =
+    error.message?.lineSequence()?.firstOrNull().orEmpty().take(200)
+
+private fun Pick.problem(): String? {
+    if (isEmpty) return "empty rule"
+    val error = runCatching {
+        css?.let { Jsoup.parse("").select(it) }
+        regex?.let { Regex(it) }
+    }.exceptionOrNull() ?: return null
+    return "invalid rule: ${firstLine(error)}"
+}
+
+data class Imported(val added: List<Recipe>, val total: Int)
+
+class Sources(private val context: Context) {
+    private val file = context.filesDir.resolve(SOURCES_FILE)
+    private val writing = Mutex()
+    val own = MutableStateFlow(read())
+    val bundled by lazy {
+        context.assets.list(BUNDLED_SOURCES).orEmpty().sorted().map { name ->
+            val text = context.assets.open("$BUNDLED_SOURCES/$name")
+                .use { it.readBytes().decodeToString() }
+            parseRecipe(text).getOrThrow().copy(id = name.removeSuffix(".json"))
+        }
+    }
+
+    private fun read() =
+        runCatching { json.decodeFromString<List<Recipe>>(file.readText()) }
+            .getOrDefault(emptyList())
+
+    suspend fun save(recipe: Recipe) = write { recipes ->
+        val replaced = recipes.map { if (it.id == recipe.id) recipe else it }
+        if (recipes.any { it.id == recipe.id }) replaced else recipes + recipe
+    }
+
+    suspend fun remove(id: String) = write { recipes -> recipes.filter { it.id != id } }
+
+    suspend fun import(uri: Uri): Imported? {
+        val text =
+            context.readFrom(uri) { it.readBytes().decodeToString() } ?: return null
+        val found = parseRecipes(text).getOrNull() ?: return null
+        val added = found.filter { it.problems().isEmpty() }
+            .map { it.copy(id = UUID.randomUUID().toString()) }
+        write { recipes -> recipes + added }
+        return Imported(added, found.size)
+    }
+
+    suspend fun export(uri: Uri) =
+        context.writeTo(uri) { it.write(recipesText(own.value).toByteArray()) }
+
+    private suspend fun write(change: (List<Recipe>) -> List<Recipe>) = writing.withLock {
+        withContext(Dispatchers.IO) {
+            val next = change(own.value)
+            replaceFile(file) { it.writeText(json.encodeToString(next)) }
+            own.value = next
+        }
     }
 }

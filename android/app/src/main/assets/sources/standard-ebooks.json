@@ -1,0 +1,22 @@
+{
+  "name": "Standard Ebooks",
+  "about": {
+    "en": "Carefully formatted classics",
+    "de": "Sorgfältig gesetzte Klassiker",
+    "fr": "Classiques soigneusement mis en forme",
+    "es": "Clásicos cuidadosamente maquetados"
+  },
+  "search": {
+    "url": "https://standardebooks.org/feeds/atom/all?query={query}",
+    "items": { "css": "entry" },
+    "fields": {
+      "title": { "css": "title" },
+      "author": { "css": "author > name" },
+      "cover": { "css": "media|thumbnail", "attr": "url" },
+      "file": { "css": "link[type=\"application/epub+zip\"]", "attr": "href" },
+      "size": { "css": "link[type=\"application/epub+zip\"]", "attr": "length" }
+    }
+  },
+  "download": "{+file}",
+  "languages": ["en"]
+}

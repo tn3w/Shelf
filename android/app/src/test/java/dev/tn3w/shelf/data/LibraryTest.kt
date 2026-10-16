@@ -99,8 +99,8 @@ class LibraryTest {
         val imported = Settings(
             catalogueSource = "https://evil.example/manifest.json",
             coverSource = "https://evil.example",
-            providers = setOf(Gutenberg.id),
-            instantSource = Gutenberg.id,
+            providers = setOf("gutenberg"),
+            instantSource = "gutenberg",
         )
         preferences.merge(Backup(settings = imported.copy(margin = 44)))
         val merged = json.decodeFromString<Settings>(preferences[settings]!!)

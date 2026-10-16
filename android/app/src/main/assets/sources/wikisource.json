@@ -1,0 +1,18 @@
+{
+  "name": "Wikisource",
+  "about": {
+    "en": "Transcribed texts from Wikimedia",
+    "de": "Transkribierte Texte von Wikimedia",
+    "fr": "Textes transcrits par Wikimedia",
+    "es": "Textos transcritos de Wikimedia"
+  },
+  "search": {
+    "url": "https://{language}.wikisource.org/w/api.php?action=query&format=json&formatversion=2&generator=search&gsrnamespace=0&gsrlimit=20&prop=pageprops%7Ccategories&ppprop=disambiguation&clcategories=Category%3AVersions%20pages%7CCategory%3AVersiones%7CCategory%3A%C3%89ditions%20multiples&gsrsearch={query}",
+    "items": { "json": "query.pages" },
+    "fields": {
+      "title": { "json": "title" },
+      "skip": { "regex": "\"(?:pageprops|categories)\":|\"title\":\"[^\"]*/" }
+    }
+  },
+  "download": "https://ws-export.wmcloud.org/?format=epub-3&lang={language}&page={title}"
+}

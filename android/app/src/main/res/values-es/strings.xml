@@ -292,10 +292,6 @@
     <string name="free_books_no_source">Ninguna fuente elegida tiene libros en este idioma.</string>
     <string name="free_books_rights">El dominio público varía según el país. Consulta la ley local.</string>
     <string name="free_ebook">Libro libre</string>
-    <string name="provider_standard_ebooks">Clásicos cuidadosamente maquetados</string>
-    <string name="provider_gutenberg">Libros de dominio público en muchos idiomas</string>
-    <string name="provider_wikisource">Textos transcritos de Wikimedia</string>
-    <string name="provider_internet_archive">Libros de dominio público escaneados</string>
     <string name="free_books_retry">Reintentar</string>
     <string name="provider_own">Fuente propia</string>
     <string name="free_books_own">Fuentes propias</string>
@@ -323,7 +319,7 @@
     <string name="free_books_header_value">Valor</string>
     <string name="free_books_languages">Idiomas</string>
     <string name="free_books_attribute">Atributo</string>
-    <string name="free_books_form_help">{name} inserta una variable codificada para URL, {+name} tal cual. La búsqueda conoce {query}, {title}, {author}, {language}, {isbn} e {isbns}; cada regla añade su nombre. Una búsqueda con {isbn} prueba los ISBN del libro uno a uno y conserva todos los resultados. Las reglas aplican CSS, luego ruta JSON, luego atributo, luego regex (primer grupo). Los enlaces relativos se resuelven respecto a la página anterior.</string>
+    <string name="free_books_form_help">{name} inserta una variable codificada para URL, {+name} tal cual. La búsqueda conoce {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} e {isbns}; cada regla añade su nombre. Una búsqueda con {isbn} prueba los ISBN del libro uno a uno y conserva todos los resultados. Las reglas aplican CSS, luego ruta JSON, luego atributo, luego regex (primer grupo); las páginas XML se leen como XML. Las reglas llamadas size (bytes) y format describen el archivo, skip descarta el elemento. Los enlaces relativos se resuelven respecto a la página anterior.</string>
     <string name="free_books_test">Probar</string>
     <string name="free_books_test_hint">Busca, ejecuta todos los pasos para el primer elemento y abre el archivo sin descargarlo. La prueba de depuración también registra cabeceras, páginas y elementos y guarda el registro; los valores de las cabeceras se ocultan, revisa las URL antes de compartir.</string>
     <plurals name="free_books_imported">
