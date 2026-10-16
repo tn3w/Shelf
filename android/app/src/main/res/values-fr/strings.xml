@@ -300,6 +300,9 @@
     <string name="provider_own">Source personnelle</string>
     <string name="free_books_own">Sources personnelles</string>
     <string name="free_books_own_hint">Tout site, serveur local ou API, décrit sous forme de données : recherche, extraction, autres requêtes, téléchargement. Aucun script n\'est exécuté. Stocké uniquement sur cet appareil ; les fichiers exportés contiennent les en-têtes comme les clés d\'API.</string>
+    <string name="instant_source">Source instantanée</string>
+    <string name="instant_source_hint">Sur un livre sans fichier, le bouton de lecture télécharge le premier résultat de cette source et l\'ouvre. Sans résultat, il demande un fichier.</string>
+    <string name="instant_source_off">Désactivée</string>
     <string name="free_books_add">Créer une source</string>
     <string name="free_books_import">Importer un fichier</string>
     <string name="free_books_export">Exporter un fichier</string>

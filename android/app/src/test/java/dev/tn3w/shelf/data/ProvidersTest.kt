@@ -26,6 +26,13 @@ class ProvidersTest {
     }
 
     @Test
+    fun instantSourceIsOffByDefault() {
+        assertNull(Settings().instantProvider())
+        assertNull(Settings(instantSource = "gone").instantProvider())
+        assertEquals(Gutenberg, Settings(instantSource = Gutenberg.id).instantProvider())
+    }
+
+    @Test
     fun providerIdsAreUnique() {
         assertEquals(PROVIDERS.size, PROVIDERS.map { it.id }.toSet().size)
     }

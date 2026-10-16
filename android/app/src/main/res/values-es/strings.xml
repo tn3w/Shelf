@@ -300,6 +300,9 @@
     <string name="provider_own">Fuente propia</string>
     <string name="free_books_own">Fuentes propias</string>
     <string name="free_books_own_hint">Cualquier sitio, servidor local o API, descrito como datos: buscar, extraer, más peticiones, descargar. No se ejecutan scripts. Solo se guarda en este dispositivo; los archivos exportados incluyen cabeceras como claves de API.</string>
+    <string name="instant_source">Fuente instantánea</string>
+    <string name="instant_source_hint">En un libro sin archivo, el botón de leer descarga el primer resultado de esta fuente y lo abre. Sin resultados, pide un archivo.</string>
+    <string name="instant_source_off">Desactivada</string>
     <string name="free_books_add">Crear fuente</string>
     <string name="free_books_import">Importar archivo</string>
     <string name="free_books_export">Exportar archivo</string>

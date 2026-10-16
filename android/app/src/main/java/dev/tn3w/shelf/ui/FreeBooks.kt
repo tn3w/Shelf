@@ -21,13 +21,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -42,6 +45,46 @@ fun FreeBookSettings() {
         stringResource(R.string.free_books_own),
         stringResource(R.string.free_books_own_hint),
     ) { OwnSourceRows(settings, update, enabled = !offline) }
+    SettingsGroup(
+        stringResource(R.string.instant_source),
+        stringResource(R.string.instant_source_hint),
+    ) { InstantSourceRows(settings, update, enabled = !offline) }
+}
+
+@Composable
+private fun InstantSourceRows(
+    settings: Settings,
+    update: SettingsUpdate,
+    enabled: Boolean,
+) {
+    val own by shelfApp().ownSources.recipes.collectAsStateWithLifecycle()
+    val selected = settings.instantProvider(own)?.id.orEmpty()
+    val options = listOf("" to stringResource(R.string.instant_source_off)) +
+        allProviders(own).map { it.id to it.name }
+    options.forEach { (id, name) ->
+        fun select() = update { it.copy(instantSource = id) }
+        SettingRow(name, enabled = enabled, onClick = ::select) {
+            RadioButton(selected = id == selected, onClick = ::select, enabled = enabled)
+        }
+    }
+}
+
+suspend fun ShelfApp.downloadInstantly(
+    book: Book,
+    settings: Settings,
+    onProgress: (Float) -> Unit,
+): Boolean {
+    val provider = settings.instantProvider(ownSources.recipes.value) ?: return false
+    val language = bookLanguage(settings)
+    if (!provider.serves(language)) return false
+    val isbns = isbnsOf(book, catalogue = provider is OwnSource && provider.usesIsbn)
+    val query = Query(book.title, book.author, language, isbns)
+    val offer = runCatching { provider.search(query) }
+        .onFailure { if (it is CancellationException) throw it }
+        .getOrNull()
+        ?.firstOrNull()
+        ?: return false
+    return library.download(book, offer, onProgress)
 }
 
 @Composable
@@ -106,19 +149,18 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
 @Composable
 private fun bookIsbns(book: Book, catalogue: Boolean): List<String>? {
     val app = shelfApp()
-    val saved by app.library.saved.collectAsStateWithLifecycle(null)
-    val entries = saved ?: return null
-    val own = entries.firstOrNull { it.work == book.work }?.isbn.orEmpty()
-    return produceState<List<String>?>(null, book.work, own, catalogue) {
-        val editions = if (catalogue) {
-            withContext(Dispatchers.IO) {
-                app.loaded.value?.catalogueOf(book.work)?.isbnsOf(book.work).orEmpty()
-            }
-        } else {
-            emptyList()
-        }
-        value = isbnsFor(book, own, editions)
+    return produceState<List<String>?>(null, book.work, catalogue) {
+        value = app.isbnsOf(book, catalogue)
     }.value
+}
+
+private suspend fun ShelfApp.isbnsOf(book: Book, catalogue: Boolean): List<String> {
+    val own = library.saved.first().firstOrNull { it.work == book.work }?.isbn.orEmpty()
+    if (!catalogue) return isbnsFor(book, own, emptyList())
+    val editions = withContext(Dispatchers.IO) {
+        loaded.value?.catalogueOf(book.work)?.isbnsOf(book.work).orEmpty()
+    }
+    return isbnsFor(book, own, editions)
 }
 
 @Composable
@@ -290,9 +332,9 @@ private fun OfferCover(url: String?) = Box(
 }
 
 @Composable
-private fun DownloadProgress(value: Float) {
+fun DownloadProgress(value: Float, size: Dp = 24.dp) {
     val progress by animateFloatAsState(value)
-    val modifier = Modifier.size(24.dp)
+    val modifier = Modifier.size(size)
     if (value > 0f) {
         CircularProgressIndicator(progress = { progress }, modifier, strokeWidth = 3.dp)
     } else {

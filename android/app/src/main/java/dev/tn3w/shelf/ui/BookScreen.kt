@@ -1,6 +1,8 @@
 package dev.tn3w.shelf.ui
 
 import android.net.Uri
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.StringRes
@@ -123,13 +125,6 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
         val cover = app.library.saveCover(book.work, image) ?: return@launch
         app.library.place(book.copy(cover = cover), shelf ?: Shelf.Reading)
     }
-    val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val work = book.work.takeIf { app.library.importBook(book, uri) }
-            navigator.openImported(work, app)
-        }
-    }
 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
@@ -175,26 +170,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             Modifier.padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Button(
-                onClick = {
-                    scope.launch {
-                        if (app.library.hasFile(position)) {
-                            navigator.reader(book.work)
-                        } else {
-                            picker.launch(arrayOf("*/*"))
-                        }
-                    }
-                },
-            ) {
-                Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
-                val label = position?.fraction?.let {
-                    stringResource(R.string.continue_percent, (it * 100).toInt())
-                }
-                    ?: stringResource(
-                        if (position != null) R.string.resume else R.string.start,
-                    )
-                Text(label, Modifier.padding(start = 8.dp))
-            }
+            ReadButton(book, position, online, navigator)
             ShelfToggle(
                 shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
@@ -231,6 +207,52 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
                 navigator.back()
             }
         }
+    }
+}
+
+@Composable
+private fun ReadButton(
+    book: Book,
+    position: Progress?,
+    online: Boolean,
+    navigator: Navigator,
+) {
+    val app = shelfApp()
+    val scope = rememberCoroutineScope()
+    val settings = loadedSettings()
+    var download by remember { mutableStateOf<Float?>(null) }
+    val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val work = book.work.takeIf { app.library.importBook(book, uri) }
+            navigator.openImported(work, app)
+        }
+    }
+    suspend fun downloaded(): Boolean {
+        val chosen = settings?.takeIf { online && it.instantSource.isNotEmpty() }
+            ?: return false
+        download = 0f
+        val done = app.downloadInstantly(book, chosen) { download = it }
+        download = null
+        if (!done) Toast.makeText(app, R.string.free_books_failed, LENGTH_SHORT).show()
+        return done
+    }
+    fun open() = scope.launch {
+        val ready = app.library.hasFile(position) || downloaded()
+        if (ready) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
+    }
+
+    Button(onClick = ::open, enabled = download == null) {
+        val progress = download
+        if (progress == null) {
+            Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
+        } else {
+            DownloadProgress(progress, 18.dp)
+        }
+        val label = position?.fraction?.let {
+            stringResource(R.string.continue_percent, (it * 100).toInt())
+        } ?: stringResource(if (position != null) R.string.resume else R.string.start)
+        Text(label, Modifier.padding(start = 8.dp))
     }
 }
 

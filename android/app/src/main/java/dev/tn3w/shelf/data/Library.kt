@@ -123,6 +123,7 @@ data class Settings(
     val coverSource: String = "",
     val dnbCoverSource: String = "",
     val providers: Set<String> = emptySet(),
+    val instantSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
 ) {
@@ -598,6 +599,7 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     coverSource = current.coverSource,
     dnbCoverSource = current.dnbCoverSource,
     providers = current.providers,
+    instantSource = current.instantSource,
 )
 
 internal fun MutablePreferences.redirect(alias: (Int) -> Int?) {

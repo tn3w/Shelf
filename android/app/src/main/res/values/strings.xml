@@ -293,6 +293,9 @@
     <string name="provider_own">Own source</string>
     <string name="free_books_own">Own sources</string>
     <string name="free_books_own_hint">Any site, local server or API, described as data: search, extract, more requests, download. No scripts run. Stored on this device only; exported files include headers such as API keys.</string>
+    <string name="instant_source">Instant source</string>
+    <string name="instant_source_hint">On a book without a file, the read button downloads the first match from this source and opens it. Without a match, it asks for a file.</string>
+    <string name="instant_source_off">Off</string>
     <string name="free_books_add">Create source</string>
     <string name="free_books_import">Import file</string>
     <string name="free_books_export">Export file</string>

@@ -292,6 +292,9 @@
     <string name="provider_own">Eigene Quelle</string>
     <string name="free_books_own">Eigene Quellen</string>
     <string name="free_books_own_hint">Jede Website, jeder lokale Server oder jede API, als Daten beschrieben: suchen, auslesen, weitere Anfragen, herunterladen. Es laufen keine Skripte. Nur auf diesem Gerät gespeichert; exportierte Dateien enthalten Header wie API-Schlüssel.</string>
+    <string name="instant_source">Sofortquelle</string>
+    <string name="instant_source_hint">Bei einem Buch ohne Datei lädt der Lesen-Knopf den ersten Treffer dieser Quelle und öffnet ihn. Ohne Treffer fragt er nach einer Datei.</string>
+    <string name="instant_source_off">Aus</string>
     <string name="free_books_add">Quelle erstellen</string>
     <string name="free_books_import">Datei importieren</string>
     <string name="free_books_export">Datei exportieren</string>

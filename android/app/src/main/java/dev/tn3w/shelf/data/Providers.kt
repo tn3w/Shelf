@@ -93,6 +93,9 @@ fun allProviders(own: List<Recipe>) = PROVIDERS + own.map(::OwnSource)
 fun Settings.enabledProviders(own: List<Recipe> = emptyList()) =
     allProviders(own).filter { it.id in providers }
 
+fun Settings.instantProvider(own: List<Recipe> = emptyList()) =
+    allProviders(own).firstOrNull { it.id == instantSource }
+
 fun Provider.serves(language: String) = languages.isEmpty() || language in languages
 
 suspend fun Provider.search(query: Query) = withContext(Dispatchers.IO) {
