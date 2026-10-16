@@ -513,8 +513,9 @@ fun <T> Choice(
 @Composable
 private fun AppLanguageChoice() {
     val manager = LocalContext.current.getSystemService(LocaleManager::class.java)
+    val chosen = manager.applicationLocales[0]?.language
     var current by remember {
-        mutableStateOf(manager.applicationLocales.toLanguageTags())
+        mutableStateOf(chosen?.takeIf { it in LANGUAGES }.orEmpty())
     }
     LanguageChoice(current, R.string.app_language) { language ->
         current = language

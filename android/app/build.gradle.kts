@@ -88,6 +88,10 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
+    lint {
+        warning += "MissingTranslation"
+    }
+
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false

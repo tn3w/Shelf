@@ -318,6 +318,9 @@ App strings and store listing are translated on
 [Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
 from its `weblate` branch.
 
+App languages without catalogue (Eesti) apply via Auto or system app settings;
+catalogue then falls back to English.
+
 ## Project
 
 <table>
