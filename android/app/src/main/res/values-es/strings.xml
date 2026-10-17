@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Acerca de</string>
     <string name="about_book">Sobre este libro</string>
@@ -116,43 +117,43 @@
     <string name="welcome_text">Encuentra, sigue y lee libros sin conexión.</string>
     <plurals name="books">
         <item quantity="one">%d libro</item>
-        <item quantity="other">%d libros</item>
         <item quantity="many">%d libros</item>
+        <item quantity="other">%d libros</item>
     </plurals>
     <plurals name="books_in_series">
         <item quantity="one">%d libro en esta serie</item>
-        <item quantity="other">%d libros en esta serie</item>
         <item quantity="many">%d libros en esta serie</item>
+        <item quantity="other">%d libros en esta serie</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d día seguido</item>
-        <item quantity="other">%d días seguidos</item>
         <item quantity="many">%d días seguidos</item>
+        <item quantity="other">%d días seguidos</item>
     </plurals>
     <plurals name="editions">
         <item quantity="one">%d edición</item>
-        <item quantity="other">%d ediciones</item>
         <item quantity="many">%d ediciones</item>
+        <item quantity="other">%d ediciones</item>
     </plurals>
     <plurals name="keep_streak">
         <item quantity="one">Lee %d página hoy para mantener la racha.</item>
-        <item quantity="other">Lee %d páginas hoy para mantener la racha.</item>
         <item quantity="many">Lee %d páginas hoy para mantener la racha.</item>
+        <item quantity="other">Lee %d páginas hoy para mantener la racha.</item>
     </plurals>
     <plurals name="pages_left">
         <item quantity="one">%d página más para tu racha.</item>
-        <item quantity="other">%d páginas más para tu racha.</item>
         <item quantity="many">%d páginas más para tu racha.</item>
+        <item quantity="other">%d páginas más para tu racha.</item>
     </plurals>
     <plurals name="readers">
         <item quantity="one">%d lector</item>
-        <item quantity="other">%d lectores</item>
         <item quantity="many">%d lectores</item>
+        <item quantity="other">%d lectores</item>
     </plurals>
     <plurals name="start_streak">
         <item quantity="one">Lee %d página para empezar una racha.</item>
-        <item quantity="other">Lee %d páginas para empezar una racha.</item>
         <item quantity="many">Lee %d páginas para empezar una racha.</item>
+        <item quantity="other">Lee %d páginas para empezar una racha.</item>
     </plurals>
     <string name="because_you_read">Porque leíste %1$s</string>
     <string name="next_in_series">Lo siguiente en tus sagas</string>
@@ -321,14 +322,16 @@
     <string name="free_books_header_value">Valor</string>
     <string name="free_books_languages">Idiomas</string>
     <string name="free_books_attribute">Atributo</string>
-    <string name="free_books_form_help">{name} inserta una variable codificada para URL, {+name} tal cual. La búsqueda conoce {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} e {isbns}; cada regla añade su nombre. Una búsqueda con {isbn} prueba los ISBN del libro uno a uno y conserva todos los resultados. Las reglas aplican CSS, luego ruta JSON, luego atributo, luego regex (primer grupo); las páginas XML se leen como XML. Las reglas llamadas size (bytes) y format describen el archivo, skip descarta el elemento. Los enlaces relativos se resuelven respecto a la página anterior.</string>
+    <string name="free_books_form_help">{name} inserta una variable codificada para URL, {+name} tal cual. La búsqueda conoce {query}, {title}, {author}, {language}, {isbn} e {isbns}; cada regla añade su nombre. Una búsqueda con {isbn} prueba los ISBN del libro uno a uno y conserva todos los resultados. Las reglas aplican CSS, luego ruta JSON, luego atributo, luego regex (primer grupo). Los enlaces relativos se resuelven respecto a la página anterior.</string>
     <string name="free_books_test">Probar</string>
     <string name="free_books_test_hint">Busca, ejecuta todos los pasos para el primer elemento y abre el archivo sin descargarlo. La prueba de depuración también registra cabeceras, páginas y elementos y guarda el registro; los valores de las cabeceras se ocultan, revisa las URL antes de compartir.</string>
     <plurals name="free_books_imported">
         <item quantity="one">%1$d de %2$d fuente importada</item>
-        <item quantity="other">%1$d de %2$d fuentes importadas</item>
         <item quantity="many">%1$d de %2$d fuentes importadas</item>
+        <item quantity="other">%1$d de %2$d fuentes importadas</item>
     </plurals>
     <string name="free_books_debug">Prueba de depuración</string>
     <string name="free_books_debug_saved">Registro de depuración guardado</string>
+    <string name="free_books_isbn" translatable="false"></string>
+    <string name="app_name" translatable="false"></string>
 </resources>
