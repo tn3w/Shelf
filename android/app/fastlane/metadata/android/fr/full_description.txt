@@ -10,7 +10,7 @@ Shelf est un catalogue de livres hors ligne issu d'Open Library.
 * Recommandations calculées sur l'appareil
 * Lecteur EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, CB7, DOCX, ODT, RTF, TXT et HTML, fichiers importés ou ouverts depuis toute app
 * Confort de lecture : taille, interligne, marges, police, pages papier et nuit, touches de page
-* Catalogues en anglais, allemand, français et espagnol avec packs optionnels
+* Catalogues en anglais, allemand, français, espagnol et estonien avec packs optionnels
 * Auto-hébergeable : source de catalogue et serveur de couvertures personnels, ou import de fichiers
 
 Aucun pistage, aucune publicité, aucun compte.

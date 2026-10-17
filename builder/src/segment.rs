@@ -248,10 +248,9 @@ fn collect_terms(
 ) -> BTreeMap<String, Postings> {
     let mut terms: BTreeMap<String, Postings> = BTreeMap::new();
     for (index, work) in works.iter().enumerate() {
-        for token in tokenize(work.title)
-            .into_iter()
-            .chain(tokenize(work.alternate))
-        {
+        let series = work.series.map_or("", |(series, _)| series.name.as_str());
+        let text = [work.title, work.alternate, series];
+        for token in text.into_iter().flat_map(tokenize) {
             push_unique(&mut terms.entry(token).or_default().titles, index as u32);
         }
     }
@@ -756,6 +755,21 @@ mod tests {
         assert_eq!(rows, vec![(0, 1, 375_120_527), (2, 1, 7)]);
         let hashed = |work: &Work| content_hash(work, &Authors::default());
         assert_ne!(hashed(&works[0]), hashed(&work(4, None)));
+    }
+
+    #[test]
+    fn series_names_searchable() {
+        let series = Series {
+            name: "Gregs Tagebuch".to_string(),
+            members: vec![4],
+        };
+        let works = [Work {
+            series: Some((&series, 3)),
+            ..work(4, None)
+        }];
+        let terms = collect_terms(&works, &[], &Authors::default());
+        assert!(terms.contains_key("gregs") && terms.contains_key("tagebuch"));
+        assert!(terms.contains_key("jetzt"));
     }
 
     #[test]

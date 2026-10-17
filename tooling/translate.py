@@ -19,13 +19,14 @@ NLLB_CODES = {
     "de": "deu_Latn",
     "fr": "fra_Latn",
     "es": "spa_Latn",
+    "et": "est_Latn",
     "pt": "por_Latn",
     "it": "ita_Latn",
     "nl": "nld_Latn",
     "sv": "swe_Latn",
     "da": "dan_Latn",
 }
-OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa"}
+OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "et": "est"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
 PLACEHOLDER = "@{}@"
 PLACEHOLDER_PATTERN = re.compile(r"@\s?(\d{1,2})\s?@")

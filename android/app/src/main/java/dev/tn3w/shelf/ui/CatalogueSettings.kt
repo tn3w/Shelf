@@ -182,6 +182,19 @@ private val DNB_COVER_SOURCE = SourceField(
     ::isValidCoverSource,
 ) { source -> library.updateSettings { it.copy(dnbCoverSource = source) } }
 
+private val DIGAR_COVER_SOURCE = SourceField(
+    R.string.digar_cover_source,
+    R.string.digar_cover_source_hint,
+    DIGAR_COVERS,
+    Settings::digarCoverSource,
+    ::isValidCoverSource,
+) { source -> library.updateSettings { it.copy(digarCoverSource = source) } }
+
+private val LIBRARY_COVER_SOURCES = mapOf(
+    "de" to DNB_COVER_SOURCE,
+    "et" to DIGAR_COVER_SOURCE,
+)
+
 @Composable
 fun SourceRows(
     language: String,
@@ -214,8 +227,8 @@ fun SourceRows(
         onChange()
     }
 
-    val german = DNB_COVER_SOURCE.takeIf { language == "de" }
-    listOfNotNull(CATALOGUE_SOURCE, COVER_SOURCE, german).forEach { field ->
+    val libraryCovers = LIBRARY_COVER_SOURCES[language]
+    listOfNotNull(CATALOGUE_SOURCE, COVER_SOURCE, libraryCovers).forEach { field ->
         val value = field.current(settings).ifEmpty { field.default }
         LinkRow(stringResource(field.title), value.removePrefix("https://")) {
             editing = field

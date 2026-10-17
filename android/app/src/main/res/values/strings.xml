@@ -248,6 +248,8 @@
     <string name="cover_source_hint">Base URL of an Open Library covers server, https only. Empty means the default.</string>
     <string name="dnb_cover_source">DNB cover server</string>
     <string name="dnb_cover_source_hint">Base URL of the German National Library cover service, https only. Empty means the default.</string>
+    <string name="digar_cover_source">DIGAR cover server</string>
+    <string name="digar_cover_source_hint">Base URL of the DIGAR archive of the National Library of Estonia, https only. Empty means the default.</string>
     <string name="catalogue_incomplete">Import both the core and the ranks file of one language.</string>
     <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
     <string name="open_settings">Open settings</string>

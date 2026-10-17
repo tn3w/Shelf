@@ -1,7 +1,7 @@
-use crate::LANGUAGES;
 use crate::catalog::{Entry, MAX_SERIES_MEMBERS, is_mostly_latin, series_key, tokenize};
 use crate::dumps::Book;
 use crate::tags;
+use crate::{LANGUAGE_COUNT, LANGUAGES};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -406,7 +406,7 @@ fn manifest_entry(output: &Path, published: &Published, base_url: &str) -> Value
     })
 }
 
-fn is_kept(entry: &Value, rebased: &[bool; 4]) -> bool {
+fn is_kept(entry: &Value, rebased: &[bool; LANGUAGE_COUNT]) -> bool {
     let language = entry["language"].as_str().unwrap_or_default();
     let Some(index) = LANGUAGES.iter().position(|&known| known == language) else {
         return false;
@@ -418,7 +418,7 @@ pub fn write_manifest(
     previous: Option<&Path>,
     output: &Path,
     month: &str,
-    rebased: &[bool; 4],
+    rebased: &[bool; LANGUAGE_COUNT],
     published: &[Published],
     base_url: &str,
 ) {

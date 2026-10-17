@@ -3,7 +3,13 @@ import { Searcher, authorBooks, popular } from "./search.js"
 
 const CATALOGUE = "../catalogue/"
 const COVERS = "https://covers.openlibrary.org"
-const LANGUAGES = { en: "English", de: "Deutsch", fr: "Français", es: "Español" }
+const LANGUAGES = {
+  en: "English",
+  de: "Deutsch",
+  fr: "Français",
+  es: "Español",
+  et: "Eesti",
+}
 const SHELVES = { Reading: "Reading", Want: "Want to read", Read: "Finished" }
 const SECTIONS = { audience: "Age group", form: "Book types", topic: "Topics" }
 

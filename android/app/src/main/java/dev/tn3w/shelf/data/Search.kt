@@ -48,7 +48,8 @@ private val FOLD = buildMap {
         "ñÑ" to 'n',
         "çÇ" to 'c',
         "ýÿÝ" to 'y',
-        "ß" to 's',
+        "ßšŠ" to 's',
+        "žŽ" to 'z',
     )
         .forEach { (characters, replacement) ->
             characters.forEach { put(it, replacement) }
@@ -288,14 +289,19 @@ class Searcher(private val catalogue: Catalogue) {
         val completing = query.last() != lastToken &&
             (query.last().startsWith(lastToken) || lastToken.startsWith(query.last()))
         val joinedQuery = query.joinToString(" ")
-        val bestTitle = listOf(book.title to 1.0, book.alternate to ALTERNATE)
-            .filter { it.first.isNotEmpty() }
-            .maxOfOrNull { (text, discount) ->
-                titleValue(text, book.subtitle, query, joinedQuery, completing) *
-                    discount
-            }
-            ?.coerceAtLeast(0.0) ?: 0.0
-        val words = tokenize("${book.title} ${book.subtitle} ${book.alternate}").toSet()
+        val labelled = catalogue.series(book.work)?.let {
+            "${it.name} ${book.title}"
+        }.orEmpty()
+        val bestTitle =
+            listOf(book.title to 1.0, book.alternate to ALTERNATE, labelled to ALTERNATE)
+                .filter { it.first.isNotEmpty() }
+                .maxOfOrNull { (text, discount) ->
+                    titleValue(text, book.subtitle, query, joinedQuery, completing) *
+                        discount
+                }
+                ?.coerceAtLeast(0.0) ?: 0.0
+        val words = tokenize("$labelled ${book.title} ${book.subtitle} ${book.alternate}")
+            .toSet()
         val authorTokens = book.authors.flatMap { tokenize(it.name) }.toSet()
         val titleHits = query.count { it in words }
         val authorHits = query.count { it in authorTokens }

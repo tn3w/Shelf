@@ -25,6 +25,7 @@ data class Fixture(
     val score: Int = 0,
     val isbns: List<String> = emptyList(),
     val libraryIsbn: String = "",
+    val digar: Int = 0,
 )
 
 class Bytes {
@@ -107,7 +108,10 @@ private class Postings(val titles: List<Int>, val authors: List<Int>)
 
 private fun terms(books: List<Fixture>, authors: List<String>): Map<String, Postings> {
     val titles = books.withIndex().flatMap { (local, book) ->
-        tokenize("${book.title} ${book.subtitle}").map { it to local }
+        tokenize("${book.title} ${book.subtitle} ${book.series.orEmpty()}").map {
+            it to
+                local
+        }
     }
     val names = authors.withIndex().flatMap { (slot, name) ->
         tokenize(name).map { it to slot }
@@ -182,15 +186,20 @@ private fun isbnSection(books: List<Fixture>): ByteArray? {
 
 private fun libraryCoverSection(books: List<Fixture>): ByteArray? {
     val rows = books.withIndex()
-        .filter { it.value.libraryIsbn.isNotEmpty() }
-        .map { (local, book) -> local to isbnKey(book.libraryIsbn)!! }
+        .mapNotNull { (local, book) ->
+            when {
+                book.digar > 0 -> Triple(local, DIGAR, book.digar)
+                book.libraryIsbn.isEmpty() -> null
+                else -> Triple(local, DNB, isbnKey(book.libraryIsbn)!!)
+            }
+        }
         .ifEmpty { return null }
         .chunked(RECORDS_PER_BLOCK)
     val blocks = rows.map { chunk ->
         deflate(
             bytes {
-                chunk.fold(chunk.first().first) { previous, (local, key) ->
-                    varint(local - previous).byte(DNB).varint(key)
+                chunk.fold(chunk.first().first) { previous, (local, source, key) ->
+                    varint(local - previous).byte(source).varint(key)
                     local
                 }
             },

@@ -155,6 +155,7 @@ class ModelTest {
         assertEquals(DNB_COVERS, settings.dnbCoverHost)
         val mirrored = settings.copy(dnbCoverSource = "https://m/")
         assertEquals("https://m", mirrored.dnbCoverHost)
+        assertEquals(DIGAR_COVERS, settings.digarCoverHost)
         val encoded = json.encodeToString(settings)
         assertEquals(settings, json.decodeFromString<Settings>(encoded))
     }

@@ -141,6 +141,24 @@ class SearchTest {
     }
 
     @Test
+    fun seriesNameFindsEveryVolume() {
+        fun volume(work: Int, title: String, series: String? = "Gregs Tagebuch") =
+            Fixture(work, title, "Jeff Kinney", series = series, score = 2)
+        val volumes = Searcher(
+            catalogue(
+                listOf(
+                    volume(1, "Von Idioten umzingelt!"),
+                    volume(2, "Gregs Tagebuch 2. Gibt's Probleme?", series = null),
+                    volume(3, "Jetzt reicht's!"),
+                    Fixture(4, "Tagebuch einer Reise", score = 2),
+                ),
+            ),
+        )
+        val found = volumes.search("gregs tagebuch").map { it.work }
+        assertEquals(listOf(1, 2, 3), found.sorted())
+    }
+
+    @Test
     fun didYouMeanFixesTruncatedLastWord() {
         val lookup = trusted.lookup("gardens of the mon")
         val suggestions = trusted.complete(lookup, trusted.search(lookup))

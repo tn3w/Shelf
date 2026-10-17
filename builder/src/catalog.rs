@@ -1,3 +1,4 @@
+use crate::LANGUAGE_COUNT;
 use crate::dumps::{Authors, Book, FLAG_COVER, FLAG_ISBN, FLAG_PUBLISHER, FLAG_READABLE};
 use crate::dumps::{Facts, Signal, TitleRecord, Titles};
 use crate::libraries::{self, SYNTHETIC};
@@ -22,6 +23,9 @@ const SHORT_LEAD_BYTES: usize = 200;
 const MAX_SHOUTED_SHARE: f32 = 0.7;
 const COVER_REACH_POINTS: [(u32, i32); 4] = [(20_000, 25), (5_000, 20), (1_000, 15), (100, 8)];
 const MODERN_EDITION: u16 = 1975;
+const VOLUME_LABELS: [&str; 6] = ["Band", "Bd.", "Buch", "Teil", "Folge", "Book"];
+const EDITION_TAGS: [&str; 2] = ["(german edition)", "(deutsche ausgabe)"];
+const ABBREVIATIONS: [&str; 5] = ["etc", "ltd", "inc", "usw", "bzw"];
 const COVER_EDITION_POINTS: [(u16, i32); 5] = [
     (2010, 15),
     (2000, 10),
@@ -141,7 +145,8 @@ const MIN_STOP_WORD_SHARE: f32 = 0.05;
 const MAX_TOKEN_BYTES: usize = 24;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-pub const SOURCE_LANGUAGES: [&str; 9] = ["en", "de", "fr", "es", "pt", "it", "nl", "sv", "da"];
+pub const SOURCE_LANGUAGES: [&str; 10] =
+    ["en", "de", "fr", "es", "et", "pt", "it", "nl", "sv", "da"];
 
 const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "the and of to in is that it was for with as his her he she on but not you this \
@@ -154,6 +159,8 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
      elle mais ou sont être été par lui leur je il avait",
     "el los las que por con para del su sus como pero este esta es al lo más fue \
      sobre entre también cuando muy hay ya",
+    "ja ning ei see kui oli mis aga oma nii siis seda kes või veel mida kõik tema nad \
+     meie pole olen olid oleks nagu ainult juba väga",
     "não uma os com dos são foi ele ela seu sua seus suas ao pelo pela pelos pelas \
      também muito já está têm quando sem nas num numa isso esse essa mesmo ainda depois \
      onde",
@@ -292,14 +299,14 @@ const PRINT_ON_DEMAND: &[&str] = &[
     "sharp ink",
 ];
 
-pub const TARGET_CODES: [&str; 4] = ["eng", "ger", "fre", "spa"];
+pub const TARGET_CODES: [&str; LANGUAGE_COUNT] = ["eng", "ger", "fre", "spa", "est"];
 
-const LANGUAGE_CODES: [&str; 24] = [
+const LANGUAGE_CODES: [&str; 25] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe", "ara",
-    "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind",
+    "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind", "est",
 ];
 
-const ISBN_GROUPS: [(&str, usize); 19] = [
+const ISBN_GROUPS: [(&str, usize); 22] = [
     ("9780", 0),
     ("9781", 0),
     ("9798", 0),
@@ -319,6 +326,9 @@ const ISBN_GROUPS: [(&str, usize); 19] = [
     ("978987", 3),
     ("9789972", 3),
     ("9789974", 3),
+    ("9789916", 4),
+    ("9789949", 4),
+    ("9789985", 4),
 ];
 
 const ISBN_BASE: u64 = 978_000_000_000;
@@ -329,7 +339,7 @@ const FOREIGN_ISBN_GROUPS: [&str; 17] = [
     "97888", "97889", "9789", "97911", "97912", "97913",
 ];
 
-const FOLDED: [(&str, char); 9] = [
+const FOLDED: [(&str, char); 10] = [
     ("áàâäãåÁÀÂÄÃÅ", 'a'),
     ("éèêëÉÈÊË", 'e'),
     ("íìîïÍÌÎÏ", 'i'),
@@ -338,7 +348,8 @@ const FOLDED: [(&str, char); 9] = [
     ("ñÑ", 'n'),
     ("çÇ", 'c'),
     ("ýÿÝ", 'y'),
-    ("ß", 's'),
+    ("ßšŠ", 's'),
+    ("žŽ", 'z'),
 ];
 
 static STOP_WORD_LANGUAGE: LazyLock<HashMap<&'static str, usize>> = LazyLock::new(|| {
@@ -990,6 +1001,75 @@ fn is_series_label(title: &str, series: &str) -> bool {
             .all(|(label, name)| *label == name)
 }
 
+fn without_volume_prefix(title: &str, series: &str) -> Option<(String, u16)> {
+    let labels = std::iter::once(series).chain(VOLUME_LABELS);
+    labels.filter(|label| !label.is_empty()).find_map(|label| {
+        let number = title
+            .get(label.len()..)?
+            .trim_start_matches([' ', '.', ',']);
+        let after = number.trim_start_matches(|digit: char| digit.is_ascii_digit());
+        let volume = number[..number.len() - after.len()].parse().ok()?;
+        let separated = after.trim_start().starts_with(['.', ':', '-', '–']);
+        let stripped = libraries::without_series(title, label);
+        let worded = stripped.starts_with(char::is_alphanumeric);
+        (separated && worded && stripped != title).then_some((stripped, volume))
+    })
+}
+
+fn named_volume(title: &str, names: &[String]) -> Option<(String, String, u16)> {
+    names.iter().find_map(|name| {
+        let (title, volume) = without_volume_prefix(title, name)?;
+        Some((title, name.clone(), volume))
+    })
+}
+
+fn adopt_series(entries: &mut [Entry], writers: &[String]) {
+    let mut known: HashMap<&str, Vec<String>> = HashMap::new();
+    for (entry, writer) in entries.iter().zip(writers) {
+        let names = known.entry(writer).or_default();
+        if !entry.series.is_empty() && !names.contains(&entry.series) {
+            names.push(entry.series.clone());
+        }
+    }
+    for (entry, writer) in entries.iter_mut().zip(writers) {
+        let names = known
+            .get(writer.as_str())
+            .filter(|_| entry.series.is_empty());
+        let found = names.and_then(|names| named_volume(&entry.title, names));
+        let Some((title, series, volume)) = found.filter(|_| !writer.is_empty()) else {
+            continue;
+        };
+        if entry.alternate.is_empty() {
+            entry.alternate = std::mem::take(&mut entry.title);
+        }
+        (entry.title, entry.series, entry.series_position) = (title, series, volume);
+    }
+}
+
+fn tidy_title(title: &str) -> String {
+    let mut title = title.split_whitespace().collect::<Vec<_>>().join(" ");
+    for tag in EDITION_TAGS {
+        if let Some(start) = title.to_ascii_lowercase().find(tag) {
+            title.replace_range(start..start + tag.len(), "");
+        }
+    }
+    let title = title.trim();
+    let title = match title.rsplit_once(". ") {
+        Some((head, tail)) if libraries::is_genre(tail.trim_end_matches('.')) => head,
+        _ => title,
+    };
+    let last = title.rsplit(' ').next().unwrap_or_default();
+    let word = last.strip_suffix('.').unwrap_or_default();
+    let abbreviated = ABBREVIATIONS.contains(&word.to_lowercase().as_str());
+    let worded = word.chars().count() > 2 && word.chars().any(char::is_lowercase);
+    let dotted = worded && !abbreviated && word.chars().all(char::is_alphabetic);
+    title
+        .strip_suffix('.')
+        .filter(|_| dotted)
+        .unwrap_or(title)
+        .to_string()
+}
+
 fn award(earned: bool, points: i32) -> i32 {
     if earned { points } else { 0 }
 }
@@ -1172,6 +1252,9 @@ impl<'a> Resolver<'a> {
         if is_series_label(&title, &franchise) {
             (title, alternate) = self.choose_title(&book.title, &franchise, voters);
         }
+        let stripped = without_volume_prefix(&title, &series);
+        let title = stripped.map_or(title, |(title, _)| title);
+        let title = tidy_title(&title);
         if !series.is_empty() && series_key(&alternate) == series_key(&series) {
             alternate.clear();
         }
@@ -1236,6 +1319,15 @@ pub fn candidates(
             (entry.local_title || sticky.is_some()).then_some(Entry { sticky, ..entry })
         })
         .collect();
+    let writer = |entry: &Entry| {
+        let author = books[entry.book]
+            .authors
+            .first()
+            .and_then(|&id| authors.get(id));
+        author.map_or(String::new(), |author| libraries::writer_key(author.name))
+    };
+    let writers: Vec<String> = entries.iter().map(writer).collect();
+    adopt_series(&mut entries, &writers);
     entries.sort_by(|a, b| {
         let stickiness = b.sticky.is_some().cmp(&a.sticky.is_some());
         stickiness
@@ -1257,15 +1349,12 @@ pub fn candidates(
             .filter_map(|&id| authors.get(id))
             .map(|author| author.name)
             .collect();
-        let key = (
-            title_key(&entry.title, &names),
-            book.authors.first().copied(),
-        );
-        let fresh = seen.insert(key);
-        let writer = names
-            .first()
-            .filter(|_| guarded)
-            .map(|name| libraries::name_key(name));
+        let writer = names.first().map(|name| libraries::writer_key(name));
+        let author = writer
+            .clone()
+            .or_else(|| book.authors.first().map(u32::to_string));
+        let fresh = seen.insert((title_key(&entry.title, &names), author));
+        let writer = writer.filter(|_| guarded);
         let title = || libraries::match_key(&entry.title);
         let library_key = writer.map(|writer| (title(), writer));
         let library_key =
@@ -1321,6 +1410,90 @@ mod tests {
             "Volume One",
         ] {
             assert!(!is_bad_title(title), "{title}");
+        }
+    }
+
+    #[test]
+    fn volume_prefixes_stripped() {
+        for (title, series, expected, volume) in [
+            (
+                "Gregs Tagebuch 01 . Von Idioten umzingelt!",
+                "Gregs Tagebuch",
+                "Von Idioten umzingelt!",
+                1,
+            ),
+            (
+                "Gregs Tagebuch 02. Gibt's Probleme?",
+                "Gregs Tagebuch",
+                "Gibt's Probleme?",
+                2,
+            ),
+            ("Beast Quest 52 - Silver", "Beast Quest", "Silver", 52),
+            (
+                "Star Trek Voyager. 16. Gestrandet",
+                "Star Trek Voyager",
+                "Gestrandet",
+                16,
+            ),
+            (
+                "Band 2: Das Geheimnis im Finsterbau",
+                "",
+                "Das Geheimnis im Finsterbau",
+                2,
+            ),
+            ("Buch 1: Verpestet", "The Extinction Cycle", "Verpestet", 1),
+            (
+                "Warriors 3: Forest of Secrets",
+                "warriors",
+                "Forest of Secrets",
+                3,
+            ),
+        ] {
+            let stripped = without_volume_prefix(title, series);
+            assert_eq!(stripped, Some((expected.to_string(), volume)), "{title}");
+        }
+        for (title, series) in [
+            ("Gregs Tagebuch Spezial 1. Mach's selbst", "Gregs Tagebuch"),
+            ("Eragon: Das Vermächtnis der Drachenreiter", "Eragon"),
+            ("Gregs Tagebuch 3", "Gregs Tagebuch"),
+            ("Das 8. Geständnis", ""),
+            ("Gregs Tagebuch 1 Von Idioten umzingelt!", "Gregs Tagebuch"),
+            ("Bandit 2: Rache", ""),
+            ("Die Gabel, die Hexe und der Wurm. Band 1 : Eragon", ""),
+            ("Band 14: (berührende Pferde-Reihe ab 10 Jahren)", ""),
+            ("Band 06 (deutsche Ausgabe)", ""),
+        ] {
+            assert_eq!(without_volume_prefix(title, series), None, "{title}");
+        }
+    }
+
+    #[test]
+    fn titles_tidied() {
+        for (title, expected) in [
+            ("Die Darwin-Kinder (German Edition)", "Die Darwin-Kinder"),
+            ("Jenseits des Horizonts. Roman.", "Jenseits des Horizonts"),
+            (
+                "Die Geschichte der Kinder Hurins. Erzählung.",
+                "Die Geschichte der Kinder Hurins",
+            ),
+            (
+                "Mord auf Rezept. Ein Fall für Mrs. Murphy.",
+                "Mord auf Rezept. Ein Fall für Mrs. Murphy",
+            ),
+            ("Die  Frau im Dunkel", "Die Frau im Dunkel"),
+            ("Flug nach Arras.", "Flug nach Arras"),
+            ("Hallo Mr.", "Hallo Mr."),
+            ("Ludwig XIV.", "Ludwig XIV."),
+            ("Lost Souls Ltd.", "Lost Souls Ltd."),
+            ("Mädchen, Frau etc.", "Mädchen, Frau etc."),
+            (
+                "Lila lässt die Funken fliegen. (Ab 8 J.).",
+                "Lila lässt die Funken fliegen. (Ab 8 J.).",
+            ),
+            ("Wait...", "Wait..."),
+            ("Roman eines Schicksallosen", "Roman eines Schicksallosen"),
+        ] {
+            assert_eq!(tidy_title(title), expected);
         }
     }
 

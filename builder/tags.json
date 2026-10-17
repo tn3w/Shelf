@@ -3,7 +3,13 @@
     {
       "slug": "fiction",
       "category": "form",
-      "labels": {"en": "Fiction", "de": "Romane", "fr": "Fiction", "es": "Ficción"},
+      "labels": {
+        "en": "Fiction",
+        "de": "Romane",
+        "fr": "Fiction",
+        "es": "Ficción",
+        "et": "Ilukirjandus"
+      },
       "include": ["fiction", "novel", "stories", "tales"],
       "exclude": [
         "history and criticism",
@@ -22,7 +28,8 @@
         "en": "Nonfiction",
         "de": "Sachbuch",
         "fr": "Non-fiction",
-        "es": "No ficción"
+        "es": "No ficción",
+        "et": "Aimekirjandus"
       },
       "include": ["nonfiction", "non-fiction"],
       "exclude": []
@@ -34,7 +41,8 @@
         "en": "Romance",
         "de": "Liebesroman",
         "fr": "Romance",
-        "es": "Romántica"
+        "es": "Romántica",
+        "et": "Armastusromaanid"
       },
       "include": ["romance", "love stories", "man-woman relationship", "chick lit"],
       "exclude": [
@@ -54,7 +62,8 @@
         "en": "Regency Romance",
         "de": "Regency-Roman",
         "fr": "Romance Régence",
-        "es": "Romántica de Regencia"
+        "es": "Romántica de Regencia",
+        "et": "Regency-romaanid"
       },
       "include": ["regency"],
       "exclude": []
@@ -66,7 +75,8 @@
         "en": "Contemporary Romance",
         "de": "Moderner Liebesroman",
         "fr": "Romance contemporaine",
-        "es": "Romántica contemporánea"
+        "es": "Romántica contemporánea",
+        "et": "Tänapäeva armastusromaanid"
       },
       "include": ["romance, contemporary", "contemporary romance"],
       "exclude": []
@@ -78,7 +88,8 @@
         "en": "Historical Romance",
         "de": "Historischer Liebesroman",
         "fr": "Romance historique",
-        "es": "Romántica histórica"
+        "es": "Romántica histórica",
+        "et": "Ajaloolised armastusromaanid"
       },
       "include": ["romance, historical", "historical romance"],
       "exclude": []
@@ -86,7 +97,13 @@
     {
       "slug": "fantasy",
       "category": "genre",
-      "labels": {"en": "Fantasy", "de": "Fantasy", "fr": "Fantasy", "es": "Fantasía"},
+      "labels": {
+        "en": "Fantasy",
+        "de": "Fantasy",
+        "fr": "Fantasy",
+        "es": "Fantasía",
+        "et": "Fantaasia"
+      },
       "include": ["fantasy", "sword and sorcery", "magic fiction"],
       "motifs": [
         "magic",
@@ -117,7 +134,8 @@
         "en": "Epic Fantasy",
         "de": "High Fantasy",
         "fr": "Fantasy épique",
-        "es": "Fantasía épica"
+        "es": "Fantasía épica",
+        "et": "Eepiline fantaasia"
       },
       "include": ["fantasy, epic", "epic fantasy", "heroic fantasy"],
       "exclude": []
@@ -129,7 +147,8 @@
         "en": "Urban Fantasy",
         "de": "Urban Fantasy",
         "fr": "Fantasy urbaine",
-        "es": "Fantasía urbana"
+        "es": "Fantasía urbana",
+        "et": "Linnafantaasia"
       },
       "include": ["fantasy, urban", "urban fantasy"],
       "exclude": []
@@ -141,7 +160,8 @@
         "en": "Paranormal",
         "de": "Paranormal",
         "fr": "Paranormal",
-        "es": "Paranormal"
+        "es": "Paranormal",
+        "et": "Paranormaalne"
       },
       "include": ["paranormal"],
       "motifs": ["vampires", "werewolves", "witches", "ghosts", "demonology", "angels"],
@@ -154,7 +174,8 @@
         "en": "Science Fiction",
         "de": "Science-Fiction",
         "fr": "Science-fiction",
-        "es": "Ciencia ficción"
+        "es": "Ciencia ficción",
+        "et": "Ulme"
       },
       "include": ["science fiction", "sci-fi"],
       "motifs": [
@@ -179,7 +200,8 @@
         "en": "Space Opera",
         "de": "Space Opera",
         "fr": "Space opera",
-        "es": "Ópera espacial"
+        "es": "Ópera espacial",
+        "et": "Kosmoseooper"
       },
       "include": ["space opera"],
       "exclude": []
@@ -187,14 +209,26 @@
     {
       "slug": "dystopian",
       "category": "genre",
-      "labels": {"en": "Dystopian", "de": "Dystopie", "fr": "Dystopie", "es": "Distopía"},
+      "labels": {
+        "en": "Dystopian",
+        "de": "Dystopie",
+        "fr": "Dystopie",
+        "es": "Distopía",
+        "et": "Düstoopia"
+      },
       "include": ["dystopia", "dystopian", "post-apocalyptic", "apocalyptic"],
       "exclude": []
     },
     {
       "slug": "mystery",
       "category": "genre",
-      "labels": {"en": "Mystery", "de": "Krimi", "fr": "Policier", "es": "Misterio"},
+      "labels": {
+        "en": "Mystery",
+        "de": "Krimi",
+        "fr": "Policier",
+        "es": "Misterio",
+        "et": "Krimi"
+      },
       "include": ["mystery", "mysteries", "detective", "whodunit", "sleuth"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
@@ -205,7 +239,8 @@
         "en": "Cozy Mystery",
         "de": "Cosy Crime",
         "fr": "Cosy mystery",
-        "es": "Misterio cozy"
+        "es": "Misterio cozy",
+        "et": "Hubane krimi"
       },
       "include": ["cozy", "women sleuths"],
       "exclude": []
@@ -213,7 +248,13 @@
     {
       "slug": "thriller",
       "category": "genre",
-      "labels": {"en": "Thriller", "de": "Thriller", "fr": "Thriller", "es": "Thriller"},
+      "labels": {
+        "en": "Thriller",
+        "de": "Thriller",
+        "fr": "Thriller",
+        "es": "Thriller",
+        "et": "Põnevus"
+      },
       "include": ["thriller", "suspense", "spy stories"],
       "motifs": [
         "espionage",
@@ -232,7 +273,8 @@
         "en": "Crime",
         "de": "Kriminalroman",
         "fr": "Roman noir",
-        "es": "Novela negra"
+        "es": "Novela negra",
+        "et": "Kriminaalromaanid"
       },
       "include": ["crime", "noir"],
       "motifs": ["murder", "gangsters", "criminals", "police"],
@@ -245,7 +287,8 @@
         "en": "True Crime",
         "de": "True Crime",
         "fr": "True crime",
-        "es": "Crímenes reales"
+        "es": "Crímenes reales",
+        "et": "Tõsielukrimi"
       },
       "include": ["true crime", "serial killers", "criminal investigation"],
       "exclude": []
@@ -253,7 +296,13 @@
     {
       "slug": "horror",
       "category": "genre",
-      "labels": {"en": "Horror", "de": "Horror", "fr": "Horreur", "es": "Terror"},
+      "labels": {
+        "en": "Horror",
+        "de": "Horror",
+        "fr": "Horreur",
+        "es": "Terror",
+        "et": "Õudus"
+      },
       "include": ["horror", "ghost stories"],
       "motifs": ["monsters", "zombies", "haunted houses"],
       "exclude": ["film", "motion picture", "television", "video game"]
@@ -265,7 +314,8 @@
         "en": "Historical Fiction",
         "de": "Historischer Roman",
         "fr": "Roman historique",
-        "es": "Novela histórica"
+        "es": "Novela histórica",
+        "et": "Ajaloolised romaanid"
       },
       "include": ["fiction, historical", "historical fiction"],
       "exclude": []
@@ -277,7 +327,8 @@
         "en": "Literary Fiction",
         "de": "Gegenwartsliteratur",
         "fr": "Littérature",
-        "es": "Ficción literaria"
+        "es": "Ficción literaria",
+        "et": "Kaasaegne proosa"
       },
       "include": ["fiction, literary", "literary fiction", "domestic fiction"],
       "exclude": []
@@ -289,7 +340,8 @@
         "en": "Adventure",
         "de": "Abenteuer",
         "fr": "Aventure",
-        "es": "Aventura"
+        "es": "Aventura",
+        "et": "Seiklus"
       },
       "include": ["adventure", "sea stories"],
       "motifs": [
@@ -304,7 +356,13 @@
     {
       "slug": "western",
       "category": "genre",
-      "labels": {"en": "Western", "de": "Western", "fr": "Western", "es": "Western"},
+      "labels": {
+        "en": "Western",
+        "de": "Western",
+        "fr": "Western",
+        "es": "Western",
+        "et": "Vestern"
+      },
       "include": ["western stories", "fiction, westerns"],
       "motifs": ["cowboys", "frontier and pioneer life", "outlaws"],
       "exclude": []
@@ -316,7 +374,8 @@
         "en": "War Stories",
         "de": "Kriegsroman",
         "fr": "Roman de guerre",
-        "es": "Novela bélica"
+        "es": "Novela bélica",
+        "et": "Sõjaromaanid"
       },
       "include": ["war stories", "fiction, war"],
       "exclude": []
@@ -324,7 +383,13 @@
     {
       "slug": "humor",
       "category": "genre",
-      "labels": {"en": "Humor", "de": "Humor", "fr": "Humour", "es": "Humor"},
+      "labels": {
+        "en": "Humor",
+        "de": "Humor",
+        "fr": "Humour",
+        "es": "Humor",
+        "et": "Huumor"
+      },
       "include": ["humor", "humour", "comedy", "satire", "wit and humor"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
@@ -335,7 +400,8 @@
         "en": "Graphic Novels",
         "de": "Comics",
         "fr": "Bandes dessinées",
-        "es": "Cómics"
+        "es": "Cómics",
+        "et": "Koomiksid"
       },
       "include": ["comic books", "graphic novel", "manga", "cartoons"],
       "exclude": []
@@ -343,7 +409,13 @@
     {
       "slug": "poetry",
       "category": "form",
-      "labels": {"en": "Poetry", "de": "Lyrik", "fr": "Poésie", "es": "Poesía"},
+      "labels": {
+        "en": "Poetry",
+        "de": "Lyrik",
+        "fr": "Poésie",
+        "es": "Poesía",
+        "et": "Luule"
+      },
       "include": ["poetry", "poems", "verse"],
       "exclude": [
         "history and criticism",
@@ -358,7 +430,13 @@
     {
       "slug": "drama",
       "category": "form",
-      "labels": {"en": "Drama & Plays", "de": "Dramen", "fr": "Théâtre", "es": "Teatro"},
+      "labels": {
+        "en": "Drama & Plays",
+        "de": "Dramen",
+        "fr": "Théâtre",
+        "es": "Teatro",
+        "et": "Näidendid"
+      },
       "include": ["drama", "plays", "tragedies", "comedies"],
       "exclude": ["film", "motion picture", "television", "video game"]
     },
@@ -369,7 +447,8 @@
         "en": "Short Stories",
         "de": "Kurzgeschichten",
         "fr": "Nouvelles",
-        "es": "Relatos"
+        "es": "Relatos",
+        "et": "Lühiproosa"
       },
       "include": ["short stories", "fiction, short stories", "anthologies"],
       "exclude": []
@@ -381,7 +460,8 @@
         "en": "Picture Books",
         "de": "Bilderbücher",
         "fr": "Albums illustrés",
-        "es": "Álbumes ilustrados"
+        "es": "Álbumes ilustrados",
+        "et": "Pildiraamatud"
       },
       "include": ["picture books", "board books", "toy and movable books"],
       "exclude": []
@@ -393,7 +473,8 @@
         "en": "Children's Books",
         "de": "Kinderbücher",
         "fr": "Jeunesse",
-        "es": "Infantil"
+        "es": "Infantil",
+        "et": "Lasteraamatud"
       },
       "include": ["juvenile", "children's", "childrens", "for children", "easy reader"],
       "exclude": ["juvenile delinquency", "juvenile justice", "juvenile courts"]
@@ -405,7 +486,8 @@
         "en": "Middle Grade",
         "de": "Kinderbücher ab 10",
         "fr": "Romans 9-12 ans",
-        "es": "Juvenil 9-12"
+        "es": "Juvenil 9-12",
+        "et": "Lasteraamatud alates 10"
       },
       "include": ["children: grades 4-6", "children: grades 3-4", "middle grade"],
       "exclude": []
@@ -417,7 +499,8 @@
         "en": "Young Adult",
         "de": "Jugendbücher",
         "fr": "Young adult",
-        "es": "Juvenil"
+        "es": "Juvenil",
+        "et": "Noorteraamatud"
       },
       "include": [
         "young adult",
@@ -439,7 +522,8 @@
         "en": "Biography",
         "de": "Biografien",
         "fr": "Biographies",
-        "es": "Biografías"
+        "es": "Biografías",
+        "et": "Elulood"
       },
       "include": ["biography", "autobiography", "memoir", "personal narratives"],
       "exclude": []
@@ -447,7 +531,13 @@
     {
       "slug": "history",
       "category": "topic",
-      "labels": {"en": "History", "de": "Geschichte", "fr": "Histoire", "es": "Historia"},
+      "labels": {
+        "en": "History",
+        "de": "Geschichte",
+        "fr": "Histoire",
+        "es": "Historia",
+        "et": "Ajalugu"
+      },
       "include": ["history", "historiography", "antiquities", "civilization", "histoire"],
       "exclude": [
         "history and criticism",
@@ -466,7 +556,8 @@
         "en": "Military History",
         "de": "Militärgeschichte",
         "fr": "Histoire militaire",
-        "es": "Historia militar"
+        "es": "Historia militar",
+        "et": "Sõjaajalugu"
       },
       "include": ["world war", "military history", "civil war", "battles"],
       "exclude": []
@@ -478,7 +569,8 @@
         "en": "Science",
         "de": "Naturwissenschaften",
         "fr": "Sciences",
-        "es": "Ciencia"
+        "es": "Ciencia",
+        "et": "Teadus"
       },
       "include": ["science", "physics", "chemistry", "biology", "astronomy", "evolution"],
       "exclude": ["science fiction", "history and criticism", "study and teaching"]
@@ -486,7 +578,13 @@
     {
       "slug": "nature",
       "category": "topic",
-      "labels": {"en": "Nature", "de": "Natur", "fr": "Nature", "es": "Naturaleza"},
+      "labels": {
+        "en": "Nature",
+        "de": "Natur",
+        "fr": "Nature",
+        "es": "Naturaleza",
+        "et": "Loodus"
+      },
       "include": ["natural history", "ecology", "environment", "animals", "birds"],
       "exclude": []
     },
@@ -497,7 +595,8 @@
         "en": "Mathematics",
         "de": "Mathematik",
         "fr": "Mathématiques",
-        "es": "Matemáticas"
+        "es": "Matemáticas",
+        "et": "Matemaatika"
       },
       "include": ["mathematics", "algebra", "geometry", "calculus", "statistics"],
       "exclude": []
@@ -509,7 +608,8 @@
         "en": "Technology",
         "de": "Technik",
         "fr": "Technologie",
-        "es": "Tecnología"
+        "es": "Tecnología",
+        "et": "Tehnika"
       },
       "include": ["computer", "programming", "engineering", "internet", "software"],
       "exclude": []
@@ -521,7 +621,8 @@
         "en": "Psychology",
         "de": "Psychologie",
         "fr": "Psychologie",
-        "es": "Psicología"
+        "es": "Psicología",
+        "et": "Psühholoogia"
       },
       "include": ["psychology", "psychoanalysis", "mental health", "emotions"],
       "exclude": []
@@ -533,7 +634,8 @@
         "en": "Philosophy",
         "de": "Philosophie",
         "fr": "Philosophie",
-        "es": "Filosofía"
+        "es": "Filosofía",
+        "et": "Filosoofia"
       },
       "include": ["philosophy", "ethics", "metaphysics", "philosophers"],
       "exclude": []
@@ -541,7 +643,13 @@
     {
       "slug": "religion",
       "category": "topic",
-      "labels": {"en": "Religion", "de": "Religion", "fr": "Religion", "es": "Religión"},
+      "labels": {
+        "en": "Religion",
+        "de": "Religion",
+        "fr": "Religion",
+        "es": "Religión",
+        "et": "Religioon"
+      },
       "include": [
         "religion",
         "christianity",
@@ -569,7 +677,8 @@
         "en": "Spirituality",
         "de": "Spiritualität",
         "fr": "Spiritualité",
-        "es": "Espiritualidad"
+        "es": "Espiritualidad",
+        "et": "Vaimsus"
       },
       "include": ["spiritual", "meditation", "mysticism", "new age"],
       "exclude": []
@@ -581,7 +690,8 @@
         "en": "Self-Help",
         "de": "Ratgeber",
         "fr": "Développement personnel",
-        "es": "Autoayuda"
+        "es": "Autoayuda",
+        "et": "Eneseabi"
       },
       "include": [
         "self-help",
@@ -599,7 +709,8 @@
         "en": "Health & Fitness",
         "de": "Gesundheit & Fitness",
         "fr": "Santé & forme",
-        "es": "Salud y bienestar"
+        "es": "Salud y bienestar",
+        "et": "Tervis ja vorm"
       },
       "include": ["health", "fitness", "diet", "nutrition", "medicine", "exercise"],
       "exclude": []
@@ -607,21 +718,33 @@
     {
       "slug": "cooking",
       "category": "topic",
-      "labels": {"en": "Cooking", "de": "Kochen", "fr": "Cuisine", "es": "Cocina"},
+      "labels": {
+        "en": "Cooking",
+        "de": "Kochen",
+        "fr": "Cuisine",
+        "es": "Cocina",
+        "et": "Kokandus"
+      },
       "include": ["cooking", "cookery", "cookbook", "recipes", "baking"],
       "exclude": []
     },
     {
       "slug": "travel",
       "category": "topic",
-      "labels": {"en": "Travel", "de": "Reisen", "fr": "Voyage", "es": "Viajes"},
+      "labels": {
+        "en": "Travel",
+        "de": "Reisen",
+        "fr": "Voyage",
+        "es": "Viajes",
+        "et": "Reisimine"
+      },
       "include": ["travel", "description and travel", "voyages", "guidebooks"],
       "exclude": []
     },
     {
       "slug": "art",
       "category": "topic",
-      "labels": {"en": "Art", "de": "Kunst", "fr": "Art", "es": "Arte"},
+      "labels": {"en": "Art", "de": "Kunst", "fr": "Art", "es": "Arte", "et": "Kunst"},
       "include": [
         "art",
         "painting",
@@ -645,7 +768,13 @@
     {
       "slug": "music",
       "category": "topic",
-      "labels": {"en": "Music", "de": "Musik", "fr": "Musique", "es": "Música"},
+      "labels": {
+        "en": "Music",
+        "de": "Musik",
+        "fr": "Musique",
+        "es": "Música",
+        "et": "Muusika"
+      },
       "include": ["music", "songs", "jazz", "rock music", "composers"],
       "exclude": []
     },
@@ -656,7 +785,8 @@
         "en": "Business",
         "de": "Wirtschaft",
         "fr": "Entreprise",
-        "es": "Negocios"
+        "es": "Negocios",
+        "et": "Ettevõtlus"
       },
       "include": ["business", "management", "marketing", "entrepreneurship", "finance"],
       "exclude": []
@@ -668,7 +798,8 @@
         "en": "Economics",
         "de": "Volkswirtschaft",
         "fr": "Économie",
-        "es": "Economía"
+        "es": "Economía",
+        "et": "Majandus"
       },
       "include": ["economics", "economic conditions", "capitalism", "economic policy"],
       "exclude": []
@@ -676,7 +807,13 @@
     {
       "slug": "politics",
       "category": "topic",
-      "labels": {"en": "Politics", "de": "Politik", "fr": "Politique", "es": "Política"},
+      "labels": {
+        "en": "Politics",
+        "de": "Politik",
+        "fr": "Politique",
+        "es": "Política",
+        "et": "Poliitika"
+      },
       "include": ["politics and government", "political science", "democracy"],
       "exclude": []
     },
@@ -687,7 +824,8 @@
         "en": "Society",
         "de": "Gesellschaft",
         "fr": "Société",
-        "es": "Sociedad"
+        "es": "Sociedad",
+        "et": "Ühiskond"
       },
       "include": [
         "social conditions",
@@ -710,7 +848,8 @@
         "en": "Folklore & Mythology",
         "de": "Märchen & Mythen",
         "fr": "Contes & mythes",
-        "es": "Mitología"
+        "es": "Mitología",
+        "et": "Muinasjutud ja müüdid"
       },
       "include": ["folklore", "fairy tales", "mythology", "legends", "folk literature"],
       "exclude": []
@@ -722,7 +861,8 @@
         "en": "Classics",
         "de": "Klassiker",
         "fr": "Classiques",
-        "es": "Clásicos"
+        "es": "Clásicos",
+        "et": "Klassika"
       },
       "include": [
         "american literature",
@@ -740,7 +880,13 @@
     {
       "slug": "law",
       "category": "topic",
-      "labels": {"en": "Law", "de": "Recht", "fr": "Droit", "es": "Derecho"},
+      "labels": {
+        "en": "Law",
+        "de": "Recht",
+        "fr": "Droit",
+        "es": "Derecho",
+        "et": "Õigus"
+      },
       "include": ["law and legislation", "constitutional law", "courts", "legal"],
       "exclude": []
     },
@@ -751,7 +897,8 @@
         "en": "Reference",
         "de": "Nachschlagewerke",
         "fr": "Référence",
-        "es": "Obras de consulta"
+        "es": "Obras de consulta",
+        "et": "Teatmeteosed"
       },
       "include": ["dictionaries", "handbooks, manuals", "encyclopedias", "atlases"],
       "exclude": []
@@ -763,7 +910,8 @@
         "en": "Education",
         "de": "Bildung",
         "fr": "Éducation",
-        "es": "Educación"
+        "es": "Educación",
+        "et": "Haridus"
       },
       "include": ["education", "study and teaching", "textbooks"],
       "exclude": []
@@ -775,7 +923,8 @@
         "en": "Parenting",
         "de": "Erziehung",
         "fr": "Parentalité",
-        "es": "Crianza"
+        "es": "Crianza",
+        "et": "Lastekasvatus"
       },
       "include": ["parenting", "child rearing", "pregnancy", "motherhood"],
       "exclude": []
@@ -783,14 +932,26 @@
     {
       "slug": "sports",
       "category": "topic",
-      "labels": {"en": "Sports", "de": "Sport", "fr": "Sport", "es": "Deportes"},
+      "labels": {
+        "en": "Sports",
+        "de": "Sport",
+        "fr": "Sport",
+        "es": "Deportes",
+        "et": "Sport"
+      },
       "include": ["sports", "baseball", "football", "basketball", "olympics"],
       "exclude": []
     },
     {
       "slug": "language",
       "category": "topic",
-      "labels": {"en": "Language", "de": "Sprache", "fr": "Langues", "es": "Idiomas"},
+      "labels": {
+        "en": "Language",
+        "de": "Sprache",
+        "fr": "Langues",
+        "es": "Idiomas",
+        "et": "Keel"
+      },
       "include": [
         "linguistics",
         "grammar",
@@ -807,7 +968,8 @@
         "en": "Literary Criticism",
         "de": "Literaturwissenschaft",
         "fr": "Critique littéraire",
-        "es": "Crítica literaria"
+        "es": "Crítica literaria",
+        "et": "Kirjandusteadus"
       },
       "include": ["history and criticism", "criticism and interpretation"],
       "exclude": []
@@ -819,7 +981,8 @@
         "en": "Bestsellers",
         "de": "Bestseller",
         "fr": "Best-sellers",
-        "es": "Superventas"
+        "es": "Superventas",
+        "et": "Menukid"
       },
       "include": ["new york times bestseller", "bestseller"],
       "exclude": []
@@ -831,7 +994,8 @@
         "en": "Critically Acclaimed",
         "de": "Preisgekrönt",
         "fr": "Primés",
-        "es": "Premiados"
+        "es": "Premiados",
+        "et": "Auhinnatud"
       },
       "include": ["new york times reviewed", "award", "prize winner", "notable book"],
       "exclude": []

@@ -53,7 +53,8 @@ const FOLD = new Map(
     ["ñÑ", "n"],
     ["çÇ", "c"],
     ["ýÿÝ", "y"],
-    ["ß", "s"],
+    ["ßšŠ", "s"],
+    ["žŽ", "z"],
   ].flatMap(([characters, replacement]) =>
     [...characters].map(character => [character, replacement]),
   ),
@@ -270,7 +271,12 @@ export class Searcher {
     return series.members[0] === book.work ? SERIES_START : 0
   }
 
-  bonus(book, perToken) {
+  async seriesLabel(book) {
+    const series = await this.catalogue.series(book.work)
+    return series ? `${series.name} ${book.title}` : ""
+  }
+
+  bonus(book, perToken, labelled = "") {
     const query = perToken.map(entry => entry.terms.get(book.work) ?? entry.token)
     const confidence =
       sum(perToken, entry => entry.scores.get(book.work) ?? 0) / perToken.length
@@ -282,6 +288,7 @@ export class Searcher {
     const titles = [
       [book.title, 1],
       [book.alternate, ALTERNATE],
+      [labelled, ALTERNATE],
     ].filter(([text]) => text)
     const bestTitle = Math.max(
       0,
@@ -290,7 +297,9 @@ export class Searcher {
           titleValue(text, book.subtitle, query, joinedQuery, completing) * discount,
       ),
     )
-    const words = new Set(tokenize(`${book.title} ${book.subtitle} ${book.alternate}`))
+    const words = new Set(
+      tokenize(`${labelled} ${book.title} ${book.subtitle} ${book.alternate}`),
+    )
     const authorTokens = new Set(book.authors.flatMap(author => tokenize(author.name)))
     const titleHits = query.filter(token => words.has(token)).length
     const authorHits = query.filter(token => authorTokens.has(token)).length
@@ -333,7 +342,7 @@ export class Searcher {
         const penalty = isCompanion(book) ? COMPANION_PENALTY : 0
         const score =
           scored.get(book.work) +
-          this.bonus(book, perToken) +
+          this.bonus(book, perToken, await this.seriesLabel(book)) +
           boost +
           (await this.seriesBonus(book, joined)) -
           penalty

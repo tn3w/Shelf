@@ -20,6 +20,7 @@ env:
   GH_TOKEN: ${{ github.token }}
   DUMPS: https://openlibrary.org/data
   DNB: https://data.dnb.de/opendata/dnb-all_lds.rdf.gz
+  ERB: https://data.digar.ee/erb/ERB_eestikeelne_raamat.zip
   HF_HOME: /mnt/huggingface
 
 jobs:
@@ -61,8 +62,8 @@ jobs:
             --pattern manifest.json &
           { for name in reading-log ratings authors covers_metadata editions works; do
             echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
-          done; echo "$DNB"; } \
-            | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 7 \
+          done; echo "$DNB"; echo "$ERB"; } \
+            | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 8 \
               --split 16 --max-connection-per-server 16 --min-split-size 64M \
               --max-tries 20 --retry-wait 5 --file-allocation none \
               --console-log-level warn --summary-interval 60
@@ -74,6 +75,7 @@ jobs:
           builder/target/release/builder /mnt/dumps out \
             --month "$RELEASE" --previous previous --translations previous \
             --library dnb=/mnt/dumps/dnb-all_lds.rdf.gz \
+            --library erb=/mnt/dumps/ERB_eestikeelne_raamat.zip \
             --requests requests ${{ inputs.rebase && '--rebase' || '' }} \
             --translator "python tooling/translate.py --device cpu \
               --compute-type int8 --limit 20000 --models-dir /mnt/models"

@@ -1,8 +1,9 @@
+use crate::LANGUAGE_COUNT;
 use crate::catalog::{self, Traits};
 use crate::libraries::Library;
 use crate::release;
 use crate::tags::{self, Classes};
-use flate2::read::MultiGzDecoder;
+use flate2::read::{DeflateDecoder, MultiGzDecoder};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;
@@ -201,11 +202,36 @@ fn open(source: &str, name: &str) -> Box<dyn Read + Send> {
     buffered(File::open(path).expect("open dump"))
 }
 
+fn unzipped(mut reader: impl Read + Send + 'static) -> Box<dyn Read + Send> {
+    let mut header = [0u8; 30];
+    reader.read_exact(&mut header).expect("zip header");
+    assert!(
+        header.starts_with(b"PK\x03\x04") && header[8] == 8,
+        "deflated zip entry"
+    );
+    let names = u16::from_le_bytes([header[26], header[27]]);
+    let extra = u16::from_le_bytes([header[28], header[29]]);
+    let mut skipped = reader.by_ref().take(u64::from(names) + u64::from(extra));
+    io::copy(&mut skipped, &mut io::sink()).expect("zip header");
+    Box::new(DeflateDecoder::new(BufReader::with_capacity(
+        1 << 20,
+        reader,
+    )))
+}
+
 pub fn open_location(location: &str) -> Box<dyn Read + Send> {
+    let zipped = location.ends_with(".zip");
     if is_url(location) {
-        return download(location.to_string());
+        let raw = Download {
+            url: location.to_string(),
+            offset: 0,
+            failures: 0,
+            body: None,
+        };
+        return if zipped { unzipped(raw) } else { buffered(raw) };
     }
     match File::open(location) {
+        Ok(file) if zipped => unzipped(file),
         Ok(file) => buffered(file),
         Err(error) => panic!("open {location}: {error}"),
     }
@@ -536,7 +562,7 @@ pub fn authors(source: &str) -> Authors {
 #[derive(Clone, Copy, Default)]
 pub struct Facts {
     pub editions: u16,
-    pub language_editions: [u16; 4],
+    pub language_editions: [u16; LANGUAGE_COUNT],
     pub languages: u32,
     pub first_year: u16,
     pub flags: u8,
@@ -860,7 +886,8 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
     if !catalog::is_mostly_latin(&title) {
         return None;
     }
-    let language = catalog::detect_language(&title).filter(|&language| language < 4);
+    let detected = catalog::detect_language(&title);
+    let language = detected.filter(|&language| language < LANGUAGE_COUNT);
     Some(language.unwrap_or(0))
 }
 
@@ -907,7 +934,7 @@ fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -
     facts.classes = tags::classes_of(edition);
     facts.flags = edition_flags(edition);
     let cover = vetted_cover(edition, shapes);
-    let claimed = cover == 0 || facts.language_editions == [0; 4];
+    let claimed = cover == 0 || facts.language_editions == [0; LANGUAGE_COUNT];
     let covers = array(edition, "covers").filter_map(Value::as_i64);
     Some(Edition {
         work,
@@ -985,8 +1012,8 @@ pub struct Book {
     pub year: u16,
     pub editions: u16,
     pub signal: Signal,
-    pub scores: [f32; 4],
-    pub eligible: [bool; 4],
+    pub scores: [f32; LANGUAGE_COUNT],
+    pub eligible: [bool; LANGUAGE_COUNT],
     pub claim: Option<Box<Claim>>,
     pub library_cover: Option<LibraryCover>,
 }
@@ -994,14 +1021,14 @@ pub struct Book {
 #[derive(Clone, Copy)]
 pub struct LibraryCover {
     pub source: u8,
-    pub isbn: u32,
+    pub key: u32,
     pub language: usize,
 }
 
 pub struct Claim {
     pub groups: Vec<u32>,
-    pub scores: [f32; 4],
-    pub eligible: [bool; 4],
+    pub scores: [f32; LANGUAGE_COUNT],
+    pub eligible: [bool; LANGUAGE_COUNT],
     pub tags: Vec<u8>,
     pub editions: u16,
 }
@@ -1040,10 +1067,14 @@ fn description_of(work: &Value) -> &str {
     text.unwrap_or_default().trim()
 }
 
-fn judged(traits: &Traits, facts: &Facts, signal: &Signal) -> ([f32; 4], [bool; 4]) {
-    let mut scores = [0.0; 4];
-    let mut eligible = [false; 4];
-    for language in 0..4 {
+fn judged(
+    traits: &Traits,
+    facts: &Facts,
+    signal: &Signal,
+) -> ([f32; LANGUAGE_COUNT], [bool; LANGUAGE_COUNT]) {
+    let mut scores = [0.0; LANGUAGE_COUNT];
+    let mut eligible = [false; LANGUAGE_COUNT];
+    for language in 0..LANGUAGE_COUNT {
         scores[language] = catalog::score(traits, facts, signal, language);
         eligible[language] = catalog::is_eligible(traits, facts, signal, language);
     }
@@ -1126,7 +1157,9 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
     if !sticky && !eligible.contains(&true) && !claimable {
         return None;
     }
-    let claimed = claim.as_ref().map_or([0.0; 4], |claim| claim.scores);
+    let claimed = claim
+        .as_ref()
+        .map_or([0.0; LANGUAGE_COUNT], |claim| claim.scores);
     let described = scores
         .iter()
         .chain(&claimed)

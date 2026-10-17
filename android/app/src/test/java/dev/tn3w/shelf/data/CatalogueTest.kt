@@ -1,5 +1,9 @@
 package dev.tn3w.shelf.data
 
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
+import androidx.compose.ui.geometry.Size
+import dev.tn3w.shelf.ui.frontCover
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -222,6 +226,24 @@ class CatalogueTest {
         )
         val unknown = LibraryCover(99, "9783833911316")
         assertNull(book.copy(libraryCover = unknown).coverUrl(COVERS, "L"))
+        val digar = book.copy(libraryCover = LibraryCover(DIGAR, "882325"))
+        assertEquals(
+            "https://www.digar.ee/arhiiv/nlib-digar:882325?thumb=1",
+            digar.coverUrl(COVERS, "L"),
+        )
+        assertEquals(
+            "https://m/arhiiv/nlib-digar:882325?thumb=1",
+            digar.coverUrl(COVERS, "L", DNB_COVERS, "https://m"),
+        )
+    }
+
+    @Test
+    fun landscapeCoversShowTheFrontHalf() {
+        assertEquals(Alignment.Center, frontCover(Size(300f, 460f)))
+        val spread = frontCover(Size(339f, 142f)) as BiasAlignment
+        assertEquals(0.69f, spread.horizontalBias, 0.01f)
+        val single = frontCover(Size(300f, 280f)) as BiasAlignment
+        assertEquals(1f, single.horizontalBias)
     }
 
     @Test
@@ -230,12 +252,15 @@ class CatalogueTest {
             Fixture(SYNTHETIC + 5, "Jetzt reicht's!", libraryIsbn = "9783833911316"),
             Fixture(4, "Emma"),
             Fixture(SYNTHETIC + 9, "Ich war's nicht!", libraryIsbn = "978-3-8387-8656-8"),
+            Fixture(2 * SYNTHETIC + 1, "Tõde ja õigus 1", digar = 431547),
         )
         val catalogue = Catalogue("de", listOf(segment(books)), null)
         val straw = catalogue.book(SYNTHETIC + 5)!!.libraryCover
         assertEquals(LibraryCover(DNB, "9783833911316"), straw)
-        assertEquals("9783838786568", catalogue.book(SYNTHETIC + 9)!!.libraryCover?.isbn)
+        assertEquals("9783838786568", catalogue.book(SYNTHETIC + 9)!!.libraryCover?.key)
         assertNull(catalogue.book(4)!!.libraryCover)
+        val estonian = catalogue.book(2 * SYNTHETIC + 1)!!.libraryCover
+        assertEquals(LibraryCover(DIGAR, "431547"), estonian)
         assertNull(catalogue(BOOKS).book(30)!!.libraryCover)
     }
 

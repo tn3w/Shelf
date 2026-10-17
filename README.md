@@ -191,7 +191,7 @@ Export writes the same format back.
 
 <table>
 <tr><th width="1%">Type</th><th width="1%">Contents</th></tr>
-<tr><td>Languages</td><td>English · Deutsch · Français · Español</td></tr>
+<tr><td>Languages</td><td>English · Deutsch · Français · Español · Eesti</td></tr>
 <tr><td>Genre packs</td><td>fantasy · scifi · mystery · romance</td></tr>
 <tr><td>More packs</td><td>kids · young-adult · nonfiction · general</td></tr>
 </table>
@@ -203,15 +203,26 @@ Packs include ISBNs of editions in their language; older apps ignore them.
 <tr><th width="1%">Source</th><th width="1%">Use</th><th width="1%">Licence</th></tr>
 <tr><td><a href="https://openlibrary.org/developers/dumps">Open Library</a></td><td>works, editions, readers, covers</td><td>CC0</td></tr>
 <tr><td><a href="https://data.dnb.de/opendata/">DNB</a> title dump</td><td>German editions, series, volumes, ISBNs, audience</td><td>CC0</td></tr>
+<tr><td><a href="https://data.digar.ee/">ERB</a> Estonian books</td><td>Estonian editions, series, volumes, ISBNs, genres, DIGAR covers</td><td><a href="https://doi.org/10.5281/zenodo.8228805">CC0</a></td></tr>
 </table>
 
-DNB only enriches the German catalogue. Its records join Open Library works by ISBN, else
-by title plus author. Books missing from Open Library get stable ids from 1,000,000,000;
-if Open Library gains one later, an alias moves saved entries. They rank below Open
-Library books with readers.
+DNB → German, ERB → Estonian catalogue. Join Open Library works by ISBN, else title or
+original title + author; per language, so editions never cross catalogues. Missing works
+get stable ids (DNB 1,000,000,000+, ERB 2,000,000,000+); later Open Library match → alias.
+Rank below Open Library books with readers. Joined works keep Open Library title, take
+library series. Genre-only pulp issues (`Dr. Norden 631 - Arztroman`) skipped.
 
-Covers: Open Library → DNB by ISBN, loaded at view time (not CC0, never packed) → drawn.
-German settings can change the DNB cover server.
+ERB: Estonian literature with ISBN (008/33 fiction form or 655 literary genre); textbook,
+activity, colouring, song books skipped. 655 genres → tags; 245 `$n`/`$p`, 490/830 →
+series; 246 → original title.
+
+Titles drop series/volume prefixes (`Gregs Tagebuch 01 . Von Idioten umzingelt!` →
+`Von Idioten umzingelt!`, `Band 2: Orwood` → `Orwood`), edition tags, `. Roman.`,
+trailing dots. Prefix naming writer's series → joins it. Series names searchable. Same
+title + writer (surname, first initial) → one book.
+
+Covers: Open Library → DNB (ISBN) or DIGAR thumbnail (ERB 856 `nlib-digar` id), view time
+only → drawn. Wide jacket scans show front half. DNB/DIGAR servers configurable.
 
 ## Generated covers
 
@@ -237,7 +248,8 @@ cd android
 ```sh
 cd builder && cargo build --release
 target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
-  [--library dnb=<dnb-all_lds.rdf.gz or url>]
+  [--library dnb=<dnb-all_lds.rdf.gz or url>] \
+  [--library erb=<ERB_eestikeelne_raamat.zip or url>]
 ```
 
 Format with `ktlint -F "android/app/src/**/*.kt"`.
@@ -264,9 +276,6 @@ App strings and store listing are translated on
 [Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
 from its `weblate` branch.
 
-App languages without catalogue (Eesti) apply via Auto or system app settings;
-catalogue then falls back to English.
-
 ## Project
 
 <table>
@@ -279,5 +288,6 @@ catalogue then falls back to English.
 
 [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) ·
 [Code of conduct](CODE_OF_CONDUCT.md) · [MIT License](LICENSE) ·
-Data from [Open Library](https://openlibrary.org) and the
-[Deutsche Nationalbibliothek](https://www.dnb.de)
+Data from [Open Library](https://openlibrary.org), the
+[Deutsche Nationalbibliothek](https://www.dnb.de) and the
+[National Library of Estonia](https://www.rara.ee)

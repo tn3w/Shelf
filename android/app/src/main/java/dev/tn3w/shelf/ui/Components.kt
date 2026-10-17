@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -40,6 +41,7 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.cover.*
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+import kotlin.math.min
 
 val ScreenPadding = 20.dp
 private val BackBarPadding = 4.dp
@@ -97,6 +99,7 @@ fun BookCover(
     val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(book.work, book.cover) { mutableStateOf(false) }
     var failed by remember(book.work, book.cover) { mutableStateOf(false) }
+    var alignment by remember(book.work, book.cover) { mutableStateOf(Alignment.Center) }
     val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
@@ -117,7 +120,12 @@ fun BookCover(
             )
             return@Box
         }
-        val url = book.coverUrl(settings.coverHost, "L", settings.dnbCoverHost)
+        val url = book.coverUrl(
+            settings.coverHost,
+            "L",
+            settings.dnbCoverHost,
+            settings.digarCoverHost,
+        )
         if (offline || !settings.onlineCovers || url == null || failed) {
             DrawnCover(book)
             return@Box
@@ -127,11 +135,21 @@ fun BookCover(
             model = url,
             contentDescription = stringResource(R.string.cover_of, book.title),
             contentScale = ContentScale.Crop,
-            onSuccess = { loaded = true },
+            alignment = alignment,
+            onSuccess = {
+                loaded = true
+                alignment = frontCover(it.painter.intrinsicSize)
+            },
             onError = { failed = true },
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+fun frontCover(size: Size): Alignment {
+    if (size.width <= size.height) return Alignment.Center
+    val spread = size.width / size.height * 1.5f
+    return BiasAlignment(min(1f, 0.5f * spread / (spread - 1f)), 0f)
 }
 
 private fun initials(name: String) = name

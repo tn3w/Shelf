@@ -17,7 +17,8 @@ use std::process::Command;
 use std::thread;
 use translations::{Request, Translations};
 
-pub const LANGUAGES: [&str; 4] = ["en", "de", "fr", "es"];
+pub const LANGUAGES: [&str; 5] = ["en", "de", "fr", "es", "et"];
+pub const LANGUAGE_COUNT: usize = LANGUAGES.len();
 const BUDGET_BYTES: usize = 75_000_000;
 const CORE_BYTES: usize = 3_000_000;
 const CORE_WORKS: usize = 20_000;
@@ -44,7 +45,7 @@ fn usage() -> ! {
         "usage: builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
-         [--base-url <url>] [--library dnb=<file-or-url>]"
+         [--base-url <url>] [--library dnb|erb=<file-or-url>]"
     );
     std::process::exit(2)
 }
@@ -180,7 +181,7 @@ fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> 
                 library_cover: book
                     .library_cover
                     .filter(|cover| entry.cover == 0 && cover.language == job.language)
-                    .map(|cover| (cover.source, cover.isbn)),
+                    .map(|cover| (cover.source, cover.key)),
             };
             Placed {
                 pack: chosen.pack,
@@ -560,7 +561,7 @@ fn main() {
     let mut order: Vec<usize> = (0..LANGUAGES.len()).collect();
     order.sort_by_key(|language| enriched.contains(language));
     let mut renamed = vec![Vec::new(); LANGUAGES.len()];
-    let mut rebased = [false; 4];
+    let mut rebased = [false; LANGUAGE_COUNT];
     let mut published = Vec::new();
     for language in order {
         if enriched.contains(&language) && !library.is_empty() {

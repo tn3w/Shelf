@@ -350,7 +350,9 @@ class Segment(buffer: ByteBuffer) {
                 while (reader.hasMore) {
                     covered += reader.varint()
                     val source = reader.byte()
-                    put(covered, LibraryCover(source, isbnOf(reader.varint())))
+                    val key = reader.varint()
+                    val text = if (source == DNB) isbnOf(key) else key.toString()
+                    put(covered, LibraryCover(source, text))
                 }
             }
         }[local]

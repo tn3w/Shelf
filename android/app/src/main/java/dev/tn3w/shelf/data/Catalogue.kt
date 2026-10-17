@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.data
 
 import androidx.collection.MutableIntList
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.BitSet
 import java.util.PriorityQueue
@@ -8,8 +9,10 @@ import kotlin.math.ln
 
 const val COVERS = "https://covers.openlibrary.org"
 const val DNB_COVERS = "https://portal.dnb.de"
+const val DIGAR_COVERS = "https://www.digar.ee"
 const val SYNTHETIC = 1_000_000_000
 const val DNB = 1
+const val DIGAR = 2
 
 data class Author(val number: Int, val name: String) {
     fun photoUrl(host: String, size: String) =
@@ -17,9 +20,10 @@ data class Author(val number: Int, val name: String) {
 }
 
 @Serializable
-data class LibraryCover(val source: Int, val isbn: String) {
-    fun url(dnbHost: String) = when (source) {
-        DNB -> "$dnbHost/opac/mvb/cover?isbn=$isbn"
+data class LibraryCover(val source: Int, @SerialName("isbn") val key: String) {
+    fun url(dnbHost: String, digarHost: String) = when (source) {
+        DNB -> "$dnbHost/opac/mvb/cover?isbn=$key"
+        DIGAR -> "$digarHost/arhiiv/nlib-digar:$key?thumb=1"
         else -> null
     }
 }
@@ -39,8 +43,18 @@ data class Book(
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
 
-    fun coverUrl(host: String, size: String, dnbHost: String = DNB_COVERS) =
-        if (cover == 0) libraryCover?.url(dnbHost) else "$host/b/id/$cover-$size.jpg"
+    fun coverUrl(
+        host: String,
+        size: String,
+        dnbHost: String = DNB_COVERS,
+        digarHost: String = DIGAR_COVERS,
+    ) = if (cover ==
+        0
+    ) {
+        libraryCover?.url(dnbHost, digarHost)
+    } else {
+        "$host/b/id/$cover-$size.jpg"
+    }
 }
 
 private val COMPANION = Regex(
@@ -93,7 +107,7 @@ fun normalizedIsbn(text: String): String? {
 }
 
 fun isbnsFor(book: Book, saved: String, catalogue: List<String>) =
-    (listOf(saved, book.libraryCover?.isbn.orEmpty()) + catalogue)
+    (listOf(saved, book.libraryCover?.key.orEmpty()) + catalogue)
         .mapNotNull(::normalizedIsbn)
         .distinct()
 

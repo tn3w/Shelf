@@ -122,6 +122,7 @@ data class Settings(
     val catalogueSource: String = "",
     val coverSource: String = "",
     val dnbCoverSource: String = "",
+    val digarCoverSource: String = "",
     val providers: Set<String> = emptySet(),
     val instantSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
@@ -132,6 +133,9 @@ data class Settings(
 
     val dnbCoverHost
         get() = dnbCoverSource.ifEmpty { DNB_COVERS }.trimEnd('/')
+
+    val digarCoverHost
+        get() = digarCoverSource.ifEmpty { DIGAR_COVERS }.trimEnd('/')
 }
 
 fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
@@ -598,6 +602,7 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     catalogueSource = current.catalogueSource,
     coverSource = current.coverSource,
     dnbCoverSource = current.dnbCoverSource,
+    digarCoverSource = current.digarCoverSource,
     providers = current.providers,
     instantSource = current.instantSource,
 )
