@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">À propos</string>
     <string name="about_book">À propos du livre</string>
@@ -116,43 +117,43 @@
     <string name="welcome_text">Trouvez, suivez et lisez des livres hors ligne.</string>
     <plurals name="books">
         <item quantity="one">%d livre</item>
-        <item quantity="other">%d livres</item>
         <item quantity="many">%d livres</item>
+        <item quantity="other">%d livres</item>
     </plurals>
     <plurals name="books_in_series">
         <item quantity="one">%d livre dans cette série</item>
-        <item quantity="other">%d livres dans cette série</item>
         <item quantity="many">%d livres dans cette série</item>
+        <item quantity="other">%d livres dans cette série</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d jour d\'affilée</item>
-        <item quantity="other">%d jours d\'affilée</item>
         <item quantity="many">%d jours d\'affilée</item>
+        <item quantity="other">%d jours d\'affilée</item>
     </plurals>
     <plurals name="editions">
         <item quantity="one">%d édition</item>
-        <item quantity="other">%d éditions</item>
         <item quantity="many">%d éditions</item>
+        <item quantity="other">%d éditions</item>
     </plurals>
     <plurals name="keep_streak">
         <item quantity="one">Lisez %d page aujourd\'hui pour garder la série.</item>
-        <item quantity="other">Lisez %d pages aujourd\'hui pour garder la série.</item>
         <item quantity="many">Lisez %d pages aujourd\'hui pour garder la série.</item>
+        <item quantity="other">Lisez %d pages aujourd\'hui pour garder la série.</item>
     </plurals>
     <plurals name="pages_left">
         <item quantity="one">Encore %d page pour la série.</item>
-        <item quantity="other">Encore %d pages pour la série.</item>
         <item quantity="many">Encore %d pages pour la série.</item>
+        <item quantity="other">Encore %d pages pour la série.</item>
     </plurals>
     <plurals name="readers">
         <item quantity="one">%d lecteur</item>
-        <item quantity="other">%d lecteurs</item>
         <item quantity="many">%d lecteurs</item>
+        <item quantity="other">%d lecteurs</item>
     </plurals>
     <plurals name="start_streak">
         <item quantity="one">Lisez %d page pour lancer une série.</item>
-        <item quantity="other">Lisez %d pages pour lancer une série.</item>
         <item quantity="many">Lisez %d pages pour lancer une série.</item>
+        <item quantity="other">Lisez %d pages pour lancer une série.</item>
     </plurals>
     <string name="because_you_read">Parce que vous avez lu %1$s</string>
     <string name="next_in_series">La suite de vos séries</string>
@@ -321,14 +322,16 @@
     <string name="free_books_header_value">Valeur</string>
     <string name="free_books_languages">Langues</string>
     <string name="free_books_attribute">Attribut</string>
-    <string name="free_books_form_help">{name} insère une variable encodée pour l\'URL, {+name} telle quelle. La recherche connaît {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} et {isbns} ; chaque règle ajoute son nom. Une recherche avec {isbn} essaie les ISBN du livre un par un et garde tous les résultats. Les règles appliquent CSS, puis chemin JSON, puis attribut, puis regex (premier groupe) ; les pages XML sont lues en XML. Les règles nommées size (octets) et format décrivent le fichier, skip écarte l\'élément. Les liens relatifs se résolvent par rapport à la page précédente.</string>
+    <string name="free_books_form_help">{name} insère une variable encodée pour l\'URL, {+name} telle quelle. La recherche connaît {query}, {title}, {author}, {language}, {isbn} et {isbns} ; chaque règle ajoute son nom. Une recherche avec {isbn} essaie les ISBN du livre un par un et garde tous les résultats. Les règles appliquent CSS, puis chemin JSON, puis attribut, puis regex (premier groupe). Les liens relatifs se résolvent par rapport à la page précédente.</string>
     <string name="free_books_test">Tester</string>
     <string name="free_books_test_hint">Cherche, exécute toutes les étapes pour le premier élément et ouvre le fichier sans le télécharger. Le test de débogage journalise aussi en-têtes, pages et éléments, puis enregistre le journal ; les valeurs des en-têtes sont masquées, vérifiez les URL avant de partager.</string>
     <plurals name="free_books_imported">
         <item quantity="one">%1$d source sur %2$d importée</item>
-        <item quantity="other">%1$d sources sur %2$d importées</item>
         <item quantity="many">%1$d sources sur %2$d importées</item>
+        <item quantity="other">%1$d sources sur %2$d importées</item>
     </plurals>
     <string name="free_books_debug">Test de débogage</string>
     <string name="free_books_debug_saved">Journal de débogage enregistré</string>
+    <string name="free_books_isbn" translatable="false"></string>
+    <string name="app_name" translatable="false"></string>
 </resources>
