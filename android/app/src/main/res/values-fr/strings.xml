@@ -332,6 +332,4 @@
     </plurals>
     <string name="free_books_debug">Test de débogage</string>
     <string name="free_books_debug_saved">Journal de débogage enregistré</string>
-    <string name="free_books_isbn" translatable="false"></string>
-    <string name="app_name" translatable="false"></string>
 </resources>

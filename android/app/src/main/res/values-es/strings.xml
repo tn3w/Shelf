@@ -332,6 +332,4 @@
     </plurals>
     <string name="free_books_debug">Prueba de depuración</string>
     <string name="free_books_debug_saved">Registro de depuración guardado</string>
-    <string name="free_books_isbn" translatable="false"></string>
-    <string name="app_name" translatable="false"></string>
 </resources>

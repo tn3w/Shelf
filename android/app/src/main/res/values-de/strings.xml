@@ -323,6 +323,4 @@
     </plurals>
     <string name="free_books_debug">Debug-Test</string>
     <string name="free_books_debug_saved">Debug-Protokoll gespeichert</string>
-    <string name="free_books_isbn" translatable="false"></string>
-    <string name="app_name" translatable="false"></string>
 </resources>
