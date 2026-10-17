@@ -287,7 +287,7 @@ impl Record {
             let titles = self.titles().map(|title| title_hash(&writer, title));
             keys.extend(titles.filter(specific));
             let volume = self.volume_key(&writer);
-            keys.extend(Some(volume).filter(|_| self.volume > 0).filter(specific));
+            keys.extend((self.volume > 0).then_some(volume).filter(specific));
         }
         let language = self.language.to_le_bytes();
         let local = |key: u64| hash(&[&key.to_le_bytes(), &language]);
