@@ -1,0 +1,8 @@
+• Estnisch als App-Sprache und Katalog, Cover der Nationalbibliothek
+• Deutscher Katalog wächst auf 388.000 Bücher mit DNB-Covern
+• Kostenlose E-Books aus offenen und eigenen Quellen
+• Öffnet MOBI, AZW3, CBR, CB7, DOCX, ODT und RTF
+• Suche: Reihennamen finden jeden Band, sauberere Titel, weniger Dubletten
+• Sicherer: nur https, App-Updates einen Tag nach Release
+• Absturzkorrekturen bei Reader, Import und Wiederherstellung
+• Katalog aktualisiert

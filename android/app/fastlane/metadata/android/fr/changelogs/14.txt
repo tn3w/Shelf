@@ -1,0 +1,8 @@
+• Estonien : app et catalogue, couvertures de la bibliothèque nationale
+• Le catalogue allemand passe à 388 000 livres avec couvertures DNB
+• Livres numériques gratuits de sources ouvertes et personnelles
+• Ouvre MOBI, AZW3, CBR, CB7, DOCX, ODT et RTF
+• Recherche : une série trouve chaque tome, titres plus propres, moins de doublons
+• Plus sûr : https uniquement, mises à jour un jour après leur sortie
+• Plantages corrigés : lecteur, import, restauration
+• Catalogue mis à jour

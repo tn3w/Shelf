@@ -8,9 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-10-10"
+val catalogueRelease = "catalogue-2026-10-17"
 val catalogueManifestSha256 =
-    "2ca03c17a7fced3d013862d2d31c196debde894f0d54242e559fd239be6bb4ea"
+    "2ed459dcc1d45cb2ea33eaa7fcea0cf3374802f281e81bc3c113a6e19a3edefc"
 val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
@@ -25,8 +25,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 13
-        versionName = "1.3.1"
+        versionCode = 14
+        versionName = "1.4.0"
         buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
     }
 

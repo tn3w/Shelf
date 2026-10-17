@@ -1,0 +1,8 @@
+• Estonian app and catalogue, covers from the national library
+• German catalogue grows to 388,000 books with DNB covers
+• Free ebooks from open sources, plus your own sources
+• Opens MOBI, AZW3, CBR, CB7, DOCX, ODT and RTF
+• Search: series names find every volume, cleaner titles, fewer duplicates
+• Safer: https only, app updates a day after release
+• Fixes for reader, import and restore crashes
+• Catalogue updated

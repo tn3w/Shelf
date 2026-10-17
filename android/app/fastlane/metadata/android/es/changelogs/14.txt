@@ -1,0 +1,8 @@
+• Estonio en la app y el catálogo, portadas de la biblioteca nacional
+• El catálogo alemán crece a 388 000 libros con portadas de la DNB
+• Libros electrónicos gratis de fuentes abiertas y propias
+• Abre MOBI, AZW3, CBR, CB7, DOCX, ODT y RTF
+• Búsqueda: el nombre de una serie encuentra cada tomo, títulos más limpios, menos duplicados
+• Más seguro: solo https, actualizaciones un día después del lanzamiento
+• Corrección de cierres en lector, importación y restauración
+• Catálogo actualizado
