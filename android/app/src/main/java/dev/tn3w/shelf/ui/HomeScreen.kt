@@ -96,17 +96,6 @@ fun HomeScreen(navigator: Navigator) {
             item { NoCatalogue { navigator.settings(SettingsPage.Catalogue) } }
             return@LazyColumn
         }
-        if (rows == null) {
-            item {
-                BookSection(
-                    stringResource(R.string.for_you),
-                    null,
-                    "for-you",
-                    navigator::book,
-                    subtitle = stringResource(R.string.for_you_subtitle),
-                )
-            }
-        }
         rows.orEmpty().filter { it.books.isNotEmpty() }.forEach { row ->
             item(key = row.key) {
                 BookSection(
