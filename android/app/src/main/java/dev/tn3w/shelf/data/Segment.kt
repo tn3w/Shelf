@@ -222,7 +222,7 @@ class Segment(buffer: ByteBuffer) {
     private val blocks = LruCache<Pair<Table, Int>, List<ByteArray>>(256)
     private val descriptionBlocks = LruCache<Int, Map<Int, Description>>(64)
     private val isbnBlocks = LruCache<Int, Map<Int, Int>>(16)
-    private val editionIsbns = LruCache<Int, List<Int>>(16)
+    private val isbnsByLocal by lazy { isbns?.let(::localIsbns) }
     private val coverBlocks = LruCache<Int, Map<Int, LibraryCover>>(16)
 
     private fun section(name: String) = sections.getValue(name)
@@ -320,22 +320,33 @@ class Segment(buffer: ByteBuffer) {
     }
 
     fun isbnsOf(local: Int): List<Int> {
-        val index = isbns ?: return emptyList()
-        return editionIsbns.getOrPut(local) {
-            (0 until index.blocks.count).flatMap { block ->
-                isbnBlock(index, block).filterValues { it == local }.keys
-            }
-        }
+        val (starts, keys) = isbnsByLocal ?: return emptyList()
+        return (starts[local] until starts[local + 1]).map(keys::get)
     }
 
-    private fun isbnBlock(index: BlockIndex, block: Int): Map<Int, Int> {
+    private fun localIsbns(index: BlockIndex): Pair<IntArray, IntArray> {
+        val starts = IntArray(workCount + 1)
+        val blocks = 0 until index.blocks.count
+        blocks.forEach { readIsbns(index, it) { _, local -> starts[local + 1]++ } }
+        for (local in 1..workCount) starts[local] += starts[local - 1]
+        val keys = IntArray(starts[workCount])
+        val filled = starts.copyOf()
+        blocks.forEach {
+            readIsbns(index, it) { isbn, local -> keys[filled[local]++] = isbn }
+        }
+        return starts to keys
+    }
+
+    private fun isbnBlock(index: BlockIndex, block: Int) = buildMap {
+        readIsbns(index, block) { isbn, local -> put(isbn, local) }
+    }
+
+    private fun readIsbns(index: BlockIndex, block: Int, action: (Int, Int) -> Unit) {
         val reader = ByteReader(inflate(index.blocks[block]))
         var isbn = index.firsts[block]
-        return buildMap {
-            while (reader.hasMore) {
-                isbn += reader.varint()
-                put(isbn, reader.varint())
-            }
+        while (reader.hasMore) {
+            isbn += reader.varint()
+            action(isbn, reader.varint())
         }
     }
 

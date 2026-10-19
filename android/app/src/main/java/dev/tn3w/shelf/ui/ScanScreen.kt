@@ -169,8 +169,8 @@ private fun CameraPreview(
             val frame = runCatching { image.use(::grayOf) }.getOrNull()
                 ?: return@setAnalyzer
             val tapped = SystemClock.uptimeMillis() - tappedAt.get() < TAP_MILLIS
-            val step = analyze(frame, tapped)
-            val work = step.work ?: return@setAnalyzer
+            val step = runCatching { analyze(frame, tapped) }.getOrNull()
+            val work = step?.work ?: return@setAnalyzer
             val marks = upright(step.dots, frame, degrees)
             view.post {
                 if (closed.compareAndSet(false, true)) found(work, view.bitmap, marks)

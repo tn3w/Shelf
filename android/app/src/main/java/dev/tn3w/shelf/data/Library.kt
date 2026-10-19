@@ -43,7 +43,7 @@ internal val SETTINGS = slot("settings", Settings())
 internal val DISMISSED = slot("dismissed", emptySet<Int>())
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
-private val BOOK_FILE = Regex("""-?\d+(\.\w+|-cover-\d+)""")
+private val BOOK_FILE = Regex("""(-?\d+)(\.\w+|-cover-\d+)""")
 val FONT_SCALES = 0.7f..1.8f
 val SPACING_RANGE = 1.35f..1.8f
 val MARGIN_RANGE = 16..44
@@ -490,7 +490,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val works =
             saved.first().map { it.work } + progress.first().keys + dismissed.first()
         if (works.none { alias(it) != null }) return
-        moveCovers(booksDir, alias)
+        moveBookFiles(booksDir, alias)
         store.edit { it.redirect(alias) }
     }
 
@@ -515,29 +515,24 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         }
 
     suspend fun importFrom(uri: Uri): Boolean {
-        val backup = context.readFrom(uri, ::readArchive) ?: return false
+        val backup = context.readFrom(uri) { readArchive(it, booksDir) } ?: return false
         merge(backup)
         return true
     }
 
-    private fun readArchive(input: InputStream) = ZipInputStream(input).use { archive ->
-        var backup: Backup? = null
-        generateSequence { archive.nextEntry }.forEach { entry ->
-            when {
-                entry.name == BACKUP_ENTRY -> backup = readBackup(archive)
-
-                entry.name.startsWith(BOOKS_PREFIX) ->
-                    extractBook(booksDir, entry.name, archive)
-            }
-        }
-        backup
-    }
-
-    private fun readBackup(archive: ZipInputStream): Backup =
-        json.decodeFromString(archive.readAtMost(MAX_ENTRY_BYTES).decodeToString())
-
     private suspend fun merge(backup: Backup) = store.edit { it.merge(backup) }
 }
+
+internal fun readArchive(input: InputStream, directory: File) =
+    ZipInputStream(input).use { archive ->
+        if (archive.nextEntry?.name != BACKUP_ENTRY) return@use null
+        val text = archive.readAtMost(MAX_ENTRY_BYTES).decodeToString()
+        val backup = json.decodeFromString<Backup>(text)
+        generateSequence { archive.nextEntry }
+            .filter { it.name.startsWith(BOOKS_PREFIX) }
+            .forEach { extractBook(directory, it.name, archive) }
+        backup
+    }
 
 internal fun extractBook(
     directory: File,
@@ -558,12 +553,16 @@ internal fun extractBook(
     }
 }
 
-internal fun moveCovers(directory: File, alias: (Int) -> Int?) =
+internal fun movedFile(name: String, alias: (Int) -> Int?): String {
+    val (work, rest) = BOOK_FILE.matchEntire(name)?.destructured ?: return name
+    val target = work.toIntOrNull()?.let(alias) ?: return name
+    return "$target$rest"
+}
+
+internal fun moveBookFiles(directory: File, alias: (Int) -> Int?) =
     directory.listFiles().orEmpty().forEach { file ->
-        val work = file.name.substringBefore("-cover-", "").toIntOrNull()
-        val target = work?.let(alias) ?: return@forEach
-        val cover = file.name.substringAfter("-cover-")
-        file.renameTo(directory.resolve("$target-cover-$cover"))
+        val name = movedFile(file.name, alias)
+        if (name != file.name) file.renameTo(directory.resolve(name))
     }
 
 private fun Preferences.toBackup() = Backup(
@@ -613,7 +612,9 @@ internal fun MutablePreferences.redirect(alias: (Int) -> Int?) {
         newestPerWork(entries.map { it.copy(work = moved(it.work)) })
     }
     update(PROGRESS) { all ->
-        all.mapKeys { moved(it.key) }
+        all.entries.associate { (work, progress) ->
+            moved(work) to progress.copy(file = movedFile(progress.file, alias))
+        }
     }
     update(DISMISSED) { dismissed ->
         dismissed.mapTo(HashSet(), ::moved)

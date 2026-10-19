@@ -8,10 +8,13 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.time.LocalDate
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.time.Duration
 
 private inline fun <reified T> MutablePreferences.read(name: String) =
@@ -27,8 +30,21 @@ private fun backupOf(preferences: MutablePreferences) = with(preferences) {
     )
 }
 
+private fun archive(vararg entries: Pair<String, String>): ByteArray {
+    val bytes = ByteArrayOutputStream()
+    ZipOutputStream(bytes).use { zip ->
+        entries.forEach { (name, text) ->
+            zip.putNextEntry(ZipEntry(name))
+            zip.write(text.toByteArray())
+            zip.closeEntry()
+        }
+    }
+    return bytes.toByteArray()
+}
+
 class LibraryTest {
     private val entries = stringPreferencesKey("entries")
+    private val progress = stringPreferencesKey("progress")
     private val settings = stringPreferencesKey("settings")
     private val dismissed = stringPreferencesKey("dismissed")
 
@@ -138,15 +154,39 @@ class LibraryTest {
     }
 
     @Test
-    fun redirectMovesCustomCovers() {
+    fun redirectMovesBookFilesAndCovers() {
         val directory = Files.createTempDirectory("books").toFile()
-        directory.resolve("5-cover-100").writeText("cover")
-        directory.resolve("6-cover-200").writeText("other")
-        moveCovers(directory) { if (it == 5) -9 else null }
+        listOf("5-cover-100", "5.epub", "6-cover-200").forEach {
+            directory.resolve(it).writeText("x")
+        }
+        moveBookFiles(directory) { if (it == 5) -9 else null }
         assertEquals(
-            listOf("-9-cover-100", "6-cover-200"),
+            listOf("-9-cover-100", "-9.epub", "6-cover-200"),
             directory.list()!!.sorted(),
         )
+        directory.deleteRecursively()
+    }
+
+    @Test
+    fun redirectPointsProgressAtMovedFile() {
+        val stored = mapOf(5 to Progress("5.epub", page = 3), 6 to Progress("6.pdf"))
+        val preferences = mutablePreferencesOf(progress to json.encodeToString(stored))
+        preferences.redirect { if (it == 5) 42 else null }
+        val expected = mapOf(42 to Progress("42.epub", page = 3), 6 to Progress("6.pdf"))
+        assertEquals(expected, preferences.read<Map<Int, Progress>>("progress"))
+    }
+
+    @Test
+    fun restoreWithoutLibraryJsonExtractsNothing() {
+        val directory = Files.createTempDirectory("books").toFile()
+        val missing = archive("books/1.epub" to "book")
+        assertEquals(null, readArchive(missing.inputStream(), directory))
+        val broken = archive("library.json" to "{", "books/1.epub" to "book")
+        runCatching { readArchive(broken.inputStream(), directory) }
+        assertEquals(emptyList<String>(), directory.list()!!.toList())
+        val valid = archive("library.json" to "{}", "books/1.epub" to "book")
+        assertEquals(Backup(), readArchive(valid.inputStream(), directory))
+        assertEquals(listOf("1.epub"), directory.list()!!.toList())
         directory.deleteRecursively()
     }
 

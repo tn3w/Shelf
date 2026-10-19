@@ -279,6 +279,12 @@ class CatalogueTest {
     }
 
     @Test
+    fun popularityWithoutScoresIsZero() {
+        val catalogue = Catalogue("en", listOf(segment(BOOKS)), null)
+        assertEquals(0.0, catalogue.popularity(30), 0.0)
+    }
+
+    @Test
     fun syntheticAuthorsHaveNoPhoto() {
         assertNull(Author(SYNTHETIC + 13395351, "Jeff Kinney").photoUrl(COVERS, "M"))
         assertEquals(

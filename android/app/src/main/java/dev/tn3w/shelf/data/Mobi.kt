@@ -277,7 +277,7 @@ internal fun decompressPalmDoc(input: ByteArray): ByteArray {
     return output.copyOf(size)
 }
 
-private class HuffDecoder(huff: ByteArray, dictionaries: List<ByteArray>) {
+internal class HuffDecoder(huff: ByteArray, dictionaries: List<ByteArray>) {
     private val lengths = IntArray(256)
     private val terminal = BooleanArray(256)
     private val tableMaximum = LongArray(256)
@@ -341,6 +341,7 @@ private class HuffDecoder(huff: ByteArray, dictionaries: List<ByteArray>) {
                 while (code < minimum[length]) length++
                 limit = maximum[length]
             }
+            check(length in 1..32) { "bad HUFF code" }
             shift -= length
             bitsLeft -= length
             if (bitsLeft < 0) return output.toByteArray()

@@ -190,6 +190,18 @@ class FormatsTest {
         assertThrows(IllegalStateException::class.java) { openDocument(file) }
     }
 
+    @Test(timeout = 5000)
+    fun huffCodeWithZeroLengthFails() {
+        val huff = ByteBuffer.allocate(24 + 1024 + 256).put("HUFF".toByteArray())
+            .putInt(8, 24).putInt(12, 24 + 1024).array()
+        val dictionary = ByteBuffer.allocate(20).put("CDIC".toByteArray())
+            .putInt(8, 1).putShort(16, 2).putShort(18, 0x8000.toShort()).array()
+        val decoder = HuffDecoder(huff, listOf(dictionary))
+        assertThrows(IllegalStateException::class.java) {
+            decoder.unpack(byteArrayOf(1, 2, 3, 4))
+        }
+    }
+
     @Test
     fun rtfKeepsTextAndSkipsTables() {
         val file = folder.newFile("story.rtf")

@@ -44,10 +44,10 @@ private val GITHUB_REPOSITORY = Regex("""[\w.-]+/[\w.-]+""")
 fun releasesUrl(source: String): String {
     val repository = source.ifEmpty { REPOSITORY }
     if (!GITHUB_REPOSITORY.matches(repository)) return repository
-    return "https://api.github.com/repos/$repository/releases?per_page=30"
+    return "https://api.github.com/repos/$repository/releases?per_page=100"
 }
 
-val RELEASES = releasesUrl(REPOSITORY)
+const val LATEST_RELEASE = "https://api.github.com/repos/$REPOSITORY/releases/latest"
 
 fun isValidSource(source: String) =
     source.isEmpty() || GITHUB_REPOSITORY.matches(source) || source.startsWith("https://")
@@ -288,9 +288,9 @@ class Packs(private val context: Context) {
     private fun manifestUrl(): String {
         val url = releasesUrl(source)
         if (url.substringBefore('?').endsWith(MANIFEST_NAME)) return url
-        val release = json.decodeFromString<List<Release>>(fetchText(url)).first {
-            it.tag.startsWith("catalogue-")
-        }
+        val release = json.decodeFromString<List<Release>>(fetchText(url))
+            .firstOrNull { it.tag.startsWith("catalogue-") }
+            ?: error("no catalogue release in $url")
         return release.assetUrl(MANIFEST_NAME)
     }
 
@@ -339,7 +339,10 @@ class Packs(private val context: Context) {
             for (entry in missing) {
                 fetching.withLock {
                     if (entry.id !in localIds()) {
-                        fetch(entry) { onProgress((done + it).toFloat() / total) }
+                        fetch(entry) {
+                            ensureActive()
+                            onProgress((done + it).toFloat() / total)
+                        }
                     }
                 }
                 done += entry.size

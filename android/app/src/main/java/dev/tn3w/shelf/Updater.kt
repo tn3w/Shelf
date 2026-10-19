@@ -43,11 +43,10 @@ object Updater {
     fun supported(context: Context) = !isStoreInstaller(installerOf(context))
 
     suspend fun latest(): Release? = withContext(Dispatchers.IO) {
-        val release = json
-            .decodeFromString<List<Release>>(fetchText(RELEASES))
-            .firstOrNull { it.tag.startsWith("v") && !it.draft && !it.prerelease }
-        val names = release?.assets.orEmpty().map { it.name }
-        release?.takeIf { APK_NAME in names && isNewer(it.version) }
+        val release = json.decodeFromString<Release>(fetchText(LATEST_RELEASE))
+        val names = release.assets.map { it.name }
+        val usable = release.tag.startsWith("v") && APK_NAME in names
+        release.takeIf { usable && isNewer(it.version) }
     }
 
     fun isAvailable(release: Release) = isNewer(release.version)
@@ -121,14 +120,14 @@ object Updater {
 
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val app = context.applicationContext as ShelfApp
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
         if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) {
-            (context.applicationContext as ShelfApp).packs.removeBundledCopies()
+            app.packs.removeBundledCopies()
             return
         }
-        val confirm = IntentCompat.getParcelableExtra(
+        app.installConfirmation.value = IntentCompat.getParcelableExtra(
             intent, Intent.EXTRA_INTENT, Intent::class.java,
-        ) ?: return
-        context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        )
     }
 }

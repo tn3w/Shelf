@@ -1,9 +1,12 @@
 package dev.tn3w.shelf
 
 import android.app.Application
+import android.content.ContentResolver
+import android.content.Intent
 import android.net.Uri
 import android.os.LocaleList
 import android.util.Log
+import android.widget.Toast
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -11,6 +14,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
@@ -30,6 +34,9 @@ class ShelfApp :
     val recognizer by lazy { assets.open("scan.bin").use { Recognizer(it.readBytes()) } }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
+    private val downloadJobs = ConcurrentHashMap<String, Job>()
+    val openedWork = MutableStateFlow<Int?>(null)
+    val installConfirmation = MutableStateFlow<Intent?>(null)
 
     override fun onCreate() {
         super.onCreate()
@@ -76,23 +83,31 @@ class ShelfApp :
         }
     }
 
-    fun download(language: String, pack: String) = scope.launch(Dispatchers.IO) {
+    fun download(language: String, pack: String) {
         val key = "$language-$pack"
-        if (!downloads.claim(key)) return@launch
-        runCatching {
-            packs.download(language, pack) { progress ->
-                downloads.update { it + (key to Download.Running(progress)) }
+        if (!downloads.claim(key)) return
+        downloadJobs[key] = scope.launch(Dispatchers.IO) {
+            runCatching {
+                packs.download(language, pack) { progress ->
+                    downloads.update { it + (key to Download.Running(progress)) }
+                }
             }
+                .onSuccess {
+                    downloads.update { it - key }
+                    if (loaded.value?.catalogue?.language == language) reload(language)
+                }
+                .onFailure { downloads.update { it + (key to Download.Failed) } }
         }
-            .onSuccess {
-                downloads.update { it - key }
-                if (loaded.value?.catalogue?.language == language) reload(language)
-            }
-            .onFailure { downloads.update { it + (key to Download.Failed) } }
     }
 
     fun removePacks(language: String, pack: String? = null, everywhere: Boolean = false) =
         scope.launch(Dispatchers.IO) {
+            val stopped = downloadJobs.keys.filter {
+                everywhere || it == "$language-$pack" ||
+                    (pack == null && it.startsWith("$language-"))
+            }
+            stopped.forEach { downloadJobs.remove(it)?.cancelAndJoin() }
+            downloads.update { it - stopped.toSet() }
             packs.remove(language.takeUnless { everywhere }, pack)
             reload(language)
         }
@@ -102,6 +117,19 @@ class ShelfApp :
         library.updateSettings { it.copy(catalogueSource = custom) }
         packs.source = custom
         packs.forgetManifest()
+    }
+
+    fun openFile(uri: Uri) = scope.launch {
+        val work = uri.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
+            ?.let { library.importFile(it) }
+        if (work != null) {
+            openedWork.value = work
+            return@launch
+        }
+        withContext(Dispatchers.Main) {
+            Toast.makeText(this@ShelfApp, R.string.unsupported_file, Toast.LENGTH_LONG)
+                .show()
+        }
     }
 
     suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {

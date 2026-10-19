@@ -128,7 +128,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     val workCount = visible.sumOf { it.cardinality() }
     val tags = segments.firstOrNull()?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
-    private val maxScore by lazy { scores.maxOrNull()?.toDouble() ?: 1.0 }
+    private val maxScore by lazy {
+        scores.maxOrNull()?.takeIf { it > 0 }?.toDouble() ?: 1.0
+    }
     private val tagCounts by lazy {
         tags.associate { tag -> tag.id to segments.sumOf { it.tagCount(tag.id) } }
     }
@@ -283,6 +285,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
         fun visibility(segments: List<Segment>): List<BitSet> {
             require(segments.size < 1 shl SEGMENT_BITS)
+            require(segments.all { it.workCount < 1 shl LOCAL_BITS })
             val bits = segments.map { BitSet(it.workCount) }
             val entries = LongArray(segments.sumOf { it.workCount + it.tombstones.size })
             var count = 0

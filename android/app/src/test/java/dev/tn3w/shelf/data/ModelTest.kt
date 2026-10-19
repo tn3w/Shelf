@@ -72,11 +72,14 @@ class ModelTest {
 
     @Test
     fun resolvesReleaseUrls() {
-        val official = "https://api.github.com/repos/$REPOSITORY/releases?per_page=30"
+        val official = "https://api.github.com/repos/$REPOSITORY/releases?per_page=100"
         assertEquals(official, releasesUrl(""))
-        assertEquals(official, RELEASES)
         assertEquals(
-            "https://api.github.com/repos/me/fork/releases?per_page=30",
+            "https://api.github.com/repos/$REPOSITORY/releases/latest",
+            LATEST_RELEASE,
+        )
+        assertEquals(
+            "https://api.github.com/repos/me/fork/releases?per_page=100",
             releasesUrl("me/fork"),
         )
         val manifest = "https://example.org/manifest.json"

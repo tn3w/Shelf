@@ -1,6 +1,5 @@
 package dev.tn3w.shelf
 
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -23,8 +22,10 @@ import androidx.compose.material3.adaptive.navigationsuite.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.IntentCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.*
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -32,7 +33,6 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import dev.tn3w.shelf.data.*
 import dev.tn3w.shelf.ui.*
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
@@ -106,29 +106,25 @@ class Navigator(private val controller: NavHostController) {
     }
 }
 
-private fun openedFile(intent: Intent): Uri? {
-    val uri = when (intent.action) {
-        Intent.ACTION_VIEW -> intent.data
+private fun openedFile(intent: Intent): Uri? = when (intent.action) {
+    Intent.ACTION_VIEW -> intent.data
 
-        Intent.ACTION_SEND ->
-            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+    Intent.ACTION_SEND ->
+        IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
 
-        else -> null
-    }
-    return uri?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
+    else -> null
 }
 
 private fun ComponentActivity.transparentBars(style: SystemBarStyle) =
     enableEdgeToEdge(style, style)
 
 class MainActivity : ComponentActivity() {
-    private val opened = MutableStateFlow<Uri?>(null)
+    private val app get() = application as ShelfApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         transparentBars(SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
-        if (savedInstanceState == null) opened.value = openedFile(intent)
-        val app = application as ShelfApp
+        if (savedInstanceState == null) openedFile(intent)?.let(app::openFile)
         setContent {
             val settings by app.library.settings.collectAsStateWithLifecycle(null)
             val current = settings ?: return@setContent
@@ -143,7 +139,7 @@ class MainActivity : ComponentActivity() {
                     Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background,
                 ) {
                     if (current.onboarded) {
-                        ShelfNavigation(current, opened)
+                        ShelfNavigation(current)
                     } else {
                         OnboardingScreen()
                     }
@@ -154,19 +150,31 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        openedFile(intent)?.let { opened.value = it }
+        openedFile(intent)?.let(app::openFile)
     }
 }
 
 @Composable
-private fun OpenFile(opened: MutableStateFlow<Uri?>, navigator: Navigator) {
+private fun OpenFile(navigator: Navigator) {
     val app = shelfApp()
-    val uri by opened.collectAsStateWithLifecycle()
-    LaunchedEffect(uri) {
-        val source = uri ?: return@LaunchedEffect
-        val work = app.library.importFile(source)
-        opened.value = null
-        navigator.openImported(work, app)
+    val opened by app.openedWork.collectAsStateWithLifecycle()
+    LaunchedEffect(opened) {
+        val work = opened ?: return@LaunchedEffect
+        app.openedWork.value = null
+        navigator.reader(work)
+    }
+}
+
+@Composable
+private fun ConfirmInstall() {
+    val app = shelfApp()
+    val context = LocalContext.current
+    val confirmation by app.installConfirmation
+        .collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
+    LaunchedEffect(confirmation) {
+        val intent = confirmation ?: return@LaunchedEffect
+        app.installConfirmation.value = null
+        context.startActivity(intent)
     }
 }
 
@@ -176,7 +184,7 @@ private fun NavHostController.selectedTab() =
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
-private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) {
+private fun ShelfNavigation(settings: Settings) {
     val controller = rememberNavController()
     val navigator = remember(controller) { Navigator(controller) }
     val entry by controller.currentBackStackEntryAsState()
@@ -192,7 +200,8 @@ private fun ShelfNavigation(settings: Settings, opened: MutableStateFlow<Uri?>) 
     LaunchedEffect(language) { app.showLanguage(language) }
 
     UpdatePrompt(settings)
-    OpenFile(opened, navigator)
+    OpenFile(navigator)
+    ConfirmInstall()
     NavigationSuiteScaffold(
         layoutType = if (hidden) NavigationSuiteType.None else adaptive,
         navigationSuiteItems = {
