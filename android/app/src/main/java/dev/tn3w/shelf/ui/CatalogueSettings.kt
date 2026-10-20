@@ -66,7 +66,7 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
         release.ifEmpty { null }?.let { stringResource(R.string.release_date, it) },
         stringResource(R.string.storage_used, bytes(storage)),
     )
-    val note = stringResource(R.string.open_library_note)
+    val note = stringResource(LIBRARY_NOTES[language] ?: R.string.open_library_note)
     val hint = details.joinToString(" · ") + "\n" + note
     val title = stringResource(R.string.packs_language, nativeName(language))
     SettingsGroup(title, hint) {
@@ -163,6 +163,11 @@ private val SOURCE_FIELDS =
 private val LIBRARY_COVER_SOURCES = mapOf(
     "de" to DNB_COVER_SOURCE,
     "et" to DIGAR_COVER_SOURCE,
+)
+
+private val LIBRARY_NOTES = mapOf(
+    "de" to R.string.dnb_note,
+    "et" to R.string.erb_note,
 )
 
 @Composable

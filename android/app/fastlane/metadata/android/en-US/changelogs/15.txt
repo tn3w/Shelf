@@ -1,0 +1,4 @@
+• App language also selectable in Android settings
+• Popular shows directly when For you is unavailable
+• Fixes: scanner crash, stuck MOBI files, lost imports, update and restore issues
+• CBR comics open only when packed as ZIP (RAR is non-free)

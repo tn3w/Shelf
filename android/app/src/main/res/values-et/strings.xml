@@ -54,11 +54,15 @@
     <string name="more_by">Veel autorilt %s</string>
     <string name="no_results">Tulemusi pole.</string>
     <string name="online_covers">Laadi kaanepildid</string>
-    <string name="online_covers_hint">Too kaanepildid Open Libraryst.</string>
+    <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st ja DIGARist.</string>
     <string name="open_failed">Seda faili ei saanud avada.</string>
     <string name="page_failed">Seda lehte ei saanud kuvada.</string>
     <string name="open_library_license">Open Library andmete litsents</string>
     <string name="open_library_note">Raamatuandmed pärinevad Open Libraryst, koostatud igakuiselt selle avalikest väljavõtetest.</string>
+    <string name="dnb_note">Raamatuandmed pärinevad Open Libraryst ja Saksa Rahvusraamatukogust (DNB), koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="erb_note">Raamatuandmed pärinevad Open Libraryst ja Eesti Rahvusraamatukogust (ERB), koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="dnb_license">DNB andmete litsents</string>
+    <string name="erb_license">ERB andmete litsents</string>
     <string name="pack_available">Paigaldamata</string>
     <string name="pack_core">Põhikataloog</string>
     <string name="pack_failed">Allalaadimine ebaõnnestus. Kontrolli ühendust ja proovi uuesti.</string>
@@ -80,7 +84,7 @@
     <string name="popular_now_subtitle">Mida lugejad kõikjal avavad.</string>
     <string name="popular_subtitle">Lugejate lemmikud kõikjal.</string>
     <string name="privacy">Privaatsus</string>
-    <string name="privacy_note">Jälgimist, reklaame, kontosid ega identifikaatoreid pole. Shelf kasutab võrku ainult selleks, mille sisse lülitad või mida puudutad: kataloogipaketid GitHubist või sinu enda allikast, rakenduse uuendused GitHubist, kaanepildid ja autorifotod Open Libraryst. Võrguühenduseta režiim peatab kõik selle. Sinu raamatukogu jääb sellesse seadmesse.</string>
+    <string name="privacy_note">Jälgimist, reklaame, kontosid ega identifikaatoreid pole. Shelf kasutab võrku ainult selleks, mille sisse lülitad või mida puudutad: kataloogipaketid GitHubist või sinu enda allikast, rakenduse uuendused GitHubist, kaanepildid Open Libraryst, DNB-st ja DIGARist, autorifotod Open Libraryst. Võrguühenduseta režiim peatab kõik selle. Sinu raamatukogu jääb sellesse seadmesse.</string>
     <string name="reading">Loen</string>
     <string name="recent">Hiljutised otsingud</string>
     <string name="remove_pack">Eemalda %s</string>
@@ -101,7 +105,7 @@
     <string name="theme_system">Süsteem</string>
     <string name="topics">Teemad</string>
     <string name="trending">Trendis</string>
-    <string name="unsupported_file">Toetamata fail. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT või HTML.</string>
+    <string name="unsupported_file">Toetamata fail. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML.</string>
     <string name="up_to_date">Shelf on ajakohane.</string>
     <string name="update_available">Shelf %s on saadaval</string>
     <string name="update_failed">Uuendamine ebaõnnestus.</string>

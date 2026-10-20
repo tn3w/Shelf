@@ -38,7 +38,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 <table>
 <tr><th width="1%">Find</th><th width="1%">Read</th><th width="1%">Track</th></tr>
-<tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · CBR · DOCX · RTF · <a href="#formats">more</a></td><td align="center">Want · Reading · Finished</td></tr>
+<tr><td align="center">Typo-tolerant search with filters, cover scanner</td><td align="center">EPUB · MOBI · AZW3 · PDF · FB2 · CBZ · CB7 · DOCX · RTF · <a href="#formats">more</a></td><td align="center">Want · Reading · Finished</td></tr>
 <tr><td align="center">Genres, series, authors, free ebooks</td><td align="center">Paper and night pages</td><td align="center">Daily goal and streaks</td></tr>
 <tr><td align="center">Recommendations on device</td><td align="center">Volume and page keys</td><td align="center">Goodreads / StoryGraph import</td></tr>
 </table>
@@ -97,15 +97,15 @@ file under another extension → same book, progress kept.
 <tr><td>Palm</td><td><code>pdb</code></td><td>PalmDOC text or HTML, MOBI</td></tr>
 <tr><td>FictionBook</td><td><code>fb2</code> <code>fbz</code> <code>fb2.zip</code></td><td>sections, styles, embedded images</td></tr>
 <tr><td>PDF</td><td><code>pdf</code></td><td>pages via <code>PdfRenderer</code></td></tr>
-<tr><td>Comics</td><td><code>cbz</code> <code>cbr</code> <code>cb7</code> <code>cbt</code></td><td>image pages, natural order; RAR up to v7</td></tr>
+<tr><td>Comics</td><td><code>cbz</code> <code>cbr</code> <code>cb7</code> <code>cbt</code></td><td>image pages, natural order; CBR only as ZIP</td></tr>
 <tr><td>Office</td><td><code>docx</code> <code>odt</code> <code>rtf</code></td><td>headings (any Word language), bold/italic (DOCX), images (DOCX, ODT); comments skipped</td></tr>
 <tr><td>Web, text</td><td><code>html</code> <code>htm</code> <code>xhtml</code> <code>htmlz</code> <code>txt</code> <code>txtz</code> <code>md</code></td><td>headings, styles; UTF-8 or Windows-1252</td></tr>
 </table>
 
 A plain `zip` opens as whatever it holds: EPUB, DOCX, ODT, FB2, HTML, images or text.
-ZIP, RAR, 7z and tar via `java.util.zip`, [junrar](https://github.com/junrar/junrar) and
-[Commons Compress](https://commons.apache.org/proper/commons-compress/); RAR, 7z and tar
-pages unpack to the cache while open (2 GB cap), cleared on start. Kindle reader in
+ZIP, 7z and tar via `java.util.zip` and
+[Commons Compress](https://commons.apache.org/proper/commons-compress/); 7z and tar pages
+unpack to the cache while open (2 GB cap), cleared on start. Kindle reader in
 `data/Mobi.kt`, everything else in `data/Documents.kt`. Long scans use one `Matcher`
 (`Regex.scan`): `findAll` re-copies the input per match on Android.
 

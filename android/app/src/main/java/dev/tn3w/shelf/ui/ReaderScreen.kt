@@ -67,6 +67,8 @@ class ReaderViewModel(application: Application, handle: SavedStateHandle) :
     }
     val opened = flow { emit(opening.await()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    var chrome by mutableStateOf(false)
+    var showChapters by mutableStateOf(false)
 
     fun save(progress: Progress, pagesRead: Int) {
         detached { library.saveProgress(work, progress, pagesRead) }
@@ -401,8 +403,8 @@ private fun Pages(
 ) {
     val viewModel: ReaderViewModel = viewModel()
     val scope = rememberCoroutineScope()
-    var chrome by rememberSaveable(key = "chrome") { mutableStateOf(false) }
-    var showChapters by rememberSaveable(key = "chapters") { mutableStateOf(false) }
+    var chrome by viewModel::chrome
+    var showChapters by viewModel::showChapters
     var furthest by rememberSaveable { mutableIntStateOf(pager.currentPage) }
     var previous by rememberSaveable { mutableIntStateOf(pager.currentPage) }
     val chapter = chapters.lastOrNull { it.second in 0..pager.currentPage }

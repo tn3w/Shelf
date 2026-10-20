@@ -1,0 +1,4 @@
+• Langue de l'app aussi réglable dans les paramètres Android
+• Populaires s'affiche directement si Pour vous est indisponible
+• Corrections : plantage du scanner, fichiers MOBI bloqués, imports perdus, mise à jour et restauration
+• Les BD CBR s'ouvrent seulement au format ZIP (RAR n'est pas libre)

@@ -54,11 +54,15 @@
     <string name="more_by">More by %s</string>
     <string name="no_results">No results.</string>
     <string name="online_covers">Load covers</string>
-    <string name="online_covers_hint">Fetch cover images from Open Library.</string>
+    <string name="online_covers_hint">Fetch cover images from Open Library, DNB and DIGAR.</string>
     <string name="open_failed">This file could not be opened.</string>
     <string name="page_failed">This page could not be displayed.</string>
     <string name="open_library_license">Open Library data license</string>
     <string name="open_library_note">Book data from Open Library, built monthly from its public dumps.</string>
+    <string name="dnb_note">Book data from Open Library and the German National Library (DNB), built monthly from their public dumps.</string>
+    <string name="erb_note">Book data from Open Library and the National Library of Estonia (ERB), built monthly from their public dumps.</string>
+    <string name="dnb_license">DNB data license</string>
+    <string name="erb_license">ERB data license</string>
     <string name="pack_available">Not installed</string>
     <string name="pack_core">Core</string>
     <string name="pack_failed">Download failed. Check your connection and try again.</string>
@@ -80,7 +84,7 @@
     <string name="popular_now_subtitle">What readers everywhere are opening.</string>
     <string name="popular_subtitle">Loved by readers everywhere.</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers and author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
+    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers from Open Library, DNB and DIGAR, author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
     <string name="reading">Reading</string>
     <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
@@ -101,7 +105,7 @@
     <string name="theme_system">System</string>
     <string name="topics">Topics</string>
     <string name="trending">Trending</string>
-    <string name="unsupported_file">Unsupported file. Try EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT or HTML.</string>
+    <string name="unsupported_file">Unsupported file. Try EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT or HTML.</string>
     <string name="up_to_date">Shelf is up to date.</string>
     <string name="update_available">Shelf %s available</string>
     <string name="update_failed">Update failed.</string>

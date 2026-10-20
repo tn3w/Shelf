@@ -275,8 +275,8 @@ internal class JsonSerializer<T>(
         throw CorruptionException("unreadable library data", error)
     }
 
-    override suspend fun writeTo(value: T, output: OutputStream) =
-        output.write(json.encodeToString(serializer, value).toByteArray())
+    override suspend fun writeTo(t: T, output: OutputStream) =
+        output.write(json.encodeToString(serializer, t).toByteArray())
 }
 
 private class LegacyMigration<T>(

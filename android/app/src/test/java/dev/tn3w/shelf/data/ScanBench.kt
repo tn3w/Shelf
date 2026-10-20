@@ -147,7 +147,7 @@ private fun records(split: String, threads: Int, reuse: Boolean): List<Record> {
         }
     }.map { it.get() }
     pool.shutdown()
-    file.parentFile.mkdirs()
+    file.parentFile?.mkdirs()
     file.writeText(Json.encodeToString(records))
     return records
 }

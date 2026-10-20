@@ -53,11 +53,15 @@
     <string name="more_by">Más de %s</string>
     <string name="no_results">Sin resultados.</string>
     <string name="online_covers">Cargar portadas</string>
-    <string name="online_covers_hint">Descargar portadas de Open Library.</string>
+    <string name="online_covers_hint">Descargar portadas de Open Library, la DNB y DIGAR.</string>
     <string name="open_failed">No se pudo abrir el archivo.</string>
     <string name="page_failed">No se pudo mostrar esta página.</string>
     <string name="open_library_license">Licencia de datos de Open Library</string>
     <string name="open_library_note">Datos de Open Library, generados cada mes a partir de sus volcados públicos.</string>
+    <string name="dnb_note">Datos de Open Library y de la Biblioteca Nacional de Alemania (DNB), generados cada mes a partir de sus volcados públicos.</string>
+    <string name="erb_note">Datos de Open Library y de la Biblioteca Nacional de Estonia (ERB), generados cada mes a partir de sus volcados públicos.</string>
+    <string name="dnb_license">Licencia de datos de la DNB</string>
+    <string name="erb_license">Licencia de datos del ERB</string>
     <string name="pack_available">No instalado</string>
     <string name="pack_core">Básico</string>
     <string name="pack_failed">Error de descarga. Comprueba tu conexión e inténtalo de nuevo.</string>
@@ -79,7 +83,7 @@
     <string name="popular_now_subtitle">Lo que abren los lectores.</string>
     <string name="popular_subtitle">Favoritos de los lectores.</string>
     <string name="privacy">Privacidad</string>
-    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas y fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
+    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas desde Open Library, la DNB y DIGAR, fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
     <string name="reading">Leyendo</string>
     <string name="recent">Búsquedas recientes</string>
     <string name="remove_pack">Eliminar %s</string>
@@ -100,7 +104,7 @@
     <string name="theme_system">Sistema</string>
     <string name="topics">Temas</string>
     <string name="trending">Tendencias</string>
-    <string name="unsupported_file">Archivo no compatible. Prueba EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT o HTML.</string>
+    <string name="unsupported_file">Archivo no compatible. Prueba EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT o HTML.</string>
     <string name="up_to_date">Shelf está actualizado.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Error al actualizar.</string>

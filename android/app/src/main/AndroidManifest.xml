@@ -47,8 +47,6 @@
                 <data android:mimeType="application/vnd.palm" />
                 <data android:mimeType="application/x-palm-database" />
                 <data android:mimeType="application/x-zip-compressed-fb2" />
-                <data android:mimeType="application/vnd.comicbook-rar" />
-                <data android:mimeType="application/x-cbr" />
                 <data android:mimeType="application/x-cb7" />
                 <data android:mimeType="application/x-cbt" />
                 <data android:mimeType="application/rtf" />

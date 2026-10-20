@@ -53,11 +53,15 @@
     <string name="more_by">Mehr von %s</string>
     <string name="no_results">Keine Treffer.</string>
     <string name="online_covers">Cover laden</string>
-    <string name="online_covers_hint">Coverbilder von Open Library laden.</string>
+    <string name="online_covers_hint">Coverbilder von Open Library, DNB und DIGAR laden.</string>
     <string name="open_failed">Datei konnte nicht geöffnet werden.</string>
     <string name="page_failed">Diese Seite konnte nicht angezeigt werden.</string>
     <string name="open_library_license">Open-Library-Datenlizenz</string>
     <string name="open_library_note">Buchdaten von Open Library, monatlich aus den öffentlichen Dumps erstellt.</string>
+    <string name="dnb_note">Buchdaten von Open Library und der Deutschen Nationalbibliothek (DNB), monatlich aus deren öffentlichen Dumps erstellt.</string>
+    <string name="erb_note">Buchdaten von Open Library und der Estnischen Nationalbibliothek (ERB), monatlich aus deren öffentlichen Dumps erstellt.</string>
+    <string name="dnb_license">DNB-Datenlizenz</string>
+    <string name="erb_license">ERB-Datenlizenz</string>
     <string name="pack_available">Nicht installiert</string>
     <string name="pack_core">Basis</string>
     <string name="pack_failed">Download fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.</string>
@@ -79,7 +83,7 @@
     <string name="popular_now_subtitle">Was Leser überall aufschlagen.</string>
     <string name="popular_subtitle">Von Lesern geliebt.</string>
     <string name="privacy">Datenschutz</string>
-    <string name="privacy_note">Kein Tracking, keine Werbung, kein Konto, keine Kennungen. Shelf nutzt das Netzwerk nur für das, was du aktivierst oder antippst: Katalogpakete von GitHub oder deiner eigenen Quelle, App-Updates von GitHub, Cover und Autorenfotos von Open Library. Der Offline-Modus stoppt alles davon. Deine Bibliothek bleibt auf dem Gerät.</string>
+    <string name="privacy_note">Kein Tracking, keine Werbung, kein Konto, keine Kennungen. Shelf nutzt das Netzwerk nur für das, was du aktivierst oder antippst: Katalogpakete von GitHub oder deiner eigenen Quelle, App-Updates von GitHub, Cover von Open Library, DNB und DIGAR, Autorenfotos von Open Library. Der Offline-Modus stoppt alles davon. Deine Bibliothek bleibt auf dem Gerät.</string>
     <string name="reading">Lese ich</string>
     <string name="recent">Zuletzt gesucht</string>
     <string name="remove_pack">%s entfernen</string>
@@ -100,7 +104,7 @@
     <string name="theme_system">System</string>
     <string name="topics">Themen</string>
     <string name="trending">Im Trend</string>
-    <string name="unsupported_file">Nicht unterstützt. EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT oder HTML verwenden.</string>
+    <string name="unsupported_file">Nicht unterstützt. EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT oder HTML verwenden.</string>
     <string name="up_to_date">Shelf ist aktuell.</string>
     <string name="update_available">Shelf %s verfügbar</string>
     <string name="update_failed">Update fehlgeschlagen.</string>

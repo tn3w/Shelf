@@ -53,11 +53,15 @@
     <string name="more_by">Plus de %s</string>
     <string name="no_results">Aucun résultat.</string>
     <string name="online_covers">Charger les couvertures</string>
-    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library.</string>
+    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library, la DNB et DIGAR.</string>
     <string name="open_failed">Impossible d\'ouvrir ce fichier.</string>
     <string name="page_failed">Impossible d\'afficher cette page.</string>
     <string name="open_library_license">Licence des données Open Library</string>
     <string name="open_library_note">Données issues d\'Open Library, générées chaque mois depuis ses exports publics.</string>
+    <string name="dnb_note">Données issues d\'Open Library et de la Bibliothèque nationale allemande (DNB), générées chaque mois depuis leurs exports publics.</string>
+    <string name="erb_note">Données issues d\'Open Library et de la Bibliothèque nationale d\'Estonie (ERB), générées chaque mois depuis leurs exports publics.</string>
+    <string name="dnb_license">Licence des données DNB</string>
+    <string name="erb_license">Licence des données ERB</string>
     <string name="pack_available">Non installé</string>
     <string name="pack_core">Essentiel</string>
     <string name="pack_failed">Échec du téléchargement. Vérifiez votre connexion et réessayez.</string>
@@ -79,7 +83,7 @@
     <string name="popular_now_subtitle">Ce que les lecteurs ouvrent partout.</string>
     <string name="popular_subtitle">Aimés des lecteurs.</string>
     <string name="privacy">Confidentialité</string>
-    <string name="privacy_note">Aucun pistage, aucune publicité, aucun compte, aucun identifiant. Shelf n\'utilise le réseau que pour ce que vous activez ou touchez : paquets du catalogue depuis GitHub ou votre propre source, mises à jour depuis GitHub, couvertures et photos d\'auteurs depuis Open Library. Le mode hors ligne arrête tout. Votre bibliothèque reste sur l\'appareil.</string>
+    <string name="privacy_note">Aucun pistage, aucune publicité, aucun compte, aucun identifiant. Shelf n\'utilise le réseau que pour ce que vous activez ou touchez : paquets du catalogue depuis GitHub ou votre propre source, mises à jour depuis GitHub, couvertures depuis Open Library, la DNB et DIGAR, photos d\'auteurs depuis Open Library. Le mode hors ligne arrête tout. Votre bibliothèque reste sur l\'appareil.</string>
     <string name="reading">En cours</string>
     <string name="recent">Recherches récentes</string>
     <string name="remove_pack">Supprimer %s</string>
@@ -100,7 +104,7 @@
     <string name="theme_system">Système</string>
     <string name="topics">Sujets</string>
     <string name="trending">Tendances</string>
-    <string name="unsupported_file">Fichier non pris en charge. Essayez EPUB, MOBI, AZW3, PDF, FB2, CBZ, CBR, DOCX, ODT, RTF, TXT ou HTML.</string>
+    <string name="unsupported_file">Fichier non pris en charge. Essayez EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT ou HTML.</string>
     <string name="up_to_date">Shelf est à jour.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Échec de la mise à jour.</string>

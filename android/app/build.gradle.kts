@@ -25,8 +25,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 14
-        versionName = "1.4.0"
+        versionCode = 15
+        versionName = "1.4.1"
         buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
     }
 
@@ -209,7 +209,6 @@ dependencies {
     implementation(libs.coil.network)
     implementation(libs.jsoup)
     implementation(libs.zxing.core)
-    implementation(libs.junrar)
     implementation(libs.commons.compress)
     implementation(libs.xz)
     debugImplementation(libs.compose.tooling)

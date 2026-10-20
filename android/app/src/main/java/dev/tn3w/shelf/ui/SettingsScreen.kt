@@ -38,7 +38,11 @@ import kotlin.math.roundToInt
 
 private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
-private const val OPEN_LIBRARY_URL = "https://openlibrary.org/developers/licensing"
+private val DATA_LICENSES = listOf(
+    R.string.open_library_license to "https://openlibrary.org/developers/licensing",
+    R.string.dnb_license to "https://data.dnb.de/opendata/",
+    R.string.erb_license to "https://doi.org/10.5281/zenodo.8228805",
+)
 private val GOALS = listOf(5, 10, 20, 30, 50)
 private val SPACINGS = mapOf(
     1.35f to R.string.spacing_compact,
@@ -696,8 +700,8 @@ private fun AboutRows() {
     }
     LinkRow(stringResource(R.string.source_code)) { uri.openUri(SOURCE_URL) }
     LinkRow(stringResource(R.string.license)) { uri.openUri(LICENSE_URL) }
-    LinkRow(stringResource(R.string.open_library_license)) {
-        uri.openUri(OPEN_LIBRARY_URL)
+    DATA_LICENSES.forEach { (title, url) ->
+        LinkRow(stringResource(title)) { uri.openUri(url) }
     }
     release?.let { UpdateDialog(it) { viewModel.release.value = null } }
 }

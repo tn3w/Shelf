@@ -312,6 +312,15 @@ class FormatsTest {
     }
 
     @Test
+    fun rarComicsAreRefused() {
+        val file = folder.newFile("comic.cbr").apply {
+            writeText("Rar!\u001A\u0007\u0000")
+        }
+        assertFalse(isFormat(file, "cbr"))
+        assertThrows(IllegalStateException::class.java) { openDocument(file) }
+    }
+
+    @Test
     fun downloadsMustMatchTheirContainer() {
         val records = listOf(palmDocHeader(1, 1), "x".toByteArray())
         val mobi = palmDatabase(folder.newFile("book.bin"), "BOOKMOBI", records)

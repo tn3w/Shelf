@@ -4,8 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import com.github.junrar.Archive
-import com.github.junrar.rarfile.FileHeader
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
@@ -61,7 +59,6 @@ private val HTML = setOf("html", "htm", "xhtml")
 private val SIGNATURES = mapOf(
     0 to "PK\u0003\u0004" to "zip",
     0 to "%PDF" to "pdf",
-    0 to "Rar!\u001A\u0007" to "rar",
     0 to "7z\u00BC\u00AF\u0027\u001C" to "7z",
     0 to "{\\rtf" to "rtf",
     60 to "BOOKMOBI" to "mobi",
@@ -69,10 +66,11 @@ private val SIGNATURES = mapOf(
     257 to "ustar" to "tar",
 )
 private val CONTAINERS = mapOf(
-    "zip" to setOf("epub", "kepub", "cbz", "fbz", "docx", "odt", "htmlz", "txtz", "zip"),
+    "zip" to setOf(
+        "epub", "kepub", "cbz", "cbr", "fbz", "docx", "odt", "htmlz", "txtz", "zip",
+    ),
     "mobi" to setOf("mobi", "azw", "azw3", "kf8", "prc", "pdb"),
     "pdf" to setOf("pdf"),
-    "rar" to setOf("cbr"),
     "7z" to setOf("cb7"),
     "tar" to setOf("cbt"),
     "rtf" to setOf("rtf"),
@@ -272,16 +270,6 @@ private fun <T> extractedComic(
     ComicDocument(found.map(nameOf), ExtractedPages(archive, found, nameOf, write))
 }.onFailure { archive.close() }.getOrThrow()
 
-private fun rarComic(file: File): ComicDocument {
-    val archive = Archive(file)
-    return extractedComic(
-        archive,
-        { archive.filterNot { it.isDirectory } },
-        FileHeader::getFileName,
-        archive::extractFile,
-    )
-}
-
 private fun sevenZipComic(file: File): ComicDocument {
     val archive = SevenZFile.builder().setFile(file).get()
     return extractedComic(
@@ -372,7 +360,6 @@ fun openDocument(file: File): Document = when (val format = formatOf(file)) {
     "zip" -> openZip(file)
     "pdf" -> PdfDocument(file.also(::replaceJpegIccProfiles))
     "mobi" -> readMobi(file)
-    "rar" -> rarComic(file)
     "7z" -> sevenZipComic(file)
     "tar" -> tarComic(file)
     "rtf" -> textDocument(rtfText(file.readText(Charsets.ISO_8859_1)))

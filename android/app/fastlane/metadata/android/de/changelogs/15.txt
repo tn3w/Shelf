@@ -1,0 +1,4 @@
+• App-Sprache auch in den Android-Einstellungen wählbar
+• Beliebt erscheint direkt, wenn Für dich nicht verfügbar ist
+• Korrekturen: Scanner-Absturz, hängende MOBI-Dateien, verlorene Importe, Update und Wiederherstellung
+• CBR-Comics öffnen nur noch als ZIP (RAR ist nicht frei)

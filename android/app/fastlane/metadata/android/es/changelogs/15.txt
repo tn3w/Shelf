@@ -1,0 +1,4 @@
+• Idioma de la app también en los ajustes de Android
+• Populares aparece directamente si Para ti no está disponible
+• Correcciones: cierre del escáner, archivos MOBI bloqueados, importaciones perdidas, actualización y restauración
+• Los cómics CBR solo abren si son ZIP (RAR no es libre)

@@ -1,4 +1,4 @@
-Shelf on Open Libraryst koostatud võrguühenduseta raamatukataloog.
+Shelf on Open Libraryst, Saksa Rahvusraamatukogust ja Eesti Rahvusraamatukogust koostatud võrguühenduseta raamatukataloog.
 
 * Kirjavigu andestav otsing koos soovitustega
 * Avasta žanre, sarju ja autoreid
@@ -8,9 +8,9 @@ Shelf on Open Libraryst koostatud võrguühenduseta raamatukataloog.
 * Goodreadsi ja StoryGraphi CSV import ja eksport
 * Päeva lugemiseesmärk ja järjestikused päevad
 * Isiklikud soovitused, arvutatud seadmes
-* Lugeja EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CBR-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-failidele, imporditud või avatud mis tahes rakendusest
+* Lugeja EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-failidele, imporditud või avatud mis tahes rakendusest
 * Lugemismugavus: teksti suurus, vahed, veerised, kirjatüüp, paber- ja öölehed, lehekeeramisnupud
 * Kataloogid inglise, saksa, prantsuse, hispaania ja eesti keeles koos valikuliste žanripakettidega
 * Isehostitav: oma kataloogiallikas ja kaaneserver või kataloogifailide import
 
-Jälgimist, reklaame ega kontosid pole. Shelf võtab ühendust ainult GitHubiga (või sinu enda kataloogiallikaga) kataloogi allalaadimiseks ning sisselülitamisel Open Library ja selle majutaja archive.org-iga (või sinu enda kaaneserveriga) kaanepiltide ja autorifotode jaoks.
+Jälgimist, reklaame ega kontosid pole. Shelf võtab ühendust ainult GitHubiga (või sinu enda kataloogiallikaga) kataloogi allalaadimiseks ning sisselülitamisel Open Library ja selle majutaja archive.org-iga, DNB ja DIGARiga (või sinu enda kaaneserveritega) kaanepiltide ja autorifotode jaoks.

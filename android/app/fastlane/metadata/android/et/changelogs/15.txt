@@ -1,0 +1,4 @@
+• Rakenduse keelt saab valida ka Androidi seadetes
+• Populaarne kuvatakse kohe, kui Sinule pole saadaval
+• Parandused: skanneri krahh, kinni jäävad MOBI-failid, kadunud impordid, uuendus ja taastamine
+• CBR-koomiksid avanevad ainult ZIP-vormingus (RAR pole vaba)
