@@ -5,6 +5,7 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -21,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import okhttp3.coroutines.executeAsync
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
@@ -180,7 +182,7 @@ data class Provider(
 
     suspend fun search(query: Query) = withContext(Dispatchers.IO) {
         val completed = rank(query, find(query), CANDIDATE_LIMIT, exact = usesIsbn)
-            .map { async { runCatching { complete(it) } } }
+            .map { async { runSuspendCatching { complete(it) } } }
             .awaitAll()
         val offers = completed.mapNotNull { it.getOrNull() }
             .filter { it.bytes <= MAX_BOOK_BYTES }
@@ -189,7 +191,7 @@ data class Provider(
         offers.take(OFFER_LIMIT)
     }
 
-    fun find(query: Query): List<Offer> {
+    suspend fun find(query: Query): List<Offer> {
         val variables = query.variables()
         if (!usesIsbn) return items(variables)
         if (query.isbns.isEmpty()) {
@@ -205,7 +207,7 @@ data class Provider(
         return emptyList()
     }
 
-    private fun items(variables: Map<String, String>): List<Offer> {
+    private suspend fun items(variables: Map<String, String>): List<Offer> {
         val page = fetch(recipe.search, variables, base = null)
         val items = recipe.search.items?.all(page).orEmpty()
         log("${items.size} items")
@@ -225,7 +227,7 @@ data class Provider(
         return Offer(this, title, author, item.base, cover, 0, chosen, variables + fields)
     }
 
-    fun complete(offer: Offer): Offer? {
+    suspend fun complete(offer: Offer): Offer? {
         var variables = offer.variables
         var base = offer.link
         recipe.steps.forEach { step ->
@@ -263,7 +265,7 @@ data class Provider(
         return true
     }
 
-    fun open(offer: Offer): Response {
+    suspend fun open(offer: Offer): Response {
         log("GET ${offer.link}")
         val started = TimeSource.Monotonic.markNow()
         return request(downloads, offer.link, null).also {
@@ -273,7 +275,7 @@ data class Provider(
         }
     }
 
-    private fun fetch(
+    private suspend fun fetch(
         step: RecipeStep,
         variables: Map<String, String>,
         base: String?,
@@ -313,10 +315,14 @@ data class Provider(
         client.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
     }
 
-    private fun request(client: OkHttpClient, url: String, body: String?): Response {
+    private suspend fun request(
+        client: OkHttpClient,
+        url: String,
+        body: String?,
+    ): Response {
         val request = Request.Builder().url(url)
         if (body != null) request.post(body.toRequestBody(FORM))
-        val response = client.newCall(request.build()).execute()
+        val response = client.newCall(request.build()).executeAsync()
         generateSequence(response) { it.priorResponse }.toList().asReversed()
             .zipWithNext { prior, next -> log("  ${prior.code} → ${next.request.url}") }
         if (response.isSuccessful) return response
@@ -329,7 +335,7 @@ data class Provider(
         throw HttpException(response.code, response.request.url.toString())
     }
 
-    fun probe(query: Query) {
+    suspend fun probe(query: Query) {
         val offers = find(query)
         offers.take(3).forEach { log("• ${it.title} · ${it.author}") }
         val first = offers.firstOrNull() ?: return log("no item with a title")
@@ -362,10 +368,16 @@ internal fun rank(
         .take(limit)
 }
 
-fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) {
-    offer.provider.open(offer).use { download(it, target, onProgress) }
-    check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
-}
+suspend fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) =
+    withContext(Dispatchers.IO) {
+        offer.provider.open(offer).use { response ->
+            download(response, target) { progress ->
+                ensureActive()
+                onProgress(progress)
+            }
+        }
+        check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
+    }
 
 private fun download(response: Response, target: File, onProgress: (Float) -> Unit) {
     val total = response.body.contentLength()

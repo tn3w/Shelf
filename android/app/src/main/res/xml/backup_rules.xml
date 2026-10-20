@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <include domain="file" path="datastore/library.preferences_pb" />
+    <include domain="file" path="datastore/" />
     <include domain="file" path="books/" requireFlags="deviceToDeviceTransfer" />
     <include domain="file" path="shelf-sources.json" requireFlags="deviceToDeviceTransfer" />
 </full-backup-content>

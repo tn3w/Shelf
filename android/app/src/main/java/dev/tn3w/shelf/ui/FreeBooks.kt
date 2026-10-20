@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.SheetValue.Hidden
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -25,22 +26,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun FreeBookSettings() {
     val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     SettingsGroup(hint = stringResource(R.string.free_books_note)) {
-        shelfApp().sources.bundled.forEach {
+        shelfViewModel().sources.bundled.forEach {
             ProviderSwitch(Provider(it), settings, update, enabled = !offline)
         }
     }
@@ -72,25 +68,6 @@ private fun InstantSourceRows(
     }
 }
 
-suspend fun ShelfApp.downloadInstantly(
-    book: Book,
-    settings: Settings,
-    onProgress: (Float) -> Unit,
-): Boolean {
-    val recipes = sources.bundled + sources.own.value
-    val provider = settings.instantProvider(recipes) ?: return false
-    val language = bookLanguage(settings)
-    if (!provider.serves(language)) return false
-    val isbns = isbnsOf(book, catalogue = provider.usesIsbn)
-    val query = Query(book.title, book.author, language, isbns)
-    val offer = runCatching { provider.search(query) }
-        .onFailure { if (it is CancellationException) throw it }
-        .getOrNull()
-        ?.firstOrNull()
-        ?: return false
-    return library.download(book, offer, onProgress)
-}
-
 @Composable
 fun ProviderSwitch(
     provider: Provider,
@@ -120,16 +97,17 @@ fun ProviderSwitch(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
-    val app = shelfApp()
+fun FreeBookSheet(book: Book, onDismiss: () -> Unit) {
+    val viewModel: BookViewModel = viewModel()
     val (settings, update) = rememberSettings() ?: return
-    var choosing by remember { mutableStateOf(settings.providers.isEmpty()) }
+    var choosing by rememberSaveable { mutableStateOf(settings.providers.isEmpty()) }
     val recipes = allRecipes()
-    val language = app.bookLanguage(settings)
+    val language = viewModel.bookLanguage(settings)
     val enabled = settings.enabledProviders(recipes).filter { it.serves(language) }
     val isbns = bookIsbns(book, enabled.any { it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
-    var downloading by remember { mutableStateOf(false) }
+    val offers by viewModel.offers.collectAsStateWithLifecycle()
+    val downloading by rememberUpdatedState(offers.values.any { it is Download.Running })
     val sheet = rememberModalBottomSheetState(true) { it != Hidden || !downloading }
     ModalBottomSheet({ if (!downloading) onDismiss() }, sheetState = sheet) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
@@ -138,9 +116,7 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
                 if (isbns == null) {
                     LoadingBar()
                 } else {
-                    Offers(book, query, enabled, settings.onlineCovers, onReady) {
-                        downloading = it
-                    }
+                    Offers(book, query, enabled, settings.onlineCovers)
                 }
                 return@Column
             }
@@ -156,26 +132,17 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit, onReady: () -> Unit) {
 
 @Composable
 private fun allRecipes(): List<Recipe> {
-    val sources = shelfApp().sources
+    val sources = shelfViewModel().sources
     val own by sources.own.collectAsStateWithLifecycle()
     return sources.bundled + own
 }
 
 @Composable
 private fun bookIsbns(book: Book, catalogue: Boolean): List<String>? {
-    val app = shelfApp()
+    val viewModel = shelfViewModel()
     return produceState<List<String>?>(null, book.work, catalogue) {
-        value = app.isbnsOf(book, catalogue)
+        value = viewModel.isbnsOf(book, catalogue)
     }.value
-}
-
-private suspend fun ShelfApp.isbnsOf(book: Book, catalogue: Boolean): List<String> {
-    val own = library.saved.first().firstOrNull { it.work == book.work }?.isbn.orEmpty()
-    if (!catalogue) return isbnsFor(book, own, emptyList())
-    val editions = withContext(Dispatchers.IO) {
-        loaded.value?.catalogueOf(book.work)?.isbnsOf(book.work).orEmpty()
-    }
-    return isbnsFor(book, own, editions)
 }
 
 @Composable
@@ -220,19 +187,15 @@ private fun Offers(
     query: Query,
     providers: List<Provider>,
     covers: Boolean,
-    onReady: () -> Unit,
-    onDownloading: (Boolean) -> Unit,
 ) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
+    val viewModel: BookViewModel = viewModel()
+    val downloads by viewModel.offers.collectAsStateWithLifecycle()
     val results = remember { mutableStateMapOf<Provider, Result<List<Offer>>>() }
-    val downloads = remember { mutableStateMapOf<Offer, Download>() }
     val attempts = remember { mutableStateMapOf<Provider, Int>() }
     providers.forEach { provider ->
         key(provider) {
             LaunchedEffect(attempts[provider]) {
-                results[provider] = runCatching { provider.search(query) }
-                    .onFailure { if (it is CancellationException) throw it }
+                results[provider] = runSuspendCatching { provider.search(query) }
             }
         }
     }
@@ -240,20 +203,7 @@ private fun Offers(
         results.remove(provider)
         attempts[provider] = (attempts[provider] ?: 0) + 1
     }
-    fun download(offer: Offer) {
-        if (downloads.values.any { it is Download.Running }) return
-        fun report(progress: Float) {
-            downloads[offer] = Download.Running(progress)
-        }
-        report(0f)
-        onDownloading(true)
-        scope.launch {
-            val done = app.library.download(book, offer, ::report)
-            onDownloading(false)
-            if (done) return@launch onReady()
-            downloads[offer] = Download.Failed
-        }
-    }
+    fun download(offer: Offer) = viewModel.download(book, offer)
 
     if (providers.isEmpty()) Note(R.string.free_books_no_source)
     providers.forEach { provider ->

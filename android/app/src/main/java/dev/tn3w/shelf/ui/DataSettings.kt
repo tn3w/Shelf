@@ -15,11 +15,9 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
-import dev.tn3w.shelf.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
 
 private const val BACKUP_FILE = "shelf-library.zip"
 private val BACKUP_TYPES = arrayOf("application/zip", "application/octet-stream")
@@ -37,7 +35,7 @@ fun DataSettings() {
 
 @Composable
 private fun BackupRows() {
-    val app = shelfApp()
+    val viewModel = settingsViewModel()
     FileRow(
         R.string.backup_export,
         Icons.Outlined.Upload,
@@ -45,7 +43,7 @@ private fun BackupRows() {
         BACKUP_FILE,
         R.string.backup_exported,
         R.string.export_failed,
-        app.library::exportTo,
+        viewModel.library::exportTo,
     )
     FileRow(
         R.string.backup_import,
@@ -53,19 +51,8 @@ private fun BackupRows() {
         OpenDocument(),
         BACKUP_TYPES,
         R.string.backup_done,
-    ) { uri ->
-        val done = app.library.importFrom(uri)
-        if (done) restoreSource(app)
-        done
-    }
-}
-
-private suspend fun restoreSource(app: ShelfApp) {
-    val settings = app.library.settings.first()
-    if (settings.catalogueSource != app.packs.source) {
-        app.changeSource(settings.catalogueSource)
-    }
-    app.reload(app.bookLanguage(settings))
+        action = viewModel::restoreBackup,
+    )
 }
 
 @Composable
@@ -78,35 +65,29 @@ private fun <I> FileRow(
     @StringRes failure: Int = R.string.backup_failed,
     action: suspend (Uri) -> Boolean,
 ) {
-    val scope = rememberCoroutineScope()
-    var status by remember { mutableStateOf<Int?>(null) }
+    val viewModel = settingsViewModel()
+    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val launcher = rememberLauncherForActivityResult(contract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch { status = if (action(uri)) success else failure }
+        viewModel.runAction(title) { if (action(uri)) success else failure }
     }
-    ActionRow(title, icon, status?.let { stringResource(it) }) { launcher.launch(input) }
+    ActionRow(title, icon, statuses[title]?.let { stringResource(it) }) {
+        launcher.launch(input)
+    }
 }
 
 @Composable
 private fun CsvRows() {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    var progress by remember { mutableStateOf<Float?>(null) }
-    var report by remember { mutableStateOf<CsvReport?>(null) }
-    var imported by remember { mutableStateOf<Int?>(null) }
+    val viewModel = settingsViewModel()
+    val progress by viewModel.csvProgress.collectAsStateWithLifecycle()
+    val report by viewModel.csvReport.collectAsStateWithLifecycle()
+    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val import = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        progress = 0f
-        imported = null
-        scope.launch {
-            report = app.library.importCsv(uri, app.loaded.value) { progress = it }
-            imported = if (report == null) R.string.backup_failed else null
-            progress = null
-        }
+        uri?.let(viewModel::importCsv)
     }
     val importStatus =
         progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
-            ?: imported?.let { stringResource(it) }
+            ?: statuses[R.string.csv_import]?.let { stringResource(it) }
     ActionRow(
         R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
     ) { import.launch(arrayOf("*/*")) }
@@ -117,9 +98,9 @@ private fun CsvRows() {
         CSV_FILE,
         R.string.csv_exported,
         R.string.export_failed,
-        app.library::exportCsv,
+        viewModel.library::exportCsv,
     )
-    report?.let { CsvReportDialog(it) { report = null } }
+    report?.let { CsvReportDialog(it) { viewModel.csvReport.value = null } }
 }
 
 @Composable

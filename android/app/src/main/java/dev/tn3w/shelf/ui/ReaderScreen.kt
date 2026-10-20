@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.app.Application
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
@@ -24,13 +26,18 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.toRoute
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ReaderRoute
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
 
 private val PAGE_PADDING = 28.dp
@@ -43,10 +50,37 @@ private data class TextPage(
     val image: String? = null,
 )
 
-private sealed interface Opened {
+sealed interface Opened {
     data class Ready(val progress: Progress, val document: Document) : Opened
 
     data object Failed : Opened
+}
+
+class ReaderViewModel(application: Application, handle: SavedStateHandle) :
+    ShelfViewModel(application) {
+    private val work = handle.toRoute<ReaderRoute>().work
+    private val opening = app.scope.async(Dispatchers.IO) {
+        runSuspendCatching {
+            val progress = library.progress.first().getValue(work)
+            Opened.Ready(progress, openDocument(library.bookFile(progress.file)))
+        }.getOrDefault(Opened.Failed)
+    }
+    val opened = flow { emit(opening.await()) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun save(progress: Progress, pagesRead: Int) {
+        detached { library.saveProgress(work, progress, pagesRead) }
+    }
+
+    fun changeFont(change: Float) = updateSettings {
+        it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
+    }
+
+    override fun onCleared() {
+        app.scope.launch(Dispatchers.IO) {
+            (opening.await() as? Opened.Ready)?.document?.close()
+        }
+    }
 }
 
 @Immutable
@@ -100,46 +134,19 @@ internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
 
 @Composable
 fun ReaderScreen(work: Int, navigator: Navigator) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
-    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
+    val viewModel: ReaderViewModel = viewModel()
+    val settings by viewModel.library.settings.collectAsStateWithLifecycle(Settings())
+    val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val title = saved.firstOrNull { it.work == work }?.title.orEmpty()
-    val opened by produceState<Opened?>(null, work) {
-        val result = withContext(NonCancellable + Dispatchers.IO) {
-            runCatching {
-                val progress = app.library.progress.first().getValue(work)
-                Opened.Ready(
-                    progress, openDocument(app.library.bookFile(progress.file)),
-                )
-            }
-                .getOrDefault(Opened.Failed)
-        }
-        value = result
-        val document = (result as? Opened.Ready)?.document ?: return@produceState
-        try {
-            awaitCancellation()
-        } finally {
-            app.scope.launch(Dispatchers.IO) { document.close() }
-        }
-    }
+    val opened by viewModel.opened.collectAsStateWithLifecycle()
     val view = LocalView.current
     DisposableEffect(settings.keepScreenOn) {
         view.keepScreenOn = settings.keepScreenOn
         onDispose { view.keepScreenOn = false }
     }
-    val changeFont: (Float) -> Unit = remember {
-        { change ->
-            scope.launch {
-                app.library.updateSettings {
-                    it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
-                }
-            }
-        }
-    }
 
     val state = remember(work, title, navigator, settings.volumeKeys) {
-        ReaderState(work, title, navigator, changeFont, settings.volumeKeys)
+        ReaderState(work, title, navigator, viewModel::changeFont, settings.volumeKeys)
     }
     val palette = pagePalette(settings)
     Surface(
@@ -271,7 +278,9 @@ private fun TextReader(
     val measurer = rememberTextMeasurer(cacheSize = 0)
     val style = readerStyle(settings, pagePalette(settings).text)
     val margin = settings.margin.dp
-    var position by remember { mutableStateOf(progress) }
+    var position by rememberSaveable(stateSaver = jsonSaver()) {
+        mutableStateOf(progress)
+    }
 
     BoxWithConstraints(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
@@ -358,7 +367,7 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
         ) {
             val page by produceState<Result<Any>?>(null, it, width, height) {
                 value = withContext(Dispatchers.IO) {
-                    runCatching { document.page(it, width, height) }
+                    runSuspendCatching { document.page(it, width, height) }
                 }
             }
             var failed by remember(page) { mutableStateOf(false) }
@@ -390,12 +399,12 @@ private fun Pages(
     save: (Int) -> Progress,
     page: @Composable (Int) -> Unit,
 ) {
-    val app = shelfApp()
+    val viewModel: ReaderViewModel = viewModel()
     val scope = rememberCoroutineScope()
-    var chrome by remember { mutableStateOf(false) }
-    var showChapters by remember { mutableStateOf(false) }
-    var furthest by remember { mutableIntStateOf(pager.currentPage) }
-    var previous by remember { mutableIntStateOf(pager.currentPage) }
+    var chrome by rememberSaveable(key = "chrome") { mutableStateOf(false) }
+    var showChapters by rememberSaveable(key = "chapters") { mutableStateOf(false) }
+    var furthest by rememberSaveable { mutableIntStateOf(pager.currentPage) }
+    var previous by rememberSaveable { mutableIntStateOf(pager.currentPage) }
     val chapter = chapters.lastOrNull { it.second in 0..pager.currentPage }
     val focus = remember { FocusRequester() }
     fun turn(page: Int) = scope.launch { pager.animateScrollToPage(page) }
@@ -407,7 +416,7 @@ private fun Pages(
     LaunchedEffect(pager.settledPage) {
         val settled = pager.settledPage
         val read = newPagesRead(previous, settled, furthest)
-        app.library.saveProgress(state.work, save(settled), read)
+        viewModel.save(save(settled), read)
         furthest = maxOf(furthest, settled)
         previous = settled
     }
@@ -507,7 +516,7 @@ private fun ReaderTopBar(state: ReaderState, onChapters: (() -> Unit)?) {
 
 @Composable
 private fun ReaderBottomBar(pager: PagerState, chapter: String?, onJump: (Int) -> Unit) {
-    var dragging by remember { mutableStateOf<Float?>(null) }
+    var dragging by rememberSaveable { mutableStateOf<Float?>(null) }
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 12.dp),

@@ -1,6 +1,6 @@
 [versions]
 agp = "9.4.1"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 composeBom = "2026.09.00"
 activity = "1.13.0"
 navigation = "2.10.2"
@@ -13,10 +13,12 @@ serialization = "1.11.0"
 coil = "3.6.3"
 jsoup = "1.23.2"
 junit = "4.13.2"
-zxing = "3.5.3"
+zxing = "3.5.4"
 junrar = "8.1.2"
 commonsCompress = "1.28.0"
 xz = "1.12"
+appcompat = "1.8.0"
+splashscreen = "1.2.0"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -27,11 +29,16 @@ compose-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camera" }
 camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
+camera-compose = { group = "androidx.camera", name = "camera-compose", version.ref = "camera" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-coroutines = { group = "com.squareup.okhttp3", name = "okhttp-coroutines", version.ref = "okhttp" }
 collection = { group = "androidx.collection", name = "collection", version.ref = "collection" }
+datastore = { group = "androidx.datastore", name = "datastore", version.ref = "datastore" }
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }

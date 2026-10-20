@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Size
@@ -36,7 +37,6 @@ import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.cover.*
 import dev.tn3w.shelf.data.*
@@ -52,11 +52,9 @@ private val GridTileWidth = 96.dp
 val LocalSharedScope = compositionLocalOf<SharedTransitionScope?> { null }
 val LocalAnimatedScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
 
-@Composable fun shelfApp() = LocalContext.current.applicationContext as ShelfApp
-
 @Composable
 fun <T> load(vararg keys: Any?, block: suspend Loaded.() -> T): State<T?> {
-    val loaded by shelfApp().loaded.collectAsStateWithLifecycle()
+    val loaded by shelfViewModel().loaded.collectAsStateWithLifecycle()
     return produceState<T?>(null, loaded, *keys) {
         val current = loaded ?: return@produceState
         value = withContext(Dispatchers.IO) { current.block() }
@@ -112,7 +110,7 @@ fun BookCover(
         if (settings == null) return@Box
         if (book.isLocal && book.cover != 0 && !failed) {
             AsyncImage(
-                model = shelfApp().library.coverFile(book),
+                model = shelfViewModel().library.coverFile(book),
                 contentDescription = stringResource(R.string.cover_of, book.title),
                 contentScale = ContentScale.Crop,
                 onError = { failed = true },
@@ -194,16 +192,19 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
 
 @Composable
 private fun DrawnCover(book: Book) {
-    val catalogue = shelfApp().loaded.collectAsStateWithLifecycle().value?.catalogue
-    val slugs = remember(book.work, book.tags, catalogue) {
+    val catalogue = shelfViewModel().loaded.collectAsStateWithLifecycle().value?.catalogue
+    val request = remember(book.work, book.title, book.author, book.tags, catalogue) {
         val tags = book.tags.ifEmpty {
             catalogue?.facts(book.work)?.tags?.toList().orEmpty()
         }
-        tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+        val slugs = tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+        CoverRequest(book.work, book.title, book.author, slugs)
     }
-    GeneratedCover(
-        CoverRequest(book.work, book.title, book.author, slugs),
-        stringResource(R.string.cover_of, book.title),
+    AsyncImage(
+        model = request,
+        contentDescription = stringResource(R.string.cover_of, book.title),
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.fillMaxSize(),
     )
 }
 
@@ -308,7 +309,7 @@ fun BookTile(
     shared: Boolean = true,
     onDismiss: ((Book) -> Unit)? = null,
 ) {
-    var menu by remember { mutableStateOf(false) }
+    var menu by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier.combinedClickable(
             onClick = { onOpen(book, origin) },
@@ -577,7 +578,7 @@ fun <T : Any> FilterMenuChip(
     current: T?,
     onSelect: (T?) -> Unit,
 ) {
-    var open by remember { mutableStateOf(false) }
+    var open by rememberSaveable { mutableStateOf(false) }
     val label = options.firstOrNull { it.second == current }?.first
     val icon = if (label == null) Icons.Outlined.ArrowDropDown else Icons.Outlined.Close
     Box {
@@ -595,7 +596,7 @@ fun <T : Any> FilterMenuChip(
 
 @Composable
 fun <T> SortMenu(options: List<Pair<String, T>>, current: T, onSelect: (T) -> Unit) {
-    var open by remember { mutableStateOf(false) }
+    var open by rememberSaveable { mutableStateOf(false) }
     Box {
         IconAction(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.sort)) {
             open = true

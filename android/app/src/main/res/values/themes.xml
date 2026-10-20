@@ -1,5 +1,10 @@
 <resources>
-    <style name="Theme.Shelf" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Theme.Shelf" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">@color/launcher_background</item>
+    </style>
+
+    <style name="Theme.Shelf.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/launcher_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Shelf</item>
     </style>
 </resources>

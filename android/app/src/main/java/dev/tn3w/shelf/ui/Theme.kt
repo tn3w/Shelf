@@ -1,6 +1,9 @@
 package dev.tn3w.shelf.ui
 
+import android.database.ContentObserver
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings.Global
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
@@ -89,6 +92,24 @@ private fun ColorScheme.black() = copy(
 )
 
 @Composable
+private fun systemReducedMotion(): Boolean {
+    val resolver = LocalContext.current.contentResolver
+    fun reduced() = Global.getFloat(resolver, Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    var value by remember { mutableStateOf(reduced()) }
+    DisposableEffect(resolver) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                value = reduced()
+            }
+        }
+        val uri = Global.getUriFor(Global.ANIMATOR_DURATION_SCALE)
+        resolver.registerContentObserver(uri, false, observer)
+        onDispose { resolver.unregisterContentObserver(observer) }
+    }
+    return value
+}
+
+@Composable
 fun ShelfTheme(settings: Settings, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val dark = isDark(settings.theme)
@@ -99,11 +120,7 @@ fun ShelfTheme(settings: Settings, content: @Composable () -> Unit) {
         dark -> DarkColors
         else -> LightColors
     }
-    val systemReducedMotion = remember {
-        val scale = Global.ANIMATOR_DURATION_SCALE
-        Global.getFloat(context.contentResolver, scale, 1f) == 0f
-    }
-    val reducedMotion = systemReducedMotion || settings.reduceMotion
+    val reducedMotion = systemReducedMotion() || settings.reduceMotion
     CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {
         MaterialTheme(
             colorScheme = if (dark && settings.blackTheme) colors.black() else colors,

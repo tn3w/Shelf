@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -65,17 +66,17 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
 
 @Composable
 fun SearchScreen(navigator: Navigator) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    val loaded by app.loaded.collectAsStateWithLifecycle()
+    val viewModel: LibraryViewModel = viewModel()
+    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
     var era by rememberSaveable { mutableStateOf<Int?>(null) }
     var sort by rememberSaveable { mutableStateOf(ResultSort.Relevance) }
     val filter = SearchFilter(tag, era?.let(ERAS::get), sort)
     var results by remember { mutableStateOf<Results?>(null) }
-    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
-    val recent by app.library.recentSearches.collectAsStateWithLifecycle(emptyList())
+    val library = viewModel.library
+    val saved by library.saved.collectAsStateWithLifecycle(emptyList())
+    val recent by library.recentSearches.collectAsStateWithLifecycle(emptyList())
     val trending by load { recommender.popular(8) }
     var addingOwn by rememberSaveable { mutableStateOf(false) }
 
@@ -91,7 +92,7 @@ fun SearchScreen(navigator: Navigator) {
         }
     }
 
-    fun saveQuery() = scope.launch { if (query.isNotBlank()) app.library.remember(query) }
+    fun saveQuery() = viewModel.remember(query)
 
     fun clearFilters() {
         tag = null
@@ -125,7 +126,7 @@ fun SearchScreen(navigator: Navigator) {
         LazyColumn {
             if (current == null) {
                 suggestions(recent, trending.orEmpty(), { query = it }) {
-                    scope.launch { app.library.clearSearches() }
+                    viewModel.clearSearches()
                 }
                 return@LazyColumn
             }
@@ -228,7 +229,7 @@ private fun NoResults(filtered: Boolean, onClear: () -> Unit) {
 @Composable
 private fun scan(navigator: Navigator): (() -> Unit)? {
     val context = LocalContext.current
-    var denied by remember { mutableStateOf(false) }
+    var denied by rememberSaveable { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(RequestPermission()) { granted ->
         if (granted) navigator.scan() else denied = true
     }

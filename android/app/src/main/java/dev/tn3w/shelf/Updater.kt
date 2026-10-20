@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams
 import android.os.Build
+import android.widget.Toast
 import androidx.core.content.IntentCompat
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
@@ -55,7 +56,7 @@ object Updater {
         app.library.updateSettings { it.copy(availableUpdate = found) }
     }
 
-    private fun stillPublished(release: Release): Boolean {
+    private suspend fun stillPublished(release: Release): Boolean {
         val url = "https://api.github.com/repos/$REPOSITORY/releases/tags/${release.tag}"
         val current = try {
             json.decodeFromString<Release>(fetchText(url))
@@ -73,7 +74,7 @@ object Updater {
     ) = withContext(Dispatchers.IO) {
         val app = context.applicationContext as ShelfApp
         if (!stillPublished(release)) {
-            runCatching { check(app) }
+            runSuspendCatching { check(app) }
             throw ReleaseChanged()
         }
         val installer = context.packageManager.packageInstaller
@@ -95,7 +96,7 @@ object Updater {
         }
     }
 
-    private fun write(
+    private suspend fun write(
         session: PackageInstaller.Session,
         url: String,
         onProgress: (Long, Long) -> Unit,
@@ -118,16 +119,30 @@ object Updater {
     }
 }
 
+private val CONFIRM_ACTIONS = setOf(
+    "android.content.pm.action.CONFIRM_INSTALL",
+    "android.content.pm.action.CONFIRM_PERMISSIONS",
+)
+
+private fun isInstallConfirmation(intent: Intent) =
+    intent.action in CONFIRM_ACTIONS && intent.`package` != BuildConfig.APPLICATION_ID
+
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext as ShelfApp
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
-        if (status != PackageInstaller.STATUS_PENDING_USER_ACTION) {
-            app.packs.removeBundledCopies()
+        if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            val confirmation = IntentCompat.getParcelableExtra(
+                intent, Intent.EXTRA_INTENT, Intent::class.java,
+            )
+            app.installConfirmation.value = confirmation?.takeIf(::isInstallConfirmation)
             return
         }
-        app.installConfirmation.value = IntentCompat.getParcelableExtra(
-            intent, Intent.EXTRA_INTENT, Intent::class.java,
-        )
+        app.packs.removeBundledCopies()
+        if (status == PackageInstaller.STATUS_SUCCESS) return
+        if (status == PackageInstaller.STATUS_FAILURE_ABORTED) return
+        val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+        val text = context.getString(R.string.update_install_failed, message.orEmpty())
+        Toast.makeText(context, text.trim(), Toast.LENGTH_LONG).show()
     }
 }

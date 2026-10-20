@@ -1,12 +1,14 @@
 package dev.tn3w.shelf.data
 
-import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.core.CorruptionException
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -16,19 +18,6 @@ import java.time.LocalDate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.time.Duration
-
-private inline fun <reified T> MutablePreferences.read(name: String) =
-    json.decodeFromString<T>(this[stringPreferencesKey(name)]!!)
-
-private fun backupOf(preferences: MutablePreferences) = with(preferences) {
-    Backup(
-        read("entries"),
-        read("progress"),
-        read("activity"),
-        read("dismissed"),
-        read("settings"),
-    )
-}
 
 private fun archive(vararg entries: Pair<String, String>): ByteArray {
     val bytes = ByteArrayOutputStream()
@@ -43,10 +32,11 @@ private fun archive(vararg entries: Pair<String, String>): ByteArray {
 }
 
 class LibraryTest {
-    private val entries = stringPreferencesKey("entries")
-    private val progress = stringPreferencesKey("progress")
-    private val settings = stringPreferencesKey("settings")
-    private val dismissed = stringPreferencesKey("dismissed")
+    private val serializer = JsonSerializer(LibraryState(), LibraryState.serializer())
+
+    private fun decode(text: String) = runBlocking {
+        serializer.readFrom(text.byteInputStream())
+    }
 
     @Test
     fun savedIsbnStaysOptionalBothWays() {
@@ -58,48 +48,64 @@ class LibraryTest {
     }
 
     @Test
-    fun updateKeepsUndecodableData() {
-        val stored = """[{"work":1,"shelf":"Unknown","updated":0}]"""
-        val preferences = mutablePreferencesOf(entries to stored)
-        preferences.update(ENTRIES) {
-            it + Saved(2, Shelf.Read, 0)
-        }
-        assertEquals(stored, preferences[entries])
+    fun undecodableLibraryIsReportedAsCorruptSoItIsNeverOverwritten() {
+        val stored = """{"entries":[{"work":1,"shelf":"Unknown","updated":0}]}"""
+        assertThrows(CorruptionException::class.java) { decode(stored) }
+        assertThrows(CorruptionException::class.java) { decode("{") }
     }
 
     @Test
-    fun updateStartsFromFallbackWhenMissing() {
-        val preferences = mutablePreferencesOf()
-        preferences.update(ENTRIES) {
-            it + Saved(2, Shelf.Read, 0)
-        }
-        assertEquals(
-            listOf(Saved(2, Shelf.Read, 0)),
-            json.decodeFromString<List<Saved>>(
-                preferences[entries]!!,
-            ),
+    fun libraryStateRoundTripsThroughSerializer() {
+        val state = LibraryState(
+            entries = listOf(Saved(2, Shelf.Read, 0)),
+            recent = listOf("dune"),
+            dismissed = setOf(4),
+            settings = Settings(margin = 16),
         )
+        val output = ByteArrayOutputStream()
+        runBlocking { serializer.writeTo(state, output) }
+        assertEquals(state, decode(output.toString()))
+        assertEquals(LibraryState(), decode("{}"))
     }
 
     @Test
-    fun mergeKeepsUndecodableData() {
-        val stored = """[{"shelf":"Read"}]"""
-        val preferences = mutablePreferencesOf(entries to stored)
-        preferences.merge(Backup(entries = listOf(Saved(2, Shelf.Read, 0))))
-        assertEquals(stored, preferences[entries])
+    fun legacyPreferencesMigrateIntoTypedStates() {
+        val entries = listOf(Saved(1, Shelf.Want, 3))
+        val progress = mapOf(1 to Progress("1.epub", page = 2))
+        val preferences = mutablePreferencesOf(
+            stringPreferencesKey("entries") to json.encodeToString(entries),
+            stringPreferencesKey("recent") to """["emma"]""",
+            stringPreferencesKey("settings") to """{"theme":"Sepia","serif":false}""",
+            stringPreferencesKey("dismissed") to "broken",
+            stringPreferencesKey("progress") to json.encodeToString(progress),
+            stringPreferencesKey("activity") to """{"2026-01-01":5}""",
+        )
+        val library = preferences.toLibraryState()
+        assertEquals(entries, library.entries)
+        assertEquals(listOf("emma"), library.recent)
+        assertEquals(emptySet<Int>(), library.dismissed)
+        assertEquals(Settings(serif = false), library.settings)
+        val reading = preferences.toReadingState()
+        assertEquals(ReadingState(progress, mapOf("2026-01-01" to 5)), reading)
+        assertEquals(LibraryState(), mutablePreferencesOf().toLibraryState())
+    }
+
+    @Test
+    fun suspendCatchingRethrowsCancellation() {
+        assertThrows(CancellationException::class.java) {
+            runSuspendCatching { throw CancellationException("stopped") }
+        }
+        assertEquals("x", runSuspendCatching { error("x") }.exceptionOrNull()?.message)
     }
 
     @Test
     fun mergeDropsProgressOutsideBooks() {
-        val progress = stringPreferencesKey("progress")
-        val preferences = mutablePreferencesOf()
         val imported = mapOf(
             1 to Progress("../datastore/library"),
             2 to Progress("-2.epub"),
         )
-        preferences.merge(Backup(progress = imported))
-        val merged = json.decodeFromString<Map<Int, Progress>>(preferences[progress]!!)
-        assertEquals(mapOf(2 to Progress("-2.epub")), merged)
+        val merged = ReadingState().merge(Backup(progress = imported))
+        assertEquals(mapOf(2 to Progress("-2.epub")), merged.progress)
     }
 
     @Test
@@ -111,16 +117,15 @@ class LibraryTest {
             catalogueSource = "owner/repo",
             coverSource = "https://a",
         )
-        val preferences = mutablePreferencesOf(settings to json.encodeToString(current))
         val imported = Settings(
             catalogueSource = "https://evil.example/manifest.json",
             coverSource = "https://evil.example",
             providers = setOf("gutenberg"),
             instantSource = "gutenberg",
         )
-        preferences.merge(Backup(settings = imported.copy(margin = 44)))
-        val merged = json.decodeFromString<Settings>(preferences[settings]!!)
-        assertEquals(current.copy(margin = 44), merged)
+        val merged = LibraryState(settings = current)
+            .merge(Backup(settings = imported.copy(margin = 44)))
+        assertEquals(current.copy(margin = 44), merged.settings)
     }
 
     @Test
@@ -140,15 +145,13 @@ class LibraryTest {
 
     @Test
     fun mergeClampsImportedReaderSettings() {
-        val preferences = mutablePreferencesOf()
         val imported = Settings(fontScale = 9f, lineSpacing = -1f, margin = -5)
-        preferences.merge(Backup(settings = imported))
-        val merged = json.decodeFromString<Settings>(preferences[settings]!!)
+        val merged = LibraryState().merge(Backup(settings = imported)).settings
         assertEquals(FONT_SCALES.endInclusive, merged.fontScale)
         assertEquals(SPACING_RANGE.start, merged.lineSpacing)
         assertEquals(MARGIN_RANGE.first, merged.margin)
-        preferences.merge(Backup(settings = Settings(lineSpacing = 50f, margin = 9999)))
-        val large = json.decodeFromString<Settings>(preferences[settings]!!)
+        val wide = Backup(settings = Settings(lineSpacing = 50f, margin = 9999))
+        val large = LibraryState().merge(wide).settings
         assertEquals(SPACING_RANGE.endInclusive, large.lineSpacing)
         assertEquals(MARGIN_RANGE.last, large.margin)
     }
@@ -170,10 +173,9 @@ class LibraryTest {
     @Test
     fun redirectPointsProgressAtMovedFile() {
         val stored = mapOf(5 to Progress("5.epub", page = 3), 6 to Progress("6.pdf"))
-        val preferences = mutablePreferencesOf(progress to json.encodeToString(stored))
-        preferences.redirect { if (it == 5) 42 else null }
+        val moved = ReadingState(stored).redirect { if (it == 5) 42 else null }
         val expected = mapOf(42 to Progress("42.epub", page = 3), 6 to Progress("6.pdf"))
-        assertEquals(expected, preferences.read<Map<Int, Progress>>("progress"))
+        assertEquals(expected, moved.progress)
     }
 
     @Test
@@ -211,11 +213,8 @@ class LibraryTest {
 
     @Test
     fun settingsSurviveUnknownValues() {
-        val preferences =
-            mutablePreferencesOf(settings to """{"theme":"Sepia","serif":false}""")
-        preferences.update(SETTINGS) { it.copy(margin = 12) }
-        val decoded = json.decodeFromString<Settings>(preferences[settings]!!)
-        assertEquals(Settings(serif = false, margin = 12), decoded)
+        val decoded = decode("""{"settings":{"theme":"Sepia","serif":false}}""")
+        assertEquals(Settings(serif = false), decoded.settings)
     }
 
     @Test
@@ -255,17 +254,15 @@ class LibraryTest {
     fun mergeKeepsNewestEntryPerWork() {
         val current =
             listOf(Saved(1, Shelf.Read, 5, rating = 4), Saved(-7, Shelf.Want, 1))
-        val preferences = mutablePreferencesOf(entries to json.encodeToString(current))
         val imported = listOf(
             Saved(1, Shelf.Want, 3),
             Saved(2, Shelf.Reading, 1),
             Saved(-7, Shelf.Read, 9, "Own", "Me"),
         )
-        preferences.merge(Backup(entries = imported))
-        val merged = json.decodeFromString<List<Saved>>(preferences[entries]!!)
+        val merged = LibraryState(current).merge(Backup(entries = imported))
         assertEquals(
             setOf(current[0], imported[1], imported[2]),
-            merged.toSet(),
+            merged.entries.toSet(),
         )
     }
 
@@ -276,23 +273,23 @@ class LibraryTest {
             activity = mapOf("2026-01-01" to 5, "2026-01-02" to 9),
             dismissed = setOf(3),
         )
-        val onboarded = json.encodeToString(Settings(onboarded = true))
-        val preferences = mutablePreferencesOf(settings to onboarded)
-        preferences.merge(current)
+        var library = LibraryState(settings = Settings(onboarded = true)).merge(current)
+        var reading = ReadingState().merge(current)
         val imported = Backup(
             progress = mapOf(1 to Progress("1.epub", page = 2), 2 to Progress("2.pdf")),
             activity = mapOf("2026-01-01" to 7, "2026-01-03" to 1),
             dismissed = setOf(4),
             settings = Settings(dailyGoal = 30),
         )
-        preferences.merge(imported)
+        library = library.merge(imported)
+        reading = reading.merge(imported)
         val expected = Backup(
             progress = mapOf(1 to Progress("1.epub", page = 40), 2 to Progress("2.pdf")),
             activity = mapOf("2026-01-01" to 7, "2026-01-02" to 9, "2026-01-03" to 1),
             dismissed = setOf(3, 4),
             settings = Settings(onboarded = true, dailyGoal = 30),
         )
-        assertEquals(expected, backupOf(preferences))
+        assertEquals(expected, backupOf(library, reading))
     }
 
     @Test
@@ -334,14 +331,10 @@ class LibraryTest {
     @Test
     fun redirectMovesAliasedWorks() {
         val stored = listOf(Saved(SYNTHETIC + 1, Shelf.Read, 5), Saved(7, Shelf.Want, 1))
-        val preferences = mutablePreferencesOf(
-            entries to json.encodeToString(stored),
-            dismissed to json.encodeToString(setOf(SYNTHETIC + 1)),
-        )
-        preferences.redirect { if (it == SYNTHETIC + 1) 42 else null }
-        val moved = json.decodeFromString<List<Saved>>(preferences[entries]!!)
-        assertEquals(listOf(42, 7), moved.map { it.work })
-        assertEquals(setOf(42), preferences.read<Set<Int>>("dismissed"))
+        val moved = LibraryState(stored, dismissed = setOf(SYNTHETIC + 1))
+            .redirect { if (it == SYNTHETIC + 1) 42 else null }
+        assertEquals(listOf(42, 7), moved.entries.map { it.work })
+        assertEquals(setOf(42), moved.dismissed)
     }
 
     @Test

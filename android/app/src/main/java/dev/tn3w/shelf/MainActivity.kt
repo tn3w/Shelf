@@ -1,14 +1,14 @@
 package dev.tn3w.shelf
 
-import android.content.Context
+import android.app.Application
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.*
 import androidx.activity.compose.setContent
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -25,14 +25,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.IntentCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.*
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import dev.tn3w.shelf.data.*
 import dev.tn3w.shelf.ui.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 @Serializable object HomeRoute
@@ -58,6 +63,7 @@ import kotlinx.serialization.Serializable
 @Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
 
 private const val SCREEN_FADE_MILLIS = 220
+private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 
 private data class Tab(@StringRes val label: Int, val icon: ImageVector, val route: Any)
 
@@ -79,8 +85,9 @@ class Navigator(private val controller: NavHostController) {
 
     fun series(work: Int) = controller.navigate(SeriesRoute(work))
 
-    fun reader(work: Int) =
-        controller.navigate(ReaderRoute(work)) { launchSingleTop = true }
+    fun reader(work: Int) = controller.navigate(ReaderRoute(work)) {
+        popUpTo<ReaderRoute> { inclusive = true }
+    }
 
     fun scan() = controller.navigate(ScanRoute) { launchSingleTop = true }
 
@@ -90,11 +97,6 @@ class Navigator(private val controller: NavHostController) {
     fun library() = tab(LibraryRoute, reselected = false)
 
     fun back() = controller.popBackStack()
-
-    fun openImported(work: Int?, context: Context) {
-        if (work != null) return reader(work)
-        Toast.makeText(context, R.string.unsupported_file, Toast.LENGTH_LONG).show()
-    }
 
     fun tab(route: Any, reselected: Boolean) {
         if (reselected && controller.popBackStack(route, inclusive = false)) return
@@ -118,15 +120,45 @@ private fun openedFile(intent: Intent): Uri? = when (intent.action) {
 private fun ComponentActivity.transparentBars(style: SystemBarStyle) =
     enableEdgeToEdge(style, style)
 
-class MainActivity : ComponentActivity() {
-    private val app get() = application as ShelfApp
+class MainViewModel(application: Application) : ShelfViewModel(application) {
+    val settings = library.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val openedWork = app.openedWork
+    val installConfirmation = app.installConfirmation
+    val update = MutableStateFlow<Release?>(null)
+
+    init {
+        viewModelScope.launch { update.value = dueUpdate() }
+    }
+
+    fun openFile(uri: Uri) = app.openFile(uri)
+
+    fun showLanguage(language: String) = app.showLanguage(language)
+
+    private suspend fun dueUpdate(): Release? {
+        val settings = library.settings.first { it.onboarded }
+        val now = System.currentTimeMillis()
+        val due = now - settings.lastAppCheck > DAY_MILLIS
+        val allowed = Updater.supported(app) && settings.checkUpdates &&
+            !settings.isOffline(app)
+        if (!allowed || !due) return null
+        library.updateSettings { it.copy(lastAppCheck = now) }
+        val found = runSuspendCatching { Updater.check(app) }.getOrNull()
+        return found?.takeIf { now >= it.readyAt }
+    }
+}
+
+class MainActivity : AppCompatActivity() {
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen().setKeepOnScreenCondition {
+            viewModel.settings.value == null
+        }
         super.onCreate(savedInstanceState)
         transparentBars(SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
-        if (savedInstanceState == null) openedFile(intent)?.let(app::openFile)
+        if (savedInstanceState == null) openedFile(intent)?.let(viewModel::openFile)
         setContent {
-            val settings by app.library.settings.collectAsStateWithLifecycle(null)
+            val settings by viewModel.settings.collectAsStateWithLifecycle()
             val current = settings ?: return@setContent
             val dark = isDark(current.theme)
             LaunchedEffect(dark) {
@@ -150,32 +182,36 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        openedFile(intent)?.let(app::openFile)
+        openedFile(intent)?.let(viewModel::openFile)
     }
 }
 
 @Composable
-private fun OpenFile(navigator: Navigator) {
-    val app = shelfApp()
-    val opened by app.openedWork.collectAsStateWithLifecycle()
+private fun OpenFile(viewModel: MainViewModel, navigator: Navigator) {
+    val opened by viewModel.openedWork.collectAsStateWithLifecycle()
     LaunchedEffect(opened) {
         val work = opened ?: return@LaunchedEffect
-        app.openedWork.value = null
+        viewModel.openedWork.value = null
         navigator.reader(work)
     }
 }
 
 @Composable
-private fun ConfirmInstall() {
-    val app = shelfApp()
+private fun ConfirmInstall(viewModel: MainViewModel) {
     val context = LocalContext.current
-    val confirmation by app.installConfirmation
+    val confirmation by viewModel.installConfirmation
         .collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
     LaunchedEffect(confirmation) {
         val intent = confirmation ?: return@LaunchedEffect
-        app.installConfirmation.value = null
+        viewModel.installConfirmation.value = null
         context.startActivity(intent)
     }
+}
+
+@Composable
+private fun UpdatePrompt(viewModel: MainViewModel) {
+    val release by viewModel.update.collectAsStateWithLifecycle()
+    release?.let { UpdateDialog(it) { viewModel.update.value = null } }
 }
 
 private fun NavHostController.selectedTab() =
@@ -195,13 +231,13 @@ private fun ShelfNavigation(settings: Settings) {
         currentWindowAdaptiveInfoV2(),
     )
     val hidden = reading || WindowInsets.isImeVisible
-    val app = shelfApp()
-    val language = app.bookLanguage(settings)
-    LaunchedEffect(language) { app.showLanguage(language) }
+    val viewModel: MainViewModel = viewModel()
+    val language = viewModel.bookLanguage(settings)
+    LaunchedEffect(language) { viewModel.showLanguage(language) }
 
-    UpdatePrompt(settings)
-    OpenFile(navigator)
-    ConfirmInstall()
+    UpdatePrompt(viewModel)
+    OpenFile(viewModel, navigator)
+    ConfirmInstall(viewModel)
     NavigationSuiteScaffold(
         layoutType = if (hidden) NavigationSuiteType.None else adaptive,
         navigationSuiteItems = {

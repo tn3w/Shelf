@@ -1,11 +1,15 @@
 package dev.tn3w.shelf.data
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.coroutines.executeAsync
 import okio.buffer
 import okio.source
 import java.io.IOException
@@ -22,6 +26,9 @@ val json = Json {
 }
 
 const val UPDATE_DELAY_MILLIS = 24L * 60 * 60 * 1000
+
+inline fun <T> runSuspendCatching(block: () -> T): Result<T> =
+    runCatching(block).onFailure { if (it is CancellationException) throw it }
 
 @Serializable
 data class Asset(
@@ -77,8 +84,11 @@ val http: OkHttpClient = OkHttpClient.Builder()
     }
     .build()
 
-fun OkHttpClient.fetch(url: String, build: Request.Builder.() -> Unit = {}): Response {
-    val response = newCall(Request.Builder().url(url).apply(build).build()).execute()
+suspend fun OkHttpClient.fetch(
+    url: String,
+    build: Request.Builder.() -> Unit = {},
+): Response {
+    val response = newCall(Request.Builder().url(url).apply(build).build()).executeAsync()
     if (response.isSuccessful) return response
     response.close()
     throw HttpException(response.code, url)
@@ -87,9 +97,11 @@ fun OkHttpClient.fetch(url: String, build: Request.Builder.() -> Unit = {}): Res
 val Response.stream: InputStream
     get() = body.byteStream()
 
-fun fetchText(url: String, accept: String = "application/vnd.github+json") =
-    http.fetch(url) { header("Accept", accept) }
-        .use { it.stream.readAtMost(MAX_TEXT_BYTES).decodeToString() }
+suspend fun fetchText(url: String, accept: String = "application/vnd.github+json") =
+    withContext(Dispatchers.IO) {
+        http.fetch(url) { header("Accept", accept) }
+            .use { it.stream.readAtMost(MAX_TEXT_BYTES).decodeToString() }
+    }
 
 fun InputStream.readAtMost(limit: Long) = source().buffer().run {
     if (request(limit + 1)) throw IOException("more than $limit bytes")

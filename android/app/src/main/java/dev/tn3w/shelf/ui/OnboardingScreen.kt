@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
@@ -47,24 +48,24 @@ private fun AboutText(text: String) {
 
 @Composable
 fun OnboardingScreen() {
-    val app = shelfApp()
+    val viewModel = settingsViewModel()
     val (settings, update) = rememberSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
-    var language by remember { mutableStateOf(app.systemLanguage()) }
-    val selected = remember(language) { mutableStateListOf<String>() }
-    var refreshes by remember { mutableIntStateOf(0) }
-    val packs = packInfos(language, refreshes)
-    val downloads by app.downloads.collectAsStateWithLifecycle()
+    var language by rememberSaveable { mutableStateOf(viewModel.systemLanguage()) }
+    var selected by rememberSaveable(language) { mutableStateOf(emptyList<String>()) }
+    val packs = packInfos(language)
+    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
+    val complete by viewModel.completeLanguage.collectAsStateWithLifecycle()
     val required = !BuildConfig.BUNDLED_CATALOGUE
     val core = packs?.firstOrNull { it.pack == "core" }
     val coreDownload = downloads["$language-core"]
-    var started by remember(language) { mutableStateOf(false) }
-    var showSources by remember { mutableStateOf(false) }
-    var showPacks by remember { mutableStateOf(false) }
+    var started by rememberSaveable(language) { mutableStateOf(false) }
+    var showSources by rememberSaveable { mutableStateOf(false) }
+    var showPacks by rememberSaveable { mutableStateOf(false) }
     fun finish(chosen: String = language) {
-        if (chosen != language) app.reload(chosen)
+        if (chosen != language) viewModel.reload(chosen)
         val now = System.currentTimeMillis()
-        val stored = storedLanguage(chosen, app.systemLanguage())
+        val stored = storedLanguage(chosen, viewModel.systemLanguage())
         update { it.copy(onboarded = true, language = stored, lastCatalogueCheck = now) }
     }
 
@@ -72,6 +73,7 @@ fun OnboardingScreen() {
         if (!started || core?.state == PackState.Available) return@LaunchedEffect
         finish()
     }
+    LaunchedEffect(complete) { complete?.let(::finish) }
 
     Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
         Column(
@@ -95,7 +97,7 @@ fun OnboardingScreen() {
             SettingsGroup(stringResource(R.string.catalogue_language)) {
                 CatalogueLanguageChoice(language) {
                     language = it
-                    app.reload(it)
+                    viewModel.reload(it)
                 }
             }
             SettingsGroup { OfflineRow(settings, update) }
@@ -105,18 +107,19 @@ fun OnboardingScreen() {
                     if (required) CoreRow(core, coreDownload)
                     ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
                     val skip = if (required) "core" else null
-                    if (showPacks) OnboardingPacks(packs, selected, skip)
+                    if (showPacks) {
+                        OnboardingPacks(packs, selected, skip) { pack ->
+                            selected =
+                                if (pack in selected) selected - pack else selected + pack
+                        }
+                    }
                 }
             }
             SettingsGroup {
                 ExpandRow(R.string.own_sources, showSources) {
                     showSources = !showSources
                 }
-                if (showSources) {
-                    SourceRows(language, settings, { refreshes++ }) { complete ->
-                        if (complete != null) finish(complete) else refreshes++
-                    }
-                }
+                if (showSources) SourceRows(language, settings)
             }
         }
         HorizontalDivider()
@@ -134,7 +137,7 @@ fun OnboardingScreen() {
             waiting = started && coreDownload !is Download.Failed,
             onSkip = { finish() },
         ) { chosen ->
-            chosen.forEach { app.download(language, it) }
+            chosen.forEach { viewModel.downloadPack(language, it) }
             started = true
         }
     }
@@ -219,8 +222,9 @@ private fun DownloadBar(download: Download?) {
 @Composable
 private fun OnboardingPacks(
     packs: List<PackInfo>?,
-    selected: MutableList<String>,
+    selected: List<String>,
     skip: String?,
+    onToggle: (String) -> Unit,
 ) {
     if (packs == null) return LoadingBar()
     packs
@@ -231,9 +235,7 @@ private fun OnboardingPacks(
             SettingRow(
                 stringResource(PACKS.getValue(info.pack)),
                 size,
-                onClick = {
-                    if (checked) selected.remove(info.pack) else selected.add(info.pack)
-                },
+                onClick = { onToggle(info.pack) },
             ) { Checkbox(checked = checked, onCheckedChange = null) }
         }
 }

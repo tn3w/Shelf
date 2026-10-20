@@ -1,12 +1,11 @@
 package dev.tn3w.shelf.ui
 
-import android.app.LocaleManager
-import android.os.Build
-import android.os.LocaleList
+import android.app.Application
+import android.net.Uri
 import android.text.format.Formatter
 import androidx.annotation.Keep
-import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -25,11 +25,14 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -82,18 +85,127 @@ fun bytes(value: Long) = Formatter.formatShortFileSize(LocalContext.current, val
 
 typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
 
+class SettingsViewModel(application: Application) : ShelfViewModel(application) {
+    val statuses = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val busy = MutableStateFlow<Set<Int>>(emptySet())
+    val refreshes = MutableStateFlow(0)
+    val release = MutableStateFlow<Release?>(null)
+    val completeLanguage = MutableStateFlow<String?>(null)
+    val csvProgress = MutableStateFlow<Float?>(null)
+    val csvReport = MutableStateFlow<CsvReport?>(null)
+
+    fun runAction(action: Int, work: suspend () -> Int?) {
+        if (action in busy.value) return
+        busy.update { it + action }
+        statuses.update { it - action }
+        app.scope.launch(Dispatchers.IO) {
+            try {
+                work()?.let { status -> statuses.update { it + (action to status) } }
+            } finally {
+                busy.update { it - action }
+                refreshes.update { it + 1 }
+            }
+        }
+    }
+
+    fun systemLanguage() = app.systemLanguage()
+
+    fun reload(language: String) = app.reload(language)
+
+    fun downloadPack(language: String, pack: String) = app.download(language, pack)
+
+    fun removePacks(language: String, pack: String? = null, everywhere: Boolean = false) {
+        app.removePacks(language, pack, everywhere)
+    }
+
+    suspend fun packs(language: String) = withContext(Dispatchers.IO) {
+        app.packs.packs(language)
+    }
+
+    suspend fun storage(language: String) = withContext(Dispatchers.IO) {
+        val month = app.packs.months()[language].orEmpty()
+        Triple(app.packs.storageBytes(language), app.packs.storageBytes(), month)
+    }
+
+    fun showUpdate(available: Release?) {
+        if (available == null) checkUpdate() else release.value = available
+    }
+
+    private fun checkUpdate() = runAction(R.string.app_name) {
+        runSuspendCatching { Updater.check(app) }.fold(
+            onSuccess = { found ->
+                release.value = found
+                R.string.up_to_date.takeIf { found == null }
+            },
+            onFailure = { R.string.update_failed },
+        )
+    }
+
+    fun checkCatalogue(language: String) = runAction(R.string.check_catalogue) {
+        runSuspendCatching {
+            app.packs.refreshManifest()
+            val now = System.currentTimeMillis()
+            library.updateSettings { it.copy(lastCatalogueCheck = now) }
+            val current = app.packs.pendingUpdates(language).isEmpty()
+            if (current) R.string.catalogue_current else R.string.catalogue_found
+        }.getOrDefault(R.string.catalogue_check_failed)
+    }
+
+    fun changeCatalogueSource(source: String) {
+        detached {
+            app.changeSource(source)
+            val offline = library.settings.first().isOffline(app)
+            if (!offline) runSuspendCatching { app.packs.refreshManifest() }
+            refreshes.update { it + 1 }
+        }
+    }
+
+    fun importCatalogue(language: String, uris: List<Uri>) =
+        runAction(R.string.import_catalogue) {
+            val imported = app.importCatalogue(language, uris)
+            val candidates = listOf(language) + (LANGUAGES - language)
+            val complete = candidates.firstOrNull(app.packs::isComplete)
+            completeLanguage.value = complete
+            when {
+                !imported -> R.string.import_failed
+                complete == null -> R.string.catalogue_incomplete
+                else -> R.string.catalogue_imported
+            }
+        }
+
+    suspend fun restoreBackup(uri: Uri): Boolean {
+        if (!library.importFrom(uri)) return false
+        val settings = library.settings.first()
+        if (settings.catalogueSource != app.packs.source) {
+            app.changeSource(settings.catalogueSource)
+        }
+        app.reload(app.bookLanguage(settings))
+        return true
+    }
+
+    fun importCsv(uri: Uri) = runAction(R.string.csv_import) {
+        csvProgress.value = 0f
+        val report = library.importCsv(uri, loaded.value) { csvProgress.value = it }
+        csvProgress.value = null
+        csvReport.value = report
+        R.string.backup_failed.takeIf { report == null }
+    }
+}
+
+@Composable
+fun settingsViewModel(): SettingsViewModel = viewModel()
+
 @Composable
 fun loadedSettings(): Settings? {
-    val settings by shelfApp().library.settings.collectAsStateWithLifecycle(null)
+    val settings by shelfViewModel().library.settings.collectAsStateWithLifecycle(null)
     return settings
 }
 
 @Composable
 fun rememberSettings(): Pair<Settings, SettingsUpdate>? {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
+    val viewModel = shelfViewModel()
     val settings = loadedSettings() ?: return null
-    return settings to { change -> scope.launch { app.library.updateSettings(change) } }
+    return settings to viewModel::updateSettings
 }
 
 @Composable
@@ -134,9 +246,9 @@ private fun SettingsOverview(navigator: Navigator) {
 
 @Composable
 private fun LibraryStats(onOpen: () -> Unit) {
-    val app = shelfApp()
-    val saved by app.library.saved.collectAsStateWithLifecycle(emptyList())
-    val habit by app.library.habit.collectAsStateWithLifecycle(null)
+    val library = shelfViewModel().library
+    val saved by library.saved.collectAsStateWithLifecycle(emptyList())
+    val habit by library.habit.collectAsStateWithLifecycle(null)
     val stats = listOf(
         saved.size to R.string.stat_books,
         saved.count { it.shelf == Shelf.Read } to R.string.finished,
@@ -165,7 +277,7 @@ private fun LibraryStats(onOpen: () -> Unit) {
 
 @Composable
 private fun GeneralSettings(navigator: Navigator) {
-    val app = shelfApp()
+    val viewModel = shelfViewModel()
     val (settings, update) = rememberSettings() ?: return
     SettingsGroup(stringResource(R.string.appearance)) {
         OptionChoice(THEMES, settings.theme) { mode -> update { it.copy(theme = mode) } }
@@ -184,11 +296,11 @@ private fun GeneralSettings(navigator: Navigator) {
         ) { on -> update { it.copy(reduceMotion = on) } }
     }
     SettingsGroup(stringResource(R.string.language)) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) AppLanguageChoice()
+        AppLanguageChoice()
         val auto = stringResource(R.string.language_auto).takeIf {
             settings.language.isEmpty()
         }
-        val book = listOfNotNull(auto, nativeName(app.bookLanguage(settings)))
+        val book = listOfNotNull(auto, nativeName(viewModel.bookLanguage(settings)))
         LinkRow(stringResource(R.string.catalogue_language), book.joinToString(" · ")) {
             navigator.settings(SettingsPage.Catalogue)
         }
@@ -198,7 +310,9 @@ private fun GeneralSettings(navigator: Navigator) {
 @Composable
 private fun ReadingSettings() {
     val (settings, update) = rememberSettings() ?: return
-    var scale by remember(settings.fontScale) { mutableFloatStateOf(settings.fontScale) }
+    var scale by rememberSaveable(settings.fontScale) {
+        mutableFloatStateOf(settings.fontScale)
+    }
     SettingsGroup(
         stringResource(R.string.daily_goal), stringResource(R.string.daily_goal_hint),
     ) { GoalChoice(settings.dailyGoal) { goal -> update { it.copy(dailyGoal = goal) } } }
@@ -255,7 +369,7 @@ private fun ReadingSettings() {
 
 @Composable
 private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
-    var editing by remember { mutableStateOf(false) }
+    var editing by rememberSaveable { mutableStateOf(false) }
     val custom = goal.takeIf { it !in GOALS }
     fun select(option: Int?) {
         if (option == null || option == custom) editing = true else onChange(option)
@@ -271,7 +385,7 @@ private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
 
 @Composable
 private fun GoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
-    var text by remember { mutableStateOf(current.toString()) }
+    var text by rememberSaveable { mutableStateOf(current.toString()) }
     val goal = text.toIntOrNull()?.takeIf { it in 0..MAX_DAILY_GOAL }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -509,17 +623,16 @@ fun <T> Choice(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun AppLanguageChoice() {
-    val manager = LocalContext.current.getSystemService(LocaleManager::class.java)
-    val chosen = manager.applicationLocales[0]?.language
-    var current by remember {
+    val chosen = AppCompatDelegate.getApplicationLocales()[0]?.language
+    var current by rememberSaveable {
         mutableStateOf(chosen?.takeIf { it in LANGUAGES }.orEmpty())
     }
     LanguageChoice(current, R.string.app_language) { language ->
         current = language
-        manager.applicationLocales = LocaleList.forLanguageTags(language)
+        val locales = LocaleListCompat.forLanguageTags(language)
+        AppCompatDelegate.setApplicationLocales(locales)
     }
 }
 
@@ -554,14 +667,15 @@ private fun updateSummary(release: Release): String {
 
 @Composable
 private fun AboutRows() {
-    val app = shelfApp()
+    val viewModel = settingsViewModel()
     val uri = LocalUriHandler.current
     val context = LocalContext.current
     val settings = loadedSettings() ?: return
-    val scope = rememberCoroutineScope()
-    var checking by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf<Int?>(null) }
-    var release by remember { mutableStateOf<Release?>(null) }
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val release by viewModel.release.collectAsStateWithLifecycle()
+    val checking = R.string.app_name in busy
+    val status = statuses[R.string.app_name]
     val available = settings.availableUpdate?.takeIf(Updater::isAvailable)
     val version =
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
@@ -575,20 +689,7 @@ private fun AboutRows() {
             summary.joinToString(" · "),
             checking,
         ) {
-            if (available != null) {
-                release = available
-                return@ActionRow
-            }
-            checking = true
-            scope.launch {
-                runCatching { Updater.check(app) }
-                    .onSuccess {
-                        release = it
-                        status = if (it == null) R.string.up_to_date else null
-                    }
-                    .onFailure { status = R.string.update_failed }
-                checking = false
-            }
+            viewModel.showUpdate(available)
         }
     } else {
         SettingRow(stringResource(R.string.app_name), version)
@@ -598,5 +699,5 @@ private fun AboutRows() {
     LinkRow(stringResource(R.string.open_library_license)) {
         uri.openUri(OPEN_LIBRARY_URL)
     }
-    release?.let { UpdateDialog(it) { release = null } }
+    release?.let { UpdateDialog(it) { viewModel.release.value = null } }
 }

@@ -1,8 +1,7 @@
 package dev.tn3w.shelf.ui
 
+import android.app.Application
 import android.net.Uri
-import android.widget.Toast
-import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.StringRes
@@ -15,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -22,10 +22,12 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 private data class Details(
     val book: Book,
@@ -39,9 +41,63 @@ private data class Related(
     val similar: List<Book>,
 )
 
+class BookViewModel(application: Application) : ShelfViewModel(application) {
+    val instant = MutableStateFlow<Float?>(null)
+    val offers = MutableStateFlow<Map<Offer, Download>>(emptyMap())
+
+    fun changeCover(book: Book, shelf: Shelf?, image: Uri) {
+        detached {
+            val cover = library.saveCover(book.work, image) ?: return@detached
+            library.place(book.copy(cover = cover), shelf ?: Shelf.Reading)
+        }
+    }
+
+    fun delete(book: Book) {
+        detached { library.deleteBook(book.work, keepShelves = !book.isLocal) }
+    }
+
+    fun import(book: Book, uri: Uri) {
+        detached { open(book.work.takeIf { library.importBook(book, uri) }) }
+    }
+
+    fun downloadInstantly(book: Book, settings: Settings) {
+        if (instant.value != null) return
+        instant.value = 0f
+        detached {
+            val offer = instantOffer(book, settings)
+            val done =
+                offer != null && library.download(book, offer) { instant.value = it }
+            instant.value = null
+            if (done) open(book.work) else toast(R.string.free_books_failed)
+        }
+    }
+
+    private suspend fun instantOffer(book: Book, settings: Settings): Offer? {
+        val recipes = sources.bundled + sources.own.value
+        val provider = settings.instantProvider(recipes) ?: return null
+        val language = bookLanguage(settings)
+        if (!provider.serves(language)) return null
+        val isbns = isbnsOf(book, catalogue = provider.usesIsbn)
+        val query = Query(book.title, book.author, language, isbns)
+        return runSuspendCatching { provider.search(query) }.getOrNull()?.firstOrNull()
+    }
+
+    fun download(book: Book, offer: Offer) {
+        if (offers.value.values.any { it is Download.Running }) return
+        fun report(progress: Float) =
+            offers.update { it + (offer to Download.Running(progress)) }
+        report(0f)
+        detached {
+            val done = library.download(book, offer, ::report)
+            offers.update { if (done) it - offer else it + (offer to Download.Failed) }
+            if (done) open(book.work)
+        }
+    }
+}
+
 @Composable
 fun BookScreen(work: Int, origin: String, navigator: Navigator) {
-    val saved by shelfApp().library.saved.collectAsStateWithLifecycle(emptyList())
+    val saved by shelfViewModel().library.saved.collectAsStateWithLifecycle(emptyList())
     val details by load(work) {
         val source = catalogueOf(work) ?: return@load null
         val book = source.book(work) ?: return@load null
@@ -109,22 +165,19 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
 
 @Composable
 private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Navigator) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
+    val viewModel: BookViewModel = viewModel()
+    val progress by viewModel.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
-    val hasFile by produceState(true, position) { value = app.library.hasFile(position) }
+    val hasFile by produceState(true, position) {
+        value = viewModel.library.hasFile(position)
+    }
     val online = loadedSettings()?.isOffline(LocalContext.current) == false
-    var confirmDelete by remember { mutableStateOf(false) }
-    var findFree by remember { mutableStateOf(false) }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var findFree by rememberSaveable { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null
-    fun place(target: Shelf) = scope.launch {
-        app.library.place(book, if (shelf == target) unplaced else target)
-    }
-    fun changeCover(image: Uri) = scope.launch {
-        val cover = app.library.saveCover(book.work, image) ?: return@launch
-        app.library.place(book.copy(cover = cover), shelf ?: Shelf.Reading)
-    }
+    fun place(target: Shelf) =
+        viewModel.place(book, if (shelf == target) unplaced else target)
+    fun changeCover(image: Uri) = viewModel.changeCover(book, shelf, image)
 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
@@ -170,7 +223,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             Modifier.padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ReadButton(book, position, online, navigator)
+            ReadButton(book, position, hasFile, online, navigator)
             ShelfToggle(
                 shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
@@ -194,18 +247,11 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             }
         }
     }
-    if (findFree) {
-        FreeBookSheet(book, onDismiss = { findFree = false }) {
-            findFree = false
-            navigator.reader(book.work)
-        }
-    }
+    if (findFree && !hasFile) FreeBookSheet(book) { findFree = false }
     if (confirmDelete) {
         DeleteDialog(book, onDismiss = { confirmDelete = false }) {
-            scope.launch {
-                app.library.deleteBook(book.work, keepShelves = !book.isLocal)
-                navigator.back()
-            }
+            viewModel.delete(book)
+            navigator.back()
         }
     }
 }
@@ -214,32 +260,23 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
 private fun ReadButton(
     book: Book,
     position: Progress?,
+    hasFile: Boolean,
     online: Boolean,
     navigator: Navigator,
 ) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
+    val viewModel: BookViewModel = viewModel()
     val settings = loadedSettings()
-    var download by remember { mutableStateOf<Float?>(null) }
+    val download by viewModel.instant.collectAsStateWithLifecycle()
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val work = book.work.takeIf { app.library.importBook(book, uri) }
-            navigator.openImported(work, app)
+        uri?.let { viewModel.import(book, it) }
+    }
+    fun open() {
+        val instant = settings?.takeIf { online && it.instantSource.isNotEmpty() }
+        when {
+            hasFile -> navigator.reader(book.work)
+            instant != null -> viewModel.downloadInstantly(book, instant)
+            else -> picker.launch(arrayOf("*/*"))
         }
-    }
-    suspend fun downloaded(): Boolean {
-        val chosen = settings?.takeIf { online && it.instantSource.isNotEmpty() }
-            ?: return false
-        download = 0f
-        val done = app.downloadInstantly(book, chosen) { download = it }
-        download = null
-        if (!done) Toast.makeText(app, R.string.free_books_failed, LENGTH_SHORT).show()
-        return done
-    }
-    fun open() = scope.launch {
-        val ready = app.library.hasFile(position) || downloaded()
-        if (ready) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
     }
 
     Button(onClick = ::open, enabled = download == null) {
@@ -303,7 +340,7 @@ private fun facts(book: Book): String {
 
 @Composable
 private fun DescriptionText(description: Description) {
-    var expanded by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.padding(horizontal = ScreenPadding)) {
         Text(
             description.text,

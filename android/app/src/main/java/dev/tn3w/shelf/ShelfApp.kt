@@ -11,6 +11,8 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import dev.tn3w.shelf.cover.CoverFetcher
+import dev.tn3w.shelf.cover.CoverKeyer
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -51,7 +53,11 @@ class ShelfApp :
 
     // Coil type-checks the Application for this; dropping it restores its default client.
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(context)
-        .components { add(OkHttpNetworkFetcherFactory({ http })) }
+        .components {
+            add(OkHttpNetworkFetcherFactory({ http }))
+            add(CoverKeyer())
+            add(CoverFetcher.Factory())
+        }
         .build()
 
     fun systemLanguage() = LocaleList.getDefault().getFirstMatch(LANGUAGES.toTypedArray())
@@ -62,6 +68,7 @@ class ShelfApp :
     private var reloadJob: Job? = null
     private var requestedLanguage: String? = null
 
+    @Synchronized
     fun showLanguage(language: String) {
         if (language != requestedLanguage) reload(language)
     }
@@ -87,7 +94,7 @@ class ShelfApp :
         val key = "$language-$pack"
         if (!downloads.claim(key)) return
         downloadJobs[key] = scope.launch(Dispatchers.IO) {
-            runCatching {
+            runSuspendCatching {
                 packs.download(language, pack) { progress ->
                     downloads.update { it + (key to Download.Running(progress)) }
                 }
@@ -122,14 +129,11 @@ class ShelfApp :
     fun openFile(uri: Uri) = scope.launch {
         val work = uri.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
             ?.let { library.importFile(it) }
-        if (work != null) {
-            openedWork.value = work
-            return@launch
-        }
-        withContext(Dispatchers.Main) {
-            Toast.makeText(this@ShelfApp, R.string.unsupported_file, Toast.LENGTH_LONG)
-                .show()
-        }
+        if (work != null) openedWork.value = work else showUnsupported()
+    }
+
+    suspend fun showUnsupported() = withContext(Dispatchers.Main) {
+        Toast.makeText(this@ShelfApp, R.string.unsupported_file, Toast.LENGTH_LONG).show()
     }
 
     suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {
@@ -145,7 +149,7 @@ class ShelfApp :
         if (!settings.catalogueUpdates || settings.isOffline(this)) return
         val now = System.currentTimeMillis()
         if (now - settings.lastCatalogueCheck < MONTH_MILLIS) return
-        runCatching { packs.refreshManifest() }.getOrElse { return }
+        runSuspendCatching { packs.refreshManifest() }.getOrElse { return }
         library.updateSettings { it.copy(lastCatalogueCheck = now) }
         val language = bookLanguage(settings)
         val updates = packs.pendingUpdates(language)

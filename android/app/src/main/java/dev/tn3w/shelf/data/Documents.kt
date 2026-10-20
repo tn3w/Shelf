@@ -5,8 +5,11 @@ import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import com.github.junrar.Archive
+import com.github.junrar.rarfile.FileHeader
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarFile
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
@@ -114,6 +117,8 @@ sealed interface Document : AutoCloseable {
 fun interface Resources : AutoCloseable {
     fun bytes(path: String): ByteArray?
 
+    fun image(path: String): Any? = bytes(path)
+
     override fun close() {}
 }
 
@@ -209,30 +214,40 @@ class ComicDocument(names: List<String>, private val resources: Resources) :
     override val pageCount = pages.size
 
     override fun page(index: Int, width: Int, height: Int) =
-        checkNotNull(resources.bytes(pages[index])) { "missing page" }
+        checkNotNull(resources.image(pages[index])) { "missing page" }
 
     override fun close() = resources.close()
 }
 
-private class ExtractedPages : Resources {
+private class ExtractedPages<T>(
+    private val archive: AutoCloseable,
+    entries: List<T>,
+    private val nameOf: (T) -> String,
+    private val write: (T, OutputStream) -> Unit,
+) : Resources {
     private val directory = Files.createTempDirectory(EXTRACTED_PREFIX).toFile()
+    private val pending = entries.filter { isComicPage(nameOf(it)) }.iterator()
     private val files = mutableMapOf<String, File>()
     private var remaining = MAX_EXTRACTED_BYTES
 
-    val names
-        get() = files.keys.toList()
+    override fun bytes(path: String) =
+        image(path)?.takeIf { it.length() <= MAX_ENTRY_BYTES }?.readBytes()
 
-    fun add(name: String, write: (OutputStream) -> Unit) {
-        if (!isComicPage(name)) return
-        val file = directory.resolve("${files.size}")
-        file.outputStream().use { write(Limited(it)) }
-        files[name] = file
+    @Synchronized
+    override fun image(path: String): File? {
+        while (path !in files && pending.hasNext()) extract(pending.next())
+        return files[path]
     }
 
-    override fun bytes(path: String) =
-        files[path]?.takeIf { it.length() <= MAX_ENTRY_BYTES }?.readBytes()
+    private fun extract(entry: T) {
+        val file = directory.resolve("${files.size}")
+        file.outputStream().use { write(entry, Limited(it)) }
+        files[nameOf(entry)] = file
+    }
 
+    @Synchronized
     override fun close() {
+        archive.close()
         directory.deleteRecursively()
     }
 
@@ -247,34 +262,42 @@ private class ExtractedPages : Resources {
     }
 }
 
-private fun extractComic(read: (ExtractedPages) -> Unit): ComicDocument {
-    val pages = ExtractedPages()
-    runCatching { read(pages) }.onFailure { pages.close() }.getOrThrow()
-    return ComicDocument(pages.names, pages)
+private fun <T> extractedComic(
+    archive: AutoCloseable,
+    entries: () -> List<T>,
+    nameOf: (T) -> String,
+    write: (T, OutputStream) -> Unit,
+) = runCatching {
+    val found = entries()
+    ComicDocument(found.map(nameOf), ExtractedPages(archive, found, nameOf, write))
+}.onFailure { archive.close() }.getOrThrow()
+
+private fun rarComic(file: File): ComicDocument {
+    val archive = Archive(file)
+    return extractedComic(
+        archive,
+        { archive.filterNot { it.isDirectory } },
+        FileHeader::getFileName,
+        archive::extractFile,
+    )
 }
 
-private fun rarComic(file: File) = extractComic { pages ->
-    Archive(file).use { archive ->
-        archive.filterNot { it.isDirectory }.forEach { header ->
-            pages.add(header.fileName) { archive.extractFile(header, it) }
-        }
-    }
+private fun sevenZipComic(file: File): ComicDocument {
+    val archive = SevenZFile.builder().setFile(file).get()
+    return extractedComic(
+        archive,
+        { archive.entries.filterNot { it.isDirectory } },
+        SevenZArchiveEntry::getName,
+    ) { entry, output -> archive.getInputStream(entry).use { it.copyTo(output) } }
 }
 
-private fun sevenZipComic(file: File) = extractComic { pages ->
-    SevenZFile.builder().setFile(file).get().use { archive ->
-        archive.entries.filterNot { it.isDirectory }.forEach { entry ->
-            pages.add(entry.name) { archive.getInputStream(entry).copyTo(it) }
-        }
-    }
-}
-
-private fun tarComic(file: File) = extractComic { pages ->
-    TarArchiveInputStream(file.inputStream().buffered()).use { archive ->
-        generateSequence { archive.nextEntry }.filter { it.isFile }.forEach { entry ->
-            pages.add(entry.name) { archive.copyTo(it) }
-        }
-    }
+private fun tarComic(file: File): ComicDocument {
+    val archive = TarFile(file)
+    return extractedComic(
+        archive,
+        { archive.entries.filter { it.isFile } },
+        TarArchiveEntry::getName,
+    ) { entry, output -> archive.getInputStream(entry).use { it.copyTo(output) } }
 }
 
 private fun isComicPage(name: String): Boolean {

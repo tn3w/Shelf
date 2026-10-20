@@ -105,6 +105,7 @@
     <string name="up_to_date">Shelf on ajakohane.</string>
     <string name="update_available">Shelf %s on saadaval</string>
     <string name="update_failed">Uuendamine ebaõnnestus.</string>
+    <string name="update_install_failed">Uuendamine ebaõnnestus. %s</string>
     <string name="update_changed">See väljalase muutus või võeti tagasi, seega seda ei paigaldatud.</string>
     <string name="update_waiting">%1$s, valmis %2$s</string>
     <string name="update_wait_note">Avaldatud %s. Shelf pakub uuendusi päev pärast väljaandmist, et ohustatud väljalase jõutaks enne tabada ja eemaldada.</string>
@@ -177,7 +178,7 @@
     <string name="release_date">Väljalase %s</string>
     <string name="language">Keel</string>
     <string name="book_language_hint">Automaatne järgib rakenduse keelt.</string>
-    <string name="packs">Paketid</string>
+    <string name="packs_language">Paketid · %s</string>
     <string name="language_auto">Automaatne</string>
     <string name="reading_settings">Lugemine</string>
     <string name="reading_hint">Päeva eesmärk, tekst ja lehekeeramine.</string>

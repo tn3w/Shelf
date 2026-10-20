@@ -1,8 +1,6 @@
 package dev.tn3w.shelf.cover
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -11,13 +9,9 @@ import android.graphics.Path
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
-import android.util.LruCache
 import dev.tn3w.shelf.cover.art.*
-import dev.tn3w.shelf.data.replaceFile
-import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.nextDown
@@ -127,77 +121,6 @@ fun renderCover(request: CoverRequest, widthPixels: Int): Bitmap {
     val cover = CoverCanvas(bitmap, random)
     cover.drawTypography(request.title, request.author, direction(cover))
     return bitmap
-}
-
-object Covers {
-    private const val VERSION = "v5"
-    private const val DISK_LIMIT_BYTES = 32L * 1024 * 1024
-    private val pruned = AtomicBoolean()
-
-    private val webp = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-    private val compressFormat =
-        if (webp) Bitmap.CompressFormat.WEBP_LOSSY else Bitmap.CompressFormat.JPEG
-    private val extension = if (webp) "webp" else "jpg"
-
-    private val memory = object : LruCache<String, Bitmap>(
-        (Runtime.getRuntime().maxMemory() / 8192).toInt().coerceIn(2048, 32768),
-    ) {
-        override fun sizeOf(key: String, value: Bitmap) = value.byteCount / 1024
-    }
-
-    fun cached(context: Context, request: CoverRequest, widthPixels: Int): Bitmap {
-        val width = snap(widthPixels)
-        val seed = coverSeed(request.work, request.title, request.author)
-        val genre = classify(request.slugs)
-        val key = "$VERSION-$seed-${genre.name}-$width"
-        memory.get(key)?.let { return it }
-
-        val directory = File(context.cacheDir, "covers").apply { mkdirs() }
-        if (pruned.compareAndSet(false, true)) prune(directory)
-
-        val file = File(directory, "$key.$extension")
-        decode(file)?.let {
-            file.setLastModified(System.currentTimeMillis())
-            memory.put(key, it)
-            return it
-        }
-        val bitmap = renderCover(request, width)
-        memory.put(key, bitmap)
-        store(file, bitmap)
-        return bitmap
-    }
-
-    private fun snap(widthPixels: Int): Int {
-        val steps = intArrayOf(120, 180, 240, 320, 420, 560, 720)
-        return steps.firstOrNull { it >= widthPixels } ?: steps.last()
-    }
-
-    private fun prune(directory: File) {
-        val files = directory.listFiles() ?: return
-        val (current, stale) = files.partition {
-            it.name.startsWith("$VERSION-") && it.extension == extension
-        }
-        stale.forEach { it.delete() }
-
-        var total = 0L
-        current.sortedByDescending { it.lastModified() }.forEach {
-            total += it.length()
-            if (total > DISK_LIMIT_BYTES) it.delete()
-        }
-    }
-
-    private fun decode(file: File): Bitmap? {
-        if (!file.exists()) return null
-        return runCatching { BitmapFactory.decodeFile(file.path) }.getOrNull()
-    }
-
-    private fun store(file: File, bitmap: Bitmap) {
-        runCatching {
-            replaceFile(file) { temporary ->
-                temporary.outputStream().use { bitmap.compress(compressFormat, 82, it) }
-            }
-        }
-    }
 }
 
 enum class CoverGenre {

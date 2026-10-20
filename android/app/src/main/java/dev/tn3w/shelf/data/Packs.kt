@@ -285,7 +285,7 @@ class Packs(private val context: Context) {
         manifest
     }
 
-    private fun manifestUrl(): String {
+    private suspend fun manifestUrl(): String {
         val url = releasesUrl(source)
         if (url.substringBefore('?').endsWith(MANIFEST_NAME)) return url
         val release = json.decodeFromString<List<Release>>(fetchText(url))
@@ -368,7 +368,7 @@ class Packs(private val context: Context) {
         },
     )
 
-    private fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
+    private suspend fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->
             val digest = MessageDigest.getInstance("SHA-256")
             DigestInputStream(http.fetch(entry.url).stream, digest).use { input ->

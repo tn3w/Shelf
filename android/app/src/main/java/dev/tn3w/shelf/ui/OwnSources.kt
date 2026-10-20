@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.ui
 
+import android.app.Application
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -11,23 +13,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.BuildConfig
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -42,32 +46,85 @@ private val EDITOR_MODES = mapOf(
     true to R.string.free_books_file,
 )
 
-@Composable
-fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    val recipes by app.sources.own.collectAsStateWithLifecycle()
-    var editing by remember { mutableStateOf<Recipe?>(null) }
-    var status by remember { mutableStateOf<String?>(null) }
-    var exportFailed by remember { mutableStateOf(false) }
-    val failed = stringResource(R.string.import_failed)
-    val importer = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val imported = app.sources.import(uri)
-            if (imported == null) {
-                status = failed
-                return@launch
-            }
-            val added = imported.added.size
-            val total = imported.total
-            status = app.resources
-                .getQuantityString(R.plurals.free_books_imported, total, added, total)
+class SourcesViewModel(application: Application) : ShelfViewModel(application) {
+    val imported = MutableStateFlow<Result<Imported>?>(null)
+    val exportFailed = MutableStateFlow(false)
+    val lines = MutableStateFlow<List<String>>(emptyList())
+    val running = MutableStateFlow(false)
+    val report = MutableStateFlow<String?>(null)
+    val reportStatus = MutableStateFlow<Int?>(null)
+
+    fun import(uri: Uri) {
+        detached {
+            imported.value = runSuspendCatching { checkNotNull(sources.import(uri)) }
         }
     }
-    val exporter = rememberLauncherForActivityResult(CreateDocument("application/json")) {
-        if (it != null) scope.launch { exportFailed = !app.sources.export(it) }
+
+    fun export(uri: Uri) {
+        detached { exportFailed.value = !sources.export(uri) }
     }
+
+    fun save(initial: Recipe, ready: Recipe) {
+        detached {
+            val id = initial.id.ifEmpty { UUID.randomUUID().toString() }
+            sources.save(ready.copy(id = id))
+            if (initial.id.isNotEmpty()) return@detached
+            library.updateSettings { it.copy(providers = it.providers + id) }
+        }
+    }
+
+    fun remove(id: String) {
+        detached {
+            sources.remove(id)
+            library.updateSettings { it.copy(providers = it.providers - id) }
+        }
+    }
+
+    fun test(recipe: Recipe, query: Query, debug: Boolean) {
+        running.value = true
+        reportStatus.value = null
+        lines.value = emptyList()
+        viewModelScope.launch {
+            trace(recipe, query, debug).collect { line -> lines.update { it + line } }
+            running.value = false
+            if (debug) report.value = debugReport(recipe, query, lines.value)
+        }
+    }
+
+    fun saveReport(uri: Uri?) {
+        val text = report.value ?: return
+        report.value = null
+        if (uri == null) return
+        detached {
+            val done = app.writeTo(uri) { it.write(text.toByteArray()) }
+            reportStatus.value =
+                if (done) R.string.free_books_debug_saved else R.string.export_failed
+        }
+    }
+}
+
+@Composable
+fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) {
+    val viewModel: SourcesViewModel = viewModel()
+    val recipes by viewModel.sources.own.collectAsStateWithLifecycle()
+    val imported by viewModel.imported.collectAsStateWithLifecycle()
+    val exportFailed by viewModel.exportFailed.collectAsStateWithLifecycle()
+    var editing by rememberSaveable(stateSaver = jsonSaver<Recipe?>()) {
+        mutableStateOf(null)
+    }
+    val importer = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        uri?.let(viewModel::import)
+    }
+    val exporter = rememberLauncherForActivityResult(CreateDocument("application/json")) {
+        it?.let(viewModel::export)
+    }
+    val status = imported?.fold(
+        onSuccess = {
+            val (added, total) = it.added.size to it.total
+            pluralStringResource(R.plurals.free_books_imported, total, added, total)
+        },
+        onFailure = { stringResource(R.string.import_failed) },
+    )
 
     recipes.forEach { recipe ->
         ProviderSwitch(Provider(recipe), settings, update, enabled) { editing = recipe }
@@ -87,16 +144,15 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
             exporter.launch(SOURCES_FILE)
         }
     }
-    editing?.let { RecipeEditor(it, update) { editing = null } }
+    editing?.let { RecipeEditor(it) { editing = null } }
 }
 
 @Composable
-private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () -> Unit) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    var recipe by remember { mutableStateOf(initial) }
-    var text by remember { mutableStateOf(initial.toText()) }
-    var asFile by remember { mutableStateOf(false) }
+private fun RecipeEditor(initial: Recipe, onClose: () -> Unit) {
+    val viewModel: SourcesViewModel = viewModel()
+    var recipe by rememberSaveable(stateSaver = jsonSaver()) { mutableStateOf(initial) }
+    var text by rememberSaveable { mutableStateOf(initial.toText()) }
+    var asFile by rememberSaveable { mutableStateOf(false) }
     val parsed = remember(text, recipe, asFile) {
         if (asFile) parseRecipe(text) else Result.success(recipe)
     }
@@ -104,16 +160,13 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
         parsed.fold({ it.problems() }, { listOf(firstLine(it)) })
     }
 
-    fun save() = scope.launch {
-        val ready = parsed.getOrNull() ?: return@launch
-        val id = initial.id.ifEmpty { UUID.randomUUID().toString() }
-        app.sources.save(ready.copy(id = id))
-        if (initial.id.isEmpty()) update { it.copy(providers = it.providers + id) }
+    fun save() {
+        val ready = parsed.getOrNull() ?: return
+        viewModel.save(initial, ready)
         onClose()
     }
-    fun remove() = scope.launch {
-        app.sources.remove(initial.id)
-        update { it.copy(providers = it.providers - initial.id) }
+    fun remove() {
+        viewModel.remove(initial.id)
         onClose()
     }
     fun showFile(file: Boolean) {
@@ -121,7 +174,6 @@ private fun RecipeEditor(initial: Recipe, update: SettingsUpdate, onClose: () ->
         if (!file) recipe = parsed.getOrNull() ?: return
         asFile = file
     }
-
     Dialog(onClose, DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.imePadding()) {
@@ -341,7 +393,7 @@ private fun AddButton(@StringRes label: Int, onClick: () -> Unit) =
 
 @Composable
 private fun VariableAdder(taken: Set<String>, onAdd: (String) -> Unit) {
-    var adding by remember { mutableStateOf(false) }
+    var adding by rememberSaveable { mutableStateOf(false) }
     val invalid = stringResource(R.string.free_books_variable_invalid)
     val duplicate = stringResource(R.string.free_books_variable_taken)
     fun problem(name: String) = when {
@@ -371,8 +423,8 @@ private fun NameDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, value: String) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var value by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var value by rememberSaveable { mutableStateOf("") }
     val trimmed = name.trim()
     val error = problem(trimmed).takeIf { trimmed.isNotEmpty() }
     AlertDialog(
@@ -415,7 +467,7 @@ private fun HeaderRows(
     headers: Map<String, String>,
     onChange: (Map<String, String>) -> Unit,
 ) {
-    var adding by remember { mutableStateOf(false) }
+    var adding by rememberSaveable { mutableStateOf(false) }
     headers.forEach { (name, value) ->
         SettingRow(name, value) {
             IconAction(Icons.Outlined.Close, stringResource(R.string.remove)) {
@@ -461,38 +513,28 @@ private fun Problem(text: String) = Hint(text, color = MaterialTheme.colorScheme
 
 @Composable
 private fun TestPanel(recipe: Recipe?) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
+    val viewModel: SourcesViewModel = viewModel()
     val settings = loadedSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
-    var title by remember { mutableStateOf("Pride and Prejudice") }
-    var author by remember { mutableStateOf("Jane Austen") }
-    var isbn by remember { mutableStateOf("") }
-    var running by remember { mutableStateOf(false) }
-    var report by remember { mutableStateOf<String?>(null) }
-    var saved by remember { mutableStateOf<Int?>(null) }
-    val lines = remember { mutableStateListOf<String>() }
-    val saver = rememberLauncherForActivityResult(CreateDocument("text/plain")) { uri ->
-        val text = report
-        if (uri == null || text == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val done = app.writeTo(uri) { it.write(text.toByteArray()) }
-            saved = if (done) R.string.free_books_debug_saved else R.string.export_failed
-        }
+    val sampleTitle = stringResource(R.string.free_books_test_title)
+    val sampleAuthor = stringResource(R.string.free_books_test_author)
+    var title by rememberSaveable { mutableStateOf(sampleTitle) }
+    var author by rememberSaveable { mutableStateOf(sampleAuthor) }
+    var isbn by rememberSaveable { mutableStateOf("") }
+    val running by viewModel.running.collectAsStateWithLifecycle()
+    val report by viewModel.report.collectAsStateWithLifecycle()
+    val saved by viewModel.reportStatus.collectAsStateWithLifecycle()
+    val lines by viewModel.lines.collectAsStateWithLifecycle()
+    val saver = rememberLauncherForActivityResult(CreateDocument("text/plain")) {
+        viewModel.saveReport(it)
     }
+    LaunchedEffect(report) { if (report != null) saver.launch(DEBUG_FILE) }
 
-    fun run(ready: Recipe, debug: Boolean) = scope.launch {
-        running = true
-        saved = null
-        lines.clear()
+    fun run(ready: Recipe, debug: Boolean) {
         val isbns = listOf(isbn.trim()).filter { it.isNotEmpty() }
             .map { normalizedIsbn(it) ?: it }
-        val query = Query(title, author, app.bookLanguage(settings), isbns)
-        trace(ready, query, debug).collect { lines += it }
-        running = false
-        if (!debug) return@launch
-        report = debugReport(ready, query, lines.toList())
-        saver.launch(DEBUG_FILE)
+        val query = Query(title, author, viewModel.bookLanguage(settings), isbns)
+        viewModel.test(ready, query, debug)
     }
 
     Heading(R.string.free_books_test)
@@ -535,7 +577,7 @@ private fun debugReport(recipe: Recipe, query: Query, lines: List<String>) = bui
 
 private fun trace(recipe: Recipe, query: Query, verbose: Boolean) = channelFlow {
     val source = Provider(recipe, log = { trySend(it) }, verbose = verbose)
-    runCatching { source.probe(query) }.onFailure { send("✕ ${describe(it)}") }
+    runSuspendCatching { source.probe(query) }.onFailure { send("✕ ${describe(it)}") }
 }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 
 @Composable

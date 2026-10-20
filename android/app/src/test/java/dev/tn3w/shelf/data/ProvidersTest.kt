@@ -359,7 +359,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun searchListsEveryMatchingItem() {
+    fun searchListsEveryMatchingItem() = runBlocking<Unit> {
         val offers = Provider(htmlRecipe()).find(Query("Pride and Prejudice", "", "en"))
         assertEquals(
             listOf("Pride and Prejudice", "Pride and Prejudice (Illustrated)"),
@@ -370,7 +370,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun stepsExtractKeyAndRedirectToFileWithoutLeakingHeaders() {
+    fun stepsExtractKeyAndRedirectToFileWithoutLeakingHeaders() = runBlocking<Unit> {
         val offer = Provider(htmlRecipe()).offers(Query("Emma", "", "en")).single()
         val target = File.createTempFile("book", ".epub")
         try {
@@ -413,11 +413,11 @@ class ProvidersTest {
         assertEquals("Emma", offer.title)
         assertEquals("Jane Austen", offer.author)
         assertEquals("c".repeat(32), offer.variables["id"])
-        assertEquals(200, Provider(recipe).open(offer).use { it.code })
+        assertEquals(200, runBlocking { Provider(recipe).open(offer).use { it.code } })
     }
 
     @Test
-    fun skipRuleDropsItems() {
+    fun skipRuleDropsItems() = runBlocking<Unit> {
         val search = htmlRecipe().search
         val skip = Pick(css = ".title", regex = "Illustrated")
         val recipe = htmlRecipe().copy(
@@ -428,7 +428,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun probeTracesEveryRequest() {
+    fun probeTracesEveryRequest() = runBlocking<Unit> {
         val lines = mutableListOf<String>()
         val source = Provider(htmlRecipe(), log = { lines += it })
         source.probe(Query("Emma", "Jane Austen", "en"))
@@ -438,7 +438,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun traceShowsEachRequestBeforeItsAnswerAndEveryRedirect() {
+    fun traceShowsEachRequestBeforeItsAnswerAndEveryRedirect() = runBlocking<Unit> {
         val lines = mutableListOf<String>()
         Provider(htmlRecipe(), log = { lines += it })
             .probe(Query("Emma", "", "en"))
@@ -451,7 +451,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun debugTraceAddsHeadersPagesAndItems() {
+    fun debugTraceAddsHeadersPagesAndItems() = runBlocking<Unit> {
         val lines = mutableListOf<String>()
         Provider(htmlRecipe(), log = { lines += it }, verbose = true)
             .probe(Query("Pride", "", "en"))
@@ -461,7 +461,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun runawayRegexStopsWithAnError() {
+    fun runawayRegexStopsWithAnError() = runBlocking<Unit> {
         val recipe = htmlRecipe().copy(
             search = htmlRecipe().search.copy(
                 url = "http://127.0.0.1:$port/slow",
@@ -489,7 +489,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun isbnSearchWithoutIsbnFindsNothing() {
+    fun isbnSearchWithoutIsbnFindsNothing() = runBlocking<Unit> {
         val lines = mutableListOf<String>()
         val source = Provider(isbnRecipe(), log = { lines += it })
         assertTrue(source.find(PRIDE_QUERY).isEmpty())
@@ -536,7 +536,7 @@ class ProvidersTest {
     }
 
     @Test
-    fun headersOnlyReachSearchHost() {
+    fun headersOnlyReachSearchHost() = runBlocking<Unit> {
         val step = RecipeStep(
             url = "http://localhost:$port/details?md5={md5}",
             fields = mapOf("key" to Pick(regex = KEY_PATTERN)),

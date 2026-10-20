@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -25,17 +26,42 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 
+class LibraryViewModel(application: Application) : ShelfViewModel(application) {
+    fun importFile(uri: Uri) {
+        detached { open(library.importFile(uri)) }
+    }
+
+    fun addOwn(book: Book, shelf: Shelf, image: Uri?) {
+        detached {
+            val cover = image?.let { library.saveCover(book.work, it) } ?: 0
+            library.place(book.copy(cover = cover), shelf)
+        }
+    }
+
+    fun dismiss(book: Book) {
+        detached { library.dismiss(book.work) }
+    }
+
+    fun remember(query: String) {
+        if (query.isNotBlank()) detached { library.remember(query) }
+    }
+
+    fun clearSearches() {
+        detached { library.clearSearches() }
+    }
+}
+
 @Composable
 fun LibraryScreen(navigator: Navigator) {
-    val app = shelfApp()
-    val scope = rememberCoroutineScope()
-    val saved by app.library.saved.collectAsStateWithLifecycle(null)
+    val viewModel: LibraryViewModel = viewModel()
+    val saved by viewModel.library.saved.collectAsStateWithLifecycle(null)
     val settings = loadedSettings()
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -55,16 +81,14 @@ fun LibraryScreen(navigator: Navigator) {
         ?.filtered(query, shelf, tag) { tagsByWork?.get(it).orEmpty() }
         ?.sorted(sort)
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch { navigator.openImported(app.library.importFile(uri), app) }
+        uri?.let(viewModel::importFile)
     }
     var addingOwn by rememberSaveable { mutableStateOf(false) }
     var options by rememberSaveable { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(searching) { if (searching) focus.requestFocus() }
 
-    fun change(update: (Settings) -> Settings) =
-        scope.launch { app.library.updateSettings(update) }
+    fun change(update: (Settings) -> Settings) = viewModel.updateSettings(update)
 
     fun toggleSearch() {
         searching = !searching
@@ -248,8 +272,7 @@ private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
-    val library = shelfApp().library
-    val scope = rememberCoroutineScope()
+    val viewModel: LibraryViewModel = viewModel()
     val title = rememberTextFieldState(query.trim())
     val author = rememberTextFieldState()
     var shelf by rememberSaveable { mutableStateOf(Shelf.Reading) }
@@ -272,12 +295,9 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
 
     fun add() {
         if (book.title.isEmpty()) return
-        scope.launch {
-            val cover = image?.let { library.saveCover(book.work, it) } ?: 0
-            library.place(book.copy(cover = cover), shelf)
-            onDismiss()
-            navigator.book(book, "own")
-        }
+        viewModel.addOwn(book, shelf, image)
+        onDismiss()
+        navigator.book(book, "own")
     }
 
     ModalBottomSheet(

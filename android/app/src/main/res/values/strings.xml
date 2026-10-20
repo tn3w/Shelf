@@ -105,6 +105,7 @@
     <string name="up_to_date">Shelf is up to date.</string>
     <string name="update_available">Shelf %s available</string>
     <string name="update_failed">Update failed.</string>
+    <string name="update_install_failed">Update failed. %s</string>
     <string name="update_changed">This release changed or was withdrawn, so it was not installed.</string>
     <string name="update_waiting">%1$s, ready %2$s</string>
     <string name="update_wait_note">Published %s. Shelf offers updates a day after release, so a compromised release can be caught and pulled first.</string>
@@ -177,7 +178,7 @@
     <string name="release_date">Release %s</string>
     <string name="language">Language</string>
     <string name="book_language_hint">Auto follows the app language.</string>
-    <string name="packs">Packs</string>
+    <string name="packs_language">Packs · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Reading</string>
     <string name="reading_hint">Daily goal, text and page turns.</string>
@@ -324,4 +325,6 @@
     <string name="free_books_debug">Debug test</string>
     <string name="free_books_debug_saved">Debug log saved</string>
     <string name="free_books_isbn" translatable="false">ISBN</string>
+    <string name="free_books_test_title" translatable="false">Pride and Prejudice</string>
+    <string name="free_books_test_author" translatable="false">Jane Austen</string>
 </resources>

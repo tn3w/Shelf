@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.app.Application
 import android.text.format.DateUtils
 import android.text.format.DateUtils.MINUTE_IN_MILLIS
 import androidx.compose.foundation.layout.*
@@ -11,29 +12,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 
-private const val DAY_MILLIS = 24L * 60 * 60 * 1000
+class UpdateViewModel(application: Application) : ShelfViewModel(application) {
+    val progress = MutableStateFlow<Float?>(null)
+    val failure = MutableStateFlow<Int?>(null)
+    val committed = MutableStateFlow(false)
 
-@Composable
-fun UpdatePrompt(settings: Settings) {
-    val app = shelfApp()
-    val context = LocalContext.current
-    var release by remember { mutableStateOf<Release?>(null) }
-    LaunchedEffect(Unit) {
-        val now = System.currentTimeMillis()
-        val due = now - settings.lastAppCheck > DAY_MILLIS
-        val allowed = Updater.supported(context) && settings.checkUpdates &&
-            !settings.isOffline(context)
-        if (!allowed || !due) return@LaunchedEffect
-        app.library.updateSettings { it.copy(lastAppCheck = now) }
-        val found = runCatching { Updater.check(app) }.getOrNull()
-        release = found?.takeIf { now >= it.readyAt }
+    fun install(release: Release) {
+        if (progress.value != null) return
+        progress.value = 0f
+        detached {
+            val result = runSuspendCatching {
+                Updater.install(app, release) { progress.value = it }
+            }
+            failure.value = when (result.exceptionOrNull()) {
+                null -> null
+                is ReleaseChanged -> R.string.update_changed
+                else -> R.string.update_failed
+            }
+            committed.value = result.isSuccess
+            progress.value = null
+        }
     }
-    release?.let { UpdateDialog(it) { release = null } }
 }
 
 @Composable
@@ -50,18 +57,18 @@ fun relativeTime(time: Long, now: Long) =
 
 @Composable
 fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var progress by remember { mutableStateOf<Float?>(null) }
-    var failure by remember { mutableStateOf<Int?>(null) }
+    val viewModel: UpdateViewModel = viewModel(key = release.tag)
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
+    val failure by viewModel.failure.collectAsStateWithLifecycle()
+    val committed by viewModel.committed.collectAsStateWithLifecycle()
     val now = currentMillis()
     val waiting = now < release.readyAt
     val language = LocalConfiguration.current.locales[0].language
     val notes by produceState("", release, language) {
         val url = release.changelogUrl(language) ?: return@produceState
-        value = runCatching { withContext(Dispatchers.IO) { fetchText(url).trim() } }
-            .getOrDefault("")
+        value = runSuspendCatching { fetchText(url).trim() }.getOrDefault("")
     }
+    LaunchedEffect(committed) { if (committed) onDismiss() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.update_available, release.version)) },
@@ -85,20 +92,7 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
         confirmButton = {
             Button(
                 enabled = progress == null,
-                onClick = {
-                    progress = 0f
-                    scope.launch {
-                        val result = runCatching {
-                            Updater.install(context, release) { progress = it }
-                        }
-                        if (result.isSuccess) return@launch onDismiss()
-                        failure = when (result.exceptionOrNull()) {
-                            is ReleaseChanged -> R.string.update_changed
-                            else -> R.string.update_failed
-                        }
-                        progress = null
-                    }
-                },
+                onClick = { viewModel.install(release) },
             ) {
                 val label = if (waiting) R.string.install_anyway else R.string.install
                 Text(stringResource(label))

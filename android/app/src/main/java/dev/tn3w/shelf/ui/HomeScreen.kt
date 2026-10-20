@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -30,18 +31,19 @@ private val Flame = Color(0xFFFF9600)
 
 @Composable
 fun HomeScreen(navigator: Navigator) {
-    val app = shelfApp()
-    val saved by app.library.saved.collectAsStateWithLifecycle(null)
-    val progress by app.library.progress.collectAsStateWithLifecycle(emptyMap())
-    val habit by app.library.habit.collectAsStateWithLifecycle(null)
-    val settings by app.library.settings.collectAsStateWithLifecycle(Settings())
-    val dismissed by app.library.dismissed.collectAsStateWithLifecycle(emptySet())
+    val viewModel: LibraryViewModel = viewModel()
+    val library = viewModel.library
+    val saved by library.saved.collectAsStateWithLifecycle(null)
+    val progress by library.progress.collectAsStateWithLifecycle(emptyMap())
+    val habit by library.habit.collectAsStateWithLifecycle(null)
+    val settings by library.settings.collectAsStateWithLifecycle(Settings())
+    val dismissed by library.dismissed.collectAsStateWithLifecycle(emptySet())
     val scope = rememberCoroutineScope()
     val rows by load(saved, dismissed) {
-        saved?.let { recommender.rows(it, app.session, dismissed) }
+        saved?.let { recommender.rows(it, viewModel.session, dismissed) }
     }
     val missing by load { catalogue.workCount == 0 }
-    fun dismiss(book: Book) = scope.launch { app.library.dismiss(book.work) }
+    fun dismiss(book: Book) = viewModel.dismiss(book)
     val genres by load {
         HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
             .map { it to recommender.popular(12, it.id) }
@@ -69,7 +71,7 @@ fun HomeScreen(navigator: Navigator) {
                         val position = progress[entry.work]
                         ContinueCard(book, position?.fraction) {
                             scope.launch {
-                                if (app.library.hasFile(position)) {
+                                if (library.hasFile(position)) {
                                     navigator.reader(entry.work)
                                 } else {
                                     navigator.book(book, "continue")

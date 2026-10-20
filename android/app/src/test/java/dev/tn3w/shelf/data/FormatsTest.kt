@@ -303,7 +303,10 @@ class FormatsTest {
         files.forEach { file ->
             (openDocument(file) as PagedDocument).use {
                 assertEquals(2, it.pageCount)
-                assertArrayEquals(PAGES["a.png"], it.page(0, 1, 1) as ByteArray)
+                val page = it.page(0, 1, 1)
+                val bytes = if (page is File) page.readBytes() else page as ByteArray
+                assertArrayEquals(PAGES["a.png"], bytes)
+                assertEquals(file.extension != "cbr", page is File)
             }
         }
     }

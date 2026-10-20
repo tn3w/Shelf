@@ -104,6 +104,7 @@
     <string name="up_to_date">Shelf está actualizado.</string>
     <string name="update_available">Shelf %s disponible</string>
     <string name="update_failed">Error al actualizar.</string>
+    <string name="update_install_failed">Error al actualizar. %s</string>
     <string name="update_changed">Esta versión cambió o fue retirada, así que no se instaló.</string>
     <string name="update_waiting">%1$s, lista %2$s</string>
     <string name="update_wait_note">Publicada %s. Shelf ofrece las actualizaciones un día después de su lanzamiento, para que una versión comprometida pueda detectarse y retirarse antes.</string>
@@ -184,7 +185,7 @@
     <string name="release_date">Versión %s</string>
     <string name="language">Idioma</string>
     <string name="book_language_hint">Auto sigue el idioma de la app.</string>
-    <string name="packs">Paquetes</string>
+    <string name="packs_language">Paquetes · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Lectura</string>
     <string name="reading_hint">Objetivo diario, texto y páginas.</string>
