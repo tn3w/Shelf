@@ -167,10 +167,18 @@ class ProvidersTest {
     @Test
     fun instantSourceIsOffByDefault() {
         val recipes = listOf(bundled("gutenberg"))
-        assertNull(Settings().instantProvider(recipes))
-        assertNull(Settings(instantSource = "gone").instantProvider(recipes))
-        val chosen = Settings(instantSource = "gutenberg").instantProvider(recipes)
+        assertNull(Settings().instantProvider(recipes, "en"))
+        assertNull(Settings(instantSource = "gone").instantProvider(recipes, "en"))
+        val chosen = Settings(instantSource = "gutenberg").instantProvider(recipes, "en")
         assertEquals("gutenberg", chosen?.id)
+    }
+
+    @Test
+    fun instantSourceSkippedForUnservedLanguage() {
+        val recipes = listOf(htmlRecipe().copy(id = "english", languages = setOf("en")))
+        val settings = Settings(instantSource = "english")
+        assertEquals("english", settings.instantProvider(recipes, "en")?.id)
+        assertNull(settings.instantProvider(recipes, "de"))
     }
 
     @Test

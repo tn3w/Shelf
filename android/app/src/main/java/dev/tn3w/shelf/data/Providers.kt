@@ -158,8 +158,9 @@ fun recipesText(recipes: List<Recipe>) =
 fun Settings.enabledProviders(recipes: List<Recipe>) =
     recipes.filter { it.id in providers }.map(::Provider)
 
-fun Settings.instantProvider(recipes: List<Recipe>) =
+fun Settings.instantProvider(recipes: List<Recipe>, language: String) =
     recipes.firstOrNull { it.id == instantSource }?.let(::Provider)
+        ?.takeIf { it.serves(language) }
 
 data class Provider(
     val recipe: Recipe,

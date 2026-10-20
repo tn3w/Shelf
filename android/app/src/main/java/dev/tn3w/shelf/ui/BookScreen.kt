@@ -60,6 +60,11 @@ class BookViewModel(application: Application) : ShelfViewModel(application) {
         detached { open(book.work.takeIf { library.importBook(book, uri) }) }
     }
 
+    fun instantProvider(settings: Settings): Provider? {
+        val recipes = sources.bundled + sources.own.value
+        return settings.instantProvider(recipes, bookLanguage(settings))
+    }
+
     fun downloadInstantly(book: Book, settings: Settings) {
         if (instant.value != null) return
         instant.value = 0f
@@ -73,10 +78,8 @@ class BookViewModel(application: Application) : ShelfViewModel(application) {
     }
 
     private suspend fun instantOffer(book: Book, settings: Settings): Offer? {
-        val recipes = sources.bundled + sources.own.value
-        val provider = settings.instantProvider(recipes) ?: return null
+        val provider = instantProvider(settings) ?: return null
         val language = bookLanguage(settings)
-        if (!provider.serves(language)) return null
         val isbns = isbnsOf(book, catalogue = provider.usesIsbn)
         val query = Query(book.title, book.author, language, isbns)
         return runSuspendCatching { provider.search(query) }.getOrNull()?.firstOrNull()
@@ -204,13 +207,13 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
                 textAlign = TextAlign.Center,
             )
         }
-        book.authors
-            .filter { it.number > 0 }
-            .forEach { author ->
+        FlowRow(horizontalArrangement = Arrangement.Center) {
+            book.authors.filter { it.number > 0 }.forEach { author ->
                 TextButton(onClick = { navigator.author(author) }) {
                     Text(author.name, style = MaterialTheme.typography.titleMedium)
                 }
             }
+        }
         if (book.isLocal && book.author.isNotBlank()) {
             Text(
                 book.author,
@@ -271,7 +274,7 @@ private fun ReadButton(
         uri?.let { viewModel.import(book, it) }
     }
     fun open() {
-        val instant = settings?.takeIf { online && it.instantSource.isNotEmpty() }
+        val instant = settings?.takeIf { online && viewModel.instantProvider(it) != null }
         when {
             hasFile -> navigator.reader(book.work)
             instant != null -> viewModel.downloadInstantly(book, instant)

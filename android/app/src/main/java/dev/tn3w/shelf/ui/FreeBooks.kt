@@ -56,8 +56,9 @@ private fun InstantSourceRows(
     update: SettingsUpdate,
     enabled: Boolean,
 ) {
-    val recipes = allRecipes()
-    val selected = settings.instantProvider(recipes)?.id.orEmpty()
+    val language = shelfViewModel().bookLanguage(settings)
+    val recipes = allRecipes().filter { Provider(it).serves(language) }
+    val selected = settings.instantProvider(recipes, language)?.id.orEmpty()
     val options = listOf("" to stringResource(R.string.instant_source_off)) +
         recipes.map { it.id to it.name }
     options.forEach { (id, name) ->
@@ -101,8 +102,8 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit) {
     val viewModel: BookViewModel = viewModel()
     val (settings, update) = rememberSettings() ?: return
     var choosing by rememberSaveable { mutableStateOf(settings.providers.isEmpty()) }
-    val recipes = allRecipes()
     val language = viewModel.bookLanguage(settings)
+    val recipes = allRecipes().filter { Provider(it).serves(language) }
     val enabled = settings.enabledProviders(recipes).filter { it.serves(language) }
     val isbns = bookIsbns(book, enabled.any { it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
