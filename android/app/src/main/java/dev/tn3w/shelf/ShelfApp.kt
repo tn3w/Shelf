@@ -21,6 +21,7 @@ import kotlin.random.Random
 
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
 private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
+private const val SCAN_MODEL = "scan.bin"
 
 class ShelfApp :
     Application(),
@@ -33,7 +34,9 @@ class ShelfApp :
     val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
     val sources by lazy { Sources(this) }
-    val recognizer by lazy { assets.open("scan.bin").use { Recognizer(it.readBytes()) } }
+    private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }
+    val canScan get() = BuildConfig.BUNDLED_SCAN_MODEL || scanCopy.exists()
+    val recognizer by lazy { Recognizer(scanModel()) }
     val loaded = MutableStateFlow<Loaded?>(null)
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
     private val downloadJobs = ConcurrentHashMap<String, Job>()
@@ -46,6 +49,7 @@ class ShelfApp :
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
             library.deleteTemporaryFiles()
+            removeBundledCopies()
             showLanguage(bookLanguage(settings))
             if (settings.onboarded) checkCatalogue()
         }
@@ -59,6 +63,27 @@ class ShelfApp :
             add(CoverFetcher.Factory())
         }
         .build()
+
+    private fun scanModel() = if (BuildConfig.BUNDLED_SCAN_MODEL) {
+        assets.open(SCAN_MODEL).use { it.readBytes() }
+    } else {
+        scanCopy.readBytes()
+    }
+
+    fun keepBundled() {
+        packs.copyBundled()
+        if (!BuildConfig.BUNDLED_SCAN_MODEL) return
+        replaceFile(scanCopy) { temporary ->
+            assets.open(SCAN_MODEL).use { input ->
+                temporary.outputStream().use(input::copyTo)
+            }
+        }
+    }
+
+    fun removeBundledCopies() {
+        packs.removeBundledCopies()
+        if (BuildConfig.BUNDLED_SCAN_MODEL) scanCopy.delete()
+    }
 
     fun systemLanguage() = LocaleList.getDefault().getFirstMatch(LANGUAGES.toTypedArray())
         ?.language?.takeIf { it in LANGUAGES } ?: "en"

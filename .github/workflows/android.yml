@@ -40,14 +40,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: >
-          ./gradlew assembleGithubRelease assembleFdroidRelease --parallel
+          ./gradlew assembleGithubRelease assembleUpdateRelease assembleFdroidRelease
+          --parallel
 
       - name: Collect
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/github/release/*.apk dist/shelf.apk
+          cp app/build/outputs/apk/update/release/*.apk dist/shelf-update.apk
           cp app/build/outputs/apk/fdroid/release/*.apk dist/shelf-fdroid.apk
-          (cd dist && sha256sum shelf.apk shelf-fdroid.apk > SHA256SUMS)
+          (cd dist && sha256sum *.apk > SHA256SUMS)
           code=$(grep -oP 'versionCode = \K\d+' app/build.gradle.kts)
           for locale in app/fastlane/metadata/android/*/; do
             language=$(basename "$locale")

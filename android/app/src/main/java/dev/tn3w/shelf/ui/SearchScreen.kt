@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 
@@ -236,6 +237,7 @@ private fun scan(navigator: Navigator): (() -> Unit)? {
     if (denied) CameraDenied { denied = false }
     val manager = context.packageManager
     if (!manager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) return null
+    if (!(context.applicationContext as ShelfApp).canScan) return null
     return {
         if (ContextCompat.checkSelfPermission(context, CAMERA) == PERMISSION_GRANTED) {
             navigator.scan()

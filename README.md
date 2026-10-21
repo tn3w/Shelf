@@ -252,6 +252,20 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
   [--library erb=<ERB_eestikeelne_raamat.zip or url>]
 ```
 
+Flavors, set in `distributions` (`app/build.gradle.kts`):
+
+<table>
+<tr><th width="1%">Flavor</th><th width="1%">Catalogue</th><th width="1%">scan.bin</th><th width="1%">Updater</th><th width="1%">Release asset</th></tr>
+<tr><td><code>github</code></td><td>core, ranks</td><td>yes</td><td>yes</td><td><code>shelf.apk</code></td></tr>
+<tr><td><code>update</code></td><td>manifest only</td><td>no</td><td>yes</td><td><code>shelf-update.apk</code></td></tr>
+<tr><td><code>fdroid</code></td><td>manifest only</td><td>yes</td><td>no, no install permission</td><td><code>shelf-fdroid.apk</code></td></tr>
+</table>
+
+In-app update downloads `shelf-update.apk` (smaller). Before install, bundled packs and
+`scan.bin` are copied to app storage, so they survive; a full APK deletes the copies on
+start. `shelf-fdroid.apk` is the F-Droid recipe's `Binaries:` reference: F-Droid
+rebuilds it from source and ships it only if the builds match.
+
 Format with `ktlint -F "android/app/src/**/*.kt"`.
 
 Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, app installed, `ffmpeg`):

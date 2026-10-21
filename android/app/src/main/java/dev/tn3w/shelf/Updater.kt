@@ -14,7 +14,7 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import java.io.IOException
 
-private const val APK_NAME = "shelf-fdroid.apk"
+private const val APK_NAME = "shelf-update.apk"
 
 private val STORE_INSTALLERS = setOf(
     "org.fdroid.fdroid",
@@ -41,7 +41,8 @@ private fun isNewer(version: String) =
 class ReleaseChanged : IOException("release changed or withdrawn")
 
 object Updater {
-    fun supported(context: Context) = !isStoreInstaller(installerOf(context))
+    fun supported(context: Context) =
+        BuildConfig.UPDATER && !isStoreInstaller(installerOf(context))
 
     suspend fun latest(): Release? = withContext(Dispatchers.IO) {
         val release = json.decodeFromString<Release>(fetchText(LATEST_RELEASE))
@@ -91,7 +92,7 @@ object Updater {
                 throw exception
             }
             ensureActive()
-            app.packs.copyBundled()
+            app.keepBundled()
             session.commit(statusReceiver(context, sessionId).intentSender)
         }
     }
@@ -138,7 +139,7 @@ class InstallReceiver : BroadcastReceiver() {
             app.installConfirmation.value = confirmation?.takeIf(::isInstallConfirmation)
             return
         }
-        app.packs.removeBundledCopies()
+        app.removeBundledCopies()
         if (status == PackageInstaller.STATUS_SUCCESS) return
         if (status == PackageInstaller.STATUS_FAILURE_ABORTED) return
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)

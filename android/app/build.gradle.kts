@@ -15,6 +15,14 @@ val catalogueFormat = 2
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
 
+data class Distribution(val catalogue: Boolean, val scanModel: Boolean, val updater: Boolean)
+
+val distributions = mapOf(
+    "github" to Distribution(catalogue = true, scanModel = true, updater = true),
+    "update" to Distribution(catalogue = false, scanModel = false, updater = true),
+    "fdroid" to Distribution(catalogue = false, scanModel = true, updater = false),
+)
+
 android {
     namespace = "dev.tn3w.shelf"
     compileSdk {
@@ -32,13 +40,13 @@ android {
 
     flavorDimensions += "distribution"
     productFlavors {
-        create("github") {
-            dimension = "distribution"
-            buildConfigField("boolean", "BUNDLED_CATALOGUE", "true")
-        }
-        create("fdroid") {
-            dimension = "distribution"
-            buildConfigField("boolean", "BUNDLED_CATALOGUE", "false")
+        distributions.forEach { (name, distribution) ->
+            create(name) {
+                dimension = "distribution"
+                buildConfigField("boolean", "BUNDLED_CATALOGUE", "${distribution.catalogue}")
+                buildConfigField("boolean", "BUNDLED_SCAN_MODEL", "${distribution.scanModel}")
+                buildConfigField("boolean", "UPDATER", "${distribution.updater}")
+            }
         }
     }
 
@@ -154,8 +162,8 @@ abstract class DownloadCatalogue : DefaultTask() {
         .joinToString("") { "%02x".format(it) }
 }
 
-fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
-    val task = tasks.register<DownloadCatalogue>(taskName) {
+fun catalogueTask(taskName: String, packs: List<String>) =
+    tasks.register<DownloadCatalogue>(taskName) {
         release = catalogueRelease
         manifestSha256 = catalogueManifestSha256
         format = catalogueFormat
@@ -163,18 +171,18 @@ fun bundleCatalogue(flavor: String, taskName: String, packs: List<String>) {
         local = localCatalogue
         output = layout.buildDirectory.dir("generated/$taskName")
     }
-    androidComponents.onVariants(
-        androidComponents.selector().withFlavor("distribution" to flavor)
-    ) { variant ->
-        variant.sources.assets?.addGeneratedSourceDirectory(
-            task,
-            DownloadCatalogue::output,
-        )
+
+val catalogueAssets = catalogueTask("downloadCatalogue", bundledPacks)
+val manifestAssets = catalogueTask("downloadManifest", emptyList())
+
+androidComponents.onVariants { variant ->
+    val distribution = distributions.getValue(variant.flavorName.orEmpty())
+    val task = if (distribution.catalogue) catalogueAssets else manifestAssets
+    variant.sources.assets?.addGeneratedSourceDirectory(task, DownloadCatalogue::output)
+    if (!distribution.scanModel) {
+        variant.androidResources.ignoreAssetsPatterns.add("scan.bin")
     }
 }
-
-bundleCatalogue("github", "downloadCatalogue", bundledPacks)
-bundleCatalogue("fdroid", "downloadManifest", emptyList())
 
 tasks.register<JavaExec>("scanBench") {
     val unitTest = tasks.named<Test>("testGithubDebugUnitTest")
