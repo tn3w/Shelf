@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
@@ -34,6 +35,7 @@ import androidx.navigation.*
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
 import dev.tn3w.shelf.data.*
 import dev.tn3w.shelf.ui.*
 import kotlinx.coroutines.flow.*
@@ -49,6 +51,8 @@ import kotlinx.serialization.Serializable
 @Serializable object SearchRoute
 
 @Serializable data class BookRoute(val work: Int, val origin: String)
+
+@Serializable object NoBookRoute
 
 @Serializable data class AuthorRoute(val number: Int, val name: String)
 
@@ -74,9 +78,12 @@ private val tabs = listOf(
     Tab(R.string.search, Icons.Outlined.Search, SearchRoute),
 )
 
-class Navigator(private val controller: NavHostController) {
-    fun book(book: Book, origin: String) =
-        controller.navigate(BookRoute(book.work, origin))
+class Navigator(
+    private val controller: NavHostController,
+    private val books: NavHostController = controller,
+    private val stack: NavHostController = controller,
+) {
+    fun book(book: Book, origin: String) = books.navigate(BookRoute(book.work, origin))
 
     fun author(author: Author) =
         controller.navigate(AuthorRoute(author.number, author.name))
@@ -96,7 +103,7 @@ class Navigator(private val controller: NavHostController) {
 
     fun library() = tab(LibraryRoute, reselected = false)
 
-    fun back() = controller.popBackStack()
+    fun back() = stack.popBackStack()
 
     fun tab(route: Any, reselected: Boolean) {
         if (reselected && controller.popBackStack(route, inclusive = false)) return
@@ -214,6 +221,13 @@ private fun UpdatePrompt(viewModel: MainViewModel) {
     release?.let { UpdateDialog(it) { viewModel.update.value = null } }
 }
 
+private fun NavBackStackEntry.isReading() =
+    destination.hasRoute(ReaderRoute::class) || destination.hasRoute(ScanRoute::class)
+
+private fun NavHostController.openBook() = currentBackStackEntry
+    ?.takeIf { it.destination.hasRoute(BookRoute::class) }
+    ?.toRoute<BookRoute>()
+
 private fun NavHostController.selectedTab() =
     tabs.indexOfLast { runCatching { getBackStackEntry(it.route) }.isSuccess }
         .coerceAtLeast(0)
@@ -222,18 +236,30 @@ private fun NavHostController.selectedTab() =
 @Composable
 private fun ShelfNavigation(settings: Settings) {
     val controller = rememberNavController()
-    val navigator = remember(controller) { Navigator(controller) }
+    val pane = rememberNavController()
+    val window = currentWindowAdaptiveInfoV2()
+    val wide = window.windowSizeClass
+        .isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND)
+    val navigator = remember(controller, pane, wide) {
+        Navigator(controller, books = if (wide) pane else controller)
+    }
     val entry by controller.currentBackStackEntryAsState()
+    val paneEntry by pane.currentBackStackEntryAsState()
     val selected = remember(entry) { controller.selectedTab() }
-    val reading = entry?.destination?.hasRoute(ReaderRoute::class) == true ||
-        entry?.destination?.hasRoute(ScanRoute::class) == true
-    val adaptive = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
-        currentWindowAdaptiveInfoV2(),
-    )
+    val reading = entry?.isReading() == true
+    val bookOpen = wide && paneEntry?.destination?.hasRoute(BookRoute::class) == true
+    val adaptive = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(window)
     val hidden = reading || WindowInsets.isImeVisible
     val viewModel: MainViewModel = viewModel()
     val language = viewModel.bookLanguage(settings)
     LaunchedEffect(language) { viewModel.showLanguage(language) }
+    LaunchedEffect(wide, entry) {
+        val top = entry ?: return@LaunchedEffect
+        if (wide || top.isReading()) return@LaunchedEffect
+        val book = pane.openBook() ?: return@LaunchedEffect
+        pane.popBackStack(NoBookRoute, inclusive = false)
+        controller.navigate(book)
+    }
 
     UpdatePrompt(viewModel)
     OpenFile(viewModel, navigator)
@@ -253,10 +279,32 @@ private fun ShelfNavigation(settings: Settings) {
             }
         },
     ) {
-        SharedTransitionLayout {
-            CompositionLocalProvider(LocalSharedScope provides this) {
-                Routes(controller, navigator)
+        Row {
+            SharedTransitionLayout(Modifier.weight(1f)) {
+                CompositionLocalProvider(LocalSharedScope provides this) {
+                    Routes(controller, navigator)
+                }
             }
+            if (reading) return@Row
+            if (bookOpen) VerticalDivider()
+            val width = if (bookOpen) Modifier.weight(1f) else Modifier.width(0.dp)
+            BookPane(controller, pane, width)
+        }
+    }
+}
+
+@Composable
+private fun BookPane(
+    controller: NavHostController,
+    pane: NavHostController,
+    modifier: Modifier,
+) {
+    val navigator = remember(controller, pane) { Navigator(controller, pane, pane) }
+    NavHost(pane, startDestination = NoBookRoute, modifier) {
+        composable<NoBookRoute> {}
+        screen<BookRoute> {
+            val route = it.toRoute<BookRoute>()
+            BookScreen(route.work, route.origin, navigator)
         }
     }
 }

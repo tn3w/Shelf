@@ -126,6 +126,10 @@ private fun pageStep(key: Key, volumeKeys: Boolean) = when (key) {
 }
 
 private const val MAX_TURN = 3
+private val MAX_LINE_WIDTH = 640.dp
+
+internal fun sideMargin(width: Dp, margin: Dp) =
+    maxOf(margin, (width - MAX_LINE_WIDTH) / 2)
 
 internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
     if (settled - previous in 1..MAX_TURN) {
@@ -287,9 +291,11 @@ private fun TextReader(
     BoxWithConstraints(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
-        val padding = with(LocalDensity.current) { margin.roundToPx() }
-        val width = constraints.maxWidth - 2 * padding
-        val height = constraints.maxHeight - 2 * padding
+        val side = sideMargin(maxWidth, margin)
+        val (horizontal, vertical) =
+            with(LocalDensity.current) { side.roundToPx() to margin.roundToPx() }
+        val width = constraints.maxWidth - 2 * horizontal
+        val height = constraints.maxHeight - 2 * vertical
         val pages by produceState<List<TextPage>?>(null, document, width, height, style) {
             value = withContext(Dispatchers.Default) {
                 paginate(document, PageLayout(measurer, style, width, height))
@@ -328,7 +334,8 @@ private fun TextReader(
                     Text(
                         page.text,
                         style = style,
-                        modifier = Modifier.fillMaxWidth().padding(margin),
+                        modifier = Modifier.fillMaxWidth()
+                            .padding(horizontal = side, vertical = margin),
                     )
                 } else {
                     PageImage(document, page.image)

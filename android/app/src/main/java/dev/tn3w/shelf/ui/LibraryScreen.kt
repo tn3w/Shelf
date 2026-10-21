@@ -7,7 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.*
@@ -32,6 +32,8 @@ import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+
+private val ListColumnWidth = 360.dp
 
 class LibraryViewModel(application: Application) : ShelfViewModel(application) {
     fun importFile(uri: Uri) {
@@ -250,7 +252,10 @@ fun GenreChip(genres: List<Tag>, current: Int?, onSelect: (Int?) -> Unit) =
 
 @Composable
 private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
-    LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+    LazyVerticalGrid(
+        GridCells.Adaptive(ListColumnWidth),
+        contentPadding = PaddingValues(vertical = 8.dp),
+    ) {
         items(entries, key = { it.work }) { saved ->
             val detail = listOfNotNull(
                 saved.author.ifEmpty { null },

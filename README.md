@@ -74,6 +74,10 @@ show first. Filter by genre or publication year, sort by relevance, popularity o
 **Library**: search, shelf chips, and a sort and filter sheet (sort, genre, grid or
 list). Genres group books automatically, no collections to maintain.
 
+**Tablets**: navigation rail; wide windows (≥ 840 dp) open books in a pane beside the
+list, back closes it. Grids and list view add columns with width. Reader text capped at
+640 dp per line, extra width → margins. Window narrows → open book moves to full screen.
+
 ## Own books
 
 Book missing from the catalogue? Library › **+**, or search it and tap
