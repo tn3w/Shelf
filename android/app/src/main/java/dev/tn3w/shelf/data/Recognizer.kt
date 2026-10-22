@@ -5,49 +5,20 @@ import java.nio.ByteOrder
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.max
-import kotlin.math.sqrt
+import kotlin.math.min
 
-class Reading(
-    val text: String,
-    val confidence: Float,
-    val height: Float,
-    val positions: List<Float> = emptyList(),
-    val dots: List<Dot> = emptyList(),
-)
+private const val GELU_RANGE = 8f
+private const val GELU_STEPS = 256f
+private const val WARM_UP_READS = 3
 
-private const val RELU = 1
-private const val GELU = 2
-private const val HARD_SWISH = 3
-private const val HARD_SIGMOID = 4
+class Reading(val text: String, val confidence: Float, val positions: List<Float>)
 
-private sealed interface Layer
+private enum class Activation { NONE, RELU, GELU, HARD_SWISH, HARD_SIGMOID }
 
-private class Conv(
-    val inputs: Int,
-    val outputs: Int,
-    val kernelHeight: Int,
-    val kernelWidth: Int,
-    val strideHeight: Int,
-    val strideWidth: Int,
-    val groups: Int,
-    val activation: Int,
-    val residual: Int,
-    val weights: FloatArray,
-    val bias: FloatArray,
-) : Layer {
-    val patch = inputs / groups * kernelHeight * kernelWidth
+private class Tensor(val channels: Int, val height: Int, val width: Int) {
+    val area = height * width
+    val data = FloatArray(channels * area)
 }
-
-private class Squeeze(val reduce: Conv, val expand: Conv) : Layer
-
-private class Pool(val height: Int, val width: Int) : Layer
-
-private class Tensor(
-    val channels: Int,
-    val height: Int,
-    val width: Int,
-    val data: FloatArray,
-)
 
 private fun erf(value: Float): Float {
     val t = 1 / (1 + 0.3275911f * abs(value))
@@ -59,115 +30,213 @@ private fun erf(value: Float): Float {
     return if (value >= 0) result else -result
 }
 
-private fun hardSigmoid(value: Float) = (value / 6 + 0.5f).coerceIn(0f, 1f)
-
-private fun activate(value: Float, activation: Int) = when (activation) {
-    RELU -> max(value, 0f)
-    GELU -> 0.5f * value * (1 + erf(value / sqrt(2f)))
-    HARD_SWISH -> value * hardSigmoid(value)
-    HARD_SIGMOID -> hardSigmoid(value)
-    else -> value
+private val GELU_TABLE = FloatArray((2 * GELU_RANGE * GELU_STEPS).toInt() + 2) {
+    val value = it / GELU_STEPS - GELU_RANGE
+    0.5f * value * (1 + erf(value * 0.70710677f))
 }
 
-private class Product(
-    val layer: Conv,
-    val columns: FloatArray,
-    val offset: Int,
-    val output: FloatArray,
-    val area: Int,
-) {
-    private val patch = layer.patch
-    private val weights = layer.weights
+private fun gelu(value: Float): Float {
+    if (value <= -GELU_RANGE) return 0f
+    if (value >= GELU_RANGE) return value
+    val position = (value + GELU_RANGE) * GELU_STEPS
+    val index = position.toInt()
+    return GELU_TABLE[index] +
+        (GELU_TABLE[index + 1] - GELU_TABLE[index]) * (position - index)
+}
 
-    private fun put(channel: Int, position: Int, value: Float) {
-        output[channel * area + position] =
-            activate(value + layer.bias[channel], layer.activation)
-    }
+private fun hardSigmoid(value: Float) = (value / 6 + 0.5f).coerceIn(0f, 1f)
 
-    private fun dot(channel: Int, position: Int): Float {
-        var total = 0f
-        for (k in 0 until patch) {
-            total += weights[channel * patch + k] * columns[offset + k * area + position]
+private fun activate(value: Float, activation: Activation) = when (activation) {
+    Activation.NONE -> value
+    Activation.RELU -> max(value, 0f)
+    Activation.GELU -> gelu(value)
+    Activation.HARD_SWISH -> value * hardSigmoid(value)
+    Activation.HARD_SIGMOID -> hardSigmoid(value)
+}
+
+private sealed interface Layer {
+    val residual: Int
+        get() = 0
+
+    fun run(input: Tensor): Tensor
+}
+
+private class Conv(
+    val inputs: Int,
+    val outputs: Int,
+    val kernelHeight: Int,
+    val kernelWidth: Int,
+    val strideHeight: Int,
+    val strideWidth: Int,
+    val groups: Int,
+    val activation: Activation,
+    override val residual: Int,
+    val weights: FloatArray,
+    val bias: FloatArray,
+) : Layer {
+    private val patch = inputs / groups * kernelHeight * kernelWidth
+    private val padTop = (kernelHeight - 1) / 2
+    private val padLeft = (kernelWidth - 1) / 2
+    private val pointwise =
+        groups == 1 && patch == inputs && strideHeight * strideWidth == 1
+
+    override fun run(input: Tensor): Tensor {
+        val output = Tensor(
+            outputs,
+            (input.height + 2 * padTop - kernelHeight) / strideHeight + 1,
+            (input.width + 2 * padLeft - kernelWidth) / strideWidth + 1,
+        )
+        when {
+            pointwise -> multiply(input.data, output)
+            groups == 1 -> multiply(unfold(input, output), output)
+            else -> depthwise(input, output)
         }
-        return total
+        return output
     }
 
-    fun row(channel: Int) {
-        val start = channel * area
-        output.fill(0f, start, start + area)
-        for (k in 0 until patch) {
-            val weight = weights[channel * patch + k]
-            val base = offset + k * area
-            for (position in 0 until area) {
-                output[start + position] += weight * columns[base + position]
+    private fun finish(output: Tensor, channel: Int) {
+        val shift = bias[channel]
+        val start = channel * output.area
+        for (index in start until start + output.area) {
+            output.data[index] = activate(output.data[index] + shift, activation)
+        }
+    }
+
+    private fun multiply(columns: FloatArray, output: Tensor) {
+        val area = output.area
+        val data = output.data
+        var channel = 0
+        while (channel + 4 <= outputs) {
+            val first = channel * area
+            for (k in 0 until patch) {
+                val weight0 = weights[channel * patch + k]
+                val weight1 = weights[(channel + 1) * patch + k]
+                val weight2 = weights[(channel + 2) * patch + k]
+                val weight3 = weights[(channel + 3) * patch + k]
+                val row = k * area
+                for (position in 0 until area) {
+                    val value = columns[row + position]
+                    data[first + position] += weight0 * value
+                    data[first + area + position] += weight1 * value
+                    data[first + 2 * area + position] += weight2 * value
+                    data[first + 3 * area + position] += weight3 * value
+                }
+            }
+            for (done in channel until channel + 4) finish(output, done)
+            channel += 4
+        }
+        for (rest in channel until outputs) {
+            for (k in 0 until patch) {
+                val weight = weights[rest * patch + k]
+                for (position in 0 until area) {
+                    data[rest * area + position] += weight * columns[k * area + position]
+                }
+            }
+            finish(output, rest)
+        }
+    }
+
+    private fun unfold(input: Tensor, output: Tensor): FloatArray {
+        val columns = FloatArray(patch * output.area)
+        var position = 0
+        for (channel in 0 until inputs) {
+            for (kernelY in 0 until kernelHeight) {
+                for (kernelX in 0 until kernelWidth) {
+                    for (y in 0 until output.height) {
+                        val sourceY = y * strideHeight + kernelY - padTop
+                        for (x in 0 until output.width) {
+                            val sourceX = x * strideWidth + kernelX - padLeft
+                            if (sourceY in 0 until input.height &&
+                                sourceX in 0 until input.width
+                            ) {
+                                val row = channel * input.area + sourceY * input.width
+                                columns[position] = input.data[row + sourceX]
+                            }
+                            position++
+                        }
+                    }
+                }
             }
         }
-        for (position in 0 until area) put(channel, position, output[start + position])
+        return columns
     }
 
-    fun block(channel: Int) {
-        var position = 0
-        while (position + 4 <= area) {
-            tile(channel, position)
-            position += 4
-        }
-        for (rest in position until area) {
-            for (row in channel until channel + 4) put(row, rest, dot(row, rest))
+    private fun depthwise(input: Tensor, output: Tensor) {
+        for (channel in 0 until outputs) {
+            for (kernelY in 0 until kernelHeight) {
+                for (y in 0 until output.height) {
+                    val sourceY = y * strideHeight + kernelY - padTop
+                    if (sourceY !in 0 until input.height) continue
+                    val source = channel * input.area + sourceY * input.width
+                    val target = channel * output.area + y * output.width
+                    for (kernelX in 0 until kernelWidth) {
+                        val weight =
+                            weights[
+                                (channel * kernelHeight + kernelY) * kernelWidth +
+                                    kernelX,
+                            ]
+                        accumulate(input, output, weight, kernelX, source, target)
+                    }
+                }
+            }
+            finish(output, channel)
         }
     }
 
-    private fun tile(channel: Int, position: Int) {
-        val first = channel * patch
-        var first0 = 0f
-        var first1 = 0f
-        var first2 = 0f
-        var first3 = 0f
-        var second0 = 0f
-        var second1 = 0f
-        var second2 = 0f
-        var second3 = 0f
-        var third0 = 0f
-        var third1 = 0f
-        var third2 = 0f
-        var third3 = 0f
-        var fourth0 = 0f
-        var fourth1 = 0f
-        var fourth2 = 0f
-        var fourth3 = 0f
-        for (k in 0 until patch) {
-            val index = offset + k * area + position
-            val column0 = columns[index]
-            val column1 = columns[index + 1]
-            val column2 = columns[index + 2]
-            val column3 = columns[index + 3]
-            val weight0 = weights[first + k]
-            val weight1 = weights[first + patch + k]
-            val weight2 = weights[first + 2 * patch + k]
-            val weight3 = weights[first + 3 * patch + k]
-            first0 += weight0 * column0
-            first1 += weight0 * column1
-            first2 += weight0 * column2
-            first3 += weight0 * column3
-            second0 += weight1 * column0
-            second1 += weight1 * column1
-            second2 += weight1 * column2
-            second3 += weight1 * column3
-            third0 += weight2 * column0
-            third1 += weight2 * column1
-            third2 += weight2 * column2
-            third3 += weight2 * column3
-            fourth0 += weight3 * column0
-            fourth1 += weight3 * column1
-            fourth2 += weight3 * column2
-            fourth3 += weight3 * column3
+    private fun accumulate(
+        input: Tensor,
+        output: Tensor,
+        weight: Float,
+        kernelX: Int,
+        source: Int,
+        target: Int,
+    ) {
+        val shift = kernelX - padLeft
+        val first = max(0, (strideWidth - 1 - shift) / strideWidth)
+        val last =
+            min(output.width, (input.width - shift + strideWidth - 1) / strideWidth)
+        for (x in first until last) {
+            output.data[target + x] +=
+                weight * input.data[source + x * strideWidth + shift]
         }
-        val sums = floatArrayOf(
-            first0, first1, first2, first3, second0, second1, second2, second3,
-            third0, third1, third2, third3, fourth0, fourth1, fourth2, fourth3,
-        )
-        sums.forEachIndexed { index, sum ->
-            put(channel + index / 4, position + index % 4, sum)
+    }
+}
+
+private class Squeeze(val reduce: Conv, val expand: Conv) : Layer {
+    override fun run(input: Tensor): Tensor {
+        val means = Tensor(input.channels, 1, 1)
+        for (channel in 0 until input.channels) {
+            var total = 0f
+            for (index in channel * input.area until (channel + 1) * input.area) {
+                total += input.data[index]
+            }
+            means.data[channel] = total / input.area
         }
+        val gate = expand.run(reduce.run(means)).data
+        val output = Tensor(input.channels, input.height, input.width)
+        for (index in output.data.indices) {
+            output.data[index] = input.data[index] * gate[index / input.area]
+        }
+        return output
+    }
+}
+
+private class Pool(val height: Int, val width: Int) : Layer {
+    override fun run(input: Tensor): Tensor {
+        val output = Tensor(input.channels, input.height / height, input.width / width)
+        for (index in output.data.indices) {
+            val plane = index / output.area * input.area
+            val top = index / output.width % output.height * height
+            val left = index % output.width * width
+            var total = 0f
+            for (y in top until top + height) {
+                for (x in left until left + width) {
+                    total += input.data[plane + y * input.width + x]
+                }
+            }
+            output.data[index] = total / (height * width)
+        }
+        return output
     }
 }
 
@@ -198,152 +267,56 @@ class Recognizer(bytes: ByteArray) {
         val scales = FloatArray(outputs) { buffer.getFloat() }
         val bias = FloatArray(outputs) { buffer.getFloat() }
         val perOutput = inputs / spec[6] * kernelHeight * kernelWidth
-        val bytes = spec[9] == 8
         val weights = FloatArray(outputs * perOutput) {
-            val value = if (bytes) buffer.get().toInt() else buffer.getShort().toInt()
+            val value = if (spec[9] ==
+                8
+            ) {
+                buffer.get().toInt()
+            } else {
+                buffer.getShort().toInt()
+            }
             value * scales[it / perOutput]
         }
         return Conv(
             inputs, outputs, kernelHeight, kernelWidth, spec[4], spec[5], spec[6],
-            spec[7], spec[8], weights, bias,
+            Activation.entries[spec[7]], spec[8], weights, bias,
         )
     }
 
-    fun read(line: Gray, height: Float = line.height.toFloat()): Reading {
-        val pixels = FloatArray(line.pixels.size) { line.pixels[it] / 127.5f - 1f }
-        var tensor = Tensor(1, line.height, line.width, pixels)
+    fun warmUp() = repeat(WARM_UP_READS) {
+        val width = LINE_HEIGHT * 4
+        read(Gray(width, LINE_HEIGHT, FloatArray(width * LINE_HEIGHT)))
+    }
+
+    fun read(line: Gray): Reading {
+        var tensor = Tensor(1, line.height, line.width)
+        for (index in tensor.data.indices) {
+            tensor.data[index] =
+                line.pixels[index] / 127.5f - 1
+        }
         val inputs = ArrayList<Tensor>(layers.size)
         for (layer in layers) {
             inputs += tensor
-            tensor = when (layer) {
-                is Conv -> apply(layer, tensor)
-                is Squeeze -> excite(layer, tensor)
-                is Pool -> pool(layer, tensor)
-            }
-            if (layer is Conv && layer.residual > 0) {
-                add(tensor, inputs[inputs.size - layer.residual])
-            }
+            tensor = layer.run(tensor)
+            if (layer.residual == 0) continue
+            val source = inputs[inputs.size - layer.residual].data
+            for (index in source.indices) tensor.data[index] += source[index]
         }
-        return decode(tensor, height)
+        return decode(tensor)
     }
 
-    private fun add(target: Tensor, source: Tensor) {
-        for (index in target.data.indices) target.data[index] += source.data[index]
-    }
-
-    private fun excite(layer: Squeeze, input: Tensor): Tensor {
-        val area = input.height * input.width
-        val means = FloatArray(input.channels) { channel ->
-            var total = 0f
-            for (index in channel * area until (channel + 1) * area) {
-                total += input.data[index]
-            }
-            total / area
-        }
-        val gate =
-            apply(layer.expand, apply(layer.reduce, Tensor(input.channels, 1, 1, means)))
-        val data = FloatArray(input.data.size) { input.data[it] * gate.data[it / area] }
-        return Tensor(input.channels, input.height, input.width, data)
-    }
-
-    private fun pool(layer: Pool, input: Tensor): Tensor {
-        val height = input.height / layer.height
-        val width = input.width / layer.width
-        val data = FloatArray(input.channels * height * width) { index ->
-            val plane = index / (height * width) * input.height * input.width
-            val top = index / width % height * layer.height
-            val left = index % width * layer.width
-            var total = 0f
-            for (y in top until top + layer.height) {
-                for (x in left until left + layer.width) {
-                    total += input.data[plane + y * input.width + x]
-                }
-            }
-            total / (layer.height * layer.width)
-        }
-        return Tensor(input.channels, height, width, data)
-    }
-
-    private fun apply(layer: Conv, input: Tensor): Tensor {
-        val padTop = (layer.kernelHeight - 1) / 2
-        val padLeft = (layer.kernelWidth - 1) / 2
-        val height =
-            (input.height + 2 * padTop - layer.kernelHeight) / layer.strideHeight + 1
-        val width =
-            (input.width + 2 * padLeft - layer.kernelWidth) / layer.strideWidth + 1
-        val area = height * width
-        val output = FloatArray(layer.outputs * area)
-        val groupInputs = layer.inputs / layer.groups
-        val groupOutputs = layer.outputs / layer.groups
-        val patch = layer.patch
-        val pointwise =
-            patch == groupInputs && layer.strideHeight * layer.strideWidth == 1
-        val columns = if (pointwise) input.data else FloatArray(patch * area)
-        for (group in 0 until layer.groups) {
-            val offset = if (pointwise) group * groupInputs * area else 0
-            if (!pointwise) {
-                val first = group * groupInputs
-                unfold(layer, input, first, groupInputs, height, width, columns)
-            }
-            val product = Product(layer, columns, offset, output, area)
-            var channel = group * groupOutputs
-            val end = channel + groupOutputs
-            while (layer.groups == 1 && channel + 4 <= end) {
-                product.block(channel)
-                channel += 4
-            }
-            for (rest in channel until end) product.row(rest)
-        }
-        return Tensor(layer.outputs, height, width, output)
-    }
-
-    private fun unfold(
-        layer: Conv,
-        input: Tensor,
-        firstChannel: Int,
-        channels: Int,
-        height: Int,
-        width: Int,
-        columns: FloatArray,
-    ) {
-        val padTop = (layer.kernelHeight - 1) / 2
-        val padLeft = (layer.kernelWidth - 1) / 2
-        var row = 0
-        for (channel in firstChannel until firstChannel + channels) {
-            val plane = channel * input.height * input.width
-            for (kernelY in 0 until layer.kernelHeight) {
-                for (kernelX in 0 until layer.kernelWidth) {
-                    var position = row * height * width
-                    for (y in 0 until height) {
-                        val sourceY = y * layer.strideHeight + kernelY - padTop
-                        val inside = sourceY in 0 until input.height
-                        for (x in 0 until width) {
-                            val sourceX = x * layer.strideWidth + kernelX - padLeft
-                            columns[position++] =
-                                if (inside && sourceX in 0 until input.width) {
-                                    input.data[plane + sourceY * input.width + sourceX]
-                                } else {
-                                    0f
-                                }
-                        }
-                    }
-                    row++
-                }
-            }
-        }
-    }
-
-    private fun decode(tensor: Tensor, height: Float): Reading {
+    private fun decode(tensor: Tensor): Reading {
         val steps = tensor.width
+        val data = tensor.data
         val text = StringBuilder()
-        var previous = 0
-        var confidence = 0.0
         val positions = mutableListOf<Float>()
+        var confidence = 0.0
+        var previous = 0
         for (step in 0 until steps) {
             var best = 0
             for (channel in 1 until tensor.channels) {
-                if (tensor.data[channel * steps + step] >
-                    tensor.data[best * steps + step]
+                if (data[channel * steps + step] >
+                    data[best * steps + step]
                 ) {
                     best = channel
                 }
@@ -351,21 +324,16 @@ class Recognizer(bytes: ByteArray) {
             if (best != 0 && best != previous) {
                 text.append(alphabet[best - 1])
                 positions += (step + 0.5f) / steps
-                confidence += probability(tensor, step, best)
+                val top = data[best * steps + step]
+                var total = 0.0
+                for (channel in 0 until tensor.channels) {
+                    total += exp((data[channel * steps + step] - top).toDouble())
+                }
+                confidence += 1 / total
             }
             previous = best
         }
-        val mean = if (text.isEmpty()) 0.0 else confidence / text.length
-        return Reading(text.toString(), mean.toFloat(), height, positions)
-    }
-
-    private fun probability(tensor: Tensor, step: Int, chosen: Int): Double {
-        val steps = tensor.width
-        val top = tensor.data[chosen * steps + step]
-        var total = 0.0
-        for (channel in 0 until tensor.channels) {
-            total += exp((tensor.data[channel * steps + step] - top).toDouble())
-        }
-        return 1 / total
+        val mean = if (text.isEmpty()) 0f else (confidence / text.length).toFloat()
+        return Reading(text.toString(), mean, positions)
     }
 }

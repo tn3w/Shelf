@@ -90,6 +90,9 @@ class Navigator(
 ) {
     fun book(book: Book, origin: String) = books.navigate(BookRoute(book.work, origin))
 
+    fun bookPage(book: Book, origin: String) =
+        controller.navigate(BookRoute(book.work, origin))
+
     fun author(author: Author) =
         controller.navigate(AuthorRoute(author.number, author.name))
 

@@ -75,7 +75,7 @@ class ScanViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val scanner = combine(
         loaded.filterNotNull(),
         flow {
-            emit(recognizer)
+            emit(recognizer.apply { warmUp() })
         },
         attempts, ::Triple,
     )
@@ -88,6 +88,8 @@ class ScanViewModel(app: ShelfApp) : ShelfViewModel(app) {
     var frozen by mutableStateOf<Found?>(null)
         private set
     var failure by mutableStateOf<Int?>(null)
+        private set
+    var paused by mutableStateOf(false)
         private set
 
     fun show(work: Int, frame: Bitmap?, marks: Marks): Boolean {
@@ -108,6 +110,17 @@ class ScanViewModel(app: ShelfApp) : ShelfViewModel(app) {
         found = null
         attempts.update { it + 1 }
     }
+
+    fun leave() {
+        found = null
+        paused = true
+    }
+
+    fun resume() {
+        if (!paused) return
+        paused = false
+        scanAgain()
+    }
 }
 
 @Composable
@@ -117,9 +130,10 @@ fun ScanScreen(navigator: Navigator) {
     val found = viewModel.found
     val haptics = LocalHapticFeedback.current
     val current = scanner
+    LaunchedEffect(Unit) { viewModel.resume() }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (found == null && current != null) {
+        if (found == null && current != null && !viewModel.paused) {
             key(current) {
                 CameraPreview(
                     analyze = current::next,
@@ -135,7 +149,7 @@ fun ScanScreen(navigator: Navigator) {
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
             BackBar(navigator::back)
         }
-        if (found == null) {
+        if (found == null && !viewModel.paused) {
             Text(
                 stringResource(viewModel.failure ?: R.string.scan_hint),
                 color = Color.White,
@@ -147,7 +161,12 @@ fun ScanScreen(navigator: Navigator) {
             )
         }
     }
-    found?.let { ScanSheet(it.book, navigator, viewModel::scanAgain) }
+    found?.let {
+        ScanSheet(it.book, viewModel::scanAgain) { book, origin ->
+            viewModel.leave()
+            navigator.bookPage(book, origin)
+        }
+    }
 }
 
 @Composable
@@ -257,13 +276,13 @@ private fun upright(bitmap: Bitmap, degrees: Int): Bitmap {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ScanSheet(book: Book, navigator: Navigator, onAgain: () -> Unit) {
+private fun ScanSheet(book: Book, onAgain: () -> Unit, onOpen: (Book, String) -> Unit) {
     val viewModel = shelfViewModel()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val shelf = saved.firstOrNull { it.work == book.work }?.shelf
     ModalBottomSheet(onAgain, sheetState = rememberModalBottomSheetState(true)) {
         Column(Modifier.padding(bottom = 24.dp), Arrangement.spacedBy(12.dp)) {
-            BookListItem(book, "scan", shared = false, onOpen = navigator::book)
+            BookListItem(book, "scan", shared = false, onOpen = onOpen)
             Box(Modifier.padding(horizontal = ScreenPadding)) {
                 ShelfPicker(shelf) { viewModel.place(book, it) }
             }

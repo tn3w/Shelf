@@ -5,25 +5,34 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import java.io.File
 import java.io.RandomAccessFile
+import java.lang.management.ManagementFactory
 import java.nio.channels.FileChannel
-import java.util.concurrent.Executors
+import java.util.concurrent.Callable
+import java.util.concurrent.ForkJoinPool
 import javax.imageio.ImageIO
 
 private val CATALOGUE = File("android/app/build/generated/downloadCatalogue")
 private val CACHE = File("scanbench/cache")
 private val MODEL = File("android/app/src/main/assets/scan.bin")
+private const val FRAME_MILLIS = 100.0
+private const val KEPT_SCORES = 12
+private const val HOLD_MILLIS = 6000.0
+private const val HELD_FRAMES = 6
 
 @Serializable
-class Frame(
-    val sharpness: Double,
+class Processed(
+    val frame: Int,
+    val end: Double,
+    val milliseconds: Double,
     val texts: List<String>,
+    val confidences: List<Float> = emptyList(),
+    val heights: List<Float> = emptyList(),
     val works: List<Int>,
     val scores: List<Double>,
-    val milliseconds: Double,
 )
 
 @Serializable
-class Record(val id: String, val expected: Int?, val frames: List<Frame>)
+class Record(val id: String, val expected: Int?, val frames: List<Processed>)
 
 private class Clip(
     val id: String,
@@ -82,12 +91,10 @@ private fun gray(file: File): Gray {
 private fun parity(folder: File) {
     val recognizer = Recognizer(MODEL.readBytes())
     val files = folder.listFiles { file -> file.extension == "png" }.orEmpty().sorted()
-    val started = System.nanoTime()
     val texts = files.associate {
         it.name to JsonPrimitive(recognizer.read(gray(it)).text)
     }
     folder.resolve("kotlin.json").writeText(JsonObject(texts).toString())
-    println("%.1f ms per line".format((System.nanoTime() - started) / 1e6 / files.size))
 }
 
 private fun clips(split: String): List<Clip> {
@@ -105,94 +112,165 @@ private fun clips(split: String): List<Clip> {
         }
 }
 
-private fun analyze(
-    clip: Clip,
-    catalogue: Catalogue,
-    searcher: Searcher,
-    recognizer: Recognizer,
-): Record {
-    val known = { word: String -> searcher.frequency(word) > 0 }
-    val reader = Reader(recognizer, ScanSettings(blur = 0.0), known)
-    val matcher = Matcher(catalogue, searcher)
-    val expected = clip.expected?.let { identity(catalogue, it) }
-    fun same(work: Int) = identity(catalogue, work) == expected
-    val files = clip.folder.listFiles().orEmpty().filter { it.extension == "jpg" }
-    val frames = files.sorted().map { file ->
-        val frame = gray(file)
-        val started = System.nanoTime()
-        val readings = reader.read(frame)
-        val scores = matcher.scores(readings).entries.sortedByDescending { it.value }
-            .take(12)
-        val milliseconds = (System.nanoTime() - started) / 1e6
-        val texts = readings.map { it.text }
-        val works = scores.map { if (same(it.key)) clip.expected!! else it.key }
-        Frame(sharpness(frame), texts, works, scores.map { it.value }, milliseconds)
-    }
-    return Record(clip.id, clip.expected, frames)
+private fun cpuMillis() = ManagementFactory.getThreadMXBean().currentThreadCpuTime / 1e6
+
+private fun held(index: Int, count: Int): Int {
+    if (index < count) return index
+    val span = minOf(HELD_FRAMES, count) - 1
+    if (span == 0) return count - 1
+    val phase = (index - count + 1) % (2 * span)
+    return count - 1 - if (phase <= span) phase else 2 * span - phase
 }
 
-private fun records(split: String, threads: Int, reuse: Boolean): List<Record> {
-    val file = CACHE.resolve("bench/$split.json")
+private fun ranked(
+    catalogue: Catalogue,
+    scores: Map<Int, Double>,
+    expected: Int?,
+): Pair<List<Int>, List<Double>> {
+    val identity = expected?.let { identity(catalogue, it) }
+    val top = scores.entries.sortedByDescending { it.value }.take(KEPT_SCORES)
+    val works = top.map {
+        if (identity(catalogue, it.key) ==
+            identity
+        ) {
+            expected
+        } else {
+            it.key
+        }
+    }
+    return works to top.map { it.value }
+}
+
+private fun rescored(
+    frame: Processed,
+    catalogue: Catalogue,
+    matcher: Matcher,
+    record: Record,
+): Processed = with(frame) {
+    val lines = texts.indices.map { TextLine(texts[it], confidences[it], heights[it]) }
+    val (works, scores) = ranked(catalogue, matcher.scores(lines), record.expected)
+    Processed(this.frame, end, milliseconds, texts, confidences, heights, works, scores)
+}
+
+private fun rematch(split: String, from: String, name: String): List<Record> {
+    val source = Json.decodeFromString<List<Record>>(
+        CACHE.resolve("bench/$split-$from.json").readText(),
+    )
+    val languages = clips(split).associate { it.id to it.language }
+    val catalogues = languages.values.distinct().associateWith(::loadCatalogue)
+    val searchers = catalogues.mapValues { Searcher(it.value) }
+    val records = source.parallelStream().map { record ->
+        val language = languages.getValue(record.id)
+        val catalogue = catalogues.getValue(language)
+        val matcher = Matcher(catalogue, searchers.getValue(language))
+        val frames = record.frames.map { frame ->
+            rescored(frame, catalogue, matcher, record)
+        }
+        Record(record.id, record.expected, frames)
+    }.toList()
+    CACHE.resolve("bench/$split-$name.json").writeText(Json.encodeToString(records))
+    return records
+}
+
+private fun simulate(
+    clip: Clip,
+    catalogue: Catalogue,
+    look: (Gray) -> Look,
+    slowdown: Double,
+): Record {
+    val expected = clip.expected?.let { identity(catalogue, it) }
+    val files = clip.folder.listFiles().orEmpty().filter {
+        it.extension == "jpg"
+    }.sorted()
+    val processed = mutableListOf<Processed>()
+    var clock = 0.0
+    var index = 0
+    while (index * FRAME_MILLIS < HOLD_MILLIS) {
+        val frame = gray(files[held(index, files.size)])
+        clock = maxOf(clock, index * FRAME_MILLIS)
+        val started = cpuMillis()
+        val result = look(frame)
+        val milliseconds = (cpuMillis() - started) * slowdown
+        clock += milliseconds
+        val (works, scores) = ranked(catalogue, result.scores, clip.expected)
+        processed += Processed(
+            index, clock, milliseconds, result.lines.map { it.text },
+            result.lines.map { it.confidence }, result.lines.map { it.height },
+            works, scores,
+        )
+        index = maxOf(index + 1, (clock / FRAME_MILLIS).toInt())
+    }
+    return Record(clip.id, clip.expected, processed)
+}
+
+private fun records(
+    split: String,
+    name: String,
+    reuse: Boolean,
+    slowdown: Double,
+    pipeline: (Catalogue, Searcher) -> (Gray) -> Look,
+): List<Record> {
+    val file = CACHE.resolve("bench/$split-$name.json")
     if (reuse && file.exists()) return Json.decodeFromString(file.readText())
     val clips = clips(split)
     val catalogues = clips.map { it.language }.distinct().associateWith(::loadCatalogue)
     val searchers = catalogues.mapValues { Searcher(it.value) }
-    val recognizer = Recognizer(MODEL.readBytes())
-    val pool = Executors.newFixedThreadPool(threads)
-    val records = clips.map { clip ->
-        pool.submit<Record> {
-            val language = clip.language
-            val catalogue = catalogues.getValue(language)
-            analyze(clip, catalogue, searchers.getValue(language), recognizer)
-        }
+    val pools = List(Runtime.getRuntime().availableProcessors()) { ForkJoinPool(1) }
+    val records = clips.mapIndexed { index, clip ->
+        pools[index % pools.size].submit(
+            Callable {
+                val catalogue = catalogues.getValue(clip.language)
+                val look = pipeline(catalogue, searchers.getValue(clip.language))
+                simulate(clip, catalogue, look, slowdown)
+            },
+        )
     }.map { it.get() }
-    pool.shutdown()
+    pools.forEach { it.shutdown() }
     file.parentFile?.mkdirs()
     file.writeText(Json.encodeToString(records))
     return records
 }
 
-private class Summary(
-    val right: Double,
-    val wrong: Double,
-    val negativeStops: Int,
-    val frames: Double,
-)
+private class Stop(val work: Int, val end: Double)
 
-private class Stop(val work: Int, val frame: Int)
-
-private fun stop(record: Record, settings: ScanSettings): Stop? {
+private fun stop(record: Record, settings: ScanSettings, hidden: Int? = null): Stop? {
     val rule = StopRule(settings)
-    record.frames.forEachIndexed { index, frame ->
-        val sharp = frame.sharpness >= settings.blur
-        val scores = if (sharp) frame.works.zip(frame.scores).toMap() else emptyMap()
-        rule.update(scores)?.let { return Stop(it, index + 1) }
+    for (frame in record.frames) {
+        val scores = frame.works.zip(frame.scores).filter { it.first != hidden }.toMap()
+        rule.update(scores)?.let { return Stop(it, frame.end) }
     }
     return null
 }
 
+private class Summary(
+    val right: Double,
+    val wrong: Double,
+    val hiddenStops: Double,
+    val seconds: List<Double>,
+)
+
 private fun summarize(records: List<Record>, settings: ScanSettings): Summary {
-    val (books, negatives) = records.partition { it.expected != null }
-    val stops = books.map { stop(it, settings) to it.expected }
-    val right = stops.filter { it.first?.work == it.second }
+    val books = records.filter { it.expected != null }
+    val stops = books.map { stop(it, settings) }
+    val right = stops.zip(books).filter { (stop, book) -> stop?.work == book.expected }
+    val wrong = stops.zip(books).count { (stop, book) ->
+        stop != null && stop.work != book.expected
+    }
+    val hidden = books.count { stop(it, settings, it.expected) != null }
     return Summary(
         right.size.toDouble() / books.size,
-        stops.count { it.first != null && it.first?.work != it.second }.toDouble() /
-            books.size,
-        negatives.count { stop(it, settings) != null },
-        right.map { it.first!!.frame }.average(),
+        wrong.toDouble() / books.size,
+        hidden.toDouble() / books.size,
+        right.map { it.first!!.end / 1000 }.sorted(),
     )
 }
 
-private fun grid(): List<ScanSettings> {
-    val rules = listOf(0.0, 20.0, 40.0, 80.0).flatMap { blur ->
-        listOf(0.5, 0.7, 0.9).flatMap { decay -> (1..3).map { Triple(blur, decay, it) } }
-    }
-    return rules.flatMap { (blur, decay, frames) ->
-        (5..60 step 2).flatMap { threshold ->
-            (0..20 step 2).map { margin ->
+private fun grid() = listOf(0.3, 0.5, 0.7).flatMap { decay ->
+    (1..3).flatMap { frames ->
+        (4..30).flatMap { threshold ->
+            (0..12).map { margin ->
                 ScanSettings(
-                    blur = blur, decay = decay, frames = frames,
+                    decay = decay, frames = frames,
                     threshold = threshold / 10.0, margin = margin / 10.0,
                 )
             }
@@ -200,37 +278,76 @@ private fun grid(): List<ScanSettings> {
     }
 }
 
-private fun tune(records: List<Record>) = grid().map { it to summarize(records, it) }
-    .filter { (_, summary) -> summary.negativeStops == 0 && summary.wrong <= 0.002 }
-    .maxByOrNull { it.second.right }?.first ?: ScanSettings()
+private fun tune(records: List<Record>, wrong: Double, hidden: Double) = grid()
+    .map { it to summarize(records, it) }
+    .filter { (_, summary) -> summary.wrong <= wrong && summary.hiddenStops <= hidden }
+    .maxByOrNull { (_, summary) -> summary.right - summary.seconds.sum() / 100_000 }
+    ?.first ?: ScanSettings()
 
-private fun Record.found() = frames.any { it.works.firstOrNull() == expected }
+private fun List<Double>.percentile(share: Double) =
+    if (isEmpty()) Double.NaN else this[((size - 1) * share).toInt()]
+
+private fun report(split: String, records: List<Record>, settings: ScanSettings) {
+    val summary = summarize(records, settings)
+    val books = records.filter { it.expected != null }
+    val top = books.count { book ->
+        book.frames.any {
+            it.works.firstOrNull() ==
+                book.expected
+        }
+    }
+    val frames = records.flatMap { it.frames }
+    println("$split: ${books.size} books, ${frames.size} processed frames")
+    println(
+        "ever top-1 %.1f%%, %.0f ms/frame, %.1f processed frames/s".format(
+            100.0 * top / books.size, frames.map { it.milliseconds }.average(),
+            1000 * frames.size / records.sumOf { it.frames.last().end },
+        ),
+    )
+    println(
+        "right %.1f%%, wrong %.1f%%, hidden-book stops %.1f%%".format(
+            100 * summary.right, 100 * summary.wrong, 100 * summary.hiddenStops,
+        ),
+    )
+    println(
+        "seconds to right stop: median %.2f, p90 %.2f, mean %.2f".format(
+            summary.seconds.percentile(0.5), summary.seconds.percentile(0.9),
+            summary.seconds.average(),
+        ),
+    )
+    println(
+        "decay ${settings.decay} frames ${settings.frames} " +
+            "threshold ${settings.threshold} margin ${settings.margin}",
+    )
+}
+
+private fun option(arguments: List<String>, name: String) =
+    arguments.indexOf(name).takeIf { it >= 0 }?.let { arguments[it + 1] }
 
 private fun bench(arguments: List<String>) {
     val split = arguments.getOrNull(1) ?: "tune"
-    val threads = Runtime.getRuntime().availableProcessors()
-    val records = records(split, threads, "--reuse" in arguments)
-    val books = records.filter { it.expected != null }
-    val top = books.count { it.found() }
-    val settings = if ("--tune" in arguments) tune(records) else ScanSettings()
-    val summary = summarize(records, settings)
-    val milliseconds = records.flatMap { it.frames }.map { it.milliseconds }.average()
-    println("$split: ${books.size} books, ${records.size - books.size} negatives")
-    println(
-        "ever top-1 %.1f%%, right %.1f%%, wrong %.1f%%, negative stops %d, %.0f ms/frame"
-            .format(
-                100.0 * top / books.size, 100 * summary.right, 100 * summary.wrong,
-                summary.negativeStops, milliseconds,
-            ),
-    )
-    println(
-        "%.2f frames until right stop, %.0f ms"
-            .format(summary.frames, summary.frames * milliseconds),
-    )
-    with(settings) {
-        println("blur $blur decay $decay frames $frames")
-        println("threshold $threshold margin $margin")
+    val name = option(arguments, "--name") ?: "current"
+    val slowdown = option(arguments, "--slowdown")?.toDouble() ?: 1.0
+    val reuse = "--reuse" in arguments
+    val recognizer = Recognizer(MODEL.readBytes())
+    val from = option(arguments, "--rematch")
+    val records = if (from == null) {
+        records(split, name, reuse, slowdown) { catalogue, searcher ->
+            Scanner(catalogue, searcher, recognizer)::look
+        }
+    } else {
+        rematch(split, from, name)
     }
+    val wrong = option(arguments, "--wrong")?.toDouble() ?: 0.01
+    val hidden = option(arguments, "--hidden")?.toDouble() ?: 0.05
+    val settings = if ("--tune" in
+        arguments
+    ) {
+        tune(records, wrong, hidden)
+    } else {
+        ScanSettings()
+    }
+    report(split, records, settings)
 }
 
 fun main(arguments: Array<String>) {
@@ -238,6 +355,6 @@ fun main(arguments: Array<String>) {
         "export" -> export(File(arguments[1]))
         "parity" -> parity(File(arguments[1]))
         "bench" -> bench(arguments.toList())
-        else -> error("usage: export | parity | bench [split] [--reuse] [--tune]")
+        else -> error("usage: export <dir> | parity <dir> | bench [split] [options]")
     }
 }

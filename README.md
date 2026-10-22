@@ -160,11 +160,13 @@ every installed catalogue.
 
 On device, pure Kotlin, no network; camera via CameraX:
 
-- `data/Lines.kt`: 1280×960 grayscale, deskew, edge-based line finding, 48 px crops
+- `data/Lines.kt`: 1280×960 grayscale, deskew and line finding at ≤ 640 px, 48 px crops
+  from the full frame
 - `data/Recognizer.kt`: CNN for `assets/scan.bin` (PP-OCRv6 tiny, Apache-2.0,
-  300 Latin characters, 1.2 MB), exact parity with the reference
-- `data/Scan.kt`: orientation, best 6 of 8 lines, typo- and glued-word-tolerant
-  title/author matching, stop rule over decaying scores
+  300 Latin characters, 1.2 MB), warmed up on open
+- `data/Scan.kt`: orientation probed once and kept, top 8 lines read in parallel,
+  typo-tolerant title/author matching; generic titles need the author, series names
+  count half; stop rule over decaying scores
 
 `scan.bin`: `SCAN`, version 3, line height, alphabet, layers (grouped/strided conv,
 8/16-bit weights, squeeze-excite, pool). Built from source, byte for byte:
@@ -179,7 +181,8 @@ Face commit, checks SHA-256, folds batch norm, keeps Latin characters, quantizes
 16 bit. Math in float64 → same bytes across numpy/BLAS versions. CI `scan` job
 rebuilds it on Debian trixie and fails on any diff. F-Droid recipe: `rm` the asset,
 `sudo` installs the three packages, `build: python3 ../../tooling/scan.py`.
-Bench data and training: gitignored `scanbench/`.
+Bench data and training: gitignored `scanbench/`; `./gradlew scanBench` simulates
+real-time scanning (`--tune`, `--rematch` rescores stored lines without OCR).
 
 ## Switch from Goodreads or StoryGraph
 

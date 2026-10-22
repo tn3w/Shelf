@@ -11,6 +11,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 const val LINE_HEIGHT = 48
+private const val DETECTION_SIDE = 640
 private const val MAX_LINE_WIDTH = 960
 private const val EDGE_FLOOR = 60f
 private const val EDGE_FACTOR = 2.0f
@@ -32,6 +33,24 @@ class Gray(val width: Int, val height: Int, val pixels: FloatArray) {
         return upper + (lower - upper) * (clampedY - top)
     }
 
+    fun shrunk(factor: Int): Gray {
+        if (factor == 1) return this
+        val shrunkWidth = width / factor
+        val area = (factor * factor).toFloat()
+        return Gray(
+            shrunkWidth, height / factor,
+            FloatArray(shrunkWidth * (height / factor)) { index ->
+                val left = index % shrunkWidth * factor
+                val top = index / shrunkWidth * factor
+                var total = 0f
+                for (y in top until top + factor) {
+                    for (x in left until left + factor) total += pixels[y * width + x]
+                }
+                total / area
+            },
+        )
+    }
+
     companion object {
         fun of(bytes: ByteArray, width: Int, height: Int, rowStride: Int = width) = Gray(
             width, height,
@@ -41,14 +60,6 @@ class Gray(val width: Int, val height: Int, val pixels: FloatArray) {
         )
     }
 }
-
-private data class CropArea(
-    val left: Float,
-    val top: Float,
-    val width: Float,
-    val height: Float,
-    val outputWidth: Int,
-)
 
 class LineBox(
     val left: Float,
@@ -61,18 +72,23 @@ class LineBox(
         get() = right - left
     val height
         get() = bottom - top
+
+    fun scaled(scale: Float) =
+        LineBox(left * scale, top * scale, right * scale, bottom * scale, glyphs)
 }
 
 class Dot(val x: Float, val y: Float)
+
+fun detectionScale(frame: Gray) = max(1, max(frame.width, frame.height) / DETECTION_SIDE)
 
 fun sharpness(frame: Gray): Double {
     var sum = 0.0
     var squares = 0.0
     var count = 0
+    val pixels = frame.pixels
     for (y in 2 until frame.height - 2 step 2) {
         for (x in 2 until frame.width - 2 step 2) {
             val index = y * frame.width + x
-            val pixels = frame.pixels
             val value =
                 pixels[index - 1] + pixels[index + 1] + pixels[index - frame.width] +
                     pixels[index + frame.width] - 4 * pixels[index]
@@ -109,9 +125,12 @@ fun skew(frame: Gray): Double {
     return atan2(imaginary, real) / 4
 }
 
-class View(private val frame: Gray, angle: Double, val width: Int, val height: Int) {
-    private val cosine = cos(angle).toFloat()
-    private val sine = sin(angle).toFloat()
+class View(private val frame: Gray, angle: Double, private val scale: Int) {
+    private val upright = abs(sin(angle)) < 0.5
+    val width = (if (upright) frame.width else frame.height) / scale
+    val height = (if (upright) frame.height else frame.width) / scale
+    private val cosine = cos(angle).toFloat() * scale
+    private val sine = sin(angle).toFloat() * scale
 
     private fun frameX(u: Float, v: Float) =
         frame.width / 2f + cosine * (u - width / 2f) - sine * (v - height / 2f)
@@ -119,10 +138,25 @@ class View(private val frame: Gray, angle: Double, val width: Int, val height: I
     private fun frameY(u: Float, v: Float) =
         frame.height / 2f + sine * (u - width / 2f) + cosine * (v - height / 2f)
 
-    fun at(u: Float, v: Float) = frame.sample(frameX(u, v), frameY(u, v))
+    private fun at(u: Float, v: Float) = frame.sample(frameX(u, v), frameY(u, v))
+
+    fun render(small: Gray): Gray {
+        val offset = (scale - 1) / 2f
+        return Gray(
+            width, height,
+            FloatArray(width * height) {
+                val u = (it % width).toFloat()
+                val v = (it / width).toFloat()
+                small.sample(
+                    (frameX(u, v) - offset) / scale,
+                    (frameY(u, v) - offset) / scale,
+                )
+            },
+        )
+    }
 
     fun dots(box: LineBox, positions: List<Float>, flipped: Boolean): List<Dot> {
-        val area = area(box, MAX_LINE_WIDTH)
+        val area = area(box)
         val v = (box.top + box.bottom) / 2
         return positions.map {
             val u = area.left + area.width * if (flipped) 1 - it else it
@@ -130,27 +164,20 @@ class View(private val frame: Gray, angle: Double, val width: Int, val height: I
         }
     }
 
-    private fun area(box: LineBox, limit: Int): CropArea {
+    private fun area(box: LineBox): CropArea {
         val marginY = box.height * 0.2f
         val spanY = box.height + 2 * marginY
         val fullWidth = (box.width + box.height * 0.5f) * LINE_HEIGHT / spanY
-        val outputWidth = fullWidth.roundToInt().coerceIn(LINE_HEIGHT, limit)
-        val left = box.left - box.height * 0.25f
+        val outputWidth = fullWidth.roundToInt().coerceIn(LINE_HEIGHT, MAX_LINE_WIDTH)
         val spanX = outputWidth * spanY / LINE_HEIGHT
+        val left = box.left - box.height * 0.25f
         return CropArea(left, box.top - marginY, spanX, spanY, outputWidth)
     }
 
-    fun render() = Gray(
-        width, height,
-        FloatArray(width * height) {
-            at((it % width).toFloat(), (it / width).toFloat())
-        },
-    )
-
-    fun crop(box: LineBox, flipped: Boolean, limit: Int = MAX_LINE_WIDTH): Gray {
-        val (left, top, spanX, spanY, outputWidth) = area(box, limit)
+    fun crop(box: LineBox, flipped: Boolean): Gray {
+        val (left, top, spanX, spanY, outputWidth) = area(box)
         val step = spanY / LINE_HEIGHT
-        val samples = step.toInt().coerceIn(1, 4)
+        val samples = (step * scale).toInt().coerceIn(1, 4)
         val pixels = FloatArray(outputWidth * LINE_HEIGHT) { index ->
             val column = index % outputWidth
             val row = index / outputWidth
@@ -172,6 +199,14 @@ class View(private val frame: Gray, angle: Double, val width: Int, val height: I
         return Gray(outputWidth, LINE_HEIGHT, pixels)
     }
 }
+
+private data class CropArea(
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float,
+    val outputWidth: Int,
+)
 
 private fun edges(image: Gray): BooleanArray {
     val width = image.width
@@ -240,7 +275,9 @@ private fun components(edges: BooleanArray, width: Int): List<Component> {
     for (index in edges.indices) {
         if (!edges[index]) continue
         if (index % width > 0 && edges[index - 1]) parent[root(index)] = root(index - 1)
-        if (index >= width && edges[index - width]) {
+        if (index >= width &&
+            edges[index - width]
+        ) {
             parent[root(index)] = root(index - width)
         }
     }
@@ -259,12 +296,10 @@ private fun components(edges: BooleanArray, width: Int): List<Component> {
     return found.values.toList()
 }
 
-private fun isGlyph(component: Component, maximum: Int): Boolean {
-    val box = component.width * component.height
-    return component.height in 6..maximum &&
+private fun isGlyph(component: Component, maximum: Int) =
+    component.height in 6..maximum &&
         component.width <= component.height * 12 &&
-        component.edges >= box * 0.1
-}
+        component.edges >= component.width * component.height * 0.1
 
 private class Group(first: LineBox) {
     var box = first
@@ -301,30 +336,13 @@ private class Group(first: LineBox) {
     }
 }
 
-private fun half(image: Gray): Gray {
-    val width = image.width / 2
-    val height = image.height / 2
-    val pixels = image.pixels
-    return Gray(
-        width, height,
-        FloatArray(width * height) { index ->
-            val source = (index / width) * 2 * image.width + (index % width) * 2
-            (
-                pixels[source] + pixels[source + 1] + pixels[source + image.width] +
-                    pixels[source + image.width + 1]
-                ) / 4
-        },
-    )
-}
-
 private fun linesAt(image: Gray, maximum: Int): List<LineBox> {
     val glyphs = components(edges(image), image.width)
         .filter { isGlyph(it, maximum) }
         .map {
-            val glyphs = max(1, it.width / it.height)
             LineBox(
                 it.left.toFloat(), it.top.toFloat(), it.right + 1f, it.bottom + 1f,
-                glyphs,
+                max(1, it.width / it.height),
             )
         }
         .sortedBy { it.left }
@@ -349,15 +367,9 @@ fun findLines(image: Gray): List<LineBox> {
     val found = mutableListOf<LineBox>()
     var level = image
     for (depth in 0 until 3) {
-        val scale = (1 shl depth).toFloat()
         val maximum = if (depth == 2) level.height / 2 else 40
-        found += linesAt(level, maximum).map {
-            LineBox(
-                it.left * scale, it.top * scale, it.right * scale, it.bottom * scale,
-                it.glyphs,
-            )
-        }
-        level = half(level)
+        found += linesAt(level, maximum).map { it.scaled((1 shl depth).toFloat()) }
+        level = level.shrunk(2)
     }
     val kept = mutableListOf<LineBox>()
     for (line in found.sortedByDescending { it.height }) {

@@ -10,17 +10,17 @@ import com.google.zxing.common.HybridBinarizer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 
+private const val PROBED_LINES = 2
+private const val WEAK_FRAMES = 3
+private const val MIN_QUALITY = 3.0
+private const val CERTAIN_INFORMATION = 12.0
+private const val AUTHOR_INFORMATION = 6.0
+private const val SUBSUMED = 0.5
 private const val CANDIDATES = 400
-private const val PROBE_WIDTH = 120
-private const val PROBED_LINES = 8
-private const val ORIENTATION_LINES = 3
-private const val MIN_ORIENTATION_QUALITY = 3.0
 private const val COMMON_WORD = 60
 private const val CACHE_SIZE = 4096
 private const val POPULARITY_BONUS = 0.08
@@ -31,33 +31,38 @@ private val STOP_PHRASES = listOf(
     "penguin classics", "the classic", "edition", "winner of", "copies sold",
     "exclusive", "signed copy", "prix goncourt", "sale",
 ).map(::tokenize)
-
-class ScanSettings(
-    val lines: Int = 6,
-    val blur: Double = 20.0,
-    val threshold: Double = 1.1,
-    val margin: Double = 0.6,
-    val frames: Int = 1,
-    val decay: Double = 0.5,
-    val tapThreshold: Double = 0.8,
-    val tapMargin: Double = 0.3,
-)
-
 private val LETTER_GAP = Regex("(?<=\\p{L})[.·•‧∙-](?=\\p{L})")
 
-private class Probe(val reading: Reading, val complete: Boolean)
+class ScanSettings(
+    val lines: Int = 8,
+    val blur: Double = 20.0,
+    val threshold: Double = 1.0,
+    val margin: Double = 0.3,
+    val frames: Int = 1,
+    val decay: Double = 0.5,
+    val tapThreshold: Double = 0.7,
+    val tapMargin: Double = 0.2,
+)
+
+class TextLine(
+    val text: String,
+    val confidence: Float,
+    val height: Float,
+    val dots: List<Dot> = emptyList(),
+)
+
+private class Orientation(val turned: Boolean, val flipped: Boolean)
+
+private class Layout(val view: View, val lines: List<LineBox>, val turned: Boolean)
+
+private class Choice(
+    val layout: Layout,
+    val flipped: Boolean,
+    val read: Map<LineBox, TextLine> = emptyMap(),
+)
 
 private fun <T, R> parallel(items: List<T>, transform: (T) -> R): List<R> =
     items.parallelStream().map(transform).collect(Collectors.toList())
-
-private class Oriented(
-    val view: View,
-    val lines: List<LineBox>,
-    val turned: Boolean,
-    val flipped: Boolean,
-    val probes: Map<LineBox, Probe> = emptyMap(),
-    val quality: Double = 0.0,
-)
 
 private fun sameRow(first: LineBox, second: LineBox): Boolean {
     val vertical = min(first.bottom, second.bottom) - max(first.top, second.top)
@@ -65,86 +70,91 @@ private fun sameRow(first: LineBox, second: LineBox): Boolean {
     return horizontal > 0 && vertical > 0.4f * min(first.height, second.height)
 }
 
-private fun strength(reading: Reading) = reading.confidence * min(reading.text.length, 12)
-
 class Reader(
     private val recognizer: Recognizer,
     private val settings: ScanSettings,
     private val known: (String) -> Boolean = { true },
 ) {
     @Volatile
-    private var remembered: Pair<Boolean, Boolean>? = null
+    private var orientation: Orientation? = null
+    private var weak = 0
 
-    private fun view(frame: Gray, rotation: Double): View {
-        val upright = abs(sin(rotation)) < 0.5
-        val width = if (upright) frame.width else frame.height
-        val height = if (upright) frame.height else frame.width
-        return View(frame, rotation, width, height)
+    private fun layout(frame: Gray, small: Gray, angle: Double, turned: Boolean): Layout {
+        val view =
+            View(frame, if (turned) angle + PI / 2 else angle, detectionScale(frame))
+        return Layout(view, findLines(view.render(small)).take(settings.lines), turned)
     }
 
-    private fun probe(option: Oriented, line: LineBox): Probe {
-        val crop = option.view.crop(line, option.flipped, PROBE_WIDTH)
-        return Probe(recognizer.read(crop, line.height), crop.width < PROBE_WIDTH)
+    private fun line(view: View, box: LineBox, flipped: Boolean): TextLine {
+        val reading = recognizer.read(view.crop(box, flipped))
+        val dots = view.dots(box, reading.positions, flipped)
+        return TextLine(reading.text, reading.confidence, box.height, dots)
     }
 
-    private fun quality(reading: Reading): Float {
-        val letters = tokenize(reading.text).sumOf {
+    private fun quality(lines: Collection<TextLine>) = lines.sumOf { line ->
+        val letters = tokenize(line.text).sumOf {
             if (it.length >= 3 && known(it)) it.length.toDouble() else it.length / 5.0
         }
-        return reading.confidence * min(letters.toFloat(), 12f)
+        line.confidence * min(letters, 12.0)
     }
 
-    private fun probed(option: Oriented, count: Int): Oriented {
-        val lines = option.lines.take(count)
-        val probes = parallel(lines) { option.probes[it] ?: probe(option, it) }
-        return Oriented(
-            option.view, option.lines, option.turned, option.flipped,
-            lines.zip(probes).toMap(), probes.sumOf { quality(it.reading).toDouble() },
+    private fun orient(frame: Gray, small: Gray, angle: Double): Choice {
+        val choices = listOf(false, true)
+            .map { layout(frame, small, angle, it) }
+            .flatMap { layout -> listOf(false, true).map { Choice(layout, it) } }
+        val probes = choices.flatMap { choice ->
+            choice.layout.lines.take(PROBED_LINES).map { choice to it }
+        }
+        val read = parallel(probes) { (choice, box) ->
+            box to line(choice.layout.view, box, choice.flipped)
+        }
+        val byChoice = probes.zip(read).groupBy({ it.first.first }, { it.second })
+        val best = choices.maxBy { choice ->
+            quality(byChoice[choice].orEmpty().map { it.second })
+        }
+        return Choice(best.layout, best.flipped, byChoice[best].orEmpty().toMap())
+    }
+
+    fun read(frame: Gray): List<TextLine> {
+        val small = frame.shrunk(detectionScale(frame))
+        if (sharpness(small) < settings.blur) return emptyList()
+        val angle = skew(small)
+        val current = orientation
+        val choice = if (current == null) {
+            orient(frame, small, angle)
+        } else {
+            Choice(layout(frame, small, angle, current.turned), current.flipped)
+        }
+        val boxes = choice.layout.lines
+        val lines = parallel(boxes) {
+            choice.read[it] ?: line(choice.layout.view, it, choice.flipped)
+        }
+        remember(Orientation(choice.layout.turned, choice.flipped), quality(lines))
+        return withoutRepeatedDots(
+            boxes.zip(lines).filter {
+                it.second.text.trim().length >=
+                    2
+            },
         )
     }
 
-    private fun layout(frame: Gray, angle: Double, turned: Boolean): List<Oriented> {
-        val view = view(frame, if (turned) angle + PI / 2 else angle)
-        val lines = findLines(view.render()).take(PROBED_LINES)
-        return listOf(false, true).map { flipped ->
-            Oriented(view, lines, turned, flipped)
+    private fun remember(chosen: Orientation, quality: Double) {
+        weak = if (quality >= MIN_QUALITY) 0 else weak + 1
+        orientation = when {
+            weak == 0 -> chosen
+            weak >= WEAK_FRAMES -> null.also { weak = 0 }
+            else -> orientation
         }
     }
 
-    private fun orient(frame: Gray): Oriented {
-        val angle = skew(frame)
-        val last = remembered
-        val turns = last?.let { listOf(it.first) } ?: listOf(false, true)
-        val best = turns.flatMap { layout(frame, angle, it) }
-            .filter { last == null || it.flipped == last.second }
-            .map { probed(it, ORIENTATION_LINES) }
-            .maxBy { it.quality }
-        remembered = (best.turned to best.flipped)
-            .takeIf { best.quality >= MIN_ORIENTATION_QUALITY }
-        return best
-    }
-
-    fun read(frame: Gray): List<Reading> {
-        if (sharpness(frame) < settings.blur) return emptyList()
-        val oriented = probed(orient(frame), PROBED_LINES)
-        val view = oriented.view
-        val chosen = oriented.probes.entries
-            .filter { it.value.reading.text.trim().length >= 2 }
-            .sortedByDescending { strength(it.value.reading) }
-            .take(settings.lines)
-        val read = parallel(chosen) { (line, probe) ->
-            line to (
-                probe.reading.takeIf { probe.complete }
-                    ?: recognizer.read(view.crop(line, oriented.flipped), line.height)
-                )
-        }
+    private fun withoutRepeatedDots(
+        lines: List<Pair<LineBox, TextLine>>,
+    ): List<TextLine> {
         val dotted = mutableListOf<LineBox>()
-        return read.map { (line, reading) ->
-            val overlaps = dotted.any { sameRow(line, it) }
-            dotted += line
-            val dots = view.dots(line, reading.positions, oriented.flipped)
-            val shown = if (overlaps) emptyList() else dots
-            with(reading) { Reading(text, confidence, height, positions, shown) }
+        return lines.map { (box, line) ->
+            val repeated = dotted.any { sameRow(box, it) }
+            dotted += box
+            if (repeated) TextLine(line.text, line.confidence, line.height) else line
         }
     }
 }
@@ -213,12 +223,12 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
     private val frequencies = LruCache<String, Int>(CACHE_SIZE)
     private val total = (catalogue.ranks?.works ?: catalogue.workCount).toDouble()
 
-    private fun words(readings: List<Reading>): List<Word> {
-        val tallest = readings.map { it.height }.sortedDescending().take(2)
-        return readings.flatMapIndexed { line, reading ->
-            val text = reading.text.replace(LETTER_GAP, "")
+    private fun words(lines: List<TextLine>): List<Word> {
+        val tallest = lines.map { it.height }.sortedDescending().take(2)
+        return lines.flatMapIndexed { index, line ->
+            val text = line.text.replace(LETTER_GAP, "")
             withoutStopPhrases(tokenize(text)).flatMap(::separated).map {
-                Word(it, reading.confidence, reading.height in tallest, line)
+                Word(it, line.confidence, line.height in tallest, index)
             }
         }
     }
@@ -257,13 +267,14 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
     }
 
     private fun buildProfile(work: Int, book: Book): BookProfile {
+        val authors = book.authors.take(2).map { tokenize(it.name) }
+        val named = authors.flatten().toSet()
         val titles = listOf(book.title, book.alternate)
             .filter { it.isNotBlank() }
             .map { title ->
                 val tokens = tokenize(mainTitle(title))
-                tokens.filter { it !in ARTICLES }.ifEmpty { tokens }
+                tokens.filter { it !in ARTICLES && it !in named }.ifEmpty { tokens }
             }
-        val authors = book.authors.take(2).map { tokenize(it.name) }
         val extra = tokenize(
             "${book.title} ${book.alternate} ${book.subtitle} " +
                 catalogue.series(work)?.name.orEmpty(),
@@ -332,8 +343,15 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
             }.toDouble() / prominent.size
         }
         val precision = precision(profile, words)
-        return title * (0.6 + 0.4 * author) * (0.25 + 0.75 * explained) *
-            (0.4 + 0.6 * precision) + POPULARITY_BONUS * profile.popularity * title
+        val information = profile.titles.maxOf { tokens ->
+            tokens.sumOf { weight(it) * best(it, words) }
+        }
+        val certainty =
+            min(1.0, (information + AUTHOR_INFORMATION * author) / CERTAIN_INFORMATION)
+        return certainty * (
+            title * (0.6 + 0.4 * author) * (0.25 + 0.75 * explained) *
+                (0.4 + 0.6 * precision) + POPULARITY_BONUS * profile.popularity * title
+            )
     }
 
     private fun precision(profile: BookProfile, words: List<Word>): Double {
@@ -357,8 +375,16 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
         return explained.sumOf(::weight) / total
     }
 
-    fun scores(readings: List<Reading>): Map<Int, Double> {
-        val words = words(readings)
+    private fun subsumed(profile: BookProfile, others: Collection<BookProfile?>) =
+        others.any { other ->
+            other != null && other.popularity > profile.popularity &&
+                profile.titles.any { title ->
+                    other.titles.any { it.size > title.size && it.containsAll(title) }
+                }
+        }
+
+    fun scores(lines: List<TextLine>): Map<Int, Double> {
+        val words = words(lines)
         if (words.isEmpty()) return emptyMap()
         val evidence = words.map { it.text }.distinct()
             .filter { it.length >= 3 && it !in ARTICLES && frequency(it) > 0 }
@@ -369,8 +395,10 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
         val best = supports.values.maxOrNull()?.takeIf { it > 0 } ?: 1.0
         return profiles
             .mapValues { (work, profile) ->
+                if (profile == null) return@mapValues 0.0
                 val relative = supports.getValue(work) / best
-                profile?.let { score(it, words) * relative } ?: 0.0
+                val shadow = if (subsumed(profile, profiles.values)) SUBSUMED else 1.0
+                score(profile, words) * relative * shadow
             }
             .filterValues { it > 0.05 }
             .entries
@@ -404,8 +432,6 @@ class StopRule(private val settings: ScanSettings) {
         return leader.takeIf { streak >= if (tapped) 1 else settings.frames }
     }
 }
-
-class Step(val work: Int?, val dots: List<Dot>)
 
 private val BARCODE_FORMATS = listOf(BarcodeFormat.EAN_13, BarcodeFormat.QR_CODE)
 private val BARCODE_HINTS = mapOf(
@@ -457,6 +483,10 @@ class BarcodeReader {
     }
 }
 
+class Look(val work: Int?, val lines: List<TextLine>, val scores: Map<Int, Double>)
+
+class Step(val work: Int?, val dots: List<Dot>)
+
 class Scanner(
     private val catalogue: Catalogue,
     searcher: Searcher,
@@ -472,21 +502,27 @@ class Scanner(
     private val rule = StopRule(settings)
     private val barcodes = BarcodeReader()
 
-    fun next(frame: Gray, tapped: Boolean = false): Step {
+    fun look(frame: Gray): Look {
         val scanned = barcodes.isbn(frame)?.let(::bookOfIsbn)
-        if (scanned != null) return Step(scanned.work, emptyList())
-        val readings = reader.read(frame)
-        val work = rule.update(matcher.scores(readings), tapped)
-        return Step(work, work?.let { matched(readings, it) }.orEmpty())
+        if (scanned != null) return Look(scanned.work, emptyList(), emptyMap())
+        val lines = reader.read(frame)
+        return Look(null, lines, matcher.scores(lines))
+    }
+
+    fun next(frame: Gray, tapped: Boolean = false): Step {
+        val look = look(frame)
+        if (look.work != null) return Step(look.work, emptyList())
+        val work = rule.update(look.scores, tapped) ?: return Step(null, emptyList())
+        return Step(work, matched(look.lines, work))
     }
 
     private fun bookOfIsbn(isbn: String) = catalogue.bookOfIsbn(isbn)
         ?: others().firstNotNullOfOrNull { it.bookOfIsbn(isbn) }
 
-    private fun matched(readings: List<Reading>, work: Int): List<Dot> {
+    private fun matched(lines: List<TextLine>, work: Int): List<Dot> {
         val words = identity(catalogue, work).filter { it.length >= 3 }
-        return readings.filter { reading ->
-            tokenize(reading.text.replace(LETTER_GAP, "")).any { token ->
+        return lines.filter { line ->
+            tokenize(line.text.replace(LETTER_GAP, "")).any { token ->
                 words.any { similarity(it, token) >= 0.75 }
             }
         }.flatMap { it.dots }
