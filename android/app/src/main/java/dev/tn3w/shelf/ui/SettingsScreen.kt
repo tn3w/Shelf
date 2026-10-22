@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import android.net.Uri
 import android.text.format.Formatter
 import androidx.annotation.Keep
@@ -27,7 +26,7 @@ import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -89,28 +88,52 @@ fun bytes(value: Long) = Formatter.formatShortFileSize(LocalContext.current, val
 
 typealias SettingsUpdate = ((Settings) -> Settings) -> Unit
 
-class SettingsViewModel(application: Application) : ShelfViewModel(application) {
-    val statuses = MutableStateFlow<Map<Int, Int>>(emptyMap())
-    val busy = MutableStateFlow<Set<Int>>(emptySet())
-    val refreshes = MutableStateFlow(0)
-    val release = MutableStateFlow<Release?>(null)
-    val completeLanguage = MutableStateFlow<String?>(null)
-    val csvProgress = MutableStateFlow<Float?>(null)
-    val csvReport = MutableStateFlow<CsvReport?>(null)
+enum class SettingsAction {
+    UpdateCheck,
+    CatalogueCheck,
+    CatalogueImport,
+    BackupExport,
+    BackupImport,
+    CsvImport,
+    CsvExport,
+}
 
-    fun runAction(action: Int, work: suspend () -> Int?) {
-        if (action in busy.value) return
-        busy.update { it + action }
-        statuses.update { it - action }
-        app.scope.launch(Dispatchers.IO) {
+class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    private val _statuses = MutableStateFlow<Map<SettingsAction, Int>>(emptyMap())
+    val statuses = _statuses.asStateFlow()
+    private val _busy = MutableStateFlow<Set<SettingsAction>>(emptySet())
+    val busy = _busy.asStateFlow()
+    private val _refreshes = MutableStateFlow(0)
+    val refreshes = _refreshes.asStateFlow()
+    private val _release = MutableStateFlow<Release?>(null)
+    val release = _release.asStateFlow()
+    private val _completeLanguage = MutableStateFlow<String?>(null)
+    val completeLanguage = _completeLanguage.asStateFlow()
+    private val _csvProgress = MutableStateFlow<Float?>(null)
+    val csvProgress = _csvProgress.asStateFlow()
+    private val _csvReport = MutableStateFlow<CsvReport?>(null)
+    val csvReport = _csvReport.asStateFlow()
+
+    private fun runAction(action: SettingsAction, work: suspend () -> Int?) {
+        if (action in _busy.value) return
+        _busy.update { it + action }
+        _statuses.update { it - action }
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                work()?.let { status -> statuses.update { it + (action to status) } }
+                work()?.let { status -> _statuses.update { it + (action to status) } }
             } finally {
-                busy.update { it - action }
-                refreshes.update { it + 1 }
+                _busy.update { it - action }
+                _refreshes.update { it + 1 }
             }
         }
     }
+
+    fun runFileAction(
+        action: SettingsAction,
+        @StringRes success: Int,
+        @StringRes failure: Int,
+        work: suspend () -> Boolean,
+    ) = runAction(action) { if (transfer { work() }) success else failure }
 
     fun systemLanguage() = app.systemLanguage()
 
@@ -132,20 +155,24 @@ class SettingsViewModel(application: Application) : ShelfViewModel(application) 
     }
 
     fun showUpdate(available: Release?) {
-        if (available == null) checkUpdate() else release.value = available
+        if (available == null) checkUpdate() else _release.value = available
     }
 
-    private fun checkUpdate() = runAction(R.string.app_name) {
+    fun dismissUpdate() {
+        _release.value = null
+    }
+
+    private fun checkUpdate() = runAction(SettingsAction.UpdateCheck) {
         runSuspendCatching { Updater.check(app) }.fold(
             onSuccess = { found ->
-                release.value = found
+                _release.value = found
                 R.string.up_to_date.takeIf { found == null }
             },
             onFailure = { R.string.update_failed },
         )
     }
 
-    fun checkCatalogue(language: String) = runAction(R.string.check_catalogue) {
+    fun checkCatalogue(language: String) = runAction(SettingsAction.CatalogueCheck) {
         runSuspendCatching {
             app.packs.refreshManifest()
             val now = System.currentTimeMillis()
@@ -156,20 +183,22 @@ class SettingsViewModel(application: Application) : ShelfViewModel(application) 
     }
 
     fun changeCatalogueSource(source: String) {
-        detached {
-            app.changeSource(source)
-            val offline = library.settings.first().isOffline(app)
-            if (!offline) runSuspendCatching { app.packs.refreshManifest() }
-            refreshes.update { it + 1 }
+        viewModelScope.launch {
+            detached {
+                app.changeSource(source)
+                val offline = library.settings.first().isOffline(app)
+                if (!offline) runSuspendCatching { app.packs.refreshManifest() }
+            }.join()
+            _refreshes.update { it + 1 }
         }
     }
 
     fun importCatalogue(language: String, uris: List<Uri>) =
-        runAction(R.string.import_catalogue) {
-            val imported = app.importCatalogue(language, uris)
+        runAction(SettingsAction.CatalogueImport) {
+            val imported = transfer { app.importCatalogue(language, uris) }
             val candidates = listOf(language) + (LANGUAGES - language)
             val complete = candidates.firstOrNull(app.packs::isComplete)
-            completeLanguage.value = complete
+            _completeLanguage.value = complete
             when {
                 !imported -> R.string.import_failed
                 complete == null -> R.string.catalogue_incomplete
@@ -187,17 +216,23 @@ class SettingsViewModel(application: Application) : ShelfViewModel(application) 
         return true
     }
 
-    fun importCsv(uri: Uri) = runAction(R.string.csv_import) {
-        csvProgress.value = 0f
-        val report = library.importCsv(uri, loaded.value) { csvProgress.value = it }
-        csvProgress.value = null
-        csvReport.value = report
+    fun importCsv(uri: Uri) = runAction(SettingsAction.CsvImport) {
+        val catalogue = loaded.value
+        val report = transfer({ _csvProgress.value = it }) { progress ->
+            library.importCsv(uri, catalogue, progress)
+        }
+        _csvProgress.value = null
+        _csvReport.value = report
         R.string.backup_failed.takeIf { report == null }
+    }
+
+    fun dismissCsvReport() {
+        _csvReport.value = null
     }
 }
 
 @Composable
-fun settingsViewModel(): SettingsViewModel = viewModel()
+fun settingsViewModel() = shelfViewModel(create = ::SettingsViewModel)
 
 @Composable
 fun loadedSettings(): Settings? {
@@ -678,8 +713,8 @@ private fun AboutRows() {
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val release by viewModel.release.collectAsStateWithLifecycle()
-    val checking = R.string.app_name in busy
-    val status = statuses[R.string.app_name]
+    val checking = SettingsAction.UpdateCheck in busy
+    val status = statuses[SettingsAction.UpdateCheck]
     val available = settings.availableUpdate?.takeIf(Updater::isAvailable)
     val version =
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
@@ -703,5 +738,5 @@ private fun AboutRows() {
     DATA_LICENSES.forEach { (title, url) ->
         LinkRow(stringResource(title)) { uri.openUri(url) }
     }
-    release?.let { UpdateDialog(it) { viewModel.release.value = null } }
+    release?.let { UpdateDialog(it, viewModel::dismissUpdate) }
 }

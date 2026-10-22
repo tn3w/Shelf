@@ -588,7 +588,7 @@ private class ZipBook(file: File) : Resources {
     fun stream(path: String) = bytes(path)?.inputStream()
 
     fun xml(path: String) =
-        bytes(path)?.let { Jsoup.parse(String(it), "", Parser.xmlParser()) }
+        stream(path)?.use { Jsoup.parse(it, null, "", Parser.xmlParser()) }
 
     fun tableOfContents(
         items: List<Element>,

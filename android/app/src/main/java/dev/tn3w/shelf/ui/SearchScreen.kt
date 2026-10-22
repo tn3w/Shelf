@@ -29,7 +29,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
@@ -65,9 +64,21 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
     )
 }
 
+class SearchViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    val trending = catalogueState { recommender.popular(8) }
+
+    fun remember(query: String) {
+        if (query.isNotBlank()) detached { library.remember(query) }
+    }
+
+    fun clearSearches() {
+        detached { library.clearSearches() }
+    }
+}
+
 @Composable
 fun SearchScreen(navigator: Navigator) {
-    val viewModel: LibraryViewModel = viewModel()
+    val viewModel = shelfViewModel(create = ::SearchViewModel)
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -78,7 +89,7 @@ fun SearchScreen(navigator: Navigator) {
     val library = viewModel.library
     val saved by library.saved.collectAsStateWithLifecycle(emptyList())
     val recent by library.recentSearches.collectAsStateWithLifecycle(emptyList())
-    val trending by load { recommender.popular(8) }
+    val trending by viewModel.trending.collectAsStateWithLifecycle()
     var addingOwn by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(query, loaded, filter) {

@@ -38,6 +38,7 @@ private fun BackupRows() {
     val viewModel = settingsViewModel()
     FileRow(
         R.string.backup_export,
+        SettingsAction.BackupExport,
         Icons.Outlined.Upload,
         CreateDocument("application/zip"),
         BACKUP_FILE,
@@ -47,31 +48,33 @@ private fun BackupRows() {
     )
     FileRow(
         R.string.backup_import,
+        SettingsAction.BackupImport,
         Icons.Outlined.Download,
         OpenDocument(),
         BACKUP_TYPES,
         R.string.backup_done,
-        action = viewModel::restoreBackup,
+        work = viewModel::restoreBackup,
     )
 }
 
 @Composable
 private fun <I> FileRow(
     @StringRes title: Int,
+    action: SettingsAction,
     icon: ImageVector,
     contract: ActivityResultContract<I, Uri?>,
     input: I,
     @StringRes success: Int,
     @StringRes failure: Int = R.string.backup_failed,
-    action: suspend (Uri) -> Boolean,
+    work: suspend (Uri) -> Boolean,
 ) {
     val viewModel = settingsViewModel()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
     val launcher = rememberLauncherForActivityResult(contract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        viewModel.runAction(title) { if (action(uri)) success else failure }
+        viewModel.runFileAction(action, success, failure) { work(uri) }
     }
-    ActionRow(title, icon, statuses[title]?.let { stringResource(it) }) {
+    ActionRow(title, icon, statuses[action]?.let { stringResource(it) }) {
         launcher.launch(input)
     }
 }
@@ -87,12 +90,13 @@ private fun CsvRows() {
     }
     val importStatus =
         progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
-            ?: statuses[R.string.csv_import]?.let { stringResource(it) }
+            ?: statuses[SettingsAction.CsvImport]?.let { stringResource(it) }
     ActionRow(
         R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
     ) { import.launch(arrayOf("*/*")) }
     FileRow(
         R.string.csv_export,
+        SettingsAction.CsvExport,
         Icons.Outlined.Upload,
         CreateDocument("text/csv"),
         CSV_FILE,
@@ -100,7 +104,7 @@ private fun CsvRows() {
         R.string.export_failed,
         viewModel.library::exportCsv,
     )
-    report?.let { CsvReportDialog(it) { viewModel.csvReport.value = null } }
+    report?.let { CsvReportDialog(it, viewModel::dismissCsvReport) }
 }
 
 @Composable

@@ -136,7 +136,7 @@ class InstallReceiver : BroadcastReceiver() {
             val confirmation = IntentCompat.getParcelableExtra(
                 intent, Intent.EXTRA_INTENT, Intent::class.java,
             )
-            app.installConfirmation.value = confirmation?.takeIf(::isInstallConfirmation)
+            app.confirmInstall(confirmation?.takeIf(::isInstallConfirmation))
             return
         }
         app.removeBundledCopies()

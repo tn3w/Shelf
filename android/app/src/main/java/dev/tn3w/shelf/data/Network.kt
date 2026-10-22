@@ -27,8 +27,13 @@ val json = Json {
 
 const val UPDATE_DELAY_MILLIS = 24L * 60 * 60 * 1000
 
-inline fun <T> runSuspendCatching(block: () -> T): Result<T> =
-    runCatching(block).onFailure { if (it is CancellationException) throw it }
+inline fun <T> runSuspendCatching(block: () -> T): Result<T> = try {
+    Result.success(block())
+} catch (exception: CancellationException) {
+    throw exception
+} catch (exception: Exception) {
+    Result.failure(exception)
+}
 
 @Serializable
 data class Asset(
@@ -78,6 +83,7 @@ class HttpException(val code: Int, url: String) : IOException("HTTP $code from $
 val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
+    .callTimeout(2, TimeUnit.MINUTES)
     .addInterceptor { chain ->
         val request = chain.request().newBuilder().header("User-Agent", USER_AGENT)
         chain.proceed(request.build())

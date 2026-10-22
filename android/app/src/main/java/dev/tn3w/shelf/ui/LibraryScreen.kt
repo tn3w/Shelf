@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -26,18 +25,25 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 
 private val ListColumnWidth = 360.dp
 
-class LibraryViewModel(application: Application) : ShelfViewModel(application) {
+class LibraryViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    val tagsByWork = combine(loaded.filterNotNull(), library.saved) { current, saved ->
+        saved.associate { it.work to current.catalogue.facts(it.work)?.tags?.toList() }
+    }.asState()
+    val catalogueTags = catalogueState { catalogue.tags }
+
     fun importFile(uri: Uri) {
-        detached { open(library.importFile(uri)) }
+        detached { app.open(library.importFile(uri)) }
     }
 
     fun addOwn(book: Book, shelf: Shelf, image: Uri?) {
@@ -46,33 +52,22 @@ class LibraryViewModel(application: Application) : ShelfViewModel(application) {
             library.place(book.copy(cover = cover), shelf)
         }
     }
-
-    fun dismiss(book: Book) {
-        detached { library.dismiss(book.work) }
-    }
-
-    fun remember(query: String) {
-        if (query.isNotBlank()) detached { library.remember(query) }
-    }
-
-    fun clearSearches() {
-        detached { library.clearSearches() }
-    }
 }
 
 @Composable
+fun libraryViewModel() = shelfViewModel(create = ::LibraryViewModel)
+
+@Composable
 fun LibraryScreen(navigator: Navigator) {
-    val viewModel: LibraryViewModel = viewModel()
+    val viewModel = libraryViewModel()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(null)
     val settings = loadedSettings()
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf<Shelf?>(null) }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
-    val tagsByWork by load(saved) {
-        saved.orEmpty().associate { it.work to catalogue.facts(it.work)?.tags?.toList() }
-    }
-    val catalogueTags by load { catalogue.tags }
+    val tagsByWork by viewModel.tagsByWork.collectAsStateWithLifecycle()
+    val catalogueTags by viewModel.catalogueTags.collectAsStateWithLifecycle()
     val tagLists = tagsByWork?.values?.filterNotNull().orEmpty()
     val genres = (facets(tagLists) + listOfNotNull(tag))
         .distinct()
@@ -277,7 +272,7 @@ private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
-    val viewModel: LibraryViewModel = viewModel()
+    val viewModel = libraryViewModel()
     val title = rememberTextFieldState(query.trim())
     val author = rememberTextFieldState()
     var shelf by rememberSaveable { mutableStateOf(Shelf.Reading) }

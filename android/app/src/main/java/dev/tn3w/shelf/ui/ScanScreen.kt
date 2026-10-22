@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.SystemClock
 import android.util.Size
+import androidx.annotation.StringRes
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
 import androidx.camera.core.ImageAnalysis
@@ -42,9 +43,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.*
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -65,49 +66,78 @@ private val ANALYSIS_SIZE = ResolutionSelector.Builder()
     )
     .build()
 
-private class Marks(val dots: List<Dot>, val width: Float, val height: Float)
+class Marks(val dots: List<Dot>, val width: Float, val height: Float)
 
-private class Found(val book: Book, val frame: Bitmap?, val marks: Marks)
+class Found(val book: Book, val frame: Bitmap?, val marks: Marks)
+
+class ScanViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    private val attempts = MutableStateFlow(0)
+    val scanner = combine(
+        loaded.filterNotNull(),
+        flow {
+            emit(recognizer)
+        },
+        attempts, ::Triple,
+    )
+        .map { (current, model) ->
+            Scanner(current.catalogue, current.searcher, model) { current.others }
+        }
+        .asState()
+    var found by mutableStateOf<Found?>(null)
+        private set
+    var frozen by mutableStateOf<Found?>(null)
+        private set
+    var failure by mutableStateOf<Int?>(null)
+        private set
+
+    fun show(work: Int, frame: Bitmap?, marks: Marks): Boolean {
+        val book = loaded.value?.book(work) ?: return false
+        found = Found(book, frame, marks).also { frozen = it }
+        return true
+    }
+
+    fun unfreeze() {
+        frozen = null
+    }
+
+    fun fail(@StringRes message: Int) {
+        failure = message
+    }
+
+    fun scanAgain() {
+        found = null
+        attempts.update { it + 1 }
+    }
+}
 
 @Composable
 fun ScanScreen(navigator: Navigator) {
-    val viewModel = shelfViewModel()
-    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
-    val recognizer by produceState<Recognizer?>(null) {
-        value = withContext(Dispatchers.IO) { viewModel.recognizer }
-    }
-    var found by remember { mutableStateOf<Found?>(null) }
-    var frozen by remember { mutableStateOf<Found?>(null) }
-    var attempt by remember { mutableIntStateOf(0) }
-    var failure by remember { mutableStateOf<Int?>(null) }
+    val viewModel = shelfViewModel(create = ::ScanViewModel)
+    val scanner by viewModel.scanner.collectAsStateWithLifecycle()
+    val found = viewModel.found
     val haptics = LocalHapticFeedback.current
-    val current = loaded
-    val model = recognizer
+    val current = scanner
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if (found == null && current != null && model != null) {
-            val scanner = remember(attempt, current, model) {
-                Scanner(current.catalogue, current.searcher, model) { current.others }
-            }
-            key(scanner) {
+        if (found == null && current != null) {
+            key(current) {
                 CameraPreview(
-                    analyze = scanner::next,
-                    onFailed = { failure = it },
-                    onShown = { frozen = null },
+                    analyze = current::next,
+                    onFailed = viewModel::fail,
+                    onShown = viewModel::unfreeze,
                 ) { work, frame, marks ->
-                    val book = current.book(work) ?: return@CameraPreview
+                    if (!viewModel.show(work, frame, marks)) return@CameraPreview
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    found = Found(book, frame, marks).also { frozen = it }
                 }
             }
         }
-        frozen?.let { Frozen(it) }
+        viewModel.frozen?.let { Frozen(it) }
         Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
             BackBar(navigator::back)
         }
         if (found == null) {
             Text(
-                stringResource(failure ?: R.string.scan_hint),
+                stringResource(viewModel.failure ?: R.string.scan_hint),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
@@ -117,12 +147,7 @@ fun ScanScreen(navigator: Navigator) {
             )
         }
     }
-    found?.let {
-        ScanSheet(it.book, navigator) {
-            found = null
-            attempt++
-        }
-    }
+    found?.let { ScanSheet(it.book, navigator, viewModel::scanAgain) }
 }
 
 @Composable

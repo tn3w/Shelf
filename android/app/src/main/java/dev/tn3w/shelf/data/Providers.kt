@@ -7,6 +7,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -41,9 +42,12 @@ private const val OFFER_LIMIT = 5
 private const val CANDIDATE_LIMIT = 8
 const val MAX_BOOK_BYTES = 200L * 1024 * 1024
 const val DOWNLOAD_MINUTES = 2L
-val downloadClient by lazy {
-    http.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
-}
+val downloadClient by lazy { http.forDownloads() }
+
+fun OkHttpClient.forDownloads() = newBuilder()
+    .readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES)
+    .callTimeout(0, TimeUnit.MINUTES)
+    .build()
 private val FORM = "application/x-www-form-urlencoded".toMediaType()
 private const val MAX_PAGE_BYTES = 5L * 1024 * 1024
 private val REGEX_TIME = 2.seconds
@@ -312,9 +316,7 @@ data class Provider(
         }.build()
     }
 
-    private val downloads by lazy {
-        client.newBuilder().readTimeout(DOWNLOAD_MINUTES, TimeUnit.MINUTES).build()
-    }
+    private val downloads by lazy { client.forDownloads() }
 
     private suspend fun request(
         client: OkHttpClient,
@@ -579,7 +581,8 @@ data class Imported(val added: List<Recipe>, val total: Int)
 class Sources(private val context: Context) {
     private val file = context.filesDir.resolve(SOURCES_FILE)
     private val writing = Mutex()
-    val own = MutableStateFlow(read())
+    private val _own = MutableStateFlow(read())
+    val own = _own.asStateFlow()
     val bundled by lazy {
         context.assets.list(BUNDLED_SOURCES).orEmpty().sorted().map { name ->
             val text = context.assets.open("$BUNDLED_SOURCES/$name")
@@ -610,13 +613,13 @@ class Sources(private val context: Context) {
     }
 
     suspend fun export(uri: Uri) =
-        context.writeTo(uri) { it.write(recipesText(own.value).toByteArray()) }
+        context.writeTo(uri) { it.write(recipesText(_own.value).toByteArray()) }
 
     private suspend fun write(change: (List<Recipe>) -> List<Recipe>) = writing.withLock {
         withContext(Dispatchers.IO) {
-            val next = change(own.value)
+            val next = change(_own.value)
             replaceFile(file) { it.writeText(json.encodeToString(next)) }
-            own.value = next
+            _own.value = next
         }
     }
 }

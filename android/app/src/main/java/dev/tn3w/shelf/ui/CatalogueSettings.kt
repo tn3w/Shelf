@@ -111,8 +111,8 @@ private fun CatalogueCheck(language: String) {
     ActionRow(
         R.string.check_catalogue,
         Icons.Outlined.Refresh,
-        statuses[R.string.check_catalogue]?.let { stringResource(it) },
-        R.string.check_catalogue in busy,
+        statuses[SettingsAction.CatalogueCheck]?.let { stringResource(it) },
+        SettingsAction.CatalogueCheck in busy,
     ) { viewModel.checkCatalogue(language) }
 }
 
@@ -189,7 +189,7 @@ fun SourceRows(language: String, settings: Settings) {
     ActionRow(
         R.string.import_catalogue,
         Icons.Outlined.FileOpen,
-        statuses[R.string.import_catalogue]?.let { stringResource(it) },
+        statuses[SettingsAction.CatalogueImport]?.let { stringResource(it) },
     ) { picker.launch(arrayOf("*/*")) }
     SOURCE_FIELDS.firstOrNull { it.title == editing }?.let { field ->
         SourceDialog(field, field.current(settings), onDismiss = { editing = null }) {

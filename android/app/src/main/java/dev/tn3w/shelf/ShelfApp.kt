@@ -6,7 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.LocaleList
 import android.util.Log
-import android.widget.Toast
+import androidx.annotation.StringRes
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -15,6 +15,7 @@ import dev.tn3w.shelf.cover.CoverFetcher
 import dev.tn3w.shelf.cover.CoverKeyer
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
@@ -37,11 +38,19 @@ class ShelfApp :
     private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }
     val canScan get() = BuildConfig.BUNDLED_SCAN_MODEL || scanCopy.exists()
     val recognizer by lazy { Recognizer(scanModel()) }
-    val loaded = MutableStateFlow<Loaded?>(null)
-    val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
+    private val _loaded = MutableStateFlow<Loaded?>(null)
+    val loaded = _loaded.asStateFlow()
+    private val _downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
+    val downloads = _downloads.asStateFlow()
     private val downloadJobs = ConcurrentHashMap<String, Job>()
-    val openedWork = MutableStateFlow<Int?>(null)
-    val installConfirmation = MutableStateFlow<Intent?>(null)
+    private val _openedWork = MutableStateFlow<Int?>(null)
+    val openedWork = _openedWork.asStateFlow()
+    private val _installConfirmation = MutableStateFlow<Intent?>(null)
+    val installConfirmation = _installConfirmation.asStateFlow()
+    private val _activeTransfers = MutableStateFlow(0)
+    val activeTransfers = _activeTransfers.asStateFlow()
+    private val _messages = Channel<Int>(Channel.BUFFERED)
+    val messages = _messages.receiveAsFlow()
 
     override fun onCreate() {
         super.onCreate()
@@ -110,25 +119,35 @@ class ShelfApp :
             }
             next.catalogue.warmUp()
             ensureActive()
-            loaded.value = next
+            _loaded.value = next
             library.redirect(next.catalogue::alias)
+        }
+    }
+
+    fun <T> transfer(work: suspend CoroutineScope.() -> T) = scope.async(Dispatchers.IO) {
+        val first = _activeTransfers.getAndUpdate { it + 1 } == 0
+        if (first) TransferService.start(this@ShelfApp)
+        try {
+            work()
+        } finally {
+            _activeTransfers.update { it - 1 }
         }
     }
 
     fun download(language: String, pack: String) {
         val key = "$language-$pack"
-        if (!downloads.claim(key)) return
-        downloadJobs[key] = scope.launch(Dispatchers.IO) {
+        if (!_downloads.claim(key)) return
+        downloadJobs[key] = transfer {
             runSuspendCatching {
                 packs.download(language, pack) { progress ->
-                    downloads.update { it + (key to Download.Running(progress)) }
+                    _downloads.update { it + (key to Download.Running(progress)) }
                 }
             }
                 .onSuccess {
-                    downloads.update { it - key }
+                    _downloads.update { it - key }
                     if (loaded.value?.catalogue?.language == language) reload(language)
                 }
-                .onFailure { downloads.update { it + (key to Download.Failed) } }
+                .onFailure { _downloads.update { it + (key to Download.Failed) } }
         }
     }
 
@@ -139,7 +158,7 @@ class ShelfApp :
                     (pack == null && it.startsWith("$language-"))
             }
             stopped.forEach { downloadJobs.remove(it)?.cancelAndJoin() }
-            downloads.update { it - stopped.toSet() }
+            _downloads.update { it - stopped.toSet() }
             packs.remove(language.takeUnless { everywhere }, pack)
             reload(language)
         }
@@ -152,13 +171,24 @@ class ShelfApp :
     }
 
     fun openFile(uri: Uri) = scope.launch {
-        val work = uri.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
-            ?.let { library.importFile(it) }
-        if (work != null) openedWork.value = work else showUnsupported()
+        val content = uri.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
+        open(content?.let { library.importFile(it) })
     }
 
-    suspend fun showUnsupported() = withContext(Dispatchers.Main) {
-        Toast.makeText(this@ShelfApp, R.string.unsupported_file, Toast.LENGTH_LONG).show()
+    fun open(work: Int?) {
+        if (work != null) _openedWork.value = work else show(R.string.unsupported_file)
+    }
+
+    fun consumeOpenedWork() {
+        _openedWork.value = null
+    }
+
+    fun show(@StringRes message: Int) {
+        _messages.trySend(message)
+    }
+
+    fun confirmInstall(intent: Intent?) {
+        _installConfirmation.value = intent
     }
 
     suspend fun importCatalogue(language: String, uris: List<Uri>): Boolean {

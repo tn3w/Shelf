@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -22,28 +21,47 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-private data class Details(
+data class Details(
     val book: Book,
     val description: Description,
     val tags: List<Pair<Int, String>>,
 )
 
-private data class Related(
+data class Related(
     val series: Pair<String, List<Book>>?,
     val byAuthor: List<Book>,
     val similar: List<Book>,
 )
 
-class BookViewModel(application: Application) : ShelfViewModel(application) {
-    val instant = MutableStateFlow<Float?>(null)
-    val offers = MutableStateFlow<Map<Offer, Download>>(emptyMap())
+class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
+    private val _instant = MutableStateFlow<Float?>(null)
+    val instant = _instant.asStateFlow()
+    private val _offers = MutableStateFlow<Map<Offer, Download>>(emptyMap())
+    val offers = _offers.asStateFlow()
+    val details = catalogueState {
+        val source = catalogueOf(work) ?: return@catalogueState null
+        val book = source.book(work) ?: return@catalogueState null
+        val tags = book.tags.mapNotNull { id ->
+            source.tags.getOrNull(id)?.let { id to it.label }
+        }
+        Details(book, source.description(work), tags)
+    }
+    val related = catalogueState {
+        val found = book(work) ?: return@catalogueState null
+        Related(
+            recommender.series(found),
+            recommender.byAuthor(found),
+            recommender.similar(found),
+        )
+    }
 
     fun changeCover(book: Book, shelf: Shelf?, image: Uri) {
         detached {
@@ -57,7 +75,7 @@ class BookViewModel(application: Application) : ShelfViewModel(application) {
     }
 
     fun import(book: Book, uri: Uri) {
-        detached { open(book.work.takeIf { library.importBook(book, uri) }) }
+        detached { app.open(book.work.takeIf { library.importBook(book, uri) }) }
     }
 
     fun instantProvider(settings: Settings): Provider? {
@@ -66,14 +84,14 @@ class BookViewModel(application: Application) : ShelfViewModel(application) {
     }
 
     fun downloadInstantly(book: Book, settings: Settings) {
-        if (instant.value != null) return
-        instant.value = 0f
-        detached {
+        if (_instant.value != null) return
+        _instant.value = 0f
+        viewModelScope.launch {
             val offer = instantOffer(book, settings)
-            val done =
-                offer != null && library.download(book, offer) { instant.value = it }
-            instant.value = null
-            if (done) open(book.work) else toast(R.string.free_books_failed)
+            val done = offer != null &&
+                transfer({ _instant.value = it }) { library.download(book, offer, it) }
+            _instant.value = null
+            if (done) app.open(book.work) else app.show(R.string.free_books_failed)
         }
     }
 
@@ -86,44 +104,31 @@ class BookViewModel(application: Application) : ShelfViewModel(application) {
     }
 
     fun download(book: Book, offer: Offer) {
-        if (offers.value.values.any { it is Download.Running }) return
+        if (_offers.value.values.any { it is Download.Running }) return
         fun report(progress: Float) =
-            offers.update { it + (offer to Download.Running(progress)) }
+            _offers.update { it + (offer to Download.Running(progress)) }
         report(0f)
-        detached {
-            val done = library.download(book, offer, ::report)
-            offers.update { if (done) it - offer else it + (offer to Download.Failed) }
-            if (done) open(book.work)
+        viewModelScope.launch {
+            val done = transfer(::report) { library.download(book, offer, it) }
+            _offers.update { if (done) it - offer else it + (offer to Download.Failed) }
+            if (done) app.open(book.work)
         }
     }
 }
 
 @Composable
 fun BookScreen(work: Int, origin: String, navigator: Navigator) {
-    val saved by shelfViewModel().library.saved.collectAsStateWithLifecycle(emptyList())
-    val details by load(work) {
-        val source = catalogueOf(work) ?: return@load null
-        val book = source.book(work) ?: return@load null
-        val tags = book.tags.mapNotNull { id ->
-            source.tags.getOrNull(id)?.let { id to it.label }
-        }
-        Details(book, source.description(work), tags)
-    }
+    val viewModel = shelfViewModel { BookViewModel(it, work) }
+    val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
+    val details by viewModel.details.collectAsStateWithLifecycle()
+    val related by viewModel.related.collectAsStateWithLifecycle()
     val entry = saved.firstOrNull { it.work == work }
     val book = details?.book ?: entry?.toBook()
-    val related by load(work) {
-        val found = book(work) ?: return@load null
-        Related(
-            recommender.series(found),
-            recommender.byAuthor(found),
-            recommender.similar(found),
-        )
-    }
 
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { BackBar(navigator::back) }
         if (book == null) return@LazyColumn
-        item { BookHeader(book, entry?.shelf, origin, navigator) }
+        item { BookHeader(book, entry?.shelf, origin, navigator, viewModel) }
         val tags = details?.tags.orEmpty()
         if (tags.isNotEmpty()) item { TagFlow(tags, navigator) }
         val description = details?.description?.takeIf { it.text.isNotBlank() }
@@ -167,8 +172,13 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
 }
 
 @Composable
-private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Navigator) {
-    val viewModel: BookViewModel = viewModel()
+private fun BookHeader(
+    book: Book,
+    shelf: Shelf?,
+    origin: String,
+    navigator: Navigator,
+    viewModel: BookViewModel,
+) {
     val progress by viewModel.library.progress.collectAsStateWithLifecycle(emptyMap())
     val position = progress[book.work]
     val hasFile by produceState(true, position) {
@@ -226,7 +236,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             Modifier.padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ReadButton(book, position, hasFile, online, navigator)
+            ReadButton(book, position, hasFile, online, navigator, viewModel)
             ShelfToggle(
                 shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
@@ -250,7 +260,7 @@ private fun BookHeader(book: Book, shelf: Shelf?, origin: String, navigator: Nav
             }
         }
     }
-    if (findFree && !hasFile) FreeBookSheet(book) { findFree = false }
+    if (findFree && !hasFile) FreeBookSheet(book, viewModel) { findFree = false }
     if (confirmDelete) {
         DeleteDialog(book, onDismiss = { confirmDelete = false }) {
             viewModel.delete(book)
@@ -266,8 +276,8 @@ private fun ReadButton(
     hasFile: Boolean,
     online: Boolean,
     navigator: Navigator,
+    viewModel: BookViewModel,
 ) {
-    val viewModel: BookViewModel = viewModel()
     val settings = loadedSettings()
     val download by viewModel.instant.collectAsStateWithLifecycle()
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->

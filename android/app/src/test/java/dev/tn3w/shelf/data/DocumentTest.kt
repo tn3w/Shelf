@@ -283,6 +283,23 @@ class DocumentTest {
     }
 
     @Test
+    fun epubHonoursDeclaredEncoding() {
+        val opf = """
+            <?xml version="1.0" encoding="windows-1251"?>
+            <package><metadata><dc:title>Привет мир</dc:title></metadata></package>
+        """.trimIndent()
+        val container = """
+            <container><rootfiles><rootfile full-path="content.opf"/></rootfiles></container>
+        """
+        val entries = mapOf(
+            "META-INF/container.xml" to container.toByteArray(),
+            "content.opf" to opf.toByteArray(charset("windows-1251")),
+        )
+        val book = zip(folder.newFile("russian.epub"), entries)
+        assertEquals("Привет мир", readMetadata(book)?.title)
+    }
+
+    @Test
     fun emptyFilesOpenWithoutContent() {
         listOf("empty.txt", "empty.html", "empty.fb2").forEach { name ->
             val document = openDocument(folder.newFile(name)) as TextDocument

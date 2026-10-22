@@ -371,7 +371,8 @@ class Packs(private val context: Context) {
     private suspend fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->
             val digest = MessageDigest.getInstance("SHA-256")
-            DigestInputStream(http.fetch(entry.url).stream, digest).use { input ->
+            val response = downloadClient.fetch(entry.url)
+            DigestInputStream(response.stream, digest).use { input ->
                 temporary.outputStream().use { output ->
                     copyWithProgress(input, output) { bytes ->
                         check(bytes <= entry.size) { "${entry.id} is larger than listed" }

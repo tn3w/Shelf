@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import android.text.format.DateUtils
 import android.text.format.DateUtils.MINUTE_IN_MILLIS
 import androidx.compose.foundation.layout.*
@@ -13,32 +12,41 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.*
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-class UpdateViewModel(application: Application) : ShelfViewModel(application) {
-    val progress = MutableStateFlow<Float?>(null)
-    val failure = MutableStateFlow<Int?>(null)
-    val committed = MutableStateFlow(false)
+class UpdateViewModel(app: ShelfApp, private val release: Release, language: String) :
+    ShelfViewModel(app) {
+    private val _progress = MutableStateFlow<Float?>(null)
+    val progress = _progress.asStateFlow()
+    private val _failure = MutableStateFlow<Int?>(null)
+    val failure = _failure.asStateFlow()
+    private val _committed = MutableStateFlow(false)
+    val committed = _committed.asStateFlow()
+    val notes = flow {
+        val url = release.changelogUrl(language) ?: return@flow
+        emit(runSuspendCatching { fetchText(url).trim() }.getOrDefault(""))
+    }.asState()
 
-    fun install(release: Release) {
-        if (progress.value != null) return
-        progress.value = 0f
-        detached {
+    fun install() {
+        if (_progress.value != null) return
+        _progress.value = 0f
+        viewModelScope.launch {
             val result = runSuspendCatching {
-                Updater.install(app, release) { progress.value = it }
+                transfer({ _progress.value = it }) { Updater.install(app, release, it) }
             }
-            failure.value = when (result.exceptionOrNull()) {
+            _failure.value = when (result.exceptionOrNull()) {
                 null -> null
                 is ReleaseChanged -> R.string.update_changed
                 else -> R.string.update_failed
             }
-            committed.value = result.isSuccess
-            progress.value = null
+            _committed.value = result.isSuccess
+            _progress.value = null
         }
     }
 }
@@ -57,26 +65,23 @@ fun relativeTime(time: Long, now: Long) =
 
 @Composable
 fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
-    val viewModel: UpdateViewModel = viewModel(key = release.tag)
+    val language = LocalConfiguration.current.locales[0].language
+    val viewModel = shelfViewModel(release.tag) { UpdateViewModel(it, release, language) }
     val progress by viewModel.progress.collectAsStateWithLifecycle()
     val failure by viewModel.failure.collectAsStateWithLifecycle()
     val committed by viewModel.committed.collectAsStateWithLifecycle()
     val now = currentMillis()
     val waiting = now < release.readyAt
-    val language = LocalConfiguration.current.locales[0].language
-    val notes by produceState("", release, language) {
-        val url = release.changelogUrl(language) ?: return@produceState
-        value = runSuspendCatching { fetchText(url).trim() }.getOrDefault("")
-    }
+    val notes by viewModel.notes.collectAsStateWithLifecycle()
     LaunchedEffect(committed) { if (committed) onDismiss() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.update_available, release.version)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (notes.isNotEmpty()) {
+                notes?.takeIf { it.isNotEmpty() }?.let {
                     Text(
-                        notes,
+                        it,
                         modifier = Modifier.weight(1f, fill = false)
                             .verticalScroll(rememberScrollState()),
                     )
@@ -92,7 +97,7 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
         confirmButton = {
             Button(
                 enabled = progress == null,
-                onClick = { viewModel.install(release) },
+                onClick = viewModel::install,
             ) {
                 val label = if (waiting) R.string.install_anyway else R.string.install
                 Text(stringResource(label))

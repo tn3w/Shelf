@@ -26,7 +26,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -98,8 +97,7 @@ fun ProviderSwitch(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FreeBookSheet(book: Book, onDismiss: () -> Unit) {
-    val viewModel: BookViewModel = viewModel()
+fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
     val (settings, update) = rememberSettings() ?: return
     var choosing by rememberSaveable { mutableStateOf(settings.providers.isEmpty()) }
     val language = viewModel.bookLanguage(settings)
@@ -117,7 +115,7 @@ fun FreeBookSheet(book: Book, onDismiss: () -> Unit) {
                 if (isbns == null) {
                     LoadingBar()
                 } else {
-                    Offers(book, query, enabled, settings.onlineCovers)
+                    Offers(book, query, enabled, settings.onlineCovers, viewModel)
                 }
                 return@Column
             }
@@ -188,8 +186,8 @@ private fun Offers(
     query: Query,
     providers: List<Provider>,
     covers: Boolean,
+    viewModel: BookViewModel,
 ) {
-    val viewModel: BookViewModel = viewModel()
     val downloads by viewModel.offers.collectAsStateWithLifecycle()
     val results = remember { mutableStateMapOf<Provider, Result<List<Offer>>>() }
     val attempts = remember { mutableStateMapOf<Provider, Int>() }

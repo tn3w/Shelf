@@ -18,10 +18,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.format.TextStyle
 
@@ -29,25 +32,36 @@ private val HOME_TAGS =
     listOf("fantasy", "mystery", "classics", "science-fiction", "romance")
 private val Flame = Color(0xFFFF9600)
 
+class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    val rows = combine(loaded.filterNotNull(), library.saved, library.dismissed, ::Triple)
+        .map { (current, saved, dismissed) ->
+            current.recommender.rows(saved, session, dismissed)
+        }
+        .asState()
+    val missing = catalogueState { catalogue.workCount == 0 }
+    val genres = catalogueState {
+        HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
+            .map { it to recommender.popular(12, it.id) }
+    }
+
+    fun dismiss(book: Book) {
+        detached { library.dismiss(book.work) }
+    }
+}
+
 @Composable
 fun HomeScreen(navigator: Navigator) {
-    val viewModel: LibraryViewModel = viewModel()
+    val viewModel = shelfViewModel(create = ::HomeViewModel)
     val library = viewModel.library
     val saved by library.saved.collectAsStateWithLifecycle(null)
     val progress by library.progress.collectAsStateWithLifecycle(emptyMap())
     val habit by library.habit.collectAsStateWithLifecycle(null)
     val settings by library.settings.collectAsStateWithLifecycle(Settings())
-    val dismissed by library.dismissed.collectAsStateWithLifecycle(emptySet())
     val scope = rememberCoroutineScope()
-    val rows by load(saved, dismissed) {
-        saved?.let { recommender.rows(it, viewModel.session, dismissed) }
-    }
-    val missing by load { catalogue.workCount == 0 }
+    val rows by viewModel.rows.collectAsStateWithLifecycle()
+    val missing by viewModel.missing.collectAsStateWithLifecycle()
     fun dismiss(book: Book) = viewModel.dismiss(book)
-    val genres by load {
-        HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
-            .map { it to recommender.popular(12, it.id) }
-    }
+    val genres by viewModel.genres.collectAsStateWithLifecycle()
     val reading = saved.orEmpty().filter { it.shelf == Shelf.Reading }
     val want = saved.orEmpty().filter { it.shelf == Shelf.Want }.map { it.toBook() }
 

@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
@@ -25,9 +24,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.BuildConfig
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -46,22 +45,28 @@ private val EDITOR_MODES = mapOf(
     true to R.string.free_books_file,
 )
 
-class SourcesViewModel(application: Application) : ShelfViewModel(application) {
-    val imported = MutableStateFlow<Result<Imported>?>(null)
-    val exportFailed = MutableStateFlow(false)
-    val lines = MutableStateFlow<List<String>>(emptyList())
-    val running = MutableStateFlow(false)
-    val report = MutableStateFlow<String?>(null)
-    val reportStatus = MutableStateFlow<Int?>(null)
+class SourcesViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    private val _imported = MutableStateFlow<Result<Imported>?>(null)
+    val imported = _imported.asStateFlow()
+    private val _exportFailed = MutableStateFlow(false)
+    val exportFailed = _exportFailed.asStateFlow()
+    private val _lines = MutableStateFlow<List<String>>(emptyList())
+    val lines = _lines.asStateFlow()
+    private val _running = MutableStateFlow(false)
+    val running = _running.asStateFlow()
+    private val _report = MutableStateFlow<String?>(null)
+    val report = _report.asStateFlow()
+    private val _reportStatus = MutableStateFlow<Int?>(null)
+    val reportStatus = _reportStatus.asStateFlow()
 
     fun import(uri: Uri) {
-        detached {
-            imported.value = runSuspendCatching { checkNotNull(sources.import(uri)) }
+        viewModelScope.launch {
+            _imported.value = runSuspendCatching { checkNotNull(sources.import(uri)) }
         }
     }
 
     fun export(uri: Uri) {
-        detached { exportFailed.value = !sources.export(uri) }
+        viewModelScope.launch { _exportFailed.value = !sources.export(uri) }
     }
 
     fun save(initial: Recipe, ready: Recipe) {
@@ -81,31 +86,34 @@ class SourcesViewModel(application: Application) : ShelfViewModel(application) {
     }
 
     fun test(recipe: Recipe, query: Query, debug: Boolean) {
-        running.value = true
-        reportStatus.value = null
-        lines.value = emptyList()
+        _running.value = true
+        _reportStatus.value = null
+        _lines.value = emptyList()
         viewModelScope.launch {
-            trace(recipe, query, debug).collect { line -> lines.update { it + line } }
-            running.value = false
-            if (debug) report.value = debugReport(recipe, query, lines.value)
+            trace(recipe, query, debug).collect { line -> _lines.update { it + line } }
+            _running.value = false
+            if (debug) _report.value = debugReport(recipe, query, _lines.value)
         }
     }
 
     fun saveReport(uri: Uri?) {
-        val text = report.value ?: return
-        report.value = null
+        val text = _report.value ?: return
+        _report.value = null
         if (uri == null) return
-        detached {
+        viewModelScope.launch {
             val done = app.writeTo(uri) { it.write(text.toByteArray()) }
-            reportStatus.value =
+            _reportStatus.value =
                 if (done) R.string.free_books_debug_saved else R.string.export_failed
         }
     }
 }
 
 @Composable
+private fun sourcesViewModel() = shelfViewModel(create = ::SourcesViewModel)
+
+@Composable
 fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) {
-    val viewModel: SourcesViewModel = viewModel()
+    val viewModel = sourcesViewModel()
     val recipes by viewModel.sources.own.collectAsStateWithLifecycle()
     val imported by viewModel.imported.collectAsStateWithLifecycle()
     val exportFailed by viewModel.exportFailed.collectAsStateWithLifecycle()
@@ -149,7 +157,7 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
 
 @Composable
 private fun RecipeEditor(initial: Recipe, onClose: () -> Unit) {
-    val viewModel: SourcesViewModel = viewModel()
+    val viewModel = sourcesViewModel()
     var recipe by rememberSaveable(stateSaver = jsonSaver()) { mutableStateOf(initial) }
     var text by rememberSaveable { mutableStateOf(initial.toText()) }
     var asFile by rememberSaveable { mutableStateOf(false) }
@@ -513,7 +521,7 @@ private fun Problem(text: String) = Hint(text, color = MaterialTheme.colorScheme
 
 @Composable
 private fun TestPanel(recipe: Recipe?) {
-    val viewModel: SourcesViewModel = viewModel()
+    val viewModel = sourcesViewModel()
     val settings = loadedSettings() ?: return
     val offline = settings.isOffline(LocalContext.current)
     val sampleTitle = stringResource(R.string.free_books_test_title)

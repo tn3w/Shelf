@@ -1,20 +1,18 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
-import android.widget.Toast
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.Saver
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.serializer
 
-open class ShelfViewModel(application: Application) : AndroidViewModel(application) {
-    protected val app = application as ShelfApp
+open class ShelfViewModel(protected val app: ShelfApp) : ViewModel() {
     val library = app.library
     val loaded = app.loaded
     val sources = app.sources
@@ -44,20 +42,34 @@ open class ShelfViewModel(application: Application) : AndroidViewModel(applicati
         return isbnsFor(book, own, editions)
     }
 
-    protected suspend fun open(work: Int?) {
-        if (work != null) app.openedWork.value = work else app.showUnsupported()
-    }
-
     protected fun detached(block: suspend CoroutineScope.() -> Unit) =
         app.scope.launch(block = block)
 
-    protected suspend fun toast(@StringRes text: Int) = withContext(Dispatchers.Main) {
-        Toast.makeText(app, text, Toast.LENGTH_SHORT).show()
+    protected suspend fun <T> transfer(
+        onProgress: (Float) -> Unit = {},
+        work: suspend (onProgress: (Float) -> Unit) -> T,
+    ): T = coroutineScope {
+        val progress = MutableStateFlow(0f)
+        val result = app.transfer { work { progress.value = it } }
+        val watcher = launch { progress.collect(onProgress) }
+        result.await().also { watcher.cancel() }
     }
+
+    protected fun <T> Flow<T>.asState(): StateFlow<T?> = flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    protected fun <T> catalogueState(block: suspend Loaded.() -> T) =
+        loaded.filterNotNull().map { it.block() }.asState()
 }
 
 @Composable
-fun shelfViewModel(): ShelfViewModel = viewModel()
+inline fun <reified T : ViewModel> shelfViewModel(
+    key: String? = null,
+    crossinline create: (ShelfApp) -> T,
+): T = viewModel(key = key) { create(this[APPLICATION_KEY] as ShelfApp) }
+
+@Composable
+fun shelfViewModel() = shelfViewModel(create = ::ShelfViewModel)
 
 inline fun <reified T> jsonSaver() = Saver<T, String>(
     save = { json.encodeToString(serializer<T>(), it) },

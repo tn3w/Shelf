@@ -9,8 +9,10 @@ import androidx.compose.ui.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 
 private val SECTIONS = listOf(
@@ -19,17 +21,37 @@ private val SECTIONS = listOf(
     "topic" to R.string.topics,
 )
 
-@Composable
-fun ExploreScreen(navigator: Navigator) {
-    val popular by load { recommender.popular(16) }
-    val tags by load {
+class ExploreViewModel(app: ShelfApp) : ShelfViewModel(app) {
+    val popular = catalogueState { recommender.popular(16) }
+    val tags = catalogueState {
         catalogue.tags
             .filter { catalogue.tagCount(it.id) > 0 }
             .sortedByDescending { catalogue.tagCount(it.id) }
             .groupBy { it.category }
     }
+    val missing = catalogueState { catalogue.workCount == 0 }
+}
 
-    val missing by load { catalogue.workCount == 0 }
+class TagViewModel(app: ShelfApp, id: Int) : ShelfViewModel(app) {
+    val tag = catalogueState { catalogue.tags.getOrNull(id) }
+    val books = catalogueState { recommender.popular(90, id) }
+}
+
+class SeriesViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
+    val series = catalogueState { book(work)?.let(recommender::series) }
+}
+
+class AuthorViewModel(app: ShelfApp, author: Author) : ShelfViewModel(app) {
+    val groups = catalogueState { recommender.authorShelf(author) }
+    val born = catalogueState { catalogue.authorBorn(author) }
+}
+
+@Composable
+fun ExploreScreen(navigator: Navigator) {
+    val viewModel = shelfViewModel(create = ::ExploreViewModel)
+    val popular by viewModel.popular.collectAsStateWithLifecycle()
+    val tags by viewModel.tags.collectAsStateWithLifecycle()
+    val missing by viewModel.missing.collectAsStateWithLifecycle()
 
     LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
         item { LargeTitle(stringResource(R.string.explore)) }
@@ -100,8 +122,9 @@ private fun TagChips(tags: List<Tag>, navigator: Navigator) {
 
 @Composable
 fun TagScreen(id: Int, navigator: Navigator) {
-    val tag by load(id) { catalogue.tags.getOrNull(id) }
-    val books by load(id) { recommender.popular(90, id) }
+    val viewModel = shelfViewModel { TagViewModel(it, id) }
+    val tag by viewModel.tag.collectAsStateWithLifecycle()
+    val books by viewModel.books.collectAsStateWithLifecycle()
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(navigator::back, tag?.label.orEmpty())
         BookGrid(books, "tag-$id", navigator::book)
@@ -110,7 +133,8 @@ fun TagScreen(id: Int, navigator: Navigator) {
 
 @Composable
 fun SeriesScreen(work: Int, navigator: Navigator) {
-    val series by load(work) { book(work)?.let(recommender::series) }
+    val series by shelfViewModel { SeriesViewModel(it, work) }.series
+        .collectAsStateWithLifecycle()
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(navigator::back)
         BookGrid(series?.second, "series-$work", navigator::book) {
@@ -137,8 +161,9 @@ private fun SeriesHeader(name: String, count: Int) {
 
 @Composable
 fun AuthorScreen(author: Author, navigator: Navigator) {
-    val groups by load(author) { recommender.authorShelf(author) }
-    val born by load(author) { catalogue.authorBorn(author) }
+    val viewModel = shelfViewModel { AuthorViewModel(it, author) }
+    val groups by viewModel.groups.collectAsStateWithLifecycle()
+    val born by viewModel.born.collectAsStateWithLifecycle()
     val count = groups?.sumOf { it.books.size }
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(navigator::back)

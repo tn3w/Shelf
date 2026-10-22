@@ -40,7 +40,6 @@ import coil3.compose.AsyncImage
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.cover.*
 import dev.tn3w.shelf.data.*
-import kotlinx.coroutines.*
 import kotlin.math.min
 
 val ScreenPadding = 20.dp
@@ -51,15 +50,6 @@ private val GridTileWidth = 96.dp
 @OptIn(ExperimentalSharedTransitionApi::class)
 val LocalSharedScope = compositionLocalOf<SharedTransitionScope?> { null }
 val LocalAnimatedScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
-
-@Composable
-fun <T> load(vararg keys: Any?, block: suspend Loaded.() -> T): State<T?> {
-    val loaded by shelfViewModel().loaded.collectAsStateWithLifecycle()
-    return produceState<T?>(null, loaded, *keys) {
-        val current = loaded ?: return@produceState
-        value = withContext(Dispatchers.IO) { current.block() }
-    }
-}
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable

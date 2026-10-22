@@ -1,6 +1,5 @@
 package dev.tn3w.shelf.ui
 
-import android.app.Application
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -26,15 +25,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.toRoute
 import coil3.compose.AsyncImage
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
-import dev.tn3w.shelf.ReaderRoute
+import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -56,9 +52,7 @@ sealed interface Opened {
     data object Failed : Opened
 }
 
-class ReaderViewModel(application: Application, handle: SavedStateHandle) :
-    ShelfViewModel(application) {
-    private val work = handle.toRoute<ReaderRoute>().work
+class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app) {
     private val opening = app.scope.async(Dispatchers.IO) {
         runSuspendCatching {
             val progress = library.progress.first().getValue(work)
@@ -84,6 +78,9 @@ class ReaderViewModel(application: Application, handle: SavedStateHandle) :
         }
     }
 }
+
+@Composable
+private fun readerViewModel(work: Int) = shelfViewModel { ReaderViewModel(it, work) }
 
 @Immutable
 private data class ReaderState(
@@ -140,7 +137,7 @@ internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
 
 @Composable
 fun ReaderScreen(work: Int, navigator: Navigator) {
-    val viewModel: ReaderViewModel = viewModel()
+    val viewModel = readerViewModel(work)
     val settings by viewModel.library.settings.collectAsStateWithLifecycle(Settings())
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val title = saved.firstOrNull { it.work == work }?.title.orEmpty()
@@ -408,7 +405,7 @@ private fun Pages(
     save: (Int) -> Progress,
     page: @Composable (Int) -> Unit,
 ) {
-    val viewModel: ReaderViewModel = viewModel()
+    val viewModel = readerViewModel(state.work)
     val scope = rememberCoroutineScope()
     var chrome by viewModel::chrome
     var showChapters by viewModel::showChapters

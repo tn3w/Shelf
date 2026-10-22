@@ -289,6 +289,8 @@
     <string name="free_books_none">No match</string>
     <string name="free_books_unreachable">Not reachable</string>
     <string name="free_books_failed">Download failed</string>
+    <string name="transfers">Downloads and imports</string>
+    <string name="transfer_running">Finishing download or import</string>
     <string name="free_books_no_source">No chosen source has books in this language.</string>
     <string name="free_books_rights">Public domain differs by country. Check your local laws.</string>
     <string name="free_ebook">Free ebook</string>
