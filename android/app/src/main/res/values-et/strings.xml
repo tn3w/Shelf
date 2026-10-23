@@ -27,7 +27,7 @@
     <string name="continue_reading">Jätka lugemist</string>
     <string name="core_offline">Populaarseimad raamatud töötavad kohe ka võrguühenduseta.</string>
     <string name="core_required">Shelfi kasutamiseks on vaja põhikataloogi. Midagi ei laadita alla enne, kui klõpsad „Laadi alla“.</string>
-    <string name="cover_of">Raamatu kas: %s</string>
+    <string name="cover_of">Raamatu kaas: %s</string>
     <string name="daily_goal">Päeva eesmärk</string>
     <string name="daily_goal_hint">Mitu lehekülge päevas lugeda, et seeria jätkuks. 0 peidab vidina.</string>
     <string name="download">Laadi alla</string>
