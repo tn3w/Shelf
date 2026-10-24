@@ -26,7 +26,7 @@
     <string name="continue_percent">Jätka · %d%%</string>
     <string name="continue_reading">Jätka lugemist</string>
     <string name="core_offline">Populaarseimad raamatud töötavad kohe ka võrguühenduseta.</string>
-    <string name="core_required">Shelfi kasutamiseks on vaja põhikataloogi. Midagi ei laadita alla enne, kui klõpsad „Laadi alla“.</string>
+    <string name="core_required">Shelfi kasutamiseks on vaja põhikataloogi. Midagi ei laadita alla enne, kui puudutad „Laadi alla“.</string>
     <string name="cover_of">Raamatu kaas: %s</string>
     <string name="daily_goal">Päeva eesmärk</string>
     <string name="daily_goal_hint">Mitu lehekülge päevas lugeda, et seeria jätkuks. 0 peidab vidina.</string>
@@ -106,7 +106,7 @@
     <string name="topics">Teemad</string>
     <string name="trending">Trendis</string>
     <string name="unsupported_file">Faili tugi puudub. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML vorminguid.</string>
-    <string name="up_to_date">Shelf on uuendatud.</string>
+    <string name="up_to_date">Shelf on ajakohane.</string>
     <string name="update_available">Shelf %s on saadaval</string>
     <string name="update_failed">Uuendamine ebaõnnestus.</string>
     <string name="update_install_failed">Uuendamine ebaõnnestus. %s</string>
