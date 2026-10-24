@@ -7,12 +7,12 @@
     <string name="audience">Vanuserühm</string>
     <string name="back">Tagasi</string>
     <string name="backup">Varukoopia</string>
-    <string name="backup_hint">Salvesta riiulid, edenemine, seaded ja imporditud raamatufailid zip-faili.</string>
+    <string name="backup_hint">Salvesta riiulid, edenemine, seadistused ja imporditud raamatufailid zip-faili.</string>
     <string name="backup_export">Ekspordi faili</string>
     <string name="backup_import">Impordi failist</string>
-    <string name="backup_done">Raamatukogu ühendatud.</string>
+    <string name="backup_done">Raamatukogu on ühendatud.</string>
     <string name="backup_failed">Seda faili ei saanud kasutada.</string>
-    <string name="backup_exported">Varukoopia salvestatud.</string>
+    <string name="backup_exported">Varukoopia on salvestatud.</string>
     <string name="export_failed">Seda faili ei saanud kirjutada.</string>
     <string name="born">Sündinud %d</string>
     <string name="catalogue">Kataloog</string>
@@ -27,7 +27,7 @@
     <string name="continue_reading">Jätka lugemist</string>
     <string name="core_offline">Populaarseimad raamatud töötavad kohe ka võrguühenduseta.</string>
     <string name="core_required">Shelfi kasutamiseks on vaja põhikataloogi. Midagi ei laadita alla enne, kui puudutad „Laadi alla“.</string>
-    <string name="cover_of">Raamatu %s kaas</string>
+    <string name="cover_of">Raamatu kaas: %s</string>
     <string name="daily_goal">Päeva eesmärk</string>
     <string name="daily_goal_hint">Mitu lehekülge päevas lugeda, et seeria jätkuks. 0 peidab vidina.</string>
     <string name="download">Laadi alla</string>
@@ -39,7 +39,7 @@
     <string name="for_you_subtitle">Sinu raamatukogu põhjal.</string>
     <string name="formats">Raamatutüübid</string>
     <string name="genres">Žanrid</string>
-    <string name="goal_reached">Päeva eesmärk täidetud. Homseni!</string>
+    <string name="goal_reached">Päeva eesmärk on täidetud. Homseni!</string>
     <string name="home">Avaleht</string>
     <string name="import_to_start">Alustamiseks impordi fail</string>
     <string name="install">Paigalda</string>
@@ -105,7 +105,7 @@
     <string name="theme_system">Süsteem</string>
     <string name="topics">Teemad</string>
     <string name="trending">Trendis</string>
-    <string name="unsupported_file">Toetamata fail. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML.</string>
+    <string name="unsupported_file">Fail pole toetatud. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML.</string>
     <string name="up_to_date">Shelf on ajakohane.</string>
     <string name="update_available">Shelf %s on saadaval</string>
     <string name="update_failed">Uuendamine ebaõnnestus.</string>
@@ -288,7 +288,7 @@
     <string name="free_books_sources">Allikad</string>
     <string name="free_books_none">Vastet pole</string>
     <string name="free_books_unreachable">Pole kättesaadav</string>
-    <string name="free_books_failed">Allalaadimine ebaõnnestus</string>
+    <string name="free_books_failed">Allalaadimine ei õnnestunud</string>
     <string name="free_books_no_source">Ühelgi valitud allikal pole selles keeles raamatuid.</string>
     <string name="free_books_rights">Avalik omand erineb riigiti. Kontrolli kohalikke seadusi.</string>
     <string name="free_ebook">Tasuta e-raamat</string>
@@ -328,4 +328,6 @@
     </plurals>
     <string name="free_books_debug">Silumistest</string>
     <string name="free_books_debug_saved">Silumislogi salvestatud</string>
+    <string name="transfers">Allalaadimised ja importimised</string>
+    <string name="transfer_running">Allalaadimise või importimise lõpetamine</string>
 </resources>
