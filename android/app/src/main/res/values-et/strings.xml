@@ -105,7 +105,7 @@
     <string name="theme_system">Süsteem</string>
     <string name="topics">Teemad</string>
     <string name="trending">Trendis</string>
-    <string name="unsupported_file">Faili tugi puudub. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML vorminguid.</string>
+    <string name="unsupported_file">Fail pole toetatud. Proovi EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT või HTML.</string>
     <string name="up_to_date">Shelf on ajakohane.</string>
     <string name="update_available">Shelf %s on saadaval</string>
     <string name="update_failed">Uuendamine ebaõnnestus.</string>
@@ -329,5 +329,5 @@
     <string name="free_books_debug">Silumistest</string>
     <string name="free_books_debug_saved">Silumislogi salvestatud</string>
     <string name="transfers">Allalaadimised ja importimised</string>
-    <string name="transfer_running">Lõpetan allalaadimist või importimist</string>
+    <string name="transfer_running">Allalaadimise või importimise lõpetamine</string>
 </resources>
