@@ -53,10 +53,16 @@ jobs:
           sudo install -d -o "$USER" /mnt/dumps
           for name in reading-log ratings authors covers_metadata editions works; do
             echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
-          done | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 8 \
-            --split 16 --max-connection-per-server 16 --min-split-size 64M \
-            --max-tries 20 --retry-wait 5 --file-allocation none \
-            --console-log-level warn --summary-interval 60
+          done > dumps.txt
+          for attempt in 1 2 3 4 5; do
+            aria2c --input-file dumps.txt --dir /mnt/dumps --max-concurrent-downloads 8 \
+              --split 16 --max-connection-per-server 16 --min-split-size 64M \
+              --max-tries 20 --retry-wait 5 --file-allocation none --continue \
+              --auto-file-renaming=false --console-log-level warn \
+              --summary-interval 60 && break
+            [ "$attempt" = 5 ] && exit 1
+            sleep $((attempt * 30))
+          done
           du -sh /mnt/dumps
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -159,10 +165,15 @@ jobs:
             --pattern "state-$LANGUAGE.bin" --pattern "translations-$LANGUAGE.bin" \
             --pattern manifest.json &
           aria() {
-            aria2c --dir /mnt/dumps --max-concurrent-downloads 8 --split 16 \
-              --max-connection-per-server 16 --min-split-size 64M --max-tries 20 \
-              --retry-wait 5 --file-allocation none --console-log-level warn \
-              --summary-interval 60 "$@"
+            for attempt in 1 2 3 4 5; do
+              aria2c --dir /mnt/dumps --max-concurrent-downloads 8 --split 16 \
+                --max-connection-per-server 16 --min-split-size 64M --max-tries 20 \
+                --retry-wait 5 --file-allocation none --continue \
+                --auto-file-renaming=false --console-log-level warn \
+                --summary-interval 60 "$@" && return
+              sleep $((attempt * 30))
+            done
+            return 1
           }
           stream() {
             curl -sSfL --retry 10 --retry-all-errors -o "/mnt/dumps/$1" "$2"
