@@ -197,8 +197,8 @@ jobs:
               library="libris=/mnt/dumps/libris-instances.ndjsonld.gz"
               library="$library,/mnt/dumps/libris-persons.ndjsonld.gz" ;;
             pl)
-              aria https://data.bn.org.pl/db/networks/bibs-ksiazka.marc \
-                https://data.bn.org.pl/db/networks/bibs-e_book.marc
+              stream bibs-ksiazka.marc https://data.bn.org.pl/db/networks/bibs-ksiazka.marc
+              stream bibs-e_book.marc https://data.bn.org.pl/db/networks/bibs-e_book.marc
               library="bnp=/mnt/dumps/bibs-ksiazka.marc"
               library="$library --library bnp=/mnt/dumps/bibs-e_book.marc" ;;
             cs)
