@@ -1,0 +1,6 @@
+• Uudet katalogit: ruotsi, puola, tšekki, korea ja suomi, maiden kansalliskirjastoista
+• Sovellus nyt myös ruotsiksi, puolaksi, tšekiksi, koreaksi ja suomeksi
+• Ranskankielinen katalogi kasvaa yli 600 000 kirjaan Ranskan kansalliskirjaston ansiosta
+• Uusi katalogin kielen valinta
+• Kevyempi sovellus: vain englanti mukana, muut katalogit ladataan ensimmäisellä käynnistyksellä
+• Haku ymmärtää puolan, tšekin ja korean kirjaimet

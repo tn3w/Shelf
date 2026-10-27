@@ -1,6 +1,8 @@
 mod catalog;
 mod dumps;
 mod libraries;
+mod linked;
+mod marc;
 mod release;
 mod segment;
 mod tags;
@@ -17,8 +19,9 @@ use std::process::Command;
 use std::thread;
 use translations::{Request, Translations};
 
-pub const LANGUAGES: [&str; 5] = ["en", "de", "fr", "es", "et"];
+pub const LANGUAGES: [&str; 10] = ["en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi"];
 pub const LANGUAGE_COUNT: usize = LANGUAGES.len();
+pub type Built = [bool; LANGUAGE_COUNT];
 const BUDGET_BYTES: usize = 75_000_000;
 const CORE_BYTES: usize = 3_000_000;
 const CORE_WORKS: usize = 20_000;
@@ -38,6 +41,15 @@ struct Options {
     translator: Option<String>,
     base_url: String,
     libraries: Vec<(Source, String)>,
+    built: Built,
+    dump: Option<PathBuf>,
+}
+
+pub fn language_index(code: &str) -> usize {
+    LANGUAGES
+        .iter()
+        .position(|&known| known == code)
+        .unwrap_or_else(|| panic!("unknown language {code}"))
 }
 
 fn usage() -> ! {
@@ -45,7 +57,8 @@ fn usage() -> ! {
         "usage: builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
-         [--base-url <url>] [--library dnb|erb=<file-or-url>]"
+         [--base-url <url>] [--languages en,de,...] [--dump <dir>] \
+         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf=<file>[,<file>]]"
     );
     std::process::exit(2)
 }
@@ -73,6 +86,18 @@ fn library(argument: Option<String>) -> (Source, String) {
     (source, location.to_string())
 }
 
+fn languages(argument: Option<String>) -> Built {
+    let Some(list) = argument else { usage() };
+    let mut built = [false; LANGUAGE_COUNT];
+    for code in list.split(',') {
+        let Some(index) = LANGUAGES.iter().position(|&known| known == code) else {
+            usage()
+        };
+        built[index] = true;
+    }
+    built
+}
+
 fn directory(argument: Option<String>) -> PathBuf {
     PathBuf::from(argument.unwrap_or_else(|| usage()))
 }
@@ -80,9 +105,10 @@ fn directory(argument: Option<String>) -> PathBuf {
 fn options() -> Options {
     let mut arguments = std::env::args().skip(1);
     let (mut rebase, mut previous, mut month) = (false, None, None);
-    let (mut translations, mut requests, mut translator) = (None, None, None);
+    let (mut translations, mut requests, mut translator, mut dump) = (None, None, None, None);
     let mut base_url = release::RELEASE_URL.to_string();
     let mut libraries = Vec::new();
+    let mut built = [true; LANGUAGE_COUNT];
     let mut positional = Vec::new();
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
@@ -94,6 +120,8 @@ fn options() -> Options {
             "--month" => month = Some(release_label(arguments.next())),
             "--base-url" => base_url = arguments.next().unwrap_or_else(|| usage()),
             "--library" => libraries.push(library(arguments.next())),
+            "--languages" => built = languages(arguments.next()),
+            "--dump" => dump = Some(directory(arguments.next())),
             _ => positional.push(argument),
         }
     }
@@ -111,6 +139,8 @@ fn options() -> Options {
         translator,
         base_url: base_url.trim_end_matches('/').to_string(),
         libraries,
+        built,
+        dump,
     }
 }
 
@@ -129,6 +159,7 @@ struct Job<'a> {
     sources: Option<&'a Path>,
     translator: Option<&'a str>,
     aliases: &'a [(u32, u32)],
+    dump: Option<&'a Path>,
 }
 
 #[derive(Clone, Copy)]
@@ -383,6 +414,38 @@ fn delta<'a>(
     (changed, tombstones)
 }
 
+fn dump_works(job: &Job, placed: &[Placed]) {
+    let Some(directory) = job.dump else {
+        return;
+    };
+    let name = |&author: &u32| job.authors.get(author).map_or("", |known| known.name);
+    let rows: Vec<String> = placed
+        .iter()
+        .map(|&Placed { pack, work, book }| {
+            let authors: Vec<&str> = work.authors.iter().map(name).collect();
+            let series = work.series.map_or(String::new(), |(series, order)| {
+                format!("{} #{order}", series.name)
+            });
+            let score = book.scores[job.language];
+            [
+                work.id.to_string(),
+                format!("{score:.0}"),
+                PACKS[pack as usize].to_string(),
+                work.title.to_string(),
+                work.alternate.to_string(),
+                authors.join("; "),
+                series,
+                work.year.to_string(),
+                work.isbns.len().to_string(),
+            ]
+            .join("\t")
+        })
+        .collect();
+    let file = directory.join(format!("{}.tsv", LANGUAGES[job.language]));
+    std::fs::create_dir_all(directory).expect("create dump directory");
+    std::fs::write(file, rows.join("\n") + "\n").expect("write dump");
+}
+
 fn ranks(job: &Job, placed: &[Placed]) -> Vec<u8> {
     let rows: Vec<Popularity> = placed
         .iter()
@@ -448,6 +511,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
         .map(|(pack, bytes)| publish(job, PACKS[pack], bytes))
         .collect();
     published.push(publish(job, "ranks", &ranks(job, &placed)));
+    dump_works(job, &placed);
     let state = State {
         base: job.base.to_string(),
         works: tracked,
@@ -490,8 +554,9 @@ fn main() {
     std::fs::create_dir_all(&options.output).expect("create output directory");
     let states: Vec<Option<State>> = LANGUAGES
         .iter()
-        .map(|language| {
-            let directory = options.previous.as_ref()?;
+        .zip(options.built)
+        .map(|(language, built)| {
+            let directory = options.previous.as_ref().filter(|_| built)?;
             State::load(&directory.join(format!("state-{language}.bin")))
         })
         .collect();
@@ -508,7 +573,7 @@ fn main() {
         thread::scope(|scope| {
             let signals = scope.spawn(|| dumps::signals(&options.source));
             let authors = scope.spawn(|| dumps::authors(&options.source));
-            let editions = scope.spawn(|| dumps::editions(&options.source));
+            let editions = scope.spawn(|| dumps::editions(&options.source, &options.built));
             let library = scope.spawn(|| Library::load(&options.libraries));
             (
                 signals.join().expect("signals"),
@@ -526,6 +591,7 @@ fn main() {
         sticky: &sticky,
         titles: &titles,
         library: &library,
+        built: &options.built,
     };
     let works = dumps::works(&options.source, &context);
     drop((signals, facts, shapes));
@@ -545,12 +611,15 @@ fn main() {
     }
     let loaded: Vec<Translations> = LANGUAGES
         .iter()
-        .map(|language| match &options.translations {
-            Some(directory) => {
-                Translations::load(&directory.join(format!("translations-{language}.bin")))
-            }
-            None => Translations::default(),
-        })
+        .zip(options.built)
+        .map(
+            |(language, built)| match options.translations.as_ref().filter(|_| built) {
+                Some(directory) => {
+                    Translations::load(&directory.join(format!("translations-{language}.bin")))
+                }
+                None => Translations::default(),
+            },
+        )
         .collect();
 
     let enriched: Vec<usize> = options
@@ -558,7 +627,9 @@ fn main() {
         .iter()
         .map(|(source, _)| source.language())
         .collect();
-    let mut order: Vec<usize> = (0..LANGUAGES.len()).collect();
+    let mut order: Vec<usize> = (0..LANGUAGES.len())
+        .filter(|&language| options.built[language])
+        .collect();
     order.sort_by_key(|language| enriched.contains(language));
     let mut renamed = vec![Vec::new(); LANGUAGES.len()];
     let mut rebased = [false; LANGUAGE_COUNT];
@@ -602,6 +673,7 @@ fn main() {
             sources: options.translations.as_deref(),
             translator: options.translator.as_deref(),
             aliases: &aliases,
+            dump: options.dump.as_deref(),
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;
@@ -624,5 +696,6 @@ fn main() {
         &rebased,
         &published,
         &options.base_url,
+        &options.built,
     );
 }

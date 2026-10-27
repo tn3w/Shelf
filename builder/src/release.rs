@@ -1,7 +1,7 @@
 use crate::catalog::{Entry, MAX_SERIES_MEMBERS, is_mostly_latin, series_key, tokenize};
 use crate::dumps::Book;
 use crate::tags;
-use crate::{LANGUAGE_COUNT, LANGUAGES};
+use crate::{Built, LANGUAGES};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -406,21 +406,22 @@ fn manifest_entry(output: &Path, published: &Published, base_url: &str) -> Value
     })
 }
 
-fn is_kept(entry: &Value, rebased: &[bool; LANGUAGE_COUNT]) -> bool {
+fn is_kept(entry: &Value, rebased: &Built, built: &Built) -> bool {
     let language = entry["language"].as_str().unwrap_or_default();
     let Some(index) = LANGUAGES.iter().position(|&known| known == language) else {
         return false;
     };
-    !rebased[index] && entry["pack"] != "ranks"
+    built[index] && !rebased[index] && entry["pack"] != "ranks"
 }
 
 pub fn write_manifest(
     previous: Option<&Path>,
     output: &Path,
     month: &str,
-    rebased: &[bool; LANGUAGE_COUNT],
+    rebased: &Built,
     published: &[Published],
     base_url: &str,
+    built: &Built,
 ) {
     let previous: Option<Value> = previous
         .and_then(|directory| std::fs::read(directory.join("manifest.json")).ok())
@@ -430,7 +431,7 @@ pub fn write_manifest(
         .and_then(|manifest| manifest["segments"].as_array())
         .into_iter()
         .flatten()
-        .filter(|entry| is_kept(entry, rebased))
+        .filter(|entry| is_kept(entry, rebased, built))
         .cloned();
     let fresh = published
         .iter()

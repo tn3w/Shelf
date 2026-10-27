@@ -37,19 +37,24 @@ val ARTICLES =
     setOf("the", "a", "an", "der", "die", "das", "le", "la", "les", "el", "los", "las")
 private val ARTICLE = Regex("^(${ARTICLES.joinToString("|")}) ")
 private val TITLE_BREAK = Regex("[:;(/]")
+private val HANGUL = '\uac00'..'\ud7a3'
 
 private val FOLD = buildMap {
     listOf(
-        "áàâäãåÁÀÂÄÃÅ" to 'a',
-        "éèêëÉÈÊË" to 'e',
+        "áàâäãåąÁÀÂÄÃÅĄ" to 'a',
+        "éèêëęěÉÈÊËĘĚ" to 'e',
         "íìîïÍÌÎÏ" to 'i',
         "óòôöõøÓÒÔÖÕØ" to 'o',
-        "úùûüÚÙÛÜ" to 'u',
-        "ñÑ" to 'n',
-        "çÇ" to 'c',
+        "úùûüůÚÙÛÜŮ" to 'u',
+        "ñńňÑŃŇ" to 'n',
+        "çćčÇĆČ" to 'c',
         "ýÿÝ" to 'y',
-        "ßšŠ" to 's',
-        "žŽ" to 'z',
+        "ßšśŠŚ" to 's',
+        "žźżŽŹŻ" to 'z',
+        "łľĺŁĽĹ" to 'l',
+        "řŕŘŔ" to 'r',
+        "ďĎ" to 'd',
+        "ťŤ" to 't',
     )
         .forEach { (characters, replacement) ->
             characters.forEach { put(it, replacement) }
@@ -59,6 +64,7 @@ private val FOLD = buildMap {
 private fun foldCharacter(character: Char): Char? {
     val lowered = if (character.code < 128) character.lowercaseChar() else character
     if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
+    if (character in HANGUL) return character
     return FOLD[character]
 }
 

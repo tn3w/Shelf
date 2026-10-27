@@ -22,6 +22,16 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
 
 @Composable
+fun installedLanguages(): Set<String> {
+    val viewModel = settingsViewModel()
+    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
+    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
+    return produceState(emptySet(), loaded, downloads.size) {
+        value = viewModel.installedLanguages()
+    }.value
+}
+
+@Composable
 fun packInfos(language: String): List<PackInfo>? {
     val viewModel = settingsViewModel()
     val loaded by viewModel.loaded.collectAsStateWithLifecycle()
@@ -44,9 +54,11 @@ fun CatalogueSettings() {
         stringResource(R.string.catalogue_language),
         stringResource(R.string.book_language_hint),
     ) {
-        LanguageChoice(settings.language) { chosen ->
-            update { it.copy(language = chosen) }
-        }
+        LanguageChips(
+            listOf("") + LANGUAGES,
+            settings.language,
+            installed = installedLanguages(),
+        ) { chosen -> update { it.copy(language = chosen) } }
     }
 
     PackList(language, packs, settings.isOffline(LocalContext.current))
@@ -157,17 +169,36 @@ private val DIGAR_COVER_SOURCE = SourceField(
     ::isValidCoverSource,
 ) { source -> updateSettings { it.copy(digarCoverSource = source) } }
 
-private val SOURCE_FIELDS =
-    listOf(CATALOGUE_SOURCE, COVER_SOURCE, DNB_COVER_SOURCE, DIGAR_COVER_SOURCE)
+private val BOOKBITES_COVER_SOURCE = SourceField(
+    R.string.bookbites_cover_source,
+    R.string.bookbites_cover_source_hint,
+    BOOKBITES_COVERS,
+    Settings::bookbitesCoverSource,
+    ::isValidCoverSource,
+) { source -> updateSettings { it.copy(bookbitesCoverSource = source) } }
+
+private val SOURCE_FIELDS = listOf(
+    CATALOGUE_SOURCE,
+    COVER_SOURCE,
+    DNB_COVER_SOURCE,
+    DIGAR_COVER_SOURCE,
+    BOOKBITES_COVER_SOURCE,
+)
 
 private val LIBRARY_COVER_SOURCES = mapOf(
     "de" to DNB_COVER_SOURCE,
     "et" to DIGAR_COVER_SOURCE,
+    "sv" to BOOKBITES_COVER_SOURCE,
 )
 
 private val LIBRARY_NOTES = mapOf(
     "de" to R.string.dnb_note,
     "et" to R.string.erb_note,
+    "sv" to R.string.libris_note,
+    "pl" to R.string.bnp_note,
+    "cs" to R.string.nkp_note,
+    "ko" to R.string.nlk_note,
+    "fi" to R.string.fennica_note,
 )
 
 @Composable

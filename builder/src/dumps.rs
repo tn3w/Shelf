@@ -1,13 +1,13 @@
-use crate::LANGUAGE_COUNT;
 use crate::catalog::{self, Traits};
 use crate::libraries::Library;
 use crate::release;
 use crate::tags::{self, Classes};
+use crate::{Built, LANGUAGE_COUNT};
 use flate2::read::{DeflateDecoder, MultiGzDecoder};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufReader, Read};
+use std::io::{self, BufReader, Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
 use std::sync::mpsc::{self, SyncSender};
@@ -219,7 +219,24 @@ fn unzipped(mut reader: impl Read + Send + 'static) -> Box<dyn Read + Send> {
     )))
 }
 
-pub fn open_location(location: &str) -> Box<dyn Read + Send> {
+fn zip_entries(location: &str, separator: &'static [u8]) -> Box<dyn Read + Send> {
+    let file = File::open(location).unwrap_or_else(|error| panic!("open {location}: {error}"));
+    let mut archive = zip::ZipArchive::new(file).expect("read zip directory");
+    let (reader, mut writer) = io::pipe().expect("pipe");
+    thread::spawn(move || {
+        for index in 0..archive.len() {
+            let mut entry = archive.by_index(index).expect("zip entry");
+            let copied =
+                io::copy(&mut entry, &mut writer).and_then(|_| writer.write_all(separator));
+            if copied.is_err() {
+                return;
+            }
+        }
+    });
+    Box::new(BufReader::with_capacity(1 << 20, reader))
+}
+
+pub fn open_location(location: &str, separator: &'static [u8]) -> Box<dyn Read + Send> {
     let zipped = location.ends_with(".zip");
     if is_url(location) {
         let raw = Download {
@@ -230,10 +247,13 @@ pub fn open_location(location: &str) -> Box<dyn Read + Send> {
         };
         return if zipped { unzipped(raw) } else { buffered(raw) };
     }
-    match File::open(location) {
-        Ok(file) if zipped => unzipped(file),
-        Ok(file) => buffered(file),
-        Err(error) => panic!("open {location}: {error}"),
+    if zipped {
+        return zip_entries(location, separator);
+    }
+    let file = File::open(location).unwrap_or_else(|error| panic!("open {location}: {error}"));
+    match location.ends_with(".gz") {
+        true => buffered(file),
+        false => Box::new(BufReader::with_capacity(1 << 20, file)),
     }
 }
 
@@ -312,8 +332,9 @@ fn scan<T: Send>(
     parse: impl Fn(&[u8]) -> Option<T> + Sync,
     absorb: impl FnMut(T),
 ) {
+    let started = std::time::Instant::now();
     scan_records(open(source, name), b"\n", parse, absorb);
-    eprintln!("scanned {name}");
+    eprintln!("scanned {name} in {:.0?}", started.elapsed());
 }
 
 pub fn scan_records<T: Send>(
@@ -621,11 +642,10 @@ pub struct Titles {
 }
 
 impl Titles {
-    pub fn has_language(&self, work: u32, language: usize) -> bool {
-        let records = self.of(work).iter();
-        records
-            .into_iter()
-            .any(|record| record.language as usize == language)
+    pub fn has_local_title(&self, work: u32, language: usize) -> bool {
+        let local = |record: &&TitleRecord| record.language as usize == language;
+        let mut records = self.of(work).iter().filter(local);
+        records.any(|record| !catalog::is_foreign_title(self.title(record), language))
     }
 
     pub fn of(&self, work: u32) -> &[TitleRecord] {
@@ -883,6 +903,9 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
         return None;
     }
     let title = format!("{} {}", text(edition, "title"), text(edition, "subtitle"));
+    if catalog::is_mostly_hangul(&title) {
+        return Some(crate::language_index("ko"));
+    }
     if !catalog::is_mostly_latin(&title) {
         return None;
     }
@@ -956,7 +979,7 @@ fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -
     })
 }
 
-pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes, Isbns) {
+pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isbns) {
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
     let mut isbns: Vec<(u32, u8, u32)> = Vec::new();
@@ -978,7 +1001,8 @@ pub fn editions(source: &str) -> (Vec<Facts>, Titles, Shapes, Isbns) {
                 *slot(&mut titles.claimed_covers, cover) = true;
             }
             let languages = edition.facts.language_editions.iter().enumerate();
-            for (language, _) in languages.filter(|(_, count)| **count > 0) {
+            let wanted = |(language, count): &(usize, &u16)| **count > 0 && built[*language];
+            for (language, _) in languages.filter(wanted) {
                 let language = language as u8;
                 isbns.extend(
                     edition
@@ -1041,6 +1065,7 @@ pub struct Context<'a> {
     pub sticky: &'a [bool],
     pub titles: &'a Titles,
     pub library: &'a Library,
+    pub built: &'a Built,
 }
 
 fn author_ids(work: &Value, authors: &Authors) -> Vec<u32> {
@@ -1071,10 +1096,11 @@ fn judged(
     traits: &Traits,
     facts: &Facts,
     signal: &Signal,
+    built: &Built,
 ) -> ([f32; LANGUAGE_COUNT], [bool; LANGUAGE_COUNT]) {
     let mut scores = [0.0; LANGUAGE_COUNT];
     let mut eligible = [false; LANGUAGE_COUNT];
-    for language in 0..LANGUAGE_COUNT {
+    for language in (0..LANGUAGE_COUNT).filter(|&language| built[language]) {
         scores[language] = catalog::score(traits, facts, signal, language);
         eligible[language] = catalog::is_eligible(traits, facts, signal, language);
     }
@@ -1100,7 +1126,7 @@ fn claim(id: u32, book: &Draft, context: &Context) -> Option<Box<Claim>> {
     }
     let mut facts = book.facts;
     facts.absorb(&context.library.facts(&groups));
-    let (scores, eligible) = judged(&book.traits, &facts, &book.signal);
+    let (scores, eligible) = judged(&book.traits, &facts, &book.signal, context.built);
     let library = context.library.subjects(&groups);
     let subjects = book.subjects.iter().copied().chain(library);
     Some(Box::new(Claim {
@@ -1141,7 +1167,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         has_description: description.len() >= 40,
         has_cover: first_cover(work) > 0,
     };
-    let (scores, eligible) = judged(&traits, &facts, &signal);
+    let (scores, eligible) = judged(&traits, &facts, &signal, context.built);
     let draft = Draft {
         title,
         authors: &authors,

@@ -1,0 +1,6 @@
+• Neue Kataloge: Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch, aus ihren Nationalbibliotheken
+• App jetzt auch auf Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch
+• Französischer Katalog wächst mit der Französischen Nationalbibliothek auf über 600.000 Bücher
+• Neue Sprachauswahl für Kataloge
+• Kleinere App: nur Englisch ist enthalten, andere Kataloge laden beim ersten Start
+• Suche versteht polnische, tschechische und koreanische Zeichen

@@ -12,6 +12,7 @@ val catalogueRelease = "catalogue-2026-10-17"
 val catalogueManifestSha256 =
     "2ed459dcc1d45cb2ea33eaa7fcea0cf3374802f281e81bc3c113a6e19a3edefc"
 val catalogueFormat = 2
+val bundledLanguage = "en"
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
 
@@ -167,7 +168,7 @@ fun catalogueTask(taskName: String, packs: List<String>) =
         release = catalogueRelease
         manifestSha256 = catalogueManifestSha256
         format = catalogueFormat
-        filter = packs.map { "[a-z]{2}-$it-.*" }
+        filter = packs.map { "$bundledLanguage-$it-.*" }
         local = localCatalogue
         output = layout.buildDirectory.dir("generated/$taskName")
     }

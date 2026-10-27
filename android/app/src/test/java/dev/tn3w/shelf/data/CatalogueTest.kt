@@ -235,6 +235,13 @@ class CatalogueTest {
             "https://m/arhiiv/nlib-digar:882325?thumb=1",
             digar.coverUrl(COVERS, "L", DNB_COVERS, "https://m"),
         )
+        val isbn = book.copy(libraryCover = LibraryCover(ISBN_COVER, "9788327154491"))
+        assertEquals(
+            "$COVERS/b/isbn/9788327154491-L.jpg?default=false",
+            isbn.coverUrl(COVERS, "L"),
+        )
+        val bookbites = book.copy(libraryCover = LibraryCover(BOOKBITES, "9789176291689"))
+        assertEquals("$BOOKBITES_COVERS/9789176291689", bookbites.coverUrl(COVERS, "L"))
     }
 
     @Test

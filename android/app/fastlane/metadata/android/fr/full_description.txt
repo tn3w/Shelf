@@ -1,4 +1,4 @@
-Shelf est un catalogue de livres hors ligne issu d'Open Library, de la Bibliothèque nationale allemande et de la Bibliothèque nationale d'Estonie.
+Shelf est un catalogue de livres hors ligne issu d'Open Library et des bibliothèques nationales d'Allemagne, de France, d'Estonie, de Suède, de Pologne, de Tchéquie, de Corée et de Finlande.
 
 * Recherche tolérante aux fautes avec suggestions
 * Genres, séries et auteurs
@@ -10,7 +10,7 @@ Shelf est un catalogue de livres hors ligne issu d'Open Library, de la Biblioth�
 * Recommandations calculées sur l'appareil
 * Lecteur EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT et HTML, fichiers importés ou ouverts depuis toute app
 * Confort de lecture : taille, interligne, marges, police, pages papier et nuit, touches de page
-* Catalogues en anglais, allemand, français, espagnol et estonien avec packs optionnels
+* Catalogues en anglais, allemand, français, espagnol, estonien, suédois, polonais, tchèque, coréen et finnois avec packs optionnels
 * Auto-hébergeable : source de catalogue et serveur de couvertures personnels, ou import de fichiers
 
 Aucun pistage, aucune publicité, aucun compte.

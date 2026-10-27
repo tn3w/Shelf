@@ -53,13 +53,18 @@
     <string name="more_by">Más de %s</string>
     <string name="no_results">Sin resultados.</string>
     <string name="online_covers">Cargar portadas</string>
-    <string name="online_covers_hint">Descargar portadas de Open Library, la DNB y DIGAR.</string>
+    <string name="online_covers_hint">Descargar portadas de Open Library, la DNB, DIGAR y Bookbites.</string>
     <string name="open_failed">No se pudo abrir el archivo.</string>
     <string name="page_failed">No se pudo mostrar esta página.</string>
     <string name="open_library_license">Licencia de datos de Open Library</string>
     <string name="open_library_note">Datos de Open Library, generados cada mes a partir de sus volcados públicos.</string>
     <string name="dnb_note">Datos de Open Library y de la Biblioteca Nacional de Alemania (DNB), generados cada mes a partir de sus volcados públicos.</string>
     <string name="erb_note">Datos de Open Library y de la Biblioteca Nacional de Estonia (ERB), generados cada mes a partir de sus volcados públicos.</string>
+    <string name="fennica_note">Datos de Open Library y de la Biblioteca Nacional de Finlandia (Fennica), generados cada mes a partir de sus volcados públicos.</string>
+    <string name="nlk_note">Datos de Open Library y de la Biblioteca Nacional de Corea, generados cada mes a partir de sus volcados públicos.</string>
+    <string name="nkp_note">Datos de Open Library y de la Biblioteca Nacional de la República Checa, generados cada mes a partir de sus volcados públicos.</string>
+    <string name="bnp_note">Datos de Open Library y de la Biblioteca Nacional de Polonia, generados cada mes a partir de sus volcados públicos.</string>
+    <string name="libris_note">Datos de Open Library y del catálogo colectivo sueco (LIBRIS), generados cada mes a partir de sus volcados públicos.</string>
     <string name="dnb_license">Licencia de datos de la DNB</string>
     <string name="erb_license">Licencia de datos del ERB</string>
     <string name="pack_available">No instalado</string>
@@ -83,7 +88,7 @@
     <string name="popular_now_subtitle">Lo que abren los lectores.</string>
     <string name="popular_subtitle">Favoritos de los lectores.</string>
     <string name="privacy">Privacidad</string>
-    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas desde Open Library, la DNB y DIGAR, fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
+    <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas desde Open Library, la DNB, DIGAR y Bookbites, fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
     <string name="reading">Leyendo</string>
     <string name="recent">Búsquedas recientes</string>
     <string name="remove_pack">Eliminar %s</string>
@@ -262,6 +267,8 @@
     <string name="dnb_cover_source_hint">URL base del servicio de portadas de la Biblioteca Nacional de Alemania, solo https. Vacío significa el predeterminado.</string>
     <string name="digar_cover_source">Servidor de portadas DIGAR</string>
     <string name="digar_cover_source_hint">URL base del archivo DIGAR de la Biblioteca Nacional de Estonia, solo https. Vacío significa el predeterminado.</string>
+    <string name="bookbites_cover_source_hint">URL base del servicio de portadas Bookbites para libros suecos, solo https. Vacío significa el predeterminado.</string>
+    <string name="bookbites_cover_source">Servidor de portadas Bookbites</string>
     <string name="catalogue_incomplete">Importa el archivo core y el archivo ranks de un mismo idioma.</string>
     <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
     <string name="open_settings">Abrir ajustes</string>
@@ -296,6 +303,8 @@
     <string name="free_books_none">Sin resultados</string>
     <string name="free_books_unreachable">No disponible</string>
     <string name="free_books_failed">Error en la descarga</string>
+    <string name="transfers">Descargas e importaciones</string>
+    <string name="transfer_running">Terminando la descarga o importación</string>
     <string name="free_books_no_source">Ninguna fuente elegida tiene libros en este idioma.</string>
     <string name="free_books_rights">El dominio público varía según el país. Consulta la ley local.</string>
     <string name="free_ebook">Libro libre</string>

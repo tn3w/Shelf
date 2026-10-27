@@ -1,6 +1,8 @@
 use crate::catalog::{self, MIN_SCORE, TARGET_CODES, tokenize};
 use crate::dumps::{self, Authors, Book, FLAG_ISBN, FLAG_PUBLISHER, FLAG_READABLE, LibraryCover};
 use crate::dumps::{Facts, Isbns, Signal, Titles};
+use crate::linked;
+use crate::marc::{self, Marc};
 use crate::release;
 use crate::tags::{self, Classes};
 use crate::{LANGUAGE_COUNT, LANGUAGES};
@@ -10,7 +12,7 @@ use std::time::Instant;
 use unicode_normalization::UnicodeNormalization;
 
 pub const SYNTHETIC: u32 = 1_000_000_000;
-const MAX_VOLUME: u16 = 40;
+pub const MAX_VOLUME: u16 = 40;
 const MAX_NAME_BYTES: usize = 120;
 const RECENT_YEARS: f32 = 10.0;
 const MAX_ALIAS_HOPS: usize = 8;
@@ -50,84 +52,15 @@ const VOLUME_WORDS: [&str; 6] = ["Band", "Bd.", "Folge", "Teil", "Heft", "Nr."];
 const TITLE_SEPARATORS: [&str; 6] = [". ", " - ", " – ", ": ", " oder ", "\u{1f}"];
 const HONORIFICS: [&str; 4] = ["sir", "dame", "dr", "prof"];
 const NAME_PREFIXES: [&str; 5] = ["von ", "by ", "par ", "Autorin ", "Autor "];
-const HARDCOVER: u8 = 1;
-const PAPERBACK: u8 = 2;
-const EBOOK: u8 = 4;
+pub const HARDCOVER: u8 = 1;
+pub const PAPERBACK: u8 = 2;
+pub const EBOOK: u8 = 4;
 const AUDIO: u8 = 8;
-const COMIC: u8 = 16;
+pub const COMIC: u8 = 16;
 const ERB_AUTHOR_IDS: u64 = 140_000_000;
-const VOLUME_PARTS: [&str; 6] = ["kd", "köide", "osa", "raamat", "jagu", "vihik"];
-const FICTION_FORMS: &str = "1fjpdmhc";
-const ERB_LITERATURE: [&str; 9] = [
-    "ilukirjandus",
-    "lastekirjandus",
-    "noorsookirjandus",
-    "romaanid",
-    "jutustused",
-    "jutud",
-    "luuletused",
-    "näidendid",
-    "koomiksid",
-];
-const ERB_SKIPPED: [&str; 19] = [
-    "värvimisraamatud",
-    "kleepsud",
-    "vigurraamatud",
-    "tegelusraamatud",
-    "pusled",
-    "nuputamisülesanded",
-    "ülesanded",
-    "harjutused",
-    "õpikud",
-    "kooliõpikud",
-    "õppematerjalid",
-    "töövihikud",
-    "lugemikud",
-    "aabitsad",
-    "kalendrid",
-    "laulikud",
-    "lauluraamatud",
-    "kokaraamatud",
-    "toiduretseptid",
-];
-const ERB_SUBJECTS: [(&str, &str); 36] = [
-    ("romaanid", "fiction"),
-    ("jutustused", "fiction"),
-    ("lühiromaanid", "fiction"),
-    ("psühholoogilised romaanid", "fiction / literary"),
-    ("perekonnaromaanid", "fiction / literary"),
-    ("armastusromaanid", "fiction / romance"),
-    ("kriminaalromaanid", "fiction / mystery & detective"),
-    ("kriminaaljutud", "fiction / mystery & detective"),
-    ("põnevusromaanid", "fiction / thrillers"),
-    ("spiooniromaanid", "fiction / thrillers"),
-    ("ajaloolised romaanid", "fiction / historical"),
-    ("fantaasiaromaanid", "fiction / fantasy"),
-    ("ulmeromaanid", "fiction / science fiction"),
-    ("ulmejutud", "fiction / science fiction"),
-    ("õudusromaanid", "fiction / horror"),
-    ("õudusjutud", "fiction / horror"),
-    ("seiklusromaanid", "fiction / action & adventure"),
-    ("sõjaromaanid", "war stories"),
-    ("huumor", "humor"),
-    ("humoreskid", "humor"),
-    ("komöödiad", "comedies"),
-    ("novellid", "fiction / short stories"),
-    ("jutud", "fiction / short stories"),
-    ("antoloogiad", "anthologies"),
-    ("luuletused", "poetry"),
-    ("poeemid", "poetry"),
-    ("näidendid", "drama"),
-    ("koomiksid", "comics & graphic novels"),
-    ("graafilised romaanid", "comics & graphic novels"),
-    ("muinasjutud", "fairy tales"),
-    ("rahvajutud", "folklore"),
-    ("legendid", "legends"),
-    ("pildiraamatud", "picture books"),
-    ("mälestused", "memoir"),
-    ("autobiograafiad", "autobiography"),
-    ("biograafiad", "biography"),
-];
+const LOCAL_IDS: u32 = 100_000_000;
+const MAX_DNB_ID: u32 = 200_000_000;
+const PUBLISHER_SERIES_WRITERS: usize = 3;
 
 const THEMA: [(&str, &str, &str); 24] = [
     ("FBC", "fiction / classics", "fiction / classics"),
@@ -188,69 +121,133 @@ const THEMA: [(&str, &str, &str); 24] = [
     ("DD", "drama", "drama"),
 ];
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Source {
     #[default]
     Dnb,
     Erb,
+    Libris,
+    Bnp,
+    Nkp,
+    Nlk,
+    Fennica,
+    Bnf,
 }
+
+pub const DNB_COVER: u8 = 1;
+const DIGAR_COVER: u8 = 2;
+const ISBN_COVER: u8 = 3;
+const BOOKBITES_COVER: u8 = 4;
 
 impl Source {
     pub fn named(name: &str) -> Option<Source> {
-        match name {
-            "dnb" => Some(Source::Dnb),
-            "erb" => Some(Source::Erb),
-            _ => None,
-        }
+        let all = [
+            ("dnb", Source::Dnb),
+            ("erb", Source::Erb),
+            ("libris", Source::Libris),
+            ("bnp", Source::Bnp),
+            ("nkp", Source::Nkp),
+            ("nlk", Source::Nlk),
+            ("fennica", Source::Fennica),
+            ("bnf", Source::Bnf),
+        ];
+        let found = all.iter().find(|(known, _)| *known == name);
+        found.map(|&(_, source)| source)
     }
 
-    pub fn code(self) -> u8 {
+    pub fn cover(self) -> u8 {
         match self {
-            Source::Dnb => 1,
-            Source::Erb => 2,
+            Source::Dnb => DNB_COVER,
+            Source::Erb => DIGAR_COVER,
+            Source::Libris => BOOKBITES_COVER,
+            _ => ISBN_COVER,
         }
     }
 
     pub fn language(self) -> usize {
-        match self {
-            Source::Dnb => 1,
-            Source::Erb => 4,
-        }
+        let code = match self {
+            Source::Dnb => "de",
+            Source::Erb => "et",
+            Source::Libris => "sv",
+            Source::Bnp => "pl",
+            Source::Nkp => "cs",
+            Source::Nlk => "ko",
+            Source::Fennica => "fi",
+            Source::Bnf => "fr",
+        };
+        crate::language_index(code)
     }
 
     fn separator(self) -> &'static [u8] {
         match self {
             Source::Dnb => b"\n</rdf:Description>\n",
-            Source::Erb => b"\n</marc:record>\n",
+            Source::Erb | Source::Fennica => b"</marc:record>",
+            Source::Nkp => b"</record>",
+            Source::Bnp | Source::Bnf => b"\x1d",
+            Source::Nlk => linked::NLK_SEPARATOR,
+            Source::Libris => b"\n",
         }
     }
 
     fn parse(self, bytes: &[u8]) -> Option<Record> {
+        let text = || std::str::from_utf8(bytes).ok();
         match self {
-            Source::Dnb => dnb_record(std::str::from_utf8(bytes).ok()?),
-            Source::Erb => erb_record(std::str::from_utf8(bytes).ok()?),
+            Source::Dnb => dnb_record(text()?),
+            Source::Erb => marc::marc21_record(&Marc::xml(text()?), self, &marc::ERB),
+            Source::Nkp => marc::marc21_record(&Marc::xml(text()?), self, &marc::NKP),
+            Source::Fennica => marc::marc21_record(&Marc::xml(text()?), self, &marc::FENNICA),
+            Source::Bnp => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNP),
+            Source::Bnf => marc::bnf_record(&Marc::binary(bytes)?),
+            Source::Nlk => linked::nlk_record(text()?),
+            Source::Libris => None,
         }
+    }
+
+    fn id_base(self) -> u32 {
+        let slot = self as u32 - Source::Libris as u32;
+        MAX_DNB_ID + slot * LOCAL_IDS
+    }
+
+    pub fn local_id(self, raw: &str) -> u32 {
+        let number = raw
+            .parse()
+            .ok()
+            .filter(|&number| number > 0 && number < LOCAL_IDS);
+        let hashed = || (hash(&[raw.as_bytes()]) % u64::from(LOCAL_IDS)) as u32;
+        self.id_base() + number.unwrap_or_else(hashed)
+    }
+
+    pub fn author_id(self, name: &str) -> u32 {
+        if name.is_empty() {
+            return 0;
+        }
+        let key = name_key(name);
+        if self == Source::Erb {
+            let hashed = hash(&[b"erb", key.as_bytes()]) % ERB_AUTHOR_IDS;
+            return SYNTHETIC + hashed as u32;
+        }
+        self.id_base() + (hash(&[key.as_bytes()]) % u64::from(LOCAL_IDS)) as u32
     }
 }
 
 #[derive(Default)]
-struct Record {
-    source: Source,
-    id: u32,
-    language: usize,
-    isbns: Vec<u32>,
-    links: Vec<u32>,
-    title: String,
-    original: String,
-    series: String,
-    volume: u16,
-    author: u32,
-    name: String,
-    year: u16,
-    format: u8,
-    classes: Classes,
-    subjects: Vec<&'static str>,
-    digar: u32,
+pub struct Record {
+    pub source: Source,
+    pub id: u32,
+    pub language: usize,
+    pub isbns: Vec<u32>,
+    pub links: Vec<u32>,
+    pub title: String,
+    pub original: String,
+    pub series: String,
+    pub volume: u16,
+    pub author: u32,
+    pub name: String,
+    pub year: u16,
+    pub format: u8,
+    pub classes: Classes,
+    pub subjects: Vec<&'static str>,
+    pub digar: u32,
 }
 
 impl Record {
@@ -260,8 +257,8 @@ impl Record {
 
     fn cover_key(&self) -> Option<u32> {
         match self.source {
-            Source::Dnb => self.isbns.first().copied(),
             Source::Erb => Some(self.digar).filter(|&digar| digar > 0),
+            _ => self.isbns.first().copied(),
         }
     }
 
@@ -350,10 +347,10 @@ fn last_segment(uri: &str) -> &str {
 fn record_id(identifier: &str) -> Option<u32> {
     let body = identifier.get(..identifier.len().checked_sub(1)?)?;
     let id: u32 = body.parse().ok()?;
-    (id > 0 && id < SYNTHETIC).then_some(id)
+    (id > 0 && id < MAX_DNB_ID).then_some(id)
 }
 
-fn clean(text: &str) -> String {
+pub fn clean(text: &str) -> String {
     let unescaped = catalog::ENTITIES.iter().fold(
         text.replace('@', "").replace("&amp;amp;", "&amp;"),
         |text, (entity, character)| text.replace(entity, character),
@@ -416,7 +413,7 @@ pub fn is_genre(title: &str) -> bool {
     GENRE_TITLES.contains(&key.as_str()) || !key.contains(' ') && key.ends_with("roman")
 }
 
-fn is_numbered_genre(title: &str) -> bool {
+pub fn is_numbered_genre(title: &str) -> bool {
     TITLE_SEPARATORS.iter().any(|separator| {
         let split = title.rsplit_once(separator);
         split.is_some_and(|(head, tail)| {
@@ -425,7 +422,7 @@ fn is_numbered_genre(title: &str) -> bool {
     })
 }
 
-fn first_number(text: &str) -> Option<u16> {
+pub fn first_number(text: &str) -> Option<u16> {
     let digits: String = text
         .chars()
         .skip_while(|character| !character.is_ascii_digit())
@@ -463,7 +460,7 @@ fn with_shared_surname(names: &str) -> String {
     }
 }
 
-fn author_name(statement: &str) -> String {
+pub fn author_name(statement: &str) -> String {
     let statement = clean(statement);
     let first = statement.split(" ; ").next().unwrap_or_default();
     let lowered = first.to_lowercase();
@@ -485,7 +482,7 @@ fn author_name(statement: &str) -> String {
     if usable { name } else { String::new() }
 }
 
-fn hash(parts: &[&[u8]]) -> u64 {
+pub fn hash(parts: &[&[u8]]) -> u64 {
     let bytes = parts.iter().flat_map(|part| part.iter().chain(&[0xff]));
     bytes.fold(0xcbf2_9ce4_8422_2325, |hash, &byte| {
         (hash ^ byte as u64).wrapping_mul(0x0100_0000_01b3)
@@ -495,7 +492,7 @@ fn hash(parts: &[&[u8]]) -> u64 {
 fn folded(text: &str) -> String {
     let marks = |character: &char| !unicode_normalization::char::is_combining_mark(*character);
     let quotes = |character: &char| !APOSTROPHES.contains(character);
-    text.nfkd().filter(marks).filter(quotes).collect()
+    text.nfkd().filter(marks).filter(quotes).nfc().collect()
 }
 
 pub fn match_key(title: &str) -> String {
@@ -522,11 +519,9 @@ pub fn writer_key(name: &str) -> String {
     let Some((last, given)) = words.split_last() else {
         return String::new();
     };
-    let spelled = given.iter().find(|word| word.len() > 1);
-    match spelled.or(given.first()) {
-        Some(first) => format!("{last} {}", &first[..1]),
-        None => format!("{last} {}", &last[..1]),
-    }
+    let spelled = given.iter().find(|word| word.chars().nth(1).is_some());
+    let first = spelled.or(given.first()).unwrap_or(last);
+    format!("{last} {}", first.chars().next().unwrap_or_default())
 }
 
 fn title_hash(writer: &str, title: &str) -> u64 {
@@ -793,256 +788,6 @@ fn dnb_record(text: &str) -> Option<Record> {
     fields.record()
 }
 
-#[derive(Default)]
-struct Marc<'a> {
-    leader: &'a str,
-    controls: Vec<(&'a str, &'a str)>,
-    fields: Vec<(&'a str, Vec<(char, &'a str)>)>,
-}
-
-fn subfield(line: &str) -> Option<(char, &str)> {
-    let body = line.strip_prefix("<marc:subfield")?;
-    let code = attribute(body, "code=\"")?.chars().next()?;
-    Some((code, element_text(line)))
-}
-
-fn element_text(line: &str) -> &str {
-    let inner = line
-        .split_once('>')
-        .and_then(|(_, rest)| rest.split_once("</"));
-    inner.map_or("", |(text, _)| text)
-}
-
-impl<'a> Marc<'a> {
-    fn parse(text: &'a str) -> Marc<'a> {
-        let mut marc = Marc::default();
-        for line in text.lines().map(str::trim_start) {
-            let tag = || attribute(line, "tag=\"").unwrap_or_default();
-            if line.starts_with("<leader>") || line.starts_with("<marc:leader>") {
-                marc.leader = element_text(line);
-            } else if line.starts_with("<marc:controlfield") {
-                marc.controls.push((tag(), element_text(line)));
-            } else if line.starts_with("<marc:datafield") {
-                marc.fields.push((tag(), Vec::new()));
-            } else if let Some(subfield) = subfield(line) {
-                let field = marc.fields.last_mut().map(|(_, subfields)| subfields);
-                field
-                    .into_iter()
-                    .for_each(|subfields| subfields.push(subfield));
-            }
-        }
-        marc
-    }
-
-    fn control(&self, tag: &str) -> &'a str {
-        let found = self.controls.iter().find(|(name, _)| *name == tag);
-        found.map_or("", |(_, value)| value)
-    }
-
-    fn values<'b>(&'b self, tag: &'b str, code: char) -> impl Iterator<Item = &'a str> {
-        let fields = self.fields.iter().filter(move |(name, _)| *name == tag);
-        let subfields = fields.flat_map(|(_, subfields)| subfields.iter());
-        subfields
-            .filter(move |(found, _)| *found == code)
-            .map(|(_, text)| *text)
-    }
-
-    fn first(&self, tag: &str, code: char) -> &'a str {
-        self.values(tag, code).next().unwrap_or_default()
-    }
-
-    fn authored_contributor(&self) -> Option<&'a str> {
-        let contributors = self.fields.iter().filter(|(tag, _)| *tag == "700");
-        let is_author = |field: &&(&str, Vec<(char, &str)>)| {
-            let roles = field.1.iter().filter(|(code, _)| *code == 'e');
-            roles.into_iter().any(|(_, role)| role.starts_with("autor"))
-        };
-        let (_, subfields) = contributors.into_iter().find(is_author)?;
-        subfields
-            .iter()
-            .find(|(code, _)| *code == 'a')
-            .map(|(_, text)| *text)
-    }
-}
-
-fn field_text(text: &str) -> String {
-    let text = text.split(" = ").next().unwrap_or(text);
-    clean(
-        text.trim_end_matches([' ', ':', '/', ';', '=', ',', '.'])
-            .trim_matches(['[', ']']),
-    )
-}
-
-fn genre_term(term: &str) -> String {
-    let term = term.split(" (").next().unwrap_or(term);
-    term.trim().trim_end_matches('.').to_lowercase()
-}
-
-fn erb_id(control: &str) -> Option<u32> {
-    let digits = control.strip_prefix('b')?;
-    let number: u32 = digits.get(..digits.len().checked_sub(1)?)?.parse().ok()?;
-    (number > 0 && number < SYNTHETIC).then_some(SYNTHETIC + number)
-}
-
-fn erb_name(marc: &Marc) -> String {
-    let heading = marc
-        .values("100", 'a')
-        .next()
-        .or_else(|| marc.authored_contributor());
-    let heading = heading.unwrap_or_default().trim_end_matches([',', ' ']);
-    let initial = heading.chars().rev().nth(1).is_some_and(char::is_uppercase);
-    let heading = clean(if initial {
-        heading
-    } else {
-        heading.trim_end_matches('.')
-    });
-    match heading.split_once(", ") {
-        Some((last, first)) => format!("{first} {last}"),
-        None => heading,
-    }
-}
-
-fn erb_author(name: &str) -> u32 {
-    if name.is_empty() {
-        return 0;
-    }
-    let hashed = hash(&[b"erb", name_key(name).as_bytes()]) % ERB_AUTHOR_IDS;
-    SYNTHETIC + hashed as u32
-}
-
-fn erb_series(marc: &Marc) -> (String, u16) {
-    let parsed = ["830", "490"].iter().find_map(|tag| {
-        let volume = first_number(marc.first(tag, 'v'))?;
-        let name = field_text(marc.first(tag, 'a'));
-        let (name, _) = release::parse_series(&[name.as_str()])?;
-        (1..=MAX_VOLUME).contains(&volume).then_some((name, volume))
-    });
-    parsed.unwrap_or_default()
-}
-
-fn is_volume_number(text: &str) -> bool {
-    let words = text.split(|character: char| !character.is_alphabetic());
-    let mut words = words.filter(|word| !word.is_empty()).map(str::to_lowercase);
-    words.all(|word| VOLUME_PARTS.contains(&word.as_str()))
-}
-
-fn erb_titled(marc: &Marc) -> Option<(String, String, u16)> {
-    let main = field_text(marc.first("245", 'a'));
-    let part = field_text(marc.first("245", 'p'));
-    let part_number = marc.first("245", 'n');
-    let number = first_number(part_number).filter(|_| is_volume_number(part_number));
-    if let Some(volume) = number.filter(|volume| (1..=MAX_VOLUME).contains(volume)) {
-        let title = if part.is_empty() {
-            format!("{main} {volume}")
-        } else {
-            part
-        };
-        return Some((title, main, volume));
-    }
-    let (series, volume) = erb_series(marc);
-    let title = without_series(&main, &series);
-    let usable = !title.is_empty() && !is_genre(&title) && !is_numbered_genre(&title);
-    usable.then_some((title, series, volume))
-}
-
-fn erb_digar(marc: &Marc) -> u32 {
-    let ids = marc.values("856", 'u').filter_map(|url| {
-        let (_, rest) = url.split_once("nlib-digar:")?;
-        rest.split(|character: char| !character.is_ascii_digit())
-            .next()?
-            .parse()
-            .ok()
-    });
-    ids.into_iter().next().unwrap_or(0)
-}
-
-fn erb_record(text: &str) -> Option<Record> {
-    let marc = Marc::parse(text);
-    let fixed: Vec<char> = marc.control("008").chars().collect();
-    let language: String = fixed.get(35..38).unwrap_or_default().iter().collect();
-    if marc.leader.get(6..8) != Some("am") || language != "est" {
-        return None;
-    }
-    let genres: Vec<String> = marc.values("655", 'a').map(genre_term).collect();
-    let has = |terms: &[&str]| genres.iter().any(|genre| terms.contains(&genre.as_str()));
-    let form = fixed.get(33).copied().unwrap_or(' ');
-    let literary = FICTION_FORMS.contains(form) || has(&ERB_LITERATURE);
-    if !literary || has(&ERB_SKIPPED) {
-        return None;
-    }
-    let mut isbns: Vec<u32> = Vec::new();
-    for key in marc.values("020", 'a').filter_map(catalog::isbn_key) {
-        if !isbns.contains(&key) {
-            isbns.push(key);
-        }
-    }
-    if isbns.is_empty() {
-        return None;
-    }
-    let (title, series, volume) = erb_titled(&marc)?;
-    let audience = fixed.get(22).copied().unwrap_or(' ');
-    let picture = has(&["pildiraamatud"]);
-    let teen = audience == 'd' || has(&["noorsookirjandus"]);
-    let young = "abcj".contains(audience) || picture || has(&["lastekirjandus"]);
-    let kid = young && !teen;
-    let comics = has(&["koomiksid", "graafilised romaanid"]);
-    let qualifiers = marc.values("020", 'q').collect::<String>().to_lowercase();
-    let electronic = ["epub", "pdf"].iter().any(|kind| qualifiers.contains(kind));
-    let digital = electronic || has(&["e-raamatud"]);
-    let format = match () {
-        _ if comics => COMIC,
-        _ if digital => EBOOK,
-        _ if qualifiers.contains("köites") => HARDCOVER,
-        _ => PAPERBACK,
-    };
-    let classes = Classes {
-        classified: 1,
-        picture: u16::from(picture),
-        juvenile: u16::from(kid || teen),
-        comics: u16::from(comics),
-        poetry: u16::from(form == 'p' || has(&["luuletused"])),
-        drama: u16::from(form == 'd' || has(&["näidendid"])),
-        kid: u16::from(kid),
-        teen: u16::from(teen),
-        young_picture: u16::from(picture),
-    };
-    let mapped = ERB_SUBJECTS.iter().filter(|(term, _)| has(&[term]));
-    let mut subjects: Vec<&'static str> = mapped.map(|&(_, subject)| subject).collect();
-    let base = match () {
-        _ if teen => Some("young adult fiction"),
-        _ if kid => Some("juvenile fiction"),
-        _ if "1fj".contains(form) => Some("fiction"),
-        _ => None,
-    };
-    subjects.extend(base);
-    subjects.sort_unstable();
-    subjects.dedup();
-    let translated = marc.values("041", 'h').next().is_some();
-    let original = marc.values("240", 'a').next();
-    let variant = marc.values("246", 'a').next().filter(|_| translated);
-    let original = original.or(variant);
-    let name = erb_name(&marc);
-    let year: String = fixed.get(7..11).unwrap_or_default().iter().collect();
-    Some(Record {
-        source: Source::Erb,
-        id: erb_id(marc.control("001"))?,
-        language: Source::Erb.language(),
-        isbns,
-        links: Vec::new(),
-        title,
-        original: original.map(field_text).unwrap_or_default(),
-        series,
-        volume,
-        author: erb_author(&name),
-        name,
-        year: dumps::year_of(&year),
-        format,
-        classes,
-        subjects,
-        digar: erb_digar(&marc),
-    })
-}
-
 fn root(parents: &mut [u32], mut node: u32) -> u32 {
     while parents[node as usize] != node {
         let grandparent = parents[parents[node as usize] as usize];
@@ -1138,6 +883,25 @@ fn shared_isbns(records: &[Record]) -> HashSet<u32> {
     shared
 }
 
+fn drop_publisher_series(records: &mut [Record]) {
+    let series_of = |record: &Record| (catalog::series_key(&record.series), record.language);
+    let mut writers: HashMap<(String, usize), HashSet<String>> = HashMap::new();
+    for record in records.iter().filter(|record| record.volume > 0) {
+        if match_key(&record.title).contains(&match_key(&record.series)) {
+            continue;
+        }
+        let names = writers.entry(series_of(record)).or_default();
+        names.insert(writer_key(&record.name));
+    }
+    let many = |names: &HashSet<String>| names.len() >= PUBLISHER_SERIES_WRITERS;
+    for record in records.iter_mut() {
+        if writers.get(&series_of(record)).is_some_and(many) {
+            record.series.clear();
+            record.volume = 0;
+        }
+    }
+}
+
 fn most_common<T: Ord + Clone>(values: impl Iterator<Item = T>) -> Option<T> {
     let mut sorted: Vec<T> = values.collect();
     sorted.sort();
@@ -1163,6 +927,25 @@ pub fn aliases(previous: &[(u32, u32)], fresh: &[(u32, u32)], books: &[Book]) ->
         .map(|(&from, &to)| (from, resolve(to)))
         .filter(|&(from, to)| from != to && !is_live(from))
         .collect()
+}
+
+fn load_source(source: Source, location: &str) -> Vec<Record> {
+    let started = Instant::now();
+    let records = match source {
+        Source::Libris => linked::libris_records(location),
+        _ => {
+            let mut records = Vec::new();
+            let reader = dumps::open_location(location, source.separator());
+            let parse = |bytes: &[u8]| source.parse(bytes);
+            dumps::scan_records(reader, source.separator(), parse, |record| {
+                records.push(record)
+            });
+            records
+        }
+    };
+    let elapsed = started.elapsed();
+    eprintln!("{location}: {} records in {elapsed:.0?}", records.len());
+    records
 }
 
 #[derive(Default)]
@@ -1219,28 +1002,28 @@ fn named_authors(books: &[Book], authors: &Authors) -> HashMap<String, u32> {
 
 impl Library {
     pub fn load(sources: &[(Source, String)]) -> Library {
-        let mut records = Vec::new();
-        for (source, location) in sources {
-            let started = Instant::now();
-            let parse = |bytes: &[u8]| source.parse(bytes);
-            let reader = dumps::open_location(location);
-            dumps::scan_records(reader, source.separator(), parse, |record| {
-                records.push(record);
-            });
-            let elapsed = started.elapsed();
-            eprintln!("{location}: {} records in {elapsed:.0?}", records.len());
-        }
+        let records = std::thread::scope(|scope| {
+            let loads: Vec<_> = sources
+                .iter()
+                .map(|(source, location)| scope.spawn(|| load_source(*source, location)))
+                .collect();
+            let loaded = loads
+                .into_iter()
+                .map(|load| load.join().expect("library load"));
+            loaded.flatten().collect()
+        });
         Library::from_records(records)
     }
 
     fn from_records(mut records: Vec<Record>) -> Library {
-        records.sort_unstable_by_key(|record| (record.source.code(), record.id));
-        records.dedup_by_key(|record| (record.source.code(), record.id));
+        records.sort_unstable_by_key(|record| (record.source, record.id));
+        records.dedup_by_key(|record| (record.source, record.id));
         let shared = shared_isbns(&records);
         for record in &mut records {
             record.isbns.retain(|isbn| !shared.contains(isbn));
         }
         records.retain(|record| !record.isbns.is_empty());
+        drop_publisher_series(&mut records);
         let generic = generic_titles(&records);
         let groups = grouped(&records, &generic);
         let languages = groups
@@ -1388,7 +1171,7 @@ impl Library {
         let best = covered.iter().copied().filter(printed).max_by_key(newest);
         let record = best.or_else(|| covered.into_iter().max_by_key(newest))?;
         Some(LibraryCover {
-            source: record.source.code(),
+            source: record.source.cover(),
             key: record.cover_key()?,
             language: self.languages[group],
         })
@@ -1646,7 +1429,7 @@ impl Library {
         let named: HashSet<(u32, usize)> = placed
             .iter()
             .map(|placed| (placed.work, self.languages[placed.group]))
-            .filter(|&(work, language)| titles.has_language(work, language))
+            .filter(|&(work, language)| titles.has_local_title(work, language))
             .collect();
         let mut rows = Vec::new();
         for &Placed { work, group } in placed {
@@ -2249,6 +2032,50 @@ mod tests {
     }
 
     #[test]
+    fn publisher_series_dropped() {
+        let volume = |name: &str, title: &str, series: &str, volume| Record {
+            name: name.to_string(),
+            title: title.to_string(),
+            series: series.to_string(),
+            volume,
+            ..Record::default()
+        };
+        let mut records = vec![
+            volume("Henryk Sienkiewicz", "Quo vadis", "Kanon Lektur", 1),
+            volume("Bolesław Prus", "Lalka", "Kanon Lektur", 2),
+            volume("Rudyard Kipling", "Księga dżungli", "Kanon Lektur", 8),
+            volume(
+                "Andrzej Sapkowski",
+                "Ostatnie życzenie",
+                "Saga o wiedźminie",
+                1,
+            ),
+            volume(
+                "Andrzej Sapkowski",
+                "Miecz przeznaczenia",
+                "Saga o wiedźminie",
+                2,
+            ),
+            volume("Ben Nevis", "Die drei ??? und der Fluch", "Die drei ???", 3),
+            volume(
+                "Marco Sonnleitner",
+                "Die drei ??? und das Phantom",
+                "Die drei ???",
+                4,
+            ),
+            volume(
+                "Kari Erlhoff",
+                "Die drei ??? und die Rache",
+                "Die drei ???",
+                5,
+            ),
+        ];
+        drop_publisher_series(&mut records);
+        let kept: Vec<u16> = records.iter().map(|record| record.volume).collect();
+        assert_eq!(kept, [0, 0, 0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
     fn aliases_follow_later_moves() {
         let books: Vec<Book> = Vec::new();
         let merged = aliases(
@@ -2257,6 +2084,14 @@ mod tests {
             &books,
         );
         assert_eq!(merged, vec![(SYNTHETIC + 5, 42), (SYNTHETIC + 9, 42)]);
+    }
+
+    fn per_language<T: Copy + Default>(values: &[(usize, T)]) -> [T; LANGUAGE_COUNT] {
+        let mut all = [T::default(); LANGUAGE_COUNT];
+        values
+            .iter()
+            .for_each(|&(language, value)| all[language] = value);
+        all
     }
 
     fn open_library_book(work: u32, title: &str, author: u32) -> Book {
@@ -2272,8 +2107,8 @@ mod tests {
             year: 0,
             editions: 1,
             signal: Signal::default(),
-            scores: [200.0, 0.0, 0.0, 0.0, 0.0],
-            eligible: [true, false, false, false, false],
+            scores: per_language(&[(0, 200.0)]),
+            eligible: per_language(&[(0, true)]),
             claim: None,
             library_cover: None,
         }
@@ -2285,8 +2120,8 @@ mod tests {
         if !groups.is_empty() {
             book.claim = Some(Box::new(dumps::Claim {
                 groups,
-                scores: [200.0, 250.0, 0.0, 0.0, 0.0],
-                eligible: [true, true, false, false, false],
+                scores: per_language(&[(0, 200.0), (1, 250.0)]),
+                eligible: per_language(&[(0, true), (1, true)]),
                 tags: Vec::new(),
                 editions: 2,
             }));
@@ -2429,7 +2264,7 @@ mod tests {
         authors.add(9, "Sir Walter Scott");
         authors.add(SYNTHETIC + 1, "Walter Scott");
         let cover = LibraryCover {
-            source: Source::Dnb.code(),
+            source: Source::Dnb.cover(),
             key: straw_isbn(),
             language: 1,
         };
@@ -2444,8 +2279,8 @@ mod tests {
         ];
         let mut titles = Titles::default();
         for book in &mut books {
-            book.eligible = [false, true, false, false, false];
-            book.scores = [0.0, 200.0, 0.0, 0.0, 0.0];
+            book.eligible = per_language(&[(1, true)]);
+            book.scores = per_language(&[(1, 200.0)]);
             titles.add((book.work, 1), &book.title, ("", 0), 2000);
         }
         titles.sort();
@@ -2466,7 +2301,7 @@ mod tests {
         assert_eq!((run.outcome.enriched[1], run.outcome.added[1]), (1, 0));
         let book = &run.books[0];
         assert!(book.eligible[1] && book.eligible[0]);
-        assert_eq!(book.scores, [200.0, 250.0, 0.0, 0.0, 0.0]);
+        assert_eq!(book.scores, per_language(&[(0, 200.0), (1, 250.0)]));
         assert_eq!(
             book.library_cover.map(|cover| cover.key),
             Some(straw_isbn())
@@ -2530,7 +2365,7 @@ mod tests {
         let book = open_library_book(42, "Emma", 7);
         assert!(library.claim(42, &["Emma"], Some("Jane Austen")).is_empty());
         let run = run(&library, vec![book], &[]);
-        assert_eq!(run.books[0].scores, [200.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(run.books[0].scores, per_language(&[(0, 200.0)]));
         assert!(run.books[0].library_cover.is_none());
     }
 }

@@ -47,7 +47,7 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 ```mermaid
 flowchart LR
-    A[Open Library + DNB dumps] -->|monthly| B[Rust builder]
+    A[Open Library + national library dumps] -->|monthly| B[Rust builder]
     B -->|GitHub release| C[Catalogue packs]
     C -->|download once| D[Shelf]
     D --> E[Your library stays on device]
@@ -62,7 +62,7 @@ flowchart LR
 <tr><td>Offline mode</td><td><b>one switch</b> cuts all network</td></tr>
 <tr><td>Cover scanner</td><td><b>on device</b>, no request, frames never stored</td></tr>
 <tr><td>Requests</td><td>https only, no identifiers, no cookies</td></tr>
-<tr><td>Hosts</td><td>GitHub, Open Library, DNB covers, or <b>your own server</b></td></tr>
+<tr><td>Hosts</td><td>GitHub, Open Library, library covers (DNB, DIGAR, Bookbites), or <b>your own server</b></td></tr>
 <tr><td>Free books</td><td><b>off</b>, each source opt-in, contacted only on search; sources are data, no scripts</td></tr>
 </table>
 
@@ -198,12 +198,17 @@ Export writes the same format back.
 
 <table>
 <tr><th width="1%">Type</th><th width="1%">Contents</th></tr>
-<tr><td>Languages</td><td>English · Deutsch · Français · Español · Eesti</td></tr>
+<tr><td>Languages</td><td>English · Deutsch · Français · Español · Eesti · Svenska · Polski · Čeština · 한국어 · Suomi</td></tr>
 <tr><td>Genre packs</td><td>fantasy · scifi · mystery · romance</td></tr>
 <tr><td>More packs</td><td>kids · young-adult · nonfiction · general</td></tr>
 </table>
 
-`core` ships in the APK. Other packs download on demand, verified by SHA-256.
+English `core` and `ranks` ship in the APK (`bundledLanguage`). Other languages and
+packs download on demand, verified by SHA-256; onboarding requires the chosen
+language's `core` unless it is installed. Language pickers (app and catalogue) show
+native names as chips: English, Deutsch, Français, Español plus the chosen and installed
+ones; **Show all** reveals the rest. ✓ marks the chosen one, a download mark installed
+catalogues.
 Packs include ISBNs of editions in their language; older apps ignore them.
 
 <table>
@@ -211,25 +216,47 @@ Packs include ISBNs of editions in their language; older apps ignore them.
 <tr><td><a href="https://openlibrary.org/developers/dumps">Open Library</a></td><td>works, editions, readers, covers</td><td>CC0</td></tr>
 <tr><td><a href="https://data.dnb.de/opendata/">DNB</a> title dump</td><td>German editions, series, volumes, ISBNs, audience</td><td>CC0</td></tr>
 <tr><td><a href="https://data.digar.ee/">ERB</a> Estonian books</td><td>Estonian editions, series, volumes, ISBNs, genres, DIGAR covers</td><td><a href="https://doi.org/10.5281/zenodo.8228805">CC0</a></td></tr>
+<tr><td><a href="https://www.bnf.fr/fr/les-donnees-de-la-bnf">BnF</a> Bibliographie nationale</td><td>French editions, series, volumes, ISBNs, audience</td><td>Licence Ouverte</td></tr>
+<tr><td><a href="https://libris.kb.se/">LIBRIS</a> instances + persons</td><td>Swedish editions, series, ISBNs, genres, authors</td><td>CC0</td></tr>
+<tr><td><a href="https://data.bn.org.pl/">BN</a> books, e-books</td><td>Polish editions, series, volumes, ISBNs, genres</td><td>CC0</td></tr>
+<tr><td><a href="https://aleph.nkp.cz/data/">NKP</a> national catalogue</td><td>Czech editions, series, volumes, ISBNs, genres</td><td>CC0</td></tr>
+<tr><td><a href="https://lod.nl.go.kr/">NLK</a> LOD books</td><td>Korean editions, series, ISBNs, KDC forms</td><td>KOGL type 1</td></tr>
+<tr><td><a href="https://data.nationallibrary.fi/">Fennica</a></td><td>Finnish editions, series, volumes, ISBNs, genres</td><td>CC0</td></tr>
 </table>
 
-DNB → German, ERB → Estonian catalogue. Join Open Library works by ISBN, else title or
-original title + author; per language, so editions never cross catalogues. Missing works
-get stable ids (DNB 1,000,000,000+, ERB 2,000,000,000+); later Open Library match → alias.
-Rank below Open Library books with readers. Joined works keep Open Library title, take
-library series. Genre-only pulp issues (`Dr. Norden 631 - Arztroman`) skipped.
+One library per catalogue: DNB → de, ERB → et, BnF → fr, LIBRIS → sv, BN → pl, NKP → cs,
+NLK → ko, Fennica → fi. Join Open Library works by ISBN, else title or original title +
+author; per language, so editions never cross catalogues. Missing works get stable ids
+(DNB 1,000,000,000+, LIBRIS 1,200,000,000+, then 100,000,000 per library, ERB
+2,000,000,000+; all below 2³¹ for the app); later Open Library match → alias. Rank below
+Open Library books with readers. Joined works keep Open Library title unless every
+local Open Library edition title is foreign, take library series. Series with ≥ 3
+writers whose titles don't name it are publisher series and dropped. Genre-only pulp
+issues (`Dr. Norden 631 - Arztroman`) skipped.
 
-ERB: Estonian literature with ISBN (008/33 fiction form or 655 literary genre); textbook,
-activity, colouring, song books skipped. 655 genres → tags; 245 `$n`/`$p`, 490/830 →
-series; 246 → original title.
+MARC libraries (ERB, BN, NKP, Fennica; `marc.rs`, binary or XML): language from 008/35,
+literature from 008/33 fiction form, UDC `821`, YKL 80–85 or a literary 655/380 genre;
+textbook, activity, colouring, song books skipped; 008/22 audience; genres → tags;
+245 `$n`/`$p`, 490/830 → series (`/ author` cut); volumes over 40 keep `Title N` without
+series; 240 or 246 (translations) → original title. BnF UNIMARC: 101 `fre`, 105/11
+literature code, 100/17 audience, 686 class (803 novels, 801 poetry, 802 drama, 805
+comics, 809 children), 200 `$h`/`$i` volumes, 225/461 series, 454 original.
+LIBRIS (`linked.rs`): Swedish instances with literary genre/form term or SAB `H`
+class; authors inline, from the persons dump, else statement of responsibility.
+NLK: Korean books with KDC 8x1–8x3 or literary keyword; `(…)` title prefixes dropped.
+Korean titles prefer Hangul spellings over romanized Open Library ones.
 
 Titles drop series/volume prefixes (`Gregs Tagebuch 01 . Von Idioten umzingelt!` →
 `Von Idioten umzingelt!`, `Band 2: Orwood` → `Orwood`), edition tags, `. Roman.`,
 trailing dots. Prefix naming writer's series → joins it. Series names searchable. Same
 title + writer (surname, first initial) → one book.
 
-Covers: Open Library → DNB (ISBN) or DIGAR thumbnail (ERB 856 `nlib-digar` id), view time
-only → drawn. Wide jacket scans show front half. DNB/DIGAR servers configurable.
+Covers: Open Library → DNB (ISBN), DIGAR thumbnail (ERB 856 `nlib-digar` id), Bookbites
+(LIBRIS, ISBN) or Open Library by ISBN (other libraries), view time only → drawn. Wide
+jacket scans show front half. DNB/DIGAR/Bookbites servers configurable.
+
+Search folds Latin accents (Polish, Czech too) and keeps Hangul syllables; builder and
+app tokenize alike.
 
 ## Generated covers
 
@@ -255,9 +282,30 @@ cd android
 ```sh
 cd builder && cargo build --release
 target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
+  [--languages sv,fi] [--dump <dir>] \
   [--library dnb=<dnb-all_lds.rdf.gz or url>] \
-  [--library erb=<ERB_eestikeelne_raamat.zip or url>]
+  [--library erb=<ERB_eestikeelne_raamat.zip or url>] \
+  [--library bnf=<P174_*.zip>]... \
+  [--library libris=<libris-instances.ndjsonld.gz>,<libris-persons.ndjsonld.gz>] \
+  [--library bnp=<bibs-ksiazka.marc>] [--library bnp=<bibs-e_book.marc>] \
+  [--library nkp=<nkc.xml.gz>] [--library nlk=<book_json_*.zip>] \
+  [--library fennica=<Fennica-bib-*.zip>]
 ```
+
+`--languages` builds only those catalogues: other languages' editions, titles and
+eligibility are skipped (faster, less RAM); `manifest.json` lists only them. Libraries
+load in parallel; zips are read entry by entry. `--dump` writes `<language>.tsv` (id,
+score, pack, title, alternate, authors, series, year, ISBNs) for review.
+
+`.github/workflows/database.yml` (monthly), every source downloaded once:
+
+| Job | Does |
+|---|---|
+| `prepare` | release name, previous catalogue tag |
+| `dumps` | Open Library dumps from archive.org → artifact `openlibrary` (1 day) |
+| `tools` | builder binary → artifact `builder`; NLLB 3.3B → int8 model cache (converted only on cache miss) |
+| `build` × 10 | one per language, in parallel: artifacts + cached model + its library dump (BnF via `tooling/bnf.py`, `BNF_LINK`/`BNF_FOLDERS` change yearly; NLK and Fennica names discovered) → `--languages <lang>` build and translation |
+| `publish` | merge per-language manifests, create release, prune |
 
 Flavors, set in `distributions` (`app/build.gradle.kts`):
 
@@ -293,7 +341,7 @@ Workflow adds icon, covers and screenshots as WebP, then minifies.
 
 ## Translate
 
-App strings and store listing are translated on
+App strings and store listing are translated into all ten catalogue languages on
 [Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
 from its `weblate` branch.
 

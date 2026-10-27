@@ -56,8 +56,9 @@ fun OnboardingScreen() {
     val packs = packInfos(language)
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
     val complete by viewModel.completeLanguage.collectAsStateWithLifecycle()
-    val required = !BuildConfig.BUNDLED_CATALOGUE
     val core = packs?.firstOrNull { it.pack == "core" }
+    val required = core?.let { it.state == PackState.Available }
+        ?: !BuildConfig.BUNDLED_CATALOGUE
     val coreDownload = downloads["$language-core"]
     var started by rememberSaveable(language) { mutableStateOf(false) }
     var showSources by rememberSaveable { mutableStateOf(false) }
@@ -145,7 +146,12 @@ fun OnboardingScreen() {
 
 @Composable
 private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit) =
-    Choice(LANGUAGES, selected, onSelect) { nativeName(it) }
+    LanguageChips(
+        LANGUAGES,
+        selected,
+        installed = installedLanguages(),
+        onSelect = onSelect,
+    )
 
 @Composable
 private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) =

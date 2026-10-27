@@ -362,7 +362,7 @@ class Segment(buffer: ByteBuffer) {
                     covered += reader.varint()
                     val source = reader.byte()
                     val key = reader.varint()
-                    val text = if (source == DNB) isbnOf(key) else key.toString()
+                    val text = if (source == DIGAR) key.toString() else isbnOf(key)
                     put(covered, LibraryCover(source, text))
                 }
             }

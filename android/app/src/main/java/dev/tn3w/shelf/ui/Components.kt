@@ -113,6 +113,7 @@ fun BookCover(
             "L",
             settings.dnbCoverHost,
             settings.digarCoverHost,
+            settings.bookbitesCoverHost,
         )
         if (offline || !settings.onlineCovers || url == null || failed) {
             DrawnCover(book)

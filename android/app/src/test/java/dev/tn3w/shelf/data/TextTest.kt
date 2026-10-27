@@ -15,6 +15,8 @@ class TextTest {
         assertEquals(listOf("dont", "panic", "ca", "va"), tokenize("Don't Panic! Ça va"))
         assertEquals(listOf("ete", "strase"), tokenize("éte Straße"))
         assertEquals(listOf("muller", "o", "neill"), tokenize("Müller O-Neill"))
+        assertEquals(listOf("zolw", "prilis"), tokenize("Żółw příliš"))
+        assertEquals(listOf("채식주의자", "한강"), tokenize("채식주의자 - 한강"))
     }
 
     @Test

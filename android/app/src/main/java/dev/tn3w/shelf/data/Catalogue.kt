@@ -10,9 +10,12 @@ import kotlin.math.ln
 const val COVERS = "https://covers.openlibrary.org"
 const val DNB_COVERS = "https://portal.dnb.de"
 const val DIGAR_COVERS = "https://www.digar.ee"
+const val BOOKBITES_COVERS = "https://bookbites-prod-se.covers.bookbites.com"
 const val SYNTHETIC = 1_000_000_000
 const val DNB = 1
 const val DIGAR = 2
+const val ISBN_COVER = 3
+const val BOOKBITES = 4
 
 data class Author(val number: Int, val name: String) {
     fun photoUrl(host: String, size: String) =
@@ -21,11 +24,14 @@ data class Author(val number: Int, val name: String) {
 
 @Serializable
 data class LibraryCover(val source: Int, @SerialName("isbn") val key: String) {
-    fun url(dnbHost: String, digarHost: String) = when (source) {
-        DNB -> "$dnbHost/opac/mvb/cover?isbn=$key"
-        DIGAR -> "$digarHost/arhiiv/nlib-digar:$key?thumb=1"
-        else -> null
-    }
+    fun url(host: String, dnbHost: String, digarHost: String, bookbitesHost: String) =
+        when (source) {
+            DNB -> "$dnbHost/opac/mvb/cover?isbn=$key"
+            DIGAR -> "$digarHost/arhiiv/nlib-digar:$key?thumb=1"
+            ISBN_COVER -> "$host/b/isbn/$key-L.jpg?default=false"
+            BOOKBITES -> "$bookbitesHost/$key"
+            else -> null
+        }
 }
 
 data class Book(
@@ -48,10 +54,11 @@ data class Book(
         size: String,
         dnbHost: String = DNB_COVERS,
         digarHost: String = DIGAR_COVERS,
+        bookbitesHost: String = BOOKBITES_COVERS,
     ) = if (cover ==
         0
     ) {
-        libraryCover?.url(dnbHost, digarHost)
+        libraryCover?.url(host, dnbHost, digarHost, bookbitesHost)
     } else {
         "$host/b/id/$cover-$size.jpg"
     }

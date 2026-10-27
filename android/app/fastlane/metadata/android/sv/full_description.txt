@@ -1,0 +1,16 @@
+Shelf är en offlinekatalog för böcker byggd på Open Library och nationalbiblioteken i Tyskland, Frankrike, Estland, Sverige, Polen, Tjeckien, Korea och Finland.
+
+* Feltolerant sökning med förslag
+* Utforska genrer, serier och författare
+* Bibliotek med hyllorna Vill läsa, Läser och Läst
+* Lägg till egna böcker som saknas i katalogen, med eget omslag
+* Skanna ett bokomslag eller en ISBN-streckkod, direkt på enheten
+* Import och export av CSV från Goodreads och StoryGraph
+* Dagligt läsmål och lässviter
+* Personliga rekommendationer beräknade på enheten
+* Läsare för EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT och HTML, importerade eller öppnade från valfri app
+* Läskomfort: textstorlek, radavstånd, marginaler, typsnitt, pappers- och nattsidor, bläddring med knappar
+* Kataloger på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska och finska med valfria genrepaket
+* Självhostbar: egen katalogkälla och omslagsserver, eller import av katalogfiler
+
+Ingen spårning, inga annonser, inga konton. Shelf kontaktar bara GitHub (eller din egen katalogkälla) för katalognedladdningar och, om det är aktiverat, Open Library och dess värd archive.org, DNB, DIGAR och Bookbites (eller dina egna omslagsservrar) för omslag och författarfoton.

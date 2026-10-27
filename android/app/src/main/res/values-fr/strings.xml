@@ -53,13 +53,18 @@
     <string name="more_by">Plus de %s</string>
     <string name="no_results">Aucun résultat.</string>
     <string name="online_covers">Charger les couvertures</string>
-    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library, la DNB et DIGAR.</string>
+    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library, la DNB, DIGAR et Bookbites.</string>
     <string name="open_failed">Impossible d\'ouvrir ce fichier.</string>
     <string name="page_failed">Impossible d\'afficher cette page.</string>
     <string name="open_library_license">Licence des données Open Library</string>
     <string name="open_library_note">Données issues d\'Open Library, générées chaque mois depuis ses exports publics.</string>
     <string name="dnb_note">Données issues d\'Open Library et de la Bibliothèque nationale allemande (DNB), générées chaque mois depuis leurs exports publics.</string>
     <string name="erb_note">Données issues d\'Open Library et de la Bibliothèque nationale d\'Estonie (ERB), générées chaque mois depuis leurs exports publics.</string>
+    <string name="fennica_note">Données issues d\'Open Library et de la Bibliothèque nationale de Finlande (Fennica), générées chaque mois depuis leurs exports publics.</string>
+    <string name="nlk_note">Données issues d\'Open Library et de la Bibliothèque nationale de Corée, générées chaque mois depuis leurs exports publics.</string>
+    <string name="nkp_note">Données issues d\'Open Library et de la Bibliothèque nationale tchèque, générées chaque mois depuis leurs exports publics.</string>
+    <string name="bnp_note">Données issues d\'Open Library et de la Bibliothèque nationale de Pologne, générées chaque mois depuis leurs exports publics.</string>
+    <string name="libris_note">Données issues d\'Open Library et du catalogue collectif suédois (LIBRIS), générées chaque mois depuis leurs exports publics.</string>
     <string name="dnb_license">Licence des données DNB</string>
     <string name="erb_license">Licence des données ERB</string>
     <string name="pack_available">Non installé</string>
@@ -83,7 +88,7 @@
     <string name="popular_now_subtitle">Ce que les lecteurs ouvrent partout.</string>
     <string name="popular_subtitle">Aimés des lecteurs.</string>
     <string name="privacy">Confidentialité</string>
-    <string name="privacy_note">Aucun pistage, aucune publicité, aucun compte, aucun identifiant. Shelf n\'utilise le réseau que pour ce que vous activez ou touchez : paquets du catalogue depuis GitHub ou votre propre source, mises à jour depuis GitHub, couvertures depuis Open Library, la DNB et DIGAR, photos d\'auteurs depuis Open Library. Le mode hors ligne arrête tout. Votre bibliothèque reste sur l\'appareil.</string>
+    <string name="privacy_note">Aucun pistage, aucune publicité, aucun compte, aucun identifiant. Shelf n\'utilise le réseau que pour ce que vous activez ou touchez : paquets du catalogue depuis GitHub ou votre propre source, mises à jour depuis GitHub, couvertures depuis Open Library, la DNB, DIGAR et Bookbites, photos d\'auteurs depuis Open Library. Le mode hors ligne arrête tout. Votre bibliothèque reste sur l\'appareil.</string>
     <string name="reading">En cours</string>
     <string name="recent">Recherches récentes</string>
     <string name="remove_pack">Supprimer %s</string>
@@ -262,6 +267,8 @@
     <string name="dnb_cover_source_hint">URL de base du service de couvertures de la Bibliothèque nationale allemande, https uniquement. Vide signifie la valeur par défaut.</string>
     <string name="digar_cover_source">Serveur de couvertures DIGAR</string>
     <string name="digar_cover_source_hint">URL de base des archives DIGAR de la Bibliothèque nationale d\'Estonie, https uniquement. Vide signifie la valeur par défaut.</string>
+    <string name="bookbites_cover_source_hint">URL de base du service de couvertures Bookbites pour les livres suédois, https uniquement. Vide signifie la valeur par défaut.</string>
+    <string name="bookbites_cover_source">Serveur de couvertures Bookbites</string>
     <string name="catalogue_incomplete">Importez le fichier core et le fichier ranks d\'une même langue.</string>
     <string name="no_catalogue">Aucun catalogue installé. Téléchargez-en un ou importez des fichiers de catalogue dans les paramètres pour parcourir les livres. Vos propres fichiers s\'importent dans la bibliothèque.</string>
     <string name="open_settings">Ouvrir les paramètres</string>
@@ -296,6 +303,8 @@
     <string name="free_books_none">Aucun résultat</string>
     <string name="free_books_unreachable">Injoignable</string>
     <string name="free_books_failed">Échec du téléchargement</string>
+    <string name="transfers">Téléchargements et imports</string>
+    <string name="transfer_running">Fin du téléchargement ou de l\'import</string>
     <string name="free_books_no_source">Aucune source choisie n\'a de livres dans cette langue.</string>
     <string name="free_books_rights">Le domaine public varie selon les pays. Vérifiez la loi locale.</string>
     <string name="free_ebook">Livre libre</string>

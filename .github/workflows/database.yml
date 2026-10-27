@@ -18,30 +18,21 @@ concurrency:
 
 env:
   GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
   DUMPS: https://openlibrary.org/data
-  DNB: https://data.dnb.de/opendata/dnb-all_lds.rdf.gz
-  ERB: https://data.digar.ee/erb/ERB_eestikeelne_raamat.zip
+  BNF_LINK: c06ebbc0-5dd9-44e8-966b-56c91dcf59c5
+  BNF_FOLDERS: BNF-Livres_2025 BNF-Livres_2025_Unimarc_UTF8
   HF_HOME: /mnt/huggingface
+  MODEL_CACHE: nllb-200-3.3B-int8
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    outputs:
+      release: ${{ steps.names.outputs.release }}
+      latest: ${{ steps.names.outputs.latest }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          workspaces: builder
-
-      - name: Prepare tools
-        run: |
-          cargo build --release --locked --manifest-path builder/Cargo.toml &
-          sudo apt-get install -y -qq aria2
-          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
-          pip install --quiet ctranslate2 transformers sentencepiece
-          wait
-
-      - name: Fetch inputs
+      - id: names
         run: |
           latest=$(gh release list --limit 100 --json tagName \
             --jq '[.[].tagName | select(startswith("catalogue-"))] | sort | last // ""')
@@ -50,35 +41,210 @@ jobs:
             gh release view "catalogue-$release" >/dev/null 2>&1 || break
             release=$(date -u +%F)-$suffix
           done
-          echo "RELEASE=$release" >> "$GITHUB_ENV"
-          mkdir -p previous
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
+  dumps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Open Library dumps
+        run: |
+          sudo apt-get install -y -qq aria2
+          sudo install -d -o "$USER" /mnt/dumps
+          for name in reading-log ratings authors covers_metadata editions works; do
+            echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
+          done | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 8 \
+            --split 16 --max-connection-per-server 16 --min-split-size 64M \
+            --max-tries 20 --retry-wait 5 --file-allocation none \
+            --console-log-level warn --summary-interval 60
+          du -sh /mnt/dumps
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: openlibrary
+          path: /mnt/dumps
+          compression-level: 0
+          retention-days: 1
+
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: builder
+
+      - run: cargo build --release --locked --manifest-path builder/Cargo.toml
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: builder
+          path: builder/target/release/builder
+          retention-days: 1
+
+      - name: Prepare disk
+        run: |
+          sudo install -d -o "$USER" /mnt/models /mnt/huggingface
+          sudo fallocate -l 12G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile >/dev/null
+          sudo swapon /mnt/swapfile
+
+      - id: model
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /mnt/models
+          key: ${{ env.MODEL_CACHE }}
+          lookup-only: true
+
+      - name: Convert translation model
+        if: steps.model.outputs.cache-hit != 'true'
+        run: |
+          pip install --quiet torch --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet ctranslate2 transformers sentencepiece
+          ct2-transformers-converter --model facebook/nllb-200-3.3B \
+            --output_dir /mnt/models/nllb-200-3.3B --quantization int8 --low_cpu_mem_usage
+
+      - if: steps.model.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /mnt/models
+          key: ${{ env.MODEL_CACHE }}
+
+  build:
+    needs: [prepare, dumps, tools]
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      matrix:
+        language: [en, de, fr, es, et, sv, pl, cs, ko, fi]
+    env:
+      LANGUAGE: ${{ matrix.language }}
+      RELEASE: ${{ needs.prepare.outputs.release }}
+      LATEST: ${{ needs.prepare.outputs.latest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Prepare disk and tools
+        run: |
           sudo install -d -o "$USER" /mnt/dumps /mnt/models /mnt/huggingface
           sudo fallocate -l 12G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile >/dev/null
           sudo swapon /mnt/swapfile
-          [ -n "$latest" ] && gh release download "$latest" --dir previous \
-            --pattern 'state-*.bin' --pattern 'translations-*.bin' \
+          sudo apt-get install -y -qq aria2 &
+          pip install --quiet ctranslate2 transformers sentencepiece
+          wait
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: openlibrary
+          path: /mnt/dumps
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: builder
+          path: bin
+
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /mnt/models
+          key: ${{ env.MODEL_CACHE }}
+          fail-on-cache-miss: true
+
+      - name: Fetch library dump
+        run: |
+          mkdir -p previous
+          [ -n "$LATEST" ] && gh release download "$LATEST" --dir previous \
+            --pattern "state-$LANGUAGE.bin" --pattern "translations-$LANGUAGE.bin" \
             --pattern manifest.json &
-          { for name in reading-log ratings authors covers_metadata editions works; do
-            echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
-          done; echo "$DNB"; echo "$ERB"; } \
-            | aria2c --input-file - --dir /mnt/dumps --max-concurrent-downloads 8 \
-              --split 16 --max-connection-per-server 16 --min-split-size 64M \
-              --max-tries 20 --retry-wait 5 --file-allocation none \
-              --console-log-level warn --summary-interval 60
+          aria() {
+            aria2c --dir /mnt/dumps --max-concurrent-downloads 8 --split 16 \
+              --max-connection-per-server 16 --min-split-size 64M --max-tries 20 \
+              --retry-wait 5 --file-allocation none --console-log-level warn \
+              --summary-interval 60 "$@"
+          }
+          stream() {
+            curl -sSfL --retry 10 --retry-all-errors -o "/mnt/dumps/$1" "$2"
+          }
+          case "$LANGUAGE" in
+            fr)
+              python3 tooling/bnf.py "$BNF_LINK" /mnt/dumps/bnf $BNF_FOLDERS
+              library=$(printf ' --library bnf=%s' /mnt/dumps/bnf/*.zip)
+              library=${library# --library } ;;
+            de)
+              aria https://data.dnb.de/opendata/dnb-all_lds.rdf.gz
+              library="dnb=/mnt/dumps/dnb-all_lds.rdf.gz" ;;
+            et)
+              aria https://data.digar.ee/erb/ERB_eestikeelne_raamat.zip
+              library="erb=/mnt/dumps/ERB_eestikeelne_raamat.zip" ;;
+            sv)
+              base='https://libris.kb.se/api/emm/full?download=.ndjsonld.gz'
+              base="$base&selection=type:"
+              stream libris-instances.ndjsonld.gz "${base}Instance" &
+              stream libris-persons.ndjsonld.gz "${base}Person"
+              library="libris=/mnt/dumps/libris-instances.ndjsonld.gz"
+              library="$library,/mnt/dumps/libris-persons.ndjsonld.gz" ;;
+            pl)
+              aria https://data.bn.org.pl/db/networks/bibs-ksiazka.marc \
+                https://data.bn.org.pl/db/networks/bibs-e_book.marc
+              library="bnp=/mnt/dumps/bibs-ksiazka.marc"
+              library="$library --library bnp=/mnt/dumps/bibs-e_book.marc" ;;
+            cs)
+              stream nkc.xml.gz https://aleph.nkp.cz/data/nkc.xml.gz
+              library="nkp=/mnt/dumps/nkc.xml.gz" ;;
+            ko)
+              name=$(curl -sSf https://lod.nl.go.kr/home/dataset/datadownload.do \
+                | grep -oE 'book_json_[0-9]{8}\.zip' | sort -u | tail -1)
+              stream "$name" \
+                "https://lod.nl.go.kr/home/dataset/datasetdownload.do?fileName=$name"
+              library="nlk=/mnt/dumps/$name" ;;
+            fi)
+              index=https://data.nationallibrary.fi/download/
+              name=$(curl -sSf "$index" | grep -oE 'Fennica-bib-[0-9]+\.zip' \
+                | sort -u | tail -1)
+              aria "$index$name"
+              library="fennica=/mnt/dumps/$name" ;;
+          esac
+          echo "LIBRARY=${library:+--library $library}" >> "$GITHUB_ENV"
           wait
           du -sh /mnt/dumps
 
       - name: Build database
         run: |
-          builder/target/release/builder /mnt/dumps out \
-            --month "$RELEASE" --previous previous --translations previous \
-            --library dnb=/mnt/dumps/dnb-all_lds.rdf.gz \
-            --library erb=/mnt/dumps/ERB_eestikeelne_raamat.zip \
-            --requests requests ${{ inputs.rebase && '--rebase' || '' }} \
+          chmod +x bin/builder
+          bin/builder /mnt/dumps out \
+            --month "$RELEASE" --languages "$LANGUAGE" \
+            --previous previous --translations previous \
+            $LIBRARY --requests requests ${{ inputs.rebase && '--rebase' || '' }} \
             --translator "python tooling/translate.py --device cpu \
               --compute-type int8 --limit 20000 --models-dir /mnt/models"
+          mv out/manifest.json "out/manifest-$LANGUAGE.json"
+          du -sh out
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: catalogue-${{ matrix.language }}
+          path: out
+          retention-days: 3
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    env:
+      RELEASE: ${{ needs.prepare.outputs.release }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: catalogue-*
+          path: out
+          merge-multiple: true
+
+      - name: Merge manifests
+        run: |
+          jq -s '{format: .[0].format, month: .[0].month}
+            + {segments: map(.segments) | add}' out/manifest-*.json > out/manifest.json
+          rm out/manifest-*.json
           du -sh out
 
       - name: Publish release
@@ -86,7 +252,7 @@ jobs:
           for attempt in 1 2 3 4 5; do
             gh release create "catalogue-$RELEASE" --latest=false \
               --title "Catalogue $RELEASE" \
-              --notes "Open Library catalogue segments, ranks and state for $RELEASE." \
+              --notes "Catalogue segments, ranks and state for $RELEASE." \
               out/* && exit 0
             gh release delete "catalogue-$RELEASE" --cleanup-tag --yes || true
             sleep $((attempt * 30))

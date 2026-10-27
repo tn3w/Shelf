@@ -54,13 +54,18 @@
     <string name="more_by">Veel autorilt %s</string>
     <string name="no_results">Tulemusi pole.</string>
     <string name="online_covers">Laadi kaanepildid</string>
-    <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st ja DIGARist.</string>
+    <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist.</string>
     <string name="open_failed">Seda faili ei saanud avada.</string>
     <string name="page_failed">Seda lehte ei saanud kuvada.</string>
     <string name="open_library_license">Open Library andmete litsents</string>
     <string name="open_library_note">Raamatuandmed pärinevad Open Libraryst, koostatud igakuiselt selle avalikest väljavõtetest.</string>
     <string name="dnb_note">Raamatuandmed pärinevad Open Libraryst ja Saksa Rahvusraamatukogust (DNB), koostatud igakuiselt nende avalikest väljavõtetest.</string>
     <string name="erb_note">Raamatuandmed pärinevad Open Libraryst ja Eesti Rahvusraamatukogust (ERB), koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="fennica_note">Raamatuandmed pärinevad Open Libraryst ja Soome Rahvusraamatukogust (Fennica), koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="nlk_note">Raamatuandmed pärinevad Open Libraryst ja Korea Rahvusraamatukogust, koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="nkp_note">Raamatuandmed pärinevad Open Libraryst ja Tšehhi Rahvusraamatukogust, koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="bnp_note">Raamatuandmed pärinevad Open Libraryst ja Poola Rahvusraamatukogust, koostatud igakuiselt nende avalikest väljavõtetest.</string>
+    <string name="libris_note">Raamatuandmed pärinevad Open Libraryst ja Rootsi koondkataloogist (LIBRIS), koostatud igakuiselt nende avalikest väljavõtetest.</string>
     <string name="dnb_license">DNB andmete litsents</string>
     <string name="erb_license">ERB andmete litsents</string>
     <string name="pack_available">Paigaldamata</string>
@@ -84,7 +89,7 @@
     <string name="popular_now_subtitle">Mida lugejad kõikjal avavad.</string>
     <string name="popular_subtitle">Lugejate lemmikud kõikjal.</string>
     <string name="privacy">Privaatsus</string>
-    <string name="privacy_note">Jälgimist, reklaame, kontosid ega identifikaatoreid pole. Shelf kasutab võrku ainult selleks, mille sisse lülitad või mida puudutad: kataloogipaketid GitHubist või sinu enda allikast, rakenduse uuendused GitHubist, kaanepildid Open Libraryst, DNB-st ja DIGARist, autorifotod Open Libraryst. Võrguühenduseta režiim peatab kõik selle. Sinu raamatukogu jääb sellesse seadmesse.</string>
+    <string name="privacy_note">Jälgimist, reklaame, kontosid ega identifikaatoreid pole. Shelf kasutab võrku ainult selleks, mille sisse lülitad või mida puudutad: kataloogipaketid GitHubist või sinu enda allikast, rakenduse uuendused GitHubist, kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist, autorifotod Open Libraryst. Võrguühenduseta režiim peatab kõik selle. Sinu raamatukogu jääb sellesse seadmesse.</string>
     <string name="reading">Loen</string>
     <string name="recent">Hiljutised otsingud</string>
     <string name="remove_pack">Eemalda %s</string>
@@ -255,6 +260,8 @@
     <string name="dnb_cover_source_hint">Saksa Rahvusraamatukogu kaaneteenuse baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
     <string name="digar_cover_source">DIGAR-i kaaneserver</string>
     <string name="digar_cover_source_hint">Rahvusraamatukogu DIGAR-i arhiivi baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
+    <string name="bookbites_cover_source_hint">Rootsi raamatute Bookbitesi kaaneteenuse baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
+    <string name="bookbites_cover_source">Bookbitesi kaaneserver</string>
     <string name="catalogue_incomplete">Impordi ühe keele nii põhi- kui ka pingereafail.</string>
     <string name="no_catalogue">Kataloogi pole veel paigaldatud. Raamatute sirvimiseks laadi see alla või impordi kataloogifailid seadetes. Oma faile saad importida raamatukogus.</string>
     <string name="open_settings">Ava seaded</string>

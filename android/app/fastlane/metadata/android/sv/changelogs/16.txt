@@ -1,0 +1,6 @@
+• Nya kataloger: svenska, polska, tjeckiska, koreanska och finska, från ländernas nationalbibliotek
+• Appen finns nu även på svenska, polska, tjeckiska, koreanska och finska
+• Den franska katalogen växer till över 600 000 böcker med Frankrikes nationalbibliotek
+• Ny språkväljare för kataloger
+• Mindre app: bara engelska ingår, andra kataloger laddas ner vid första start
+• Sökningen förstår polska, tjeckiska och koreanska tecken

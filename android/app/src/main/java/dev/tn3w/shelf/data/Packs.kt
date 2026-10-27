@@ -16,7 +16,8 @@ import java.nio.channels.FileChannel
 import java.security.DigestInputStream
 import java.security.MessageDigest
 
-val LANGUAGES = listOf("en", "de", "fr", "es", "et")
+val LANGUAGES = listOf("en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi")
+val MAIN_LANGUAGES = listOf("en", "de", "fr", "es")
 val PACKS = mapOf(
     "core" to R.string.pack_core,
     "fantasy" to R.string.pack_fantasy,

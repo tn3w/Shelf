@@ -54,13 +54,18 @@
     <string name="more_by">More by %s</string>
     <string name="no_results">No results.</string>
     <string name="online_covers">Load covers</string>
-    <string name="online_covers_hint">Fetch cover images from Open Library, DNB and DIGAR.</string>
+    <string name="online_covers_hint">Fetch cover images from Open Library, DNB, DIGAR and Bookbites.</string>
     <string name="open_failed">This file could not be opened.</string>
     <string name="page_failed">This page could not be displayed.</string>
     <string name="open_library_license">Open Library data license</string>
     <string name="open_library_note">Book data from Open Library, built monthly from its public dumps.</string>
     <string name="dnb_note">Book data from Open Library and the German National Library (DNB), built monthly from their public dumps.</string>
     <string name="erb_note">Book data from Open Library and the National Library of Estonia (ERB), built monthly from their public dumps.</string>
+    <string name="libris_note">Book data from Open Library and the Swedish union catalogue (LIBRIS), built monthly from their public dumps.</string>
+    <string name="bnp_note">Book data from Open Library and the National Library of Poland, built monthly from their public dumps.</string>
+    <string name="nkp_note">Book data from Open Library and the National Library of the Czech Republic, built monthly from their public dumps.</string>
+    <string name="nlk_note">Book data from Open Library and the National Library of Korea, built monthly from their public dumps.</string>
+    <string name="fennica_note">Book data from Open Library and the National Library of Finland (Fennica), built monthly from their public dumps.</string>
     <string name="dnb_license">DNB data license</string>
     <string name="erb_license">ERB data license</string>
     <string name="pack_available">Not installed</string>
@@ -84,7 +89,7 @@
     <string name="popular_now_subtitle">What readers everywhere are opening.</string>
     <string name="popular_subtitle">Loved by readers everywhere.</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers from Open Library, DNB and DIGAR, author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
+    <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers from Open Library, DNB, DIGAR and Bookbites, author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
     <string name="reading">Reading</string>
     <string name="recent">Recent searches</string>
     <string name="remove_pack">Remove %s</string>
@@ -255,6 +260,8 @@
     <string name="dnb_cover_source_hint">Base URL of the German National Library cover service, https only. Empty means the default.</string>
     <string name="digar_cover_source">DIGAR cover server</string>
     <string name="digar_cover_source_hint">Base URL of the DIGAR archive of the National Library of Estonia, https only. Empty means the default.</string>
+    <string name="bookbites_cover_source">Bookbites cover server</string>
+    <string name="bookbites_cover_source_hint">Base URL of the Bookbites cover service for Swedish books, https only. Empty means the default.</string>
     <string name="catalogue_incomplete">Import both the core and the ranks file of one language.</string>
     <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
     <string name="open_settings">Open settings</string>

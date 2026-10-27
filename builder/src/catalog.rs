@@ -1,8 +1,8 @@
-use crate::LANGUAGE_COUNT;
 use crate::dumps::{Authors, Book, FLAG_COVER, FLAG_ISBN, FLAG_PUBLISHER, FLAG_READABLE};
 use crate::dumps::{Facts, Signal, TitleRecord, Titles};
 use crate::libraries::{self, SYNTHETIC};
 use crate::release::State;
+use crate::{LANGUAGE_COUNT, LANGUAGES};
 use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 
@@ -142,11 +142,12 @@ const READER_VERDICTS: &[&str] = &[
 
 const JUDGED_WORDS: usize = 25;
 const MIN_STOP_WORD_SHARE: f32 = 0.05;
-const MAX_TOKEN_BYTES: usize = 24;
+const MAX_TOKEN_CHARACTERS: usize = 24;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-pub const SOURCE_LANGUAGES: [&str; 10] =
-    ["en", "de", "fr", "es", "et", "pt", "it", "nl", "sv", "da"];
+pub const SOURCE_LANGUAGES: [&str; 14] = [
+    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "pt", "it", "nl", "da",
+];
 
 const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "the and of to in is that it was for with as his her he she on but not you this \
@@ -161,6 +162,15 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
      sobre entre también cuando muy hay ya",
     "ja ning ei see kui oli mis aga oma nii siis seda kes või veel mida kõik tema nad \
      meie pole olen olid oleks nagu ainult juba väga",
+    "och är inte till av ett från efter vid när hennes hade hon säger blev skulle \
+     mot jag",
+    "się jest przez są był była było oraz tylko już ich jego jej który która które gdy \
+     dla bardzo może",
+    "jsem pro jako není jsou byl byla bylo jeho její které který také když při jsme \
+     však nebo",
+    "",
+    "että hän mutta kun niin jos tai myös kuin ovat olla mitä joka jotka sen hänen \
+     ole",
     "não uma os com dos são foi ele ela seu sua seus suas ao pelo pela pelos pelas \
      também muito já está têm quando sem nas num numa isso esse essa mesmo ainda depois \
      onde",
@@ -168,8 +178,6 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
      questa anche suo suoi sue hanno molto tra fra dopo essere stato stata",
     "het een van dat zijn niet wordt naar voor ook maar deze wij zij hun werd waren \
      heeft hebben geen door met bij uit over zich ik",
-    "och är inte till av ett från efter vid när hennes hade hon säger blev skulle \
-     mot jag",
     "og af ikke til på ved når hendes havde bliver mod ikkje frå eit jeg hvad hvor",
 ];
 
@@ -299,14 +307,16 @@ const PRINT_ON_DEMAND: &[&str] = &[
     "sharp ink",
 ];
 
-pub const TARGET_CODES: [&str; LANGUAGE_COUNT] = ["eng", "ger", "fre", "spa", "est"];
+pub const TARGET_CODES: [&str; LANGUAGE_COUNT] = [
+    "eng", "ger", "fre", "spa", "est", "swe", "pol", "cze", "kor", "fin",
+];
 
 const LANGUAGE_CODES: [&str; 25] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe", "ara",
     "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind", "est",
 ];
 
-const ISBN_GROUPS: [(&str, usize); 22] = [
+const ISBN_GROUPS: [(&str, usize); 30] = [
     ("9780", 0),
     ("9781", 0),
     ("9798", 0),
@@ -329,6 +339,14 @@ const ISBN_GROUPS: [(&str, usize); 22] = [
     ("9789916", 4),
     ("9789949", 4),
     ("9789985", 4),
+    ("97891", 5),
+    ("97883", 6),
+    ("97880", 7),
+    ("97889", 8),
+    ("97911", 8),
+    ("978951", 9),
+    ("978952", 9),
+    ("9789935", 9),
 ];
 
 const ISBN_BASE: u64 = 978_000_000_000;
@@ -339,18 +357,23 @@ const FOREIGN_ISBN_GROUPS: [&str; 17] = [
     "97888", "97889", "9789", "97911", "97912", "97913",
 ];
 
-const FOLDED: [(&str, char); 10] = [
-    ("áàâäãåÁÀÂÄÃÅ", 'a'),
-    ("éèêëÉÈÊË", 'e'),
+const FOLDED: [(&str, char); 14] = [
+    ("áàâäãåąÁÀÂÄÃÅĄ", 'a'),
+    ("éèêëęěÉÈÊËĘĚ", 'e'),
     ("íìîïÍÌÎÏ", 'i'),
     ("óòôöõøÓÒÔÖÕØ", 'o'),
-    ("úùûüÚÙÛÜ", 'u'),
-    ("ñÑ", 'n'),
-    ("çÇ", 'c'),
+    ("úùûüůÚÙÛÜŮ", 'u'),
+    ("ñńňÑŃŇ", 'n'),
+    ("çćčÇĆČ", 'c'),
     ("ýÿÝ", 'y'),
-    ("ßšŠ", 's'),
-    ("žŽ", 'z'),
+    ("ßšśŠŚ", 's'),
+    ("žźżŽŹŻ", 'z'),
+    ("łľĺŁĽĹ", 'l'),
+    ("řŕŘŔ", 'r'),
+    ("ďĎ", 'd'),
+    ("ťŤ", 't'),
 ];
+const HANGUL: std::ops::RangeInclusive<char> = '\u{ac00}'..='\u{d7a3}';
 
 static STOP_WORD_LANGUAGE: LazyLock<HashMap<&'static str, usize>> = LazyLock::new(|| {
     let lists = STOP_WORDS.iter().enumerate();
@@ -748,7 +771,8 @@ pub fn clean_description(text: &str) -> String {
     }
     let stripped = without_citations(&without_links(&without_tags(&text)));
     let text = tidy(&without_urls(&stripped));
-    if is_subject_list(&text) || !is_mostly_latin(&text) {
+    let readable = is_mostly_latin(&text) || is_mostly_hangul(&text);
+    if is_subject_list(&text) || !readable {
         return String::new();
     }
     let paragraphs = readable_paragraphs(&text);
@@ -860,7 +884,7 @@ fn stop_word_hits(text: &str) -> ([usize; SOURCE_LANGUAGES.len()], usize) {
     (hits, count)
 }
 
-fn is_foreign_title(title: &str, language: usize) -> bool {
+pub fn is_foreign_title(title: &str, language: usize) -> bool {
     let (hits, words) = stop_word_hits(title);
     let foreign = hits
         .iter()
@@ -870,6 +894,9 @@ fn is_foreign_title(title: &str, language: usize) -> bool {
 }
 
 pub fn detect_language(text: &str) -> Option<usize> {
+    if is_mostly_hangul(text) {
+        return Some(crate::language_index("ko"));
+    }
     let (hits, words) = stop_word_hits(text);
     let best = (0..hits.len()).max_by_key(|&language| hits[language])?;
     let others = hits
@@ -881,17 +908,33 @@ pub fn detect_language(text: &str) -> Option<usize> {
     (hits[best] > runner_up && !thin).then_some(best)
 }
 
-pub fn is_mostly_latin(text: &str) -> bool {
+fn is_mostly(text: &str, script: impl Fn(char) -> bool) -> bool {
     let letters = text.chars().filter(|character| character.is_alphabetic());
-    let (latin, total) = letters.fold((0, 0), |(latin, total), character| {
-        (latin + usize::from((character as u32) < 0x250), total + 1)
+    let (matching, total) = letters.fold((0, 0), |(matching, total), character| {
+        (matching + usize::from(script(character)), total + 1)
     });
-    total == 0 || latin * 2 > total
+    total == 0 || matching * 2 > total
+}
+
+pub fn is_mostly_latin(text: &str) -> bool {
+    is_mostly(text, |character| (character as u32) < 0x250)
+}
+
+pub fn is_mostly_hangul(text: &str) -> bool {
+    text.chars().any(char::is_alphabetic)
+        && is_mostly(text, |character| HANGUL.contains(&character))
+}
+
+pub fn is_native_script(text: &str, language: usize) -> bool {
+    match LANGUAGES[language] {
+        "ko" => is_mostly_hangul(text) || is_mostly_latin(text),
+        _ => is_mostly_latin(text),
+    }
 }
 
 fn fold(character: char) -> Option<char> {
     let lowered = character.to_ascii_lowercase();
-    if lowered.is_ascii_alphanumeric() {
+    if lowered.is_ascii_alphanumeric() || HANGUL.contains(&character) {
         return Some(lowered);
     }
     let found = FOLDED.iter().find(|(set, _)| set.contains(character));
@@ -901,17 +944,21 @@ fn fold(character: char) -> Option<char> {
 pub fn tokenize(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut current = String::new();
+    let mut length = 0;
     for character in text
         .chars()
         .filter(|character| !matches!(character, '\'' | '’' | '\u{300}'..='\u{36f}'))
     {
         match fold(character) {
-            Some(folded) => current.push(folded),
-            None if !current.is_empty() => tokens.push(std::mem::take(&mut current)),
-            None => {}
+            Some(folded) => {
+                current.push(folded);
+                length += 1;
+            }
+            None => length = MAX_TOKEN_CHARACTERS,
         }
-        if current.len() >= MAX_TOKEN_BYTES {
-            tokens.push(std::mem::take(&mut current));
+        if length >= MAX_TOKEN_CHARACTERS {
+            tokens.extend((!current.is_empty()).then(|| std::mem::take(&mut current)));
+            length = 0;
         }
     }
     if !current.is_empty() {
@@ -1142,13 +1189,17 @@ impl<'a> Resolver<'a> {
         series: &str,
         records: &[&TitleRecord],
     ) -> (String, String) {
-        let ballots: Vec<(String, &str, u16)> = records
+        let mut ballots: Vec<(String, &str, u16)> = records
             .iter()
             .map(|record| self.spelling(record, series))
-            .filter(|title| is_mostly_latin(title))
+            .filter(|title| is_native_script(title, self.language))
             .map(|title| (title_key(title, &[]), title, 0))
             .filter(|ballot| !ballot.0.is_empty())
             .collect();
+        let hangul = |ballot: &(String, &str, u16)| is_mostly_hangul(ballot.1);
+        if LANGUAGES[self.language] == "ko" && ballots.iter().any(hangul) {
+            ballots.retain(hangul);
+        }
         let own_key = title_key(work_title, &[]);
         let own = ballots.iter().filter(|ballot| ballot.0 == own_key).count();
         let keep = (work_title.to_string(), String::new());
@@ -1159,7 +1210,7 @@ impl<'a> Resolver<'a> {
         if best.key == own_key {
             return keep;
         }
-        if own == 0 || own_key.is_empty() || !is_mostly_latin(work_title) {
+        if own == 0 || own_key.is_empty() || !is_native_script(work_title, self.language) {
             return retitle;
         }
         let common = best.count >= 2 && best.count > own * 2;
@@ -1210,7 +1261,7 @@ impl<'a> Resolver<'a> {
             .iter()
             .filter(|record| record.cover > 0)
             .filter(|record| record.language as usize == language)
-            .filter(|record| is_mostly_latin(self.title(record)))
+            .filter(|record| is_native_script(self.title(record), language))
             .filter(|record| !is_foreign_title(self.title(record), language));
         usable
             .map(|record| {
@@ -1388,6 +1439,25 @@ pub fn candidates(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn new_scripts_tokenized_like_the_app() {
+        assert_eq!(tokenize("Żółw příliš"), ["zolw", "prilis"]);
+        assert_eq!(tokenize("채식주의자 - 한강"), ["채식주의자", "한강"]);
+        assert_eq!(tokenize(&"a".repeat(30)), ["a".repeat(24), "a".repeat(6)]);
+        assert_eq!(
+            detect_language("채식주의자"),
+            Some(crate::language_index("ko"))
+        );
+        assert_eq!(
+            isbn_language("9788327154491"),
+            Some(crate::language_index("pl"))
+        );
+        assert_eq!(
+            isbn_language("9789510396358"),
+            Some(crate::language_index("fi"))
+        );
+    }
 
     #[test]
     fn collections_rejected() {

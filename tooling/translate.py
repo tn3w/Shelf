@@ -25,6 +25,10 @@ NLLB_CODES = {
     "nl": "nld_Latn",
     "sv": "swe_Latn",
     "da": "dan_Latn",
+    "pl": "pol_Latn",
+    "cs": "ces_Latn",
+    "ko": "kor_Hang",
+    "fi": "fin_Latn",
 }
 OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "et": "est"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
@@ -413,7 +417,7 @@ def options(argument_list=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("requests", help="requests-<lang>.jsonl from the builder")
     parser.add_argument("output", help="translations-<lang>.bin to write")
-    parser.add_argument("--language", required=True, choices=sorted(OPUS_CODES))
+    parser.add_argument("--language", required=True, choices=sorted(NLLB_CODES))
     parser.add_argument("--model", default=MODEL)
     parser.add_argument("--previous", help="translations-<lang>.bin to merge into")
     parser.add_argument("--models-dir", default="models")

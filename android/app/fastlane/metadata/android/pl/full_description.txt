@@ -1,0 +1,16 @@
+Shelf to katalog książek offline oparty na Open Library oraz bibliotekach narodowych Niemiec, Francji, Estonii, Szwecji, Polski, Czech, Korei i Finlandii.
+
+* Wyszukiwanie odporne na literówki z podpowiedziami
+* Gatunki, serie i autorzy
+* Biblioteka z półkami Chcę przeczytać, Czytam i Przeczytane
+* Własne książki, których brakuje w katalogu, z własną okładką
+* Skanowanie okładki lub kodu kreskowego ISBN, na urządzeniu
+* Import i eksport CSV z Goodreads i StoryGraph
+* Dzienny cel czytania i serie dni
+* Osobiste rekomendacje liczone na urządzeniu
+* Czytnik EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT i HTML, importowanych lub otwieranych z dowolnej aplikacji
+* Wygoda czytania: rozmiar tekstu, odstępy, marginesy, krój pisma, strony papierowe i nocne, przyciski stron
+* Katalogi po angielsku, niemiecku, francusku, hiszpańsku, estońsku, szwedzku, polsku, czesku, koreańsku i fińsku z opcjonalnymi pakietami gatunków
+* Własny hosting: własne źródło katalogu i serwer okładek lub import plików katalogu
+
+Bez śledzenia, bez reklam, bez kont. Shelf łączy się tylko z GitHubem (lub Twoim źródłem katalogu) w celu pobrania katalogu oraz, jeśli włączone, z Open Library i jej hostem archive.org, DNB, DIGAR i Bookbites (lub Twoimi serwerami okładek) po okładki i zdjęcia autorów.

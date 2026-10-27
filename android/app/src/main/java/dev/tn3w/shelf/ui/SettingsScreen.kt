@@ -149,6 +149,10 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
         app.packs.packs(language)
     }
 
+    suspend fun installedLanguages() = withContext(Dispatchers.IO) {
+        app.packs.months().filterValues { it != null }.keys
+    }
+
     suspend fun storage(language: String) = withContext(Dispatchers.IO) {
         val month = app.packs.months()[language].orEmpty()
         Triple(app.packs.storageBytes(language), app.packs.storageBytes(), month)
@@ -668,7 +672,7 @@ private fun AppLanguageChoice() {
     var current by rememberSaveable {
         mutableStateOf(chosen?.takeIf { it in LANGUAGES }.orEmpty())
     }
-    LanguageChoice(current, R.string.app_language) { language ->
+    LanguageChips(listOf("") + LANGUAGES, current, R.string.app_language) { language ->
         current = language
         val locales = LocaleListCompat.forLanguageTags(language)
         AppCompatDelegate.setApplicationLocales(locales)
@@ -676,12 +680,57 @@ private fun AppLanguageChoice() {
 }
 
 @Composable
-fun LanguageChoice(
+private fun ChipIcon(icon: ImageVector) =
+    Icon(icon, contentDescription = null, Modifier.size(FilterChipDefaults.IconSize))
+
+@Composable
+fun LanguageChips(
+    options: List<String>,
     selected: String,
     @StringRes title: Int? = null,
+    installed: Set<String> = emptySet(),
     onSelect: (String) -> Unit,
-) = Choice(listOf("") + LANGUAGES, selected, onSelect, title) {
-    if (it.isEmpty()) stringResource(R.string.language_auto) else it.uppercase()
+) {
+    title?.let {
+        Text(
+            stringResource(it),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        )
+    }
+    val auto = stringResource(R.string.language_auto)
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val main = { option: String ->
+        val pinned = option.isEmpty() || option == selected || option in installed
+        pinned || option in MAIN_LANGUAGES
+    }
+    val shown = if (expanded) options else options.filter(main)
+    FlowRow(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        shown.forEach { option ->
+            val chosen = option == selected
+            val check: @Composable () -> Unit = { ChipIcon(Icons.Outlined.Check) }
+            val done: @Composable () -> Unit = { ChipIcon(Icons.Outlined.DownloadDone) }
+            FilterChip(
+                selected = chosen,
+                onClick = { onSelect(option) },
+                label = {
+                    Text(if (option.isEmpty()) auto else nativeName(option), maxLines = 1)
+                },
+                leadingIcon = check.takeIf { chosen },
+                trailingIcon = done.takeIf { option in installed },
+            )
+        }
+        if (shown.size < options.size) {
+            AssistChip(
+                onClick = { expanded = true },
+                label = { Text(stringResource(R.string.show_all), maxLines = 1) },
+                trailingIcon = { ChipIcon(Icons.Outlined.ExpandMore) },
+            )
+        }
+    }
 }
 
 @Composable

@@ -124,6 +124,7 @@ data class Settings(
     val coverSource: String = "",
     val dnbCoverSource: String = "",
     val digarCoverSource: String = "",
+    val bookbitesCoverSource: String = "",
     val providers: Set<String> = emptySet(),
     val instantSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
@@ -137,6 +138,9 @@ data class Settings(
 
     val digarCoverHost
         get() = digarCoverSource.ifEmpty { DIGAR_COVERS }.trimEnd('/')
+
+    val bookbitesCoverHost
+        get() = bookbitesCoverSource.ifEmpty { BOOKBITES_COVERS }.trimEnd('/')
 }
 
 fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
@@ -667,6 +671,7 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     coverSource = current.coverSource,
     dnbCoverSource = current.dnbCoverSource,
     digarCoverSource = current.digarCoverSource,
+    bookbitesCoverSource = current.bookbitesCoverSource,
     providers = current.providers,
     instantSource = current.instantSource,
 )
