@@ -23,7 +23,7 @@ private const val NOTIFICATION = 1
 class TransferService : Service() {
     override fun onBind(intent: Intent?) = null
 
-    @SuppressLint("InlinedApi")
+    @SuppressLint("InlinedApi", "ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ServiceCompat.startForeground(
             this, NOTIFICATION, notification(), FOREGROUND_SERVICE_TYPE_DATA_SYNC,

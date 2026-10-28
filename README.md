@@ -310,11 +310,15 @@ score, pack, title, alternate, authors, series, year, ISBNs) for review.
 Flavors, set in `distributions` (`app/build.gradle.kts`):
 
 <table>
-<tr><th width="1%">Flavor</th><th width="1%">Catalogue</th><th width="1%">scan.bin</th><th width="1%">Updater</th><th width="1%">Release asset</th></tr>
-<tr><td><code>github</code></td><td>core, ranks</td><td>yes</td><td>yes</td><td><code>shelf.apk</code></td></tr>
-<tr><td><code>update</code></td><td>manifest only</td><td>no</td><td>yes</td><td><code>shelf-update.apk</code></td></tr>
-<tr><td><code>fdroid</code></td><td>manifest only</td><td>yes</td><td>no, no install permission</td><td><code>shelf-fdroid.apk</code></td></tr>
+<tr><th width="1%">Flavor</th><th width="1%">Catalogue</th><th width="1%">scan.bin</th><th width="1%">Updater</th><th width="1%">Transfer service</th><th width="1%">Release asset</th></tr>
+<tr><td><code>github</code></td><td>core, ranks</td><td>yes</td><td>yes</td><td>yes</td><td><code>shelf.apk</code></td></tr>
+<tr><td><code>update</code></td><td>manifest only</td><td>no</td><td>yes</td><td>yes</td><td><code>shelf-update.apk</code></td></tr>
+<tr><td><code>fdroid</code></td><td>manifest only</td><td>yes</td><td>no</td><td>no</td><td><code>shelf-fdroid.apk</code></td></tr>
 </table>
+
+`fdroid` permissions: camera, internet only. `src/fdroid/AndroidManifest.xml` removes
+install, foreground service and androidx dynamic receiver permissions, so transfers run
+without a foreground notification.
 
 In-app update downloads `shelf-update.apk` (smaller). Before install, bundled packs and
 `scan.bin` are copied to app storage, so they survive; a full APK deletes the copies on
