@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.ui
 
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
 import android.text.format.Formatter
 import androidx.annotation.Keep
@@ -218,6 +220,17 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }
         app.reload(app.bookLanguage(settings))
         return true
+    }
+
+    fun chooseBackupFolder(folder: Uri?) = detached {
+        val resolver = app.contentResolver
+        val access = FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
+        resolver.persistedUriPermissions.forEach {
+            resolver.releasePersistableUriPermission(it.uri, access)
+        }
+        folder?.let { resolver.takePersistableUriPermission(it, access) }
+        library.updateSettings { it.copy(backupFolder = folder?.toString().orEmpty()) }
+        app.backUp()
     }
 
     fun importCsv(uri: Uri) = runAction(SettingsAction.CsvImport) {

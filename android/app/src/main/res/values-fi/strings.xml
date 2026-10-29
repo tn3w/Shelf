@@ -13,6 +13,10 @@
     <string name="backup_failed">Tiedostoa ei voitu käyttää.</string>
     <string name="backup_exported">Varmuuskopio tallennettu.</string>
     <string name="export_failed">Tiedostoa ei voitu kirjoittaa.</string>
+    <string name="auto_backup">Automaattinen varmuuskopio</string>
+    <string name="auto_backup_hint">Kerran päivässä Shelf kirjoittaa poistuttaessa päivätyn zip-tiedoston tähän kansioon ja säilyttää 7 uusinta. Valitse Syncthing-kansio, niin se kopioituu muille laitteille.</string>
+    <string name="auto_backup_folder">Varmuuskopiokansio</string>
+    <string name="auto_backup_off">Pois</string>
     <string name="born">Syntynyt %d</string>
     <string name="catalogue">Luettelo</string>
     <string name="catalogue_hint">Offline-paketit, päivitykset ja omat lähteet.</string>

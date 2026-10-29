@@ -13,6 +13,10 @@
     <string name="backup_failed">Diese Datei konnte nicht verwendet werden.</string>
     <string name="backup_exported">Sicherung gespeichert.</string>
     <string name="export_failed">Diese Datei konnte nicht geschrieben werden.</string>
+    <string name="auto_backup">Automatische Sicherung</string>
+    <string name="auto_backup_hint">Einmal täglich schreibt Shelf beim Verlassen eine datierte Zip-Datei in diesen Ordner und behält die neuesten 7. Mit einem Syncthing-Ordner landet sie auch auf anderen Geräten.</string>
+    <string name="auto_backup_folder">Sicherungsordner</string>
+    <string name="auto_backup_off">Aus</string>
     <string name="born">Geboren %d</string>
     <string name="catalogue">Katalog</string>
     <string name="catalogue_hint">Offline-Pakete, Updates und eigene Quellen.</string>

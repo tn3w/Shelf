@@ -13,6 +13,10 @@
     <string name="backup_failed">이 파일을 사용할 수 없습니다.</string>
     <string name="backup_exported">백업을 저장했습니다.</string>
     <string name="export_failed">이 파일을 쓸 수 없습니다.</string>
+    <string name="auto_backup">자동 백업</string>
+    <string name="auto_backup_hint">하루에 한 번 Shelf를 나갈 때 날짜가 붙은 zip 파일을 이 폴더에 쓰고 최신 7개를 유지합니다. Syncthing 폴더를 고르면 다른 기기로도 복사됩니다.</string>
+    <string name="auto_backup_folder">백업 폴더</string>
+    <string name="auto_backup_off">끔</string>
     <string name="born">%d년 출생</string>
     <string name="catalogue">카탈로그</string>
     <string name="catalogue_hint">오프라인 팩, 업데이트, 직접 지정한 소스.</string>

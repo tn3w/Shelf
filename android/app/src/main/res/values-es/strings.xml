@@ -13,6 +13,10 @@
     <string name="backup_failed">No se pudo usar ese archivo.</string>
     <string name="backup_exported">Copia guardada.</string>
     <string name="export_failed">No se pudo escribir ese archivo.</string>
+    <string name="auto_backup">Copia automática</string>
+    <string name="auto_backup_hint">Una vez al día, al salir de Shelf se guarda un zip con fecha en esta carpeta y se conservan los 7 más recientes. Elige una carpeta de Syncthing para copiarlo a otros dispositivos.</string>
+    <string name="auto_backup_folder">Carpeta de copias</string>
+    <string name="auto_backup_off">Desactivada</string>
     <string name="born">Nacido en %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Paquetes sin conexión, actualizaciones y fuentes propias.</string>

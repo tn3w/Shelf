@@ -14,6 +14,10 @@
     <string name="backup_failed">That file could not be used.</string>
     <string name="backup_exported">Backup saved.</string>
     <string name="export_failed">That file could not be written.</string>
+    <string name="auto_backup">Automatic backup</string>
+    <string name="auto_backup_hint">Once a day, leaving Shelf writes a dated zip to this folder and keeps the newest 7. Pick a Syncthing folder to copy it to other devices.</string>
+    <string name="auto_backup_folder">Backup folder</string>
+    <string name="auto_backup_off">Off</string>
     <string name="born">Born %d</string>
     <string name="catalogue">Catalogue</string>
     <string name="catalogue_hint">Offline packs, updates and own sources.</string>

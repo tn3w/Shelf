@@ -4,10 +4,17 @@ import android.Manifest.permission.INTERNET
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.DocumentsContract.Document
+import android.provider.DocumentsContract.buildChildDocumentsUriUsingTree
+import android.provider.DocumentsContract.buildDocumentUriUsingTree
+import android.provider.DocumentsContract.createDocument
+import android.provider.DocumentsContract.deleteDocument
+import android.provider.DocumentsContract.getTreeDocumentId
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.annotation.StringRes
+import androidx.core.net.toUri
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataMigration
 import androidx.datastore.core.DataStore
@@ -44,6 +51,8 @@ private const val LEGACY_FILE = "datastore/library.preferences_pb"
 private const val BACKUP_ENTRY = "library.json"
 private const val COVER_CACHE = "covers"
 private const val BOOKS_PREFIX = "books/"
+private const val KEPT_BACKUPS = 7
+private val AUTOMATIC_BACKUP = Regex("""shelf-\d{4}-\d{2}-\d{2}\.zip""")
 private val BOOK_FILE = Regex("""(-?\d+)(\.\w+|-cover-\d+)""")
 val FONT_SCALES = 0.7f..1.8f
 val SPACING_RANGE = 1.35f..1.8f
@@ -129,6 +138,7 @@ data class Settings(
     val instantSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
+    val backupFolder: String = "",
 ) {
     val coverHost
         get() = coverSource.ifEmpty { COVERS }.trimEnd('/')
@@ -569,6 +579,26 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         return context.writeTo(uri) { writeArchive(it, backup) }
     }
 
+    suspend fun backUpToFolder(today: LocalDate = LocalDate.now()) =
+        withContext(Dispatchers.IO) {
+            val folder = settings.first().backupFolder.ifEmpty { return@withContext }
+            val tree = folder.toUri()
+            val resolver = context.contentResolver
+            val backups = context.documentsIn(tree)
+            val name = automaticBackupName(today)
+            if (name in backups) return@withContext
+            val parent = buildDocumentUriUsingTree(tree, getTreeDocumentId(tree))
+            val created = createDocument(resolver, parent, "application/zip", name)
+                ?: return@withContext
+            if (!exportTo(created)) {
+                deleteDocument(resolver, created)
+                return@withContext
+            }
+            staleBackups(backups.keys + name).forEach {
+                deleteDocument(resolver, backups.getValue(it))
+            }
+        }
+
     private fun writeArchive(output: OutputStream, backup: Backup) =
         ZipOutputStream(output).use { archive ->
             archive.putNextEntry(ZipEntry(BACKUP_ENTRY))
@@ -589,6 +619,21 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         return true
     }
 }
+
+private fun Context.documentsIn(tree: Uri): Map<String, Uri> {
+    val children = buildChildDocumentsUriUsingTree(tree, getTreeDocumentId(tree))
+    val columns = arrayOf(Document.COLUMN_DOCUMENT_ID, Document.COLUMN_DISPLAY_NAME)
+    return contentResolver.query(children, columns, null, null, null)?.use { cursor ->
+        generateSequence { cursor.takeIf { it.moveToNext() } }.associate {
+            it.getString(1) to buildDocumentUriUsingTree(tree, it.getString(0))
+        }
+    }.orEmpty()
+}
+
+internal fun automaticBackupName(day: LocalDate) = "shelf-$day.zip"
+
+internal fun staleBackups(names: Collection<String>, kept: Int = KEPT_BACKUPS) =
+    names.filter(AUTOMATIC_BACKUP::matches).sortedDescending().drop(kept)
 
 internal fun readArchive(input: InputStream, directory: File) =
     ZipInputStream(input).use { archive ->
@@ -674,6 +719,7 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     bookbitesCoverSource = current.bookbitesCoverSource,
     providers = current.providers,
     instantSource = current.instantSource,
+    backupFolder = current.backupFolder,
 )
 
 private fun Int.moved(alias: (Int) -> Int?) = alias(this) ?: this

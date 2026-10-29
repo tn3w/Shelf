@@ -214,6 +214,11 @@ class MainActivity : AppCompatActivity() {
         openedFile(intent)?.let(viewModel::openFile)
     }
 
+    override fun onStop() {
+        super.onStop()
+        (application as ShelfApp).backUp()
+    }
+
     private fun showMessages() = lifecycleScope.launch {
         repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.messages.collect {

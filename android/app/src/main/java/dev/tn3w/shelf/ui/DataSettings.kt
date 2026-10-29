@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.ui
 
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.*
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
@@ -28,6 +30,9 @@ fun DataSettings() {
     SettingsGroup(stringResource(R.string.backup), stringResource(R.string.backup_hint)) {
         BackupRows()
     }
+    SettingsGroup(
+        stringResource(R.string.auto_backup), stringResource(R.string.auto_backup_hint),
+    ) { AutomaticBackupRow() }
     SettingsGroup(stringResource(R.string.csv), stringResource(R.string.csv_hint)) {
         CsvRows()
     }
@@ -55,6 +60,35 @@ private fun BackupRows() {
         R.string.backup_done,
         work = viewModel::restoreBackup,
     )
+}
+
+@Composable
+private fun AutomaticBackupRow() {
+    val viewModel = settingsViewModel()
+    val settings = loadedSettings() ?: return
+    val folder = settings.backupFolder
+    val picker = rememberLauncherForActivityResult(OpenDocumentTree()) { uri ->
+        uri?.let(viewModel::chooseBackupFolder)
+    }
+    val summary = folder.ifEmpty { null }?.let(::folderName)
+        ?: stringResource(R.string.auto_backup_off)
+    SettingRow(
+        stringResource(R.string.auto_backup_folder),
+        summary,
+        onClick = { picker.launch(null) },
+    ) {
+        Switch(
+            checked = folder.isNotEmpty(),
+            onCheckedChange = { on ->
+                if (on) picker.launch(null) else viewModel.chooseBackupFolder(null)
+            },
+        )
+    }
+}
+
+private fun folderName(folder: String): String {
+    val id = DocumentsContract.getTreeDocumentId(folder.toUri())
+    return id.substringAfter(':').ifEmpty { id }
 }
 
 @Composable

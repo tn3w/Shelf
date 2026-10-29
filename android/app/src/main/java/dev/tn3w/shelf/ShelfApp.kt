@@ -17,6 +17,8 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
@@ -51,6 +53,7 @@ class ShelfApp :
     val activeTransfers = _activeTransfers.asStateFlow()
     private val _messages = Channel<Int>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
+    private val backup = Mutex()
 
     override fun onCreate() {
         super.onCreate()
@@ -122,6 +125,10 @@ class ShelfApp :
             _loaded.value = next
             library.redirect(next.catalogue::alias)
         }
+    }
+
+    fun backUp() = scope.launch(Dispatchers.IO) {
+        backup.withLock { library.backUpToFolder() }
     }
 
     fun <T> transfer(work: suspend CoroutineScope.() -> T) = scope.async(Dispatchers.IO) {

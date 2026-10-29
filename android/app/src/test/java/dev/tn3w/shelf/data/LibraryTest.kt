@@ -122,10 +122,20 @@ class LibraryTest {
             coverSource = "https://evil.example",
             providers = setOf("gutenberg"),
             instantSource = "gutenberg",
+            backupFolder = "content://other",
         )
         val merged = LibraryState(settings = current)
             .merge(Backup(settings = imported.copy(margin = 44)))
         assertEquals(current.copy(margin = 44), merged.settings)
+    }
+
+    @Test
+    fun staleBackupsKeepNewestDatedZips() {
+        val today = LocalDate.of(2030, 1, 10)
+        val dated = (0L..9).map { automaticBackupName(today.minusDays(it)) }
+        val others = listOf("shelf-library.zip", "notes.txt")
+        val stale = staleBackups((dated + others).shuffled(), kept = 3)
+        assertEquals(dated.drop(3), stale)
     }
 
     @Test
