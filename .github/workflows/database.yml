@@ -58,8 +58,8 @@ jobs:
           sudo apt-get install -y -qq aria2
           sudo install -d -o "$USER" /mnt/dumps
           for attempt in 1 2 3 4 5; do
-            aria2c --dir /mnt/dumps --split 16 --max-connection-per-server 16 \
-              --min-split-size 64M --max-tries 20 --retry-wait 5 \
+            aria2c --dir /mnt/dumps --out "$FILE" --split 16 \
+              --max-connection-per-server 16 --min-split-size 64M --max-tries 20 --retry-wait 5 \
               --file-allocation none --continue --auto-file-renaming=false \
               --console-log-level warn --summary-interval 60 "$DUMPS/$FILE" && break
             [ "$attempt" = 5 ] && exit 1
@@ -71,6 +71,7 @@ jobs:
         with:
           path: /mnt/dumps/${{ env.FILE }}
           archive: false
+          if-no-files-found: error
           retention-days: 1
 
   tools:
