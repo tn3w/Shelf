@@ -11,6 +11,7 @@ on:
         default: false
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -46,20 +47,21 @@ jobs:
 
   dumps:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dump: [reading-log, ratings, authors, covers_metadata, editions, works]
+    env:
+      FILE: ol_dump_${{ matrix.dump }}_latest.txt.gz
     steps:
-      - name: Download Open Library dumps
+      - name: Download Open Library dump
         run: |
           sudo apt-get install -y -qq aria2
           sudo install -d -o "$USER" /mnt/dumps
-          for name in reading-log ratings authors covers_metadata editions works; do
-            echo "$DUMPS/ol_dump_${name}_latest.txt.gz"
-          done > dumps.txt
           for attempt in 1 2 3 4 5; do
-            aria2c --input-file dumps.txt --dir /mnt/dumps --max-concurrent-downloads 8 \
-              --split 16 --max-connection-per-server 16 --min-split-size 64M \
-              --max-tries 20 --retry-wait 5 --file-allocation none --continue \
-              --auto-file-renaming=false --console-log-level warn \
-              --summary-interval 60 && break
+            aria2c --dir /mnt/dumps --split 16 --max-connection-per-server 16 \
+              --min-split-size 64M --max-tries 20 --retry-wait 5 \
+              --file-allocation none --continue --auto-file-renaming=false \
+              --console-log-level warn --summary-interval 60 "$DUMPS/$FILE" && break
             [ "$attempt" = 5 ] && exit 1
             sleep $((attempt * 30))
           done
@@ -67,9 +69,8 @@ jobs:
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: openlibrary
-          path: /mnt/dumps
-          compression-level: 0
+          path: /mnt/dumps/${{ env.FILE }}
+          archive: false
           retention-days: 1
 
   tools:
@@ -142,10 +143,27 @@ jobs:
           pip install --quiet ctranslate2 transformers sentencepiece
           wait
 
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: openlibrary
-          path: /mnt/dumps
+      - name: Fetch Open Library dumps
+        run: |
+          fetch() {
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              url=$(curl -sSf --retry 5 --retry-all-errors -o /dev/null \
+                -w '%{redirect_url}' -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/$GH_REPO/actions/artifacts/$1/zip")
+              aria2c --dir /mnt/dumps --out "$2" --split 16 \
+                --max-connection-per-server 16 --min-split-size 64M --max-tries 3 \
+                --retry-wait 5 --file-allocation none --continue \
+                --auto-file-renaming=false --console-log-level warn \
+                --summary-interval 60 "$url" && return
+              sleep $((attempt * 10))
+            done
+            return 1
+          }
+          gh api "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name | startswith("ol_dump_"))
+              | "\(.id) \(.name)"' \
+            | while read -r id name; do fetch "$id" "$name"; done
+          du -sh /mnt/dumps
 
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
