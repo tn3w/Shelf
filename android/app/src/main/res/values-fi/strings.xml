@@ -204,6 +204,8 @@
     <string name="wallpaper_colors_hint">Sävytä sovellus taustakuvasi väreillä.</string>
     <string name="reduce_motion">Vähennä liikettä</string>
     <string name="reduce_motion_hint">Vähemmän animaatioita. Sopii e-mustenäytöille.</string>
+    <string name="e_ink">E-mustetila</string>
+    <string name="e_ink_hint">Musta valkoisella, ei animaatioita, välitön sivunkääntö, suuremmat kosketusalueet.</string>
     <string name="reader">Lukija</string>
     <string name="text_size">Tekstin koko</string>
     <string name="line_spacing">Riviväli</string>
@@ -226,6 +228,8 @@
     <string name="keep_screen_on_hint">Näyttö pysyy päällä, kun kirja on auki.</string>
     <string name="volume_keys">Äänenvoimakkuusnäppäimet kääntävät sivua</string>
     <string name="volume_keys_hint">Lukulaitteiden sivunkääntönäppäimet toimivat aina.</string>
+    <string name="brightness_swipe">Kirkkaus pyyhkäisemällä</string>
+    <string name="brightness_swipe_hint">Pyyhkäise sivulla ylös tai alas. Pois: järjestelmän kirkkaus.</string>
     <string name="reader_hint">Tekstiasetukset koskevat EPUB-, FB2-, TXT- ja HTML-tiedostoja. PDF ja sarjakuvat säilyttävät oman asettelunsa.</string>
     <string name="pages_suffix">sivua</string>
     <string name="reader_sample">Liisaa alkoi kovasti väsyttää istua sisarensa vieressä penkereellä tekemättä mitään: kerran tai pari hän oli kurkistanut kirjaan, jota sisar luki, mutta siinä ei ollut kuvia eikä keskusteluja, ”ja mitä hyötyä on kirjasta”, ajatteli Liisa, ”jossa ei ole kuvia eikä keskusteluja?”</string>

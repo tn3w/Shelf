@@ -220,6 +220,8 @@
     <string name="wallpaper_colors_hint">Obarví aplikaci barvami z tapety.</string>
     <string name="reduce_motion">Omezit animace</string>
     <string name="reduce_motion_hint">Méně animací. Vhodné pro displeje e-ink.</string>
+    <string name="e_ink">Režim e-ink</string>
+    <string name="e_ink_hint">Černá na bílé, bez animací, okamžité otáčení stránek, větší dotykové plochy.</string>
     <string name="reader">Čtečka</string>
     <string name="text_size">Velikost textu</string>
     <string name="line_spacing">Řádkování</string>
@@ -242,6 +244,8 @@
     <string name="keep_screen_on_hint">Obrazovka zůstane zapnutá, dokud je otevřená kniha.</string>
     <string name="volume_keys">Tlačítka hlasitosti otáčí stránky</string>
     <string name="volume_keys_hint">Tlačítka stránek na čtečkách fungují vždy.</string>
+    <string name="brightness_swipe">Jas přejetím</string>
+    <string name="brightness_swipe_hint">Přejeďte po stránce nahoru nebo dolů. Vypnuto: jas systému.</string>
     <string name="reader_hint">Možnosti textu platí pro EPUB, FB2, TXT a HTML. PDF a komiksy si ponechávají vlastní rozvržení.</string>
     <string name="pages_suffix">stran</string>
     <string name="reader_sample">Alenka začínala být velice unavená, jak tak seděla vedle sestry na břehu a neměla co dělat: jednou či dvakrát nahlédla do knížky, kterou sestra četla, ale nebyly v ní žádné obrázky ani rozhovory, „a k čemu je knížka,“ pomyslela si Alenka, „bez obrázků a rozhovorů?“</string>

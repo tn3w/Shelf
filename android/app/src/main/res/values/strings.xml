@@ -205,6 +205,8 @@
     <string name="wallpaper_colors_hint">Tint the app with colours from your wallpaper.</string>
     <string name="reduce_motion">Reduce motion</string>
     <string name="reduce_motion_hint">Fewer animations. Good for e-ink screens.</string>
+    <string name="e_ink">E-ink mode</string>
+    <string name="e_ink_hint">Black on white, no animations, instant page turns, larger touch targets.</string>
     <string name="reader">Reader</string>
     <string name="text_size">Text size</string>
     <string name="line_spacing">Line spacing</string>
@@ -227,6 +229,8 @@
     <string name="keep_screen_on_hint">The screen stays awake while a book is open.</string>
     <string name="volume_keys">Volume keys turn pages</string>
     <string name="volume_keys_hint">Page keys on e-readers always work.</string>
+    <string name="brightness_swipe">Swipe for brightness</string>
+    <string name="brightness_swipe_hint">Swipe up or down on the page. Off: system brightness.</string>
     <string name="reader_hint">Text options apply to EPUB, FB2, TXT and HTML. PDF and comics keep their own layout.</string>
     <string name="pages_suffix">pages</string>
     <string name="reader_sample">Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice, “without pictures or conversations?”</string>

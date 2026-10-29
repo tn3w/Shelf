@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.Settings
@@ -43,6 +44,36 @@ private val DarkColors = darkColorScheme(
     surfaceContainerHigh = Color(0xFF2D2722),
 )
 
+private val EInkColors = lightColorScheme(
+    primary = Color.Black,
+    onPrimary = Color.White,
+    primaryContainer = Color.Black,
+    onPrimaryContainer = Color.White,
+    secondary = Color.Black,
+    onSecondary = Color.White,
+    secondaryContainer = Color.Black,
+    onSecondaryContainer = Color.White,
+    tertiary = Color.Black,
+    onTertiary = Color.White,
+    tertiaryContainer = Color.Black,
+    onTertiaryContainer = Color.White,
+    background = Color.White,
+    onBackground = Color.Black,
+    surface = Color.White,
+    onSurface = Color.Black,
+    surfaceVariant = Color.White,
+    onSurfaceVariant = Color.Black,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color.White,
+    surfaceContainer = Color.White,
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color.White,
+    outline = Color.Black,
+    outlineVariant = Color.Black,
+)
+
+private val EInkTouchTarget = 56.dp
+
 @OptIn(ExperimentalTextApi::class)
 private fun inter(weight: Int) = Font(
     R.font.inter,
@@ -73,7 +104,7 @@ private val InterTypography = Typography().run {
 }
 
 @Composable
-fun isDark(mode: ThemeMode) = when (mode) {
+fun isDark(settings: Settings) = !settings.eInk && when (settings.theme) {
     ThemeMode.System -> isSystemInDarkTheme()
     ThemeMode.Light -> false
     ThemeMode.Dark -> true
@@ -112,16 +143,21 @@ private fun systemReducedMotion(): Boolean {
 @Composable
 fun ShelfTheme(settings: Settings, content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val dark = isDark(settings.theme)
+    val dark = isDark(settings)
     val dynamic = wallpaperColorsSupported && settings.wallpaperColors
     val colors = when {
+        settings.eInk -> EInkColors
         dynamic && dark -> dynamicDarkColorScheme(context)
         dynamic -> dynamicLightColorScheme(context)
         dark -> DarkColors
         else -> LightColors
     }
-    val reducedMotion = systemReducedMotion() || settings.reduceMotion
-    CompositionLocalProvider(LocalReducedMotion provides reducedMotion) {
+    val reducedMotion = systemReducedMotion() || settings.reduceMotion || settings.eInk
+    val touchTarget = if (settings.eInk) EInkTouchTarget else 48.dp
+    CompositionLocalProvider(
+        LocalReducedMotion provides reducedMotion,
+        LocalMinimumInteractiveComponentSize provides touchTarget,
+    ) {
         MaterialTheme(
             colorScheme = if (dark && settings.blackTheme) colors.black() else colors,
             typography = InterTypography,

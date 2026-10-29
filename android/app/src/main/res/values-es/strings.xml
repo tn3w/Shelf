@@ -212,6 +212,8 @@
     <string name="wallpaper_colors_hint">Teñir la app con los colores de tu fondo de pantalla.</string>
     <string name="reduce_motion">Reducir movimiento</string>
     <string name="reduce_motion_hint">Menos animaciones. Ideal para pantallas e-ink.</string>
+    <string name="e_ink">Modo e-ink</string>
+    <string name="e_ink_hint">Negro sobre blanco, sin animaciones, pasar página al instante, botones más grandes.</string>
     <string name="reader">Lector</string>
     <string name="text_size">Tamaño del texto</string>
     <string name="line_spacing">Interlineado</string>
@@ -234,6 +236,8 @@
     <string name="keep_screen_on_hint">La pantalla no se apaga mientras hay un libro abierto.</string>
     <string name="volume_keys">Teclas de volumen pasan página</string>
     <string name="volume_keys_hint">Las teclas de página de los lectores e-ink siempre funcionan.</string>
+    <string name="brightness_swipe">Deslizar para brillo</string>
+    <string name="brightness_swipe_hint">Desliza arriba o abajo en la página. Desactivado: brillo del sistema.</string>
     <string name="reader_hint">Las opciones de texto se aplican a EPUB, FB2, TXT y HTML. PDF y cómics mantienen su diseño.</string>
     <string name="pages_suffix">páginas</string>
     <string name="reader_sample">Alicia comenzaba a aburrirse mucho, sentada junto a su hermana en la orilla y sin nada que hacer. Un par de veces había mirado el libro que leía su hermana, pero no tenía ilustraciones ni conversaciones. «¿Y para qué sirve un libro», pensó Alicia, «sin ilustraciones ni conversaciones?»</string>

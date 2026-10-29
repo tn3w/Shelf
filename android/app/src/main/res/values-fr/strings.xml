@@ -212,6 +212,8 @@
     <string name="wallpaper_colors_hint">Teinter l\'app avec les couleurs de votre fond d\'écran.</string>
     <string name="reduce_motion">Réduire les animations</string>
     <string name="reduce_motion_hint">Moins d\'animations. Idéal pour les écrans e-ink.</string>
+    <string name="e_ink">Mode e-ink</string>
+    <string name="e_ink_hint">Noir sur blanc, sans animations, pages tournées instantanément, zones tactiles plus grandes.</string>
     <string name="reader">Liseuse</string>
     <string name="text_size">Taille du texte</string>
     <string name="line_spacing">Interligne</string>
@@ -234,6 +236,8 @@
     <string name="keep_screen_on_hint">L\'écran reste allumé tant qu\'un livre est ouvert.</string>
     <string name="volume_keys">Touches de volume pour tourner les pages</string>
     <string name="volume_keys_hint">Les touches de page des liseuses fonctionnent toujours.</string>
+    <string name="brightness_swipe">Luminosité par balayage</string>
+    <string name="brightness_swipe_hint">Balayez la page vers le haut ou le bas. Désactivé : luminosité du système.</string>
     <string name="reader_hint">Les options de texte s\'appliquent aux EPUB, FB2, TXT et HTML. PDF et BD gardent leur mise en page.</string>
     <string name="pages_suffix">pages</string>
     <string name="reader_sample">Alice, assise auprès de sa sœur sur le gazon, commençait à s\'ennuyer de rester là à ne rien faire ; une ou deux fois elle avait jeté les yeux sur le livre que lisait sa sœur ; mais quoi ! pas d\'images, pas de dialogues ! « La belle avance, pensait Alice, qu\'un livre sans images, sans causeries ! »</string>

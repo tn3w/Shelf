@@ -336,20 +336,10 @@ private fun GeneralSettings(navigator: Navigator) {
     val viewModel = shelfViewModel()
     val (settings, update) = rememberSettings() ?: return
     SettingsGroup(stringResource(R.string.appearance)) {
-        OptionChoice(THEMES, settings.theme) { mode -> update { it.copy(theme = mode) } }
-        SwitchRow(
-            R.string.black_theme, R.string.black_theme_hint, settings.blackTheme,
-        ) { on -> update { it.copy(blackTheme = on) } }
-        if (wallpaperColorsSupported) {
-            SwitchRow(
-                R.string.wallpaper_colors,
-                R.string.wallpaper_colors_hint,
-                settings.wallpaperColors,
-            ) { on -> update { it.copy(wallpaperColors = on) } }
+        SwitchRow(R.string.e_ink, R.string.e_ink_hint, settings.eInk) { on ->
+            update { it.copy(eInk = on) }
         }
-        SwitchRow(
-            R.string.reduce_motion, R.string.reduce_motion_hint, settings.reduceMotion,
-        ) { on -> update { it.copy(reduceMotion = on) } }
+        if (!settings.eInk) DisplaySettings(settings, update)
     }
     SettingsGroup(stringResource(R.string.language)) {
         AppLanguageChoice()
@@ -361,6 +351,24 @@ private fun GeneralSettings(navigator: Navigator) {
             navigator.settings(SettingsPage.Catalogue)
         }
     }
+}
+
+@Composable
+private fun DisplaySettings(settings: Settings, update: SettingsUpdate) {
+    OptionChoice(THEMES, settings.theme) { mode -> update { it.copy(theme = mode) } }
+    SwitchRow(
+        R.string.black_theme, R.string.black_theme_hint, settings.blackTheme,
+    ) { on -> update { it.copy(blackTheme = on) } }
+    if (wallpaperColorsSupported) {
+        SwitchRow(
+            R.string.wallpaper_colors,
+            R.string.wallpaper_colors_hint,
+            settings.wallpaperColors,
+        ) { on -> update { it.copy(wallpaperColors = on) } }
+    }
+    SwitchRow(
+        R.string.reduce_motion, R.string.reduce_motion_hint, settings.reduceMotion,
+    ) { on -> update { it.copy(reduceMotion = on) } }
 }
 
 @Composable
@@ -420,6 +428,10 @@ private fun ReadingSettings() {
         SwitchRow(
             R.string.volume_keys, R.string.volume_keys_hint, settings.volumeKeys,
         ) { on -> update { it.copy(volumeKeys = on) } }
+        SwitchRow(
+            R.string.brightness_swipe, R.string.brightness_swipe_hint,
+            settings.brightnessSwipe,
+        ) { on -> update { it.copy(brightnessSwipe = on, readerBrightness = null) } }
     }
 }
 

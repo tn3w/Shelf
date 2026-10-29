@@ -1,11 +1,18 @@
 package dev.tn3w.shelf.ui
 
+import android.content.Context
+import android.provider.Settings.System
+import android.view.Window
+import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.pager.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.List
@@ -72,6 +79,10 @@ class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app
         it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
     }
 
+    fun saveBrightness(brightness: Float) = updateSettings {
+        it.copy(readerBrightness = brightness)
+    }
+
     override fun onCleared() {
         app.scope.launch(Dispatchers.IO) {
             (opening.await() as? Opened.Ready)?.document?.close()
@@ -128,6 +139,12 @@ private val MAX_LINE_WIDTH = 640.dp
 internal fun sideMargin(width: Dp, margin: Dp) =
     maxOf(margin, (width - MAX_LINE_WIDTH) / 2)
 
+private const val MIN_BRIGHTNESS = 0.01f
+private const val MAX_LEVEL = 255
+
+internal fun swipedBrightness(current: Float, dragged: Float, height: Int) =
+    (current - dragged / height).coerceIn(MIN_BRIGHTNESS, 1f)
+
 internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
     if (settled - previous in 1..MAX_TURN) {
         (settled - maxOf(previous, furthest)).coerceAtLeast(0)
@@ -155,19 +172,92 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     Surface(
         Modifier.fillMaxSize(), color = palette.background, contentColor = palette.text,
     ) {
-        when (val current = opened) {
-            null -> Loading()
+        BrightnessSwipe(
+            settings.brightnessSwipe,
+            settings.readerBrightness,
+            viewModel::saveBrightness,
+        ) {
+            when (val current = opened) {
+                null -> Loading()
 
-            Opened.Failed -> OpenFailed(navigator)
+                Opened.Failed -> OpenFailed(navigator)
 
-            is Opened.Ready ->
-                when (val document = current.document) {
-                    is TextDocument ->
-                        TextReader(state, document, current.progress, settings)
+                is Opened.Ready ->
+                    when (val document = current.document) {
+                        is TextDocument ->
+                            TextReader(state, document, current.progress, settings)
 
-                    is PagedDocument ->
-                        PagedReader(state, document, current.progress)
-                }
+                        is PagedDocument ->
+                            PagedReader(state, document, current.progress)
+                    }
+            }
+        }
+    }
+}
+
+private fun Window.setBrightness(brightness: Float?) {
+    attributes = attributes.apply {
+        screenBrightness = brightness ?: BRIGHTNESS_OVERRIDE_NONE
+    }
+}
+
+private fun Context.systemBrightness(): Float {
+    val level = System.getInt(contentResolver, System.SCREEN_BRIGHTNESS, MAX_LEVEL / 2)
+    return level / MAX_LEVEL.toFloat()
+}
+
+@Composable
+private fun BrightnessSwipe(
+    enabled: Boolean,
+    saved: Float?,
+    onSave: (Float) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val context = LocalContext.current
+    val window = LocalActivity.current?.window
+    val save by rememberUpdatedState(onSave)
+    var brightness by remember(saved) { mutableStateOf(saved) }
+    var dragging by remember { mutableStateOf(false) }
+    SideEffect { window?.setBrightness(brightness.takeIf { enabled }) }
+    DisposableEffect(window) { onDispose { window?.setBrightness(null) } }
+
+    fun finish() {
+        dragging = false
+        brightness?.let(save)
+    }
+    val swipe = Modifier.pointerInput(Unit) {
+        detectVerticalDragGestures(
+            onDragStart = {
+                brightness = brightness ?: context.systemBrightness()
+                dragging = true
+            },
+            onDragEnd = ::finish,
+            onDragCancel = ::finish,
+        ) { change, dragged ->
+            change.consume()
+            brightness = brightness?.let { swipedBrightness(it, dragged, size.height) }
+        }
+    }
+    Box(if (enabled) swipe else Modifier) {
+        content()
+        if (dragging) brightness?.let { BrightnessBadge(it) }
+    }
+}
+
+@Composable
+private fun BoxScope.BrightnessBadge(brightness: Float) {
+    Surface(
+        Modifier.align(Alignment.Center),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.inverseSurface,
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.BrightnessMedium, contentDescription = null)
+            Text("${(brightness * 100).roundToInt()} %")
         }
     }
 }
@@ -397,6 +487,16 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
     }
 }
 
+private fun chromeEnter(reduced: Boolean, offset: (Int) -> Int) = when {
+    reduced -> EnterTransition.None
+    else -> fadeIn() + slideInVertically(initialOffsetY = offset)
+}
+
+private fun chromeExit(reduced: Boolean, offset: (Int) -> Int) = when {
+    reduced -> ExitTransition.None
+    else -> fadeOut() + slideOutVertically(targetOffsetY = offset)
+}
+
 @Composable
 private fun Pages(
     pager: PagerState,
@@ -413,7 +513,10 @@ private fun Pages(
     var previous by rememberSaveable { mutableIntStateOf(pager.currentPage) }
     val chapter = chapters.lastOrNull { it.second in 0..pager.currentPage }
     val focus = remember { FocusRequester() }
-    fun turn(page: Int) = scope.launch { pager.animateScrollToPage(page) }
+    val reduced = LocalReducedMotion.current
+    fun turn(page: Int) = scope.launch {
+        if (reduced) pager.scrollToPage(page) else pager.animateScrollToPage(page)
+    }
 
     LaunchedEffect(chrome, showChapters) {
         if (!chrome && !showChapters) focus.requestFocus()
@@ -457,8 +560,8 @@ private fun Pages(
         }
         AnimatedVisibility(
             chrome,
-            enter = fadeIn() + slideInVertically(),
-            exit = fadeOut() + slideOutVertically(),
+            enter = chromeEnter(reduced) { -it / 2 },
+            exit = chromeExit(reduced) { -it / 2 },
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
             val onChapters = if (chapters.isEmpty()) null else ({ showChapters = true })
@@ -466,8 +569,8 @@ private fun Pages(
         }
         AnimatedVisibility(
             chrome,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
+            enter = chromeEnter(reduced) { it },
+            exit = chromeExit(reduced) { it },
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             ReaderBottomBar(pager, chapter?.first) {

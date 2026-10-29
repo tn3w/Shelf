@@ -220,6 +220,8 @@
     <string name="wallpaper_colors_hint">Barwi aplikację kolorami z tapety.</string>
     <string name="reduce_motion">Ogranicz animacje</string>
     <string name="reduce_motion_hint">Mniej animacji. Dobre dla ekranów e-ink.</string>
+    <string name="e_ink">Tryb e-ink</string>
+    <string name="e_ink_hint">Czarne na białym, bez animacji, natychmiastowe przewracanie stron, większe pola dotyku.</string>
     <string name="reader">Czytnik</string>
     <string name="text_size">Rozmiar tekstu</string>
     <string name="line_spacing">Interlinia</string>
@@ -242,6 +244,8 @@
     <string name="keep_screen_on_hint">Ekran pozostaje włączony, gdy książka jest otwarta.</string>
     <string name="volume_keys">Przyciski głośności przewracają strony</string>
     <string name="volume_keys_hint">Przyciski stron w czytnikach działają zawsze.</string>
+    <string name="brightness_swipe">Jasność przesunięciem</string>
+    <string name="brightness_swipe_hint">Przesuń palcem w górę lub w dół strony. Wyłączone: jasność systemu.</string>
     <string name="reader_hint">Opcje tekstu dotyczą EPUB, FB2, TXT i HTML. PDF i komiksy zachowują własny układ.</string>
     <string name="pages_suffix">stron</string>
     <string name="reader_sample">Alicja zaczynała już odczuwać zmęczenie, siedząc na brzegu obok siostry i nie mając nic do roboty: raz czy dwa zajrzała do książki, którą czytała siostra, ale nie było w niej obrazków ani rozmów, „a jaki pożytek z książki”, pomyślała Alicja, „bez obrazków i rozmów?”</string>

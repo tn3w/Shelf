@@ -204,6 +204,8 @@
     <string name="wallpaper_colors_hint">Die App mit Farben deines Hintergrundbilds einfärben.</string>
     <string name="reduce_motion">Weniger Bewegung</string>
     <string name="reduce_motion_hint">Weniger Animationen. Gut für E-Ink-Displays.</string>
+    <string name="e_ink">E-Ink-Modus</string>
+    <string name="e_ink_hint">Schwarz auf Weiß, keine Animationen, sofortiges Umblättern, größere Tippflächen.</string>
     <string name="reader">Lesemodus</string>
     <string name="text_size">Schriftgröße</string>
     <string name="line_spacing">Zeilenabstand</string>
@@ -226,6 +228,8 @@
     <string name="keep_screen_on_hint">Der Bildschirm bleibt an, solange ein Buch offen ist.</string>
     <string name="volume_keys">Lautstärketasten blättern</string>
     <string name="volume_keys_hint">Blättertasten von E-Readern funktionieren immer.</string>
+    <string name="brightness_swipe">Helligkeit wischen</string>
+    <string name="brightness_swipe_hint">Auf der Seite nach oben oder unten wischen. Aus: Systemhelligkeit.</string>
     <string name="reader_hint">Textoptionen gelten für EPUB, FB2, TXT und HTML. PDF und Comics behalten ihr Layout.</string>
     <string name="pages_suffix">Seiten</string>
     <string name="reader_sample">Alice fing an sich zu langweilen; sie saß schon lange bei ihrer Schwester am Ufer und hatte nichts zu tun. Das Buch, das ihre Schwester las, gefiel ihr nicht; denn es waren weder Bilder noch Gespräche darin. „Und was nützen Bücher“, dachte Alice, „ohne Bilder und Gespräche?“</string>

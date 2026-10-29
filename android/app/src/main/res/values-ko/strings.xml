@@ -196,6 +196,8 @@
     <string name="wallpaper_colors_hint">배경화면의 색으로 앱을 꾸밉니다.</string>
     <string name="reduce_motion">움직임 줄이기</string>
     <string name="reduce_motion_hint">애니메이션을 줄입니다. 전자잉크 화면에 좋습니다.</string>
+    <string name="e_ink">전자잉크 모드</string>
+    <string name="e_ink_hint">흰 바탕에 검은 글자, 애니메이션 없음, 즉시 페이지 넘김, 더 큰 터치 영역.</string>
     <string name="reader">리더</string>
     <string name="text_size">글자 크기</string>
     <string name="line_spacing">줄 간격</string>
@@ -218,6 +220,8 @@
     <string name="keep_screen_on_hint">책을 여는 동안 화면이 꺼지지 않습니다.</string>
     <string name="volume_keys">볼륨 버튼으로 페이지 넘기기</string>
     <string name="volume_keys_hint">전자책 리더의 페이지 버튼은 항상 작동합니다.</string>
+    <string name="brightness_swipe">밝기 스와이프</string>
+    <string name="brightness_swipe_hint">페이지에서 위아래로 스와이프하세요. 끄면 시스템 밝기를 사용합니다.</string>
     <string name="reader_hint">글자 설정은 EPUB, FB2, TXT, HTML에 적용됩니다. PDF와 만화는 원래 레이아웃을 유지합니다.</string>
     <string name="pages_suffix">쪽</string>
     <string name="reader_sample">앨리스는 언니 곁 강둑에 앉아 아무것도 할 일이 없는 것에 몹시 지루해지기 시작했다. 한두 번 언니가 읽는 책을 들여다보았지만 그림도 대화도 없었다. “그림도 대화도 없는 책이 무슨 소용이람?” 앨리스는 생각했다.</string>

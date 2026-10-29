@@ -204,6 +204,8 @@
     <string name="wallpaper_colors_hint">Färga appen med färger från din bakgrundsbild.</string>
     <string name="reduce_motion">Minska rörelse</string>
     <string name="reduce_motion_hint">Färre animationer. Bra för e-bläckskärmar.</string>
+    <string name="e_ink">E-bläckläge</string>
+    <string name="e_ink_hint">Svart på vitt, inga animationer, direkta sidbyten, större tryckytor.</string>
     <string name="reader">Läsare</string>
     <string name="text_size">Textstorlek</string>
     <string name="line_spacing">Radavstånd</string>
@@ -226,6 +228,8 @@
     <string name="keep_screen_on_hint">Skärmen förblir tänd medan en bok är öppen.</string>
     <string name="volume_keys">Volymknappar bläddrar</string>
     <string name="volume_keys_hint">Bläddringsknappar på läsplattor fungerar alltid.</string>
+    <string name="brightness_swipe">Svep för ljusstyrka</string>
+    <string name="brightness_swipe_hint">Svep uppåt eller nedåt på sidan. Av: systemets ljusstyrka.</string>
     <string name="reader_hint">Textalternativen gäller EPUB, FB2, TXT och HTML. PDF och serier behåller sin egen layout.</string>
     <string name="pages_suffix">sidor</string>
     <string name="reader_sample">Alice började bli mycket trött på att sitta bredvid sin syster på slänten och inte ha något att göra: en eller två gånger hade hon kikat i boken som systern läste, men den hade inga bilder eller samtal, ”och vad är det för nytta med en bok”, tänkte Alice, ”utan bilder eller samtal?”</string>

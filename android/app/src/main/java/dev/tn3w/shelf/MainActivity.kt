@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val current = settings ?: return@setContent
-            val dark = isDark(current.theme)
+            val dark = isDark(current)
             LaunchedEffect(dark) {
                 transparentBars(
                     SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },

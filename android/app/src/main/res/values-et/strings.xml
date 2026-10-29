@@ -205,6 +205,8 @@
     <string name="wallpaper_colors_hint">Toonib rakendust taustapildi värvidega.</string>
     <string name="reduce_motion">Vähenda liikumist</string>
     <string name="reduce_motion_hint">Vähem animatsioone. Sobib e-tindiga ekraanidele.</string>
+    <string name="e_ink">E-tindi režiim</string>
+    <string name="e_ink_hint">Must valgel, animatsioonideta, kohene lehepööre, suuremad puutealad.</string>
     <string name="reader">Lugeja</string>
     <string name="text_size">Teksti suurus</string>
     <string name="line_spacing">Reavahe</string>
@@ -227,6 +229,8 @@
     <string name="keep_screen_on_hint">Ekraan püsib ärkvel, kuni raamat on avatud.</string>
     <string name="volume_keys">Helitugevuse nupud keeravad lehte</string>
     <string name="volume_keys_hint">E-lugerite lehekeeramisnupud töötavad alati.</string>
+    <string name="brightness_swipe">Heledus pühkimisega</string>
+    <string name="brightness_swipe_hint">Pühi lehel üles või alla. Väljas: süsteemi heledus.</string>
     <string name="reader_hint">Tekstivalikud kehtivad EPUB-, FB2-, TXT- ja HTML-failidele. PDF ja koomiksid säilitavad oma paigutuse.</string>
     <string name="pages_suffix">lk</string>
     <string name="reader_sample">Alice hakkas väga tüdinema sellest, et istus jõekaldal õe kõrval ega olnud tal midagi teha: korra või paar oli ta piilunud raamatusse, mida õde luges, kuid selles polnud pilte ega vestlusi, „ja mis kasu on raamatust,“ mõtles Alice, „kus pole pilte ega vestlusi?“</string>

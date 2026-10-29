@@ -45,4 +45,16 @@ class ReaderTest {
         assertTrue(side > 28.dp)
         assertEquals(sideMargin(width + 200.dp, 28.dp) - 100.dp, side)
     }
+
+    @Test
+    fun swipeUpBrightens() {
+        val brightness = swipedBrightness(0.5f, dragged = -250f, height = 1000)
+        assertEquals(0.75f, brightness, 0.001f)
+    }
+
+    @Test
+    fun keepsBrightnessInRange() {
+        assertEquals(1f, swipedBrightness(0.9f, dragged = -500f, height = 1000))
+        assertTrue(swipedBrightness(0.1f, dragged = 500f, height = 1000) > 0f)
+    }
 }
