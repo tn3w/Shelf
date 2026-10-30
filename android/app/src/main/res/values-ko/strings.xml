@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">정보</string>
     <string name="about_book">이 책에 대하여</string>
@@ -81,7 +82,7 @@
     <string name="pack_mystery">추리와 스릴러</string>
     <string name="pack_nonfiction">논픽션</string>
     <string name="pack_romance">로맨스</string>
-    <string name="pack_scifi">SF</string>
+    <string name="pack_scifi">공상과학</string>
     <string name="pack_update">업데이트 있음</string>
     <string name="pack_young_adult">청소년</string>
     <string name="page_of">%2$d쪽 중 %1$d쪽</string>
