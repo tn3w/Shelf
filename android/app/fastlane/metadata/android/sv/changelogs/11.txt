@@ -1,0 +1,6 @@
+• Lägg till egna böcker: titel, författare, hylla och valfritt omslag
+• Läsare: PDF-krasch och blanka sidor åtgärdade, snabbare serier och EPUB-bilder, korrekt sidordning i CBZ
+• Samma fil importerad två gånger förblir en bok; importerade filer följer med vid enhetsöverföring
+• Importerade kopior av katalogböcker kan tas bort
+• Omslagscachen rensas, nedladdningar städar upp efter fel
+• Inbyggd katalog uppdaterad, översättningar rättade

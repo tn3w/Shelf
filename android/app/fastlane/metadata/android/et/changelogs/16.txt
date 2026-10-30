@@ -1,6 +1,6 @@
-• Uued kataloogid: rootsi, poola, tšehhi, korea ja soome, nende rahvusraamatukogudest
-• Rakendus nüüd ka rootsi, poola, tšehhi, korea ja soome keeles
+• Rootsi, poola, tšehhi, korea ja soome kataloogid nende rahvusraamatukogudest; rakendus ka neis keeltes ja vene keeles
 • Prantsuse kataloog kasvab Prantsusmaa Rahvusraamatukogu abil üle 600 000 raamatu
-• Uus kataloogi keele valik
-• Väiksem rakendus: kaasas ainult inglise kataloog, teised laaditakse esimesel käivitusel
+• Kataloogi keele valik; väiksem rakendus, kaasas ainult inglise keel
 • Otsing mõistab poola, tšehhi ja korea tähti
+• E-ink-režiim ja eredus pühkides lugejas
+• Automaatne päevane varukoopia valitud kausta, säilib 7 uusimat

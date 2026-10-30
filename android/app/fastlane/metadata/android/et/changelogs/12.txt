@@ -1,0 +1,8 @@
+• Skaneeri raamatu kaant või ISBN-vöötkoodi, et see leida, täielikult seadmes
+• CSV-import sobitab raamatuid esmalt ISBN-i järgi
+• Turvalisemad andmed: ei vaikset tühjendamist lugemisvigade korral, valideeritud varukoopia import
+• Lugemiseesmärk loeb ainult tegelikke lehepööranguid; harjumus uueneb pärast südaööd
+• Muude märgistikega FB2- ja TXT-failid avanevad õigesti
+• StoryGraphis pooleli jäänud raamatud imporditakse loetuna
+• Uuendusdialoog näitab puhast muudatusi
+• Kataloog uuendatud

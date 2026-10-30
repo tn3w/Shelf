@@ -1,0 +1,1 @@
+• Avstängda omslag och författarfoton skickar inga förfrågningar längre. Att ladda ner alla paket hämtar varje fil en gång, och kärnans storlek inkluderar nu rankningsfilen.

@@ -1,0 +1,1 @@
+• Reprodukovatelná sestavení: nativní knihovny už nejsou odstraňovány, plus aktualizované závislosti.

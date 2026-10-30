@@ -1,0 +1,1 @@
+• Öppna vilken bokfil som helst: importera den i Bibliotek, använd Öppna med eller dela den till Shelf. Ange egen katalogkälla (GitHub-arkiv, Gitea/Forgejo-utgåvor eller en manifest-URL) och omslagsserver, eller importera katalogfiler utan nedladdning. Renare första start och en tydlig ledtråd när ingen katalog är installerad.

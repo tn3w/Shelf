@@ -1,0 +1,8 @@
+• Naskenujte obálku nebo čárový kód ISBN a knihu najděte, zcela v zařízení
+• Import CSV páruje knihy nejprve podle ISBN
+• Bezpečnější data: žádné tiché mazání při chybě čtení, ověřený import zálohy
+• Čtenářský cíl počítá jen skutečné otočení stránek; návyk se aktualizuje po půlnoci
+• Soubory FB2 a TXT v jiných kódováních se otevírají správně
+• Knihy nedočtené ve StoryGraph se importují jako přečtené
+• Dialog aktualizace zobrazuje přehledný seznam změn
+• Vestavěný katalog aktualizován

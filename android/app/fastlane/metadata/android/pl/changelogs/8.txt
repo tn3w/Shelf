@@ -1,0 +1,1 @@
+• Poprawka nawigacji: powrót do karty wyróżnia teraz właściwą kartę, a ponowne dotknięcie wraca do jej ekranu głównego.

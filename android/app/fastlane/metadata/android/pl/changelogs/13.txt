@@ -1,0 +1,8 @@
+• Biblioteka: sortowanie, filtry i widok listy; wyszukiwanie filtruje według faset
+• Ekran serii ze strony książki
+• Dzienny cel 0 ukrywa widżet nawyku
+• „Usuń wszystko” dla każdego języka oraz „Usuń wszystkie języki”
+• Otwierają się pliki EPUB ze znakami specjalnymi w linkach; czytnik dostosowuje się do zmiany rozmiaru
+• Skaner ponawia próbę uruchomienia aparatu i wyjaśnia błędy
+• Szybsze wyszukiwanie oraz ładowanie katalogu i biblioteki
+• Kompilacja F-Droid jest teraz powtarzalna

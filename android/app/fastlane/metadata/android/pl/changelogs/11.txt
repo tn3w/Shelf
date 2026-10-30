@@ -1,0 +1,6 @@
+• Dodawaj własne książki: tytuł, autor, półka i opcjonalna okładka
+• Czytnik: naprawiono awarię PDF i puste strony, szybsze komiksy i obrazy w EPUB, poprawna kolejność stron CBZ
+• Ten sam plik zaimportowany dwa razy zostaje jedną książką; zaimportowane pliki przenoszą się z urządzeniem
+• Zaimportowane kopie książek z katalogu można usuwać
+• Pamięć podręczna okładek jest czyszczona, pobieranie po błędach sprząta po sobie
+• Zaktualizowano wbudowany katalog, poprawiono tłumaczenia

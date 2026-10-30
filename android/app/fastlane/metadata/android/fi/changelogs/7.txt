@@ -1,0 +1,1 @@
+• Avaa mikä tahansa kirjatiedosto: tuo se Kirjastossa, käytä Avaa sovelluksella tai jaa se Shelfiin. Aseta oma luettelolähde (GitHub-varasto, Gitea/Forgejo-julkaisut tai manifest-URL) ja kansipalvelin tai tuo luettelotiedostot lataamatta. Siistimpi ensikäynnistys ja selkeä vihje, kun luetteloa ei ole asennettu.

@@ -1,0 +1,5 @@
+• Import av CSV från Goodreads och StoryGraph med träffrapport, samt CSV-export
+• Läsare: textstorlek, radavstånd, marginaler, typsnitt, pappers- och nattsidor, marginaljustering, behåll skärmen på, volym- och sidknappar
+• Rent svart tema, tapetfärger, minskad rörelse
+• Bokspråk Auto, eget dagligt mål
+• Inställningarna omgrupperade till tydliga sidor

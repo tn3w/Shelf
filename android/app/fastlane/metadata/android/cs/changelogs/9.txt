@@ -1,0 +1,1 @@
+• Oprava gesta zpět: stránka knihy nyní čistě zmizí, text už nezůstává nad Domovem.

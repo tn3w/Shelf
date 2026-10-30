@@ -1,0 +1,4 @@
+• Język aplikacji można też wybrać w ustawieniach Androida
+• Popularne pokazują się od razu, gdy Dla Ciebie jest niedostępne
+• Poprawki: awaria skanera, zawieszone pliki MOBI, utracone importy, problemy z aktualizacją i przywracaniem
+• Komiksy CBR otwierają się tylko spakowane jako ZIP (RAR nie jest wolny)

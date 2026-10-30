@@ -1,0 +1,1 @@
+• Wyłączone okładki i zdjęcia autorów nie wysyłają już żadnych żądań. Pobranie wszystkich pakietów pobiera każdy plik tylko raz, a rozmiar rdzenia obejmuje teraz plik rankingów.

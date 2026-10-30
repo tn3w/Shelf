@@ -1,0 +1,8 @@
+• Skannaa kirjan kansi tai ISBN-viivakoodi löytääksesi sen, täysin laitteella
+• CSV-tuonti yhdistää kirjat ensin ISBN:n perusteella
+• Turvallisemmat tiedot: ei hiljaista tyhjennystä lukuvirheissä, vahvistettu varmuuskopion tuonti
+• Lukutavoite laskee vain todelliset sivunvaihdot; tapa päivittyy keskiyön jälkeen
+• FB2- ja TXT-tiedostot muilla merkistöillä aukeavat oikein
+• StoryGraphissa kesken jääneet kirjat tuodaan luettuina
+• Päivitysikkuna näyttää siistin muutosloki
+• Luettelo päivitetty

@@ -6,11 +6,15 @@ Shelf ist ein Offline-Buchkatalog auf Basis von Open Library und den Nationalbib
 * Eigene Bücher, die im Katalog fehlen, mit eigenem Cover
 * Buchcover oder ISBN-Barcode scannen, direkt auf dem Gerät
 * Goodreads- und StoryGraph-CSV-Import und -Export
+* Automatisches Tagesbackup in einen Ordner deiner Wahl, etwa einen Syncthing-Ordner
 * Tagesziel und Leseserien
 * Persönliche Empfehlungen, direkt auf dem Gerät berechnet
 * Reader für EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT und HTML, importiert oder aus jeder App geöffnet
+* Gemeinfreie und offen lizenzierte E-Books aus Quellen deiner Wahl oder eigenen Quellen
 * Lesekomfort: Schriftgröße, Abstände, Ränder, Schriftart, Papier- und Nachtseiten, Blättertasten
+* E-Ink-Modus und Helligkeit per Wischen auf der Seite
 * Kataloge auf Englisch, Deutsch, Französisch, Spanisch, Estnisch, Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch mit optionalen Genre-Paketen
-* Selbst hostbar: eigene Katalogquelle und Cover-Server oder Import von Katalogdateien
+* App auf Englisch, Deutsch, Französisch, Spanisch, Estnisch, Schwedisch, Polnisch, Tschechisch, Koreanisch, Finnisch und Russisch
+* Selbst hostbar: eigene Katalogquelle oder Import von Katalogdateien
 
-Kein Tracking, keine Werbung, kein Konto.
+Kein Tracking, keine Werbung, keine Konten. Shelf kontaktiert nur GitHub (oder deine eigene Katalogquelle) für Katalog-Downloads und, wenn aktiviert, Open Library und dessen Host archive.org, die DNB, DIGAR und Bookbites für Cover und Autorenfotos.

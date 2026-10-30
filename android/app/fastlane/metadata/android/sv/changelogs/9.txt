@@ -1,0 +1,1 @@
+• Fix för bakåtgest: boksidan tonas nu ut rent i stället för att texten ligger kvar över Hem.

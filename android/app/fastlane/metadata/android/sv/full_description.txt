@@ -4,13 +4,17 @@ Shelf är en offlinekatalog för böcker byggd på Open Library och nationalbibl
 * Utforska genrer, serier och författare
 * Bibliotek med hyllorna Vill läsa, Läser och Läst
 * Lägg till egna böcker som saknas i katalogen, med eget omslag
-* Skanna ett bokomslag eller en ISBN-streckkod, direkt på enheten
+* Skanna ett bokomslag eller en ISBN-streckkod för att hitta boken, direkt på enheten
 * Import och export av CSV från Goodreads och StoryGraph
-* Dagligt läsmål och lässviter
+* Automatisk daglig säkerhetskopia till en mapp du väljer, till exempel en Syncthing-mapp
+* Dagligt läsmål och lässerier
 * Personliga rekommendationer beräknade på enheten
-* Läsare för EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT och HTML, importerade eller öppnade från valfri app
-* Läskomfort: textstorlek, radavstånd, marginaler, typsnitt, pappers- och nattsidor, bläddring med knappar
+* Läsare för EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- och HTML-filer, importerade eller öppnade från valfri app
+* Gratis e-böcker i det fria eller med öppen licens, från källor du väljer eller dina egna
+* Läskomfort: textstorlek, radavstånd, marginaler, typsnitt, pappers- och nattsidor, sidknappar
+* E-ink-läge och ljusstyrka genom att svepa på sidan
 * Kataloger på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska och finska med valfria genrepaket
-* Självhostbar: egen katalogkälla och omslagsserver, eller import av katalogfiler
+* Appen på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska, finska och ryska
+* Kan egenhostas: egen katalogkälla eller import av katalogfiler
 
-Ingen spårning, inga annonser, inga konton. Shelf kontaktar bara GitHub (eller din egen katalogkälla) för katalognedladdningar och, om det är aktiverat, Open Library och dess värd archive.org, DNB, DIGAR och Bookbites (eller dina egna omslagsservrar) för omslag och författarfoton.
+Ingen spårning, inga annonser, inga konton. Shelf kontaktar bara GitHub (eller din egen katalogkälla) för nedladdning av kataloger och, om du aktiverar det, Open Library och dess värd archive.org, DNB, DIGAR och Bookbites för omslag och författarfoton.

@@ -1,16 +1,20 @@
-Shelf on Open Libraryst ning Saksamaa, Prantsusmaa, Eesti, Rootsi, Poola, Tšehhi, Korea ja Soome rahvusraamatukogudest koostatud võrguühenduseta raamatukataloog.
+Shelf on võrguühenduseta raamatukataloog, mis põhineb Open Libraryl ning Saksamaa, Prantsusmaa, Eesti, Rootsi, Poola, Tšehhi, Korea ja Soome rahvusraamatukogudel.
 
 * Kirjavigu andestav otsing koos soovitustega
 * Avasta žanre, sarju ja autoreid
-* Raamatukogu riiulitega „Tahan lugeda“, „Loen“ ja „Loetud“
-* Lisa kataloogist puuduvad raamatud oma kaanega
-* Skanni raamatukaas või ISBN-vöötkood, et see leida, otse seadmes
-* Goodreadsi ja StoryGraphi CSV import ja eksport
-* Päeva lugemiseesmärk ja järjestikused päevad
-* Isiklikud soovitused, arvutatud seadmes
+* Raamatukogu riiulitega Tahan lugeda, Loen ja Loetud
+* Lisa oma raamatuid, mida kataloogis pole, oma kaanega
+* Skaneeri raamatu kaant või ISBN-vöötkoodi, et see leida, otse seadmes
+* Goodreadsi ja StoryGraphi CSV-import ja -eksport
+* Automaatne päevane varukoopia valitud kausta, näiteks Syncthingi kausta
+* Päevane lugemiseesmärk ja jadad
+* Isiklikud soovitused, mis arvutatakse seadmes
 * Lugeja EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-failidele, imporditud või avatud mis tahes rakendusest
-* Lugemismugavus: teksti suurus, vahed, veerised, kirjatüüp, paber- ja öölehed, lehekeeramisnupud
-* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea ja soome keeles koos valikuliste žanripakettidega
-* Isehostitav: oma kataloogiallikas ja kaaneserver või kataloogifailide import
+* Tasuta avalikus omandis ja avatud litsentsiga e-raamatud sinu valitud või oma allikatest
+* Lugemismugavus: teksti suurus, reavahe, veerised, kirjatüüp, paber- ja ööleheküljed, lehepööramisklahvid
+* E-ink-režiim ja eredus lehel pühkides
+* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea ja soome keeles valikuliste žanripakettidega
+* Rakendus inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea, soome ja vene keeles
+* Isehostitav: oma kataloogiallikas või kataloogifailide import
 
-Jälgimist, reklaame ega kontosid pole. Shelf võtab ühendust ainult GitHubiga (või sinu enda kataloogiallikaga) kataloogi allalaadimiseks ning sisselülitamisel Open Library ja selle majutaja archive.org-iga, DNB, DIGARi ja Bookbitesiga (või sinu enda kaaneserveritega) kaanepiltide ja autorifotode jaoks.
+Ei jälgimist, ei reklaame, ei kontosid. Shelf võtab ühendust ainult GitHubiga (või sinu enda kataloogiallikaga) kataloogide allalaadimiseks ning, kui lubad, Open Libraryga ja selle hostiga archive.org, DNB-ga, DIGAR-iga ja Bookbitesiga kaante ja autoripiltide jaoks.

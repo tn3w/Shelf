@@ -1,3 +1,4 @@
+import subprocess
 from functools import cache
 from pathlib import Path
 
@@ -33,6 +34,22 @@ def font(size, weight):
     return face
 
 
+@cache
+def hangul_font(size):
+    query = ["fc-match", "-f", "%{file}\n%{index}", "Noto Sans CJK KR:bold"]
+    match = subprocess.run(query, capture_output=True, text=True, check=True).stdout
+    path, index = match.split("\n")
+    return ImageFont.truetype(path, size, index=int(index))
+
+
+def has_hangul(text):
+    return any("\u1100" <= char <= "\ud7af" for char in text)
+
+
+def face_for(text, size, weight):
+    return hangul_font(size) if has_hangul(text) else font(size, weight)
+
+
 def widest(lines, face):
     return max(face.getlength(line) for line in lines)
 
@@ -46,16 +63,16 @@ def balanced(text, face):
 
 def headline_size(headlines, width=1900, largest=216):
     for size in range(largest, 60, -4):
-        face = font(size, HEADLINE_WEIGHT)
+        face = face_for(" ".join(headlines), size, HEADLINE_WEIGHT)
         if all(widest(balanced(text, face), face) <= width for text in headlines):
             return size
     return 60
 
 
 def fitting(text, weight, size, width=1800):
-    while font(size, weight).getlength(text) > width:
+    while face_for(text, size, weight).getlength(text) > width:
         size -= 2
-    return font(size, weight)
+    return face_for(text, size, weight)
 
 
 def gradient(top, bottom):
@@ -165,7 +182,7 @@ def badge(canvas, top, text, palette):
 
 
 def chips(canvas, top, text, palette):
-    face, gap = font(64, 700), 20
+    face, gap = face_for(text, 64, 700), 20
     labels = text.split(" · ")
     total = sum(pill_width(label, face) for label in labels) + gap * (len(labels) - 1)
     left = CENTER - total / 2
@@ -182,7 +199,7 @@ def subline(canvas, top, text, palette):
 
 def header(canvas, index, headline, detail, size, palette):
     draw = ImageDraw.Draw(canvas)
-    face = font(size, HEADLINE_WEIGHT)
+    face = face_for(headline, size, HEADLINE_WEIGHT)
     rows = []
     if index == 0:
         rows += [(150, lambda top: brand(canvas, top, palette)), (64, None)]

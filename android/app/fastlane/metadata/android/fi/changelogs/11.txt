@@ -1,0 +1,6 @@
+• Lisää omia kirjoja: nimi, kirjailija, hylly ja valinnainen kansikuva
+• Lukija: PDF-kaatuminen ja tyhjät sivut korjattu, nopeammat sarjakuvat ja EPUB-kuvat, oikea CBZ-sivujärjestys
+• Kahdesti tuotu sama tiedosto pysyy yhtenä kirjana; tuodut tiedostot siirtyvät laitteen mukana
+• Luettelokirjojen tuodut kopiot voi poistaa
+• Kansivälimuisti siivotaan, lataukset siivoavat virheiden jälkeen
+• Sisäänrakennettu luettelo päivitetty, käännökset korjattu

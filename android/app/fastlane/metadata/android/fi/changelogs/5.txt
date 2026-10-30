@@ -1,0 +1,1 @@
+• Käytöstä poistetut kannet ja kirjailijakuvat eivät enää lähetä pyyntöjä. Kaikkien pakettien lataus hakee jokaisen tiedoston kerran, ja ytimen koko sisältää nyt sijoitustiedoston.

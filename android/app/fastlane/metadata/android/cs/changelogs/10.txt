@@ -1,0 +1,5 @@
+• Import CSV z Goodreads a StoryGraph se zprávou o shodách a export CSV
+• Čtečka: velikost textu, řádkování, okraje, písmo, papírové a noční stránky, zarovnání do bloku, nevypínat displej, tlačítka hlasitosti a stránkování
+• Čistě černý motiv, barvy tapety, omezení pohybu
+• Jazyk knih Auto, vlastní denní cíl
+• Nastavení přeskupena do přehledných stránek

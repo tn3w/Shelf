@@ -329,6 +329,15 @@ Format with `ktlint -F "android/app/src/**/*.kt"`.
 Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, app installed, `ffmpeg`):
 `python3 tooling/screenshots.py [--only 7_scan|8_settings]`.
 Scan shot: emulator camera plays a rendered book-on-table loop; taps to capture after 30 s.
+`scroll_to(label)` scrolls until nothing visible sits above that section header, so use it
+for any section shot. Tab, settings, cover and scan labels come from
+`values-<lang>/strings.xml`, so Weblate translations reach the screenshots. Only headlines
+and demo books live in the script.
+Each language downloads its packs via Settings › Catalogue (Russian has none and uses the
+English catalogue). Demo books are picked per catalogue: titles and covers from that
+catalogue, a series book for the series shot. The scan shot needs a Latin-script cover:
+the recognizer reads Latin text only. Demo mode is re-applied after each theme switch;
+Hangul headlines use Noto Sans CJK KR (`fc-match`).
 
 Scanner bench (local `scanbench/cache` clips; `--tune` grid-searches the stop rule):
 
@@ -344,9 +353,12 @@ Workflow adds icon, covers and screenshots as WebP, then minifies.
 
 ## Translate
 
-App strings and store listing are translated into all ten catalogue languages on
+App strings (component `app`) and store listing (component `fastlane`: title, short and
+full description, changelogs `1`–`16` per language under
+`android/app/fastlane/metadata/android/<lang>/`) are translated on
 [Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
-from its `weblate` branch.
+from its `weblate` branch. Store texts are limited to 30 (title), 80 (short), 4000 (full)
+and 500 (changelog) characters. App languages: ten catalogue languages plus Russian.
 
 ## Project
 

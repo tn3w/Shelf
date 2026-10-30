@@ -1,0 +1,8 @@
+• Estońska aplikacja i katalog, okładki z biblioteki narodowej
+• Niemiecki katalog rośnie do 388 000 książek z okładkami DNB
+• Darmowe e-booki z otwartych źródeł oraz własne źródła
+• Otwiera MOBI, AZW3, CBR, CB7, DOCX, ODT i RTF
+• Wyszukiwanie: nazwy serii znajdują każdy tom, czystsze tytuły, mniej duplikatów
+• Bezpieczniej: tylko https, aktualizacje aplikacji dzień po wydaniu
+• Poprawki awarii czytnika, importu i przywracania
+• Zaktualizowano katalog

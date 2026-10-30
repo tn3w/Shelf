@@ -1,0 +1,5 @@
+• Goodreadsi ja StoryGraphi CSV-import vastavusaruandega ning CSV-eksport
+• Lugeja: teksti suurus, reavahe, veerised, kirjatüüp, paber- ja ööleheküljed, rööpjoondus, ekraan jääb sisse, helitugevuse ja lehepööramisklahvid
+• Täismust teema, taustapildi värvid, vähendatud liikumine
+• Raamatute keel Auto, oma päevaeesmärk
+• Seaded ümber rühmitatud selgetele lehtedele

@@ -1,0 +1,5 @@
+• Import CSV z Goodreads i StoryGraph z raportem dopasowań oraz eksport CSV
+• Czytnik: rozmiar tekstu, interlinia, marginesy, krój pisma, strony papierowe i nocne, wyjustowanie, nie wygaszaj ekranu, klawisze głośności i przewracania stron
+• Czysto czarny motyw, kolory tapety, ograniczenie ruchu
+• Język książek Auto, własny dzienny cel
+• Ustawienia pogrupowane w przejrzyste strony

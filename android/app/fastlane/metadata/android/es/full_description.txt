@@ -1,16 +1,20 @@
 Shelf es un catálogo de libros sin conexión basado en Open Library y las bibliotecas nacionales de Alemania, Francia, Estonia, Suecia, Polonia, Chequia, Corea y Finlandia.
 
 * Búsqueda tolerante a errores con sugerencias
-* Géneros, series y autores
-* Biblioteca: quiero leer, leyendo, leídos
-* Tus propios libros que faltan en el catálogo, con tu portada
-* Escanea una portada o un código ISBN, en el dispositivo
+* Explora géneros, sagas y autores
+* Biblioteca con estantes de pendientes, leyendo y leídos
+* Añade tus propios libros que faltan en el catálogo, con tu propia portada
+* Escanea la portada o el código de barras ISBN de un libro para encontrarlo, en el dispositivo
 * Importación y exportación CSV de Goodreads y StoryGraph
-* Meta diaria y rachas de lectura
-* Recomendaciones calculadas en el dispositivo
-* Lector de EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT y HTML, importados o abiertos desde cualquier app
-* Comodidad de lectura: tamaño, interlineado, márgenes, tipografía, páginas papel y noche, teclas de página
-* Catálogos en inglés, alemán, francés, español, estonio, sueco, polaco, checo, coreano y finés con paquetes opcionales
-* Autoalojable: fuente de catálogo y servidor de portadas propios, o importación de archivos
+* Copia de seguridad diaria automática en una carpeta que elijas, por ejemplo de Syncthing
+* Objetivo de lectura diario y rachas
+* Recomendaciones personales calculadas en el dispositivo
+* Lector para archivos EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT y HTML, importados o abiertos desde cualquier app
+* Libros electrónicos gratuitos de dominio público o con licencia abierta, de fuentes que elijas o propias
+* Comodidad de lectura: tamaño de texto, espaciado, márgenes, tipografía, páginas de papel y nocturnas, teclas de página
+* Modo e-ink y brillo deslizando sobre la página
+* Catálogos en inglés, alemán, francés, español, estonio, sueco, polaco, checo, coreano y finés con paquetes de géneros opcionales
+* App en inglés, alemán, francés, español, estonio, sueco, polaco, checo, coreano, finés y ruso
+* Autoalojable: tu propia fuente de catálogo o importación de archivos de catálogo
 
-Sin rastreo, sin anuncios, sin cuentas.
+Sin rastreo, sin anuncios, sin cuentas. Shelf solo contacta con GitHub (o tu propia fuente de catálogo) para descargar catálogos y, si lo activas, con Open Library y su host archive.org, la DNB, DIGAR y Bookbites para portadas y fotos de autores.

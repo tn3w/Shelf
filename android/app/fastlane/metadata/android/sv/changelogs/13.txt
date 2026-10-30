@@ -1,0 +1,8 @@
+• Bibliotek: sortering, filter och listvy; sökningen filtrerar efter facetter
+• Serievy från boksidan
+• Dagligt mål 0 döljer vanewidgeten
+• ”Ta bort alla” per språk, samt ”Ta bort alla språk”
+• EPUB-filer med specialtecken i länkar öppnas; läsaren anpassar sig vid storleksändring
+• Skannern försöker med kameran igen och förklarar fel
+• Snabbare sökning samt inläsning av katalog och bibliotek
+• F-Droid-bygget är nu reproducerbart

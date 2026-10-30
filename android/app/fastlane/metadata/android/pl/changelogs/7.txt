@@ -1,0 +1,1 @@
+• Otwieraj dowolny plik książki: zaimportuj go w Bibliotece, użyj Otwórz w aplikacji lub udostępnij do Shelf. Ustaw własne źródło katalogu (repozytorium GitHub, wydania Gitea/Forgejo lub adres manifestu) i serwer okładek albo importuj pliki katalogu bez pobierania. Czystszy pierwszy start i wyraźna wskazówka, gdy nie zainstalowano katalogu.

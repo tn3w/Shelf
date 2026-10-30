@@ -1,0 +1,1 @@
+• Poprawka gestu cofania: strona książki znika teraz czysto, a jej tekst nie zostaje nad ekranem głównym.

@@ -1,0 +1,1 @@
+• Navigeringsfix: att återvända till en flik markerar nu rätt flik, och ett nytt tryck går tillbaka till dess huvudvy.

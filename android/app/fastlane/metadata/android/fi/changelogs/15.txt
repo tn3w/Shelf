@@ -1,0 +1,4 @@
+• Sovelluksen kielen voi valita myös Androidin asetuksista
+• Suosittu näkyy heti, kun Sinulle ei ole saatavilla
+• Korjaukset: skannerin kaatuminen, jumittuneet MOBI-tiedostot, kadonneet tuonnit, päivitys- ja palautusongelmat
+• CBR-sarjakuvat aukeavat vain ZIP-pakattuina (RAR ei ole vapaa)

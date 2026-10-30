@@ -1,0 +1,8 @@
+• Skanna ett bokomslag eller en ISBN-streckkod för att hitta boken, helt på enheten
+• CSV-importen matchar böcker via ISBN först
+• Säkrare data: ingen tyst radering vid läsfel, validerad import av säkerhetskopior
+• Läsmålet räknar bara riktiga sidvändningar; vanan uppdateras efter midnatt
+• FB2- och TXT-filer med andra teckenkodningar öppnas korrekt
+• Böcker som lästs ut i StoryGraph importeras som lästa
+• Uppdateringsdialogen visar en ren ändringslogg
+• Inbyggd katalog uppdaterad

@@ -1,0 +1,1 @@
+• Navigoinnin korjaus: välilehteen palaaminen korostaa nyt oikean välilehden, ja uusi napautus vie sen pääruutuun.

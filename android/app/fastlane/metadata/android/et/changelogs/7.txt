@@ -1,0 +1,1 @@
+• Ava mis tahes raamatufail: impordi see Raamatukogus, kasuta Ava rakendusega või jaga see Shelfile. Määra oma kataloogiallikas (GitHubi hoidla, Gitea/Forgejo väljalasked või manifesti URL) ja kaaneserver või impordi kataloogifailid ilma allalaadimata. Puhtam esmakäivitus ja selge vihje, kui kataloogi pole paigaldatud.

@@ -1,0 +1,8 @@
+• Kirjasto: lajittelu, suodattimet ja luettelonäkymä; haku suodattaa fasetin mukaan
+• Sarjanäkymä kirjasivulta
+• Päivittäinen tavoite 0 piilottaa tapawidgetin
+• ”Poista kaikki” kieltä kohti sekä ”Poista kaikki kielet”
+• EPUB-tiedostot, joiden linkeissä on erikoismerkkejä, aukeavat; lukija mukautuu koon muutokseen
+• Skanneri yrittää kameraa uudelleen ja selittää virheet
+• Nopeampi haku sekä luettelon ja kirjaston lataus
+• F-Droid-koonti on nyt toistettava

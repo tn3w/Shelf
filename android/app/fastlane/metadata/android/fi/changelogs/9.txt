@@ -1,0 +1,1 @@
+• Takaisin-eleen korjaus: kirjasivu häipyy nyt siististi, eikä sen teksti jää Kodin päälle.

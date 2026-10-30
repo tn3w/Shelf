@@ -1,0 +1,1 @@
+• Toistettavat koonnit: natiivikirjastoja ei enää poisteta symboleista, lisäksi päivitetyt riippuvuudet.

@@ -1,0 +1,4 @@
+• Jazyk aplikace lze zvolit i v nastavení Androidu
+• Populární se zobrazí hned, když není dostupné Pro vás
+• Opravy: zhroucení skeneru, zaseknuté soubory MOBI, ztracené importy, problémy s aktualizací a obnovou
+• Komiksy CBR se otevřou jen zabalené jako ZIP (RAR není svobodný)

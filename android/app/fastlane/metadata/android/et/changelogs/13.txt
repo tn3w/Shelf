@@ -1,0 +1,8 @@
+• Raamatukogu: sortimine, filtrid ja loendivaade; otsing filtreerib tahkude järgi
+• Sarjavaade raamatulehelt
+• Päevaeesmärk 0 peidab harjumuse vidina
+• „Kustuta kõik” iga keele kohta ning „Kustuta kõik keeled”
+• Avanevad EPUB-id, mille linkides on erimärke; lugeja kohandub suuruse muutumisega
+• Skanner proovib kaamerat uuesti ja selgitab tõrkeid
+• Kiirem otsing ning kataloogi ja raamatukogu laadimine
+• F-Droidi järk on nüüd reprodutseeritav

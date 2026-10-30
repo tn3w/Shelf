@@ -1,0 +1,1 @@
+• Powtarzalne kompilacje: biblioteki natywne nie są już okrajane, plus zaktualizowane zależności.

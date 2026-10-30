@@ -1,0 +1,6 @@
+• Přidávejte vlastní knihy: název, autor, police a volitelná obálka
+• Čtečka: opraveno zhroucení PDF a prázdné stránky, rychlejší komiksy a obrázky v EPUB, správné pořadí stránek CBZ
+• Dvakrát importovaný stejný soubor zůstane jednou knihou; importované soubory se přenesou při přesunu zařízení
+• Importované kopie katalogových knih lze odstranit
+• Mezipaměť obálek se čistí, stahování po chybách uklízí
+• Vestavěný katalog aktualizován, opraveny překlady

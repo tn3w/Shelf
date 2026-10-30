@@ -1,16 +1,20 @@
 Shelf on offline-kirjaluettelo, joka perustuu Open Libraryyn sekä Saksan, Ranskan, Viron, Ruotsin, Puolan, Tšekin, Korean ja Suomen kansalliskirjastoihin.
 
-* Kirjoitusvirheet sietävä haku ehdotuksineen
-* Tutki lajityyppejä, sarjoja ja kirjailijoita
-* Kirjasto hyllyillä Haluan lukea, Luen ja Luettu
-* Lisää luettelosta puuttuvat kirjat omalla kannella
-* Skannaa kirjan kansi tai ISBN-viivakoodi suoraan laitteella
-* Goodreads- ja StoryGraph-CSV:n tuonti ja vienti
-* Päivittäinen lukutavoite ja lukuputket
+* Kirjoitusvirheitä sietävä haku ehdotuksineen
+* Tutki lajeja, sarjoja ja kirjailijoita
+* Kirjasto, jossa on Haluan lukea-, Luen- ja Luettu-hyllyt
+* Lisää omia kirjoja, joita luettelossa ei ole, omalla kannella
+* Skannaa kirjan kansi tai ISBN-viivakoodi löytääksesi sen, suoraan laitteella
+* Goodreads- ja StoryGraph-CSV-tuonti ja -vienti
+* Automaattinen päivittäinen varmuuskopio valitsemaasi kansioon, esimerkiksi Syncthing-kansioon
+* Päivittäinen lukutavoite ja putket
 * Henkilökohtaiset suositukset laskettuna laitteella
-* Lukija EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-tiedostoille, tuotuna tai avattuna mistä tahansa sovelluksesta
-* Lukumukavuus: tekstikoko, riviväli, marginaalit, kirjasin, paperi- ja yösivut, sivunkääntönäppäimet
-* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi ja suomeksi sekä valinnaiset lajityyppipaketit
-* Itse ylläpidettävä: oma luettelolähde ja kansipalvelin tai luettelotiedostojen tuonti
+* Lukija EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-tiedostoille, tuotuina tai avattuina mistä tahansa sovelluksesta
+* Ilmaiset vapaasti käytettävät ja avoimella lisenssillä julkaistut e-kirjat valitsemistasi lähteistä tai omista lähteistä
+* Lukumukavuus: tekstin koko, riviväli, marginaalit, kirjasin, paperi- ja yösivut, sivunvaihtonäppäimet
+* E-ink-tila ja kirkkaus pyyhkäisemällä sivulla
+* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi ja suomeksi valinnaisin lajipaketein
+* Sovellus englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi, suomeksi ja venäjäksi
+* Voit isännöidä itse: oma luettelolähde tai luettelotiedostojen tuonti
 
-Ei seurantaa, ei mainoksia, ei tilejä. Shelf ottaa yhteyttä vain GitHubiin (tai omaan luettelolähteeseesi) luettelon latausta varten ja, jos sallittu, Open Libraryyn ja sen ylläpitäjään archive.orgiin, DNB:hen, DIGARiin ja Bookbitesiin (tai omiin kansipalvelimiisi) kansikuvia ja kirjailijakuvia varten.
+Ei seurantaa, ei mainoksia, ei tilejä. Shelf ottaa yhteyden vain GitHubiin (tai omaan luettelolähteeseesi) luettelolatauksia varten ja, jos otat käyttöön, Open Libraryyn ja sen isäntään archive.org, DNB:hen, DIGARiin ja Bookbitesiin kansia ja kirjailijakuvia varten.

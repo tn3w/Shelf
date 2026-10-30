@@ -1,0 +1,1 @@
+• Navigeerimise parandus: vahekaardile naasmine tõstab nüüd esile õige vahekaardi ja uuesti puudutamine viib selle pealehele.

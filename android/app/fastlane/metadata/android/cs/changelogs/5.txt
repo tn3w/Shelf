@@ -1,0 +1,1 @@
+• Vypnuté obálky a fotografie autorů už neodesílají žádné požadavky. Stažení všech balíčků načte každý soubor jen jednou a velikost jádra nyní zahrnuje soubor s pořadím.

@@ -1,0 +1,4 @@
+• Appspråket kan också väljas i Androids inställningar
+• Populärt visas direkt när För dig inte är tillgängligt
+• Fixar: skannerkrasch, fastnade MOBI-filer, förlorade importer, uppdaterings- och återställningsproblem
+• CBR-serier öppnas bara när de är packade som ZIP (RAR är inte fritt)

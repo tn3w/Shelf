@@ -1,0 +1,5 @@
+• Goodreads- ja StoryGraph-CSV-tuonti vastaavuusraportilla sekä CSV-vienti
+• Lukija: tekstin koko, riviväli, marginaalit, kirjasin, paperi- ja yösivut, tasaus, näyttö päällä, äänenvoimakkuus- ja sivunvaihtonäppäimet
+• Täysmusta teema, taustakuvan värit, vähennetty liike
+• Kirjojen kieli Auto, oma päivittäinen tavoite
+• Asetukset ryhmitelty selkeille sivuille

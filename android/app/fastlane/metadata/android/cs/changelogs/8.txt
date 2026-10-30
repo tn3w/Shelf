@@ -1,0 +1,1 @@
+• Oprava navigace: návrat na kartu nyní zvýrazní správnou kartu a opětovné klepnutí vede zpět na její hlavní obrazovku.

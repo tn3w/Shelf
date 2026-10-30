@@ -1,0 +1,6 @@
+• Lisa oma raamatuid: pealkiri, autor, riiul ja valikuline kaanepilt
+• Lugeja: PDF-i krahh ja tühjad leheküljed parandatud, kiiremad koomiksid ja EPUB-i pildid, õige CBZ-i lehekülgede järjekord
+• Kaks korda imporditud sama fail jääb üheks raamatuks; imporditud failid liiguvad seadme ülekandega kaasa
+• Kataloogiraamatute imporditud koopiaid saab eemaldada
+• Kaanemälu puhastatakse, allalaadimised koristavad pärast tõrkeid
+• Sisseehitatud kataloog uuendatud, tõlked parandatud

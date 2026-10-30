@@ -1,0 +1,8 @@
+• Knihovna: řazení, filtry a zobrazení seznamu; vyhledávání filtruje podle faset
+• Obrazovka série ze stránky knihy
+• Denní cíl 0 skryje widget návyku
+• „Smazat vše“ pro každý jazyk a „Smazat všechny jazyky“
+• Otevírají se EPUB se speciálními znaky v odkazech; čtečka se přizpůsobí změně velikosti
+• Skener zkouší kameru znovu a vysvětluje chyby
+• Rychlejší vyhledávání, načítání katalogu i knihovny
+• Sestavení pro F-Droid je nyní reprodukovatelné

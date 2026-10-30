@@ -1,6 +1,6 @@
-• Nové katalogy: švédský, polský, český, korejský a finský, z národních knihoven
-• Aplikace nově také ve švédštině, polštině, češtině, korejštině a finštině
-• Francouzský katalog roste díky Francouzské národní knihovně na více než 600 000 knih
-• Nový výběr jazyka katalogu
-• Menší aplikace: obsahuje jen angličtinu, ostatní katalogy se stáhnou při prvním spuštění
-• Vyhledávání rozumí polským, českým a korejským znakům
+• Katalogy švédský, polský, český, korejský a finský z národních knihoven; aplikace také v těchto jazycích a ruštině
+• Francouzský katalog roste na více než 600 000 knih s Francouzskou národní knihovnou
+• Výběr jazyka katalogů; menší aplikace, součástí je jen angličtina
+• Vyhledávání rozumí polským, českým a korejským písmenům
+• Režim e-ink a jas přejetím prstem ve čtečce
+• Automatická denní záloha do zvolené složky, uchovává se posledních 7

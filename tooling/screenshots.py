@@ -11,7 +11,9 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+from functools import cache
 from pathlib import Path
+from xml.etree import ElementTree
 
 import numpy
 from PIL import Image, ImageDraw, ImageFilter
@@ -36,17 +38,15 @@ AVD = os.environ.get("SHELF_AVD", "shelf-screenshots")
 SCENE_SIZE = (1440, 1920)
 BOOK_HEIGHT = 700
 BOOK_CENTER = 580
-CUT = (1300, 1580)
+BAND_MARGIN = 60
+SHEET_MARGIN = 130
+SHEET_TITLE_TARGET = 1550
 VIDEO_FRAMES = 40
 PAGES = 24
 
 LOCALES = {
     "en": dict(
         folder="en-US",
-        tabs=("Home", "Library", "Explore"),
-        settings=("Settings", "All ("),
-        cover="Cover of",
-        about="About this book",
         copy=[("Your books, offline", "No account · No ads"),
               ("Switch from Goodreads", "Import shelves via CSV"),
               ("Find any book", "Fast offline search"),
@@ -55,7 +55,7 @@ LOCALES = {
               ("Read your own files", FORMATS),
               ("Scan any cover", "Recognized on your phone"),
               ("Private by design", "No account · Offline switch")],
-        scan=("Search", "Scan cover", "Scan again", 8535565),
+        scan=8535565,
         reader=(138052, "Alice's Adventures in Wonderland", "Lewis Carroll",
                 10527843, 11),
         reading=[(82563, "Harry Potter and the Philosopher's Stone", "J. K. Rowling",
@@ -72,10 +72,6 @@ LOCALES = {
     ),
     "de": dict(
         folder="de",
-        tabs=("Startseite", "Bibliothek", "Entdecken"),
-        settings=("Einstellungen", "Alle ("),
-        cover="Cover von",
-        about="Über dieses Buch",
         copy=[("Deine Bücher, offline", "Kein Konto · Keine Werbung"),
               ("Wechsel von Goodreads", "Regale per CSV importieren"),
               ("Finde jedes Buch", "Schnelle Offline-Suche"),
@@ -84,7 +80,7 @@ LOCALES = {
               ("Lies deine eigenen Dateien", FORMATS),
               ("Scanne jedes Cover", "Erkannt auf dem Handy"),
               ("Privat von Grund auf", "Kein Konto · Offline-Schalter")],
-        scan=("Suche", "Cover scannen", "Erneut scannen", 15157474),
+        scan=15157474,
         reader=(151411, "Alice im Wunderland", "Lewis Carroll", 8595966, 19778),
         reading=[(82563, "Harry Potter und der Stein der Weisen", "J. K. Rowling",
                   15155833),
@@ -100,10 +96,6 @@ LOCALES = {
     ),
     "fr": dict(
         folder="fr",
-        tabs=("Accueil", "Bibliothèque", "Explorer"),
-        settings=("Paramètres", "Tout ("),
-        cover="Couverture de",
-        about="À propos du livre",
         copy=[("Vos livres, hors ligne", "Sans compte · Sans pub"),
               ("Quittez Goodreads", "Import CSV de vos étagères"),
               ("Trouvez vos livres", "Recherche rapide hors ligne"),
@@ -112,7 +104,7 @@ LOCALES = {
               ("Lisez vos fichiers", FORMATS),
               ("Scannez une couverture", "Reconnue sur l’appareil"),
               ("Privé par conception", "Sans compte · Mode hors ligne")],
-        scan=("Recherche", "Scanner une couverture", "Scanner à nouveau", 14320086),
+        scan=14320086,
         reader=(138052, "Alice Au Pays des Merveilles", "Lewis Carroll",
                 10527843, 55456),
         reading=[(82563, "Harry Potter à l'école des sorciers", "J. K. Rowling",
@@ -129,10 +121,6 @@ LOCALES = {
     ),
     "es": dict(
         folder="es",
-        tabs=("Inicio", "Biblioteca", "Explorar"),
-        settings=("Ajustes", "Todo ("),
-        cover="Portada de",
-        about="Sobre este libro",
         copy=[("Tus libros, sin conexión", "Sin cuenta · Sin anuncios"),
               ("Ven desde Goodreads", "Importa estantes en CSV"),
               ("Encuentra cualquier libro", "Búsqueda rápida sin red"),
@@ -141,7 +129,7 @@ LOCALES = {
               ("Lee tus archivos", FORMATS),
               ("Escanea una portada", "Reconocida en tu móvil"),
               ("Privado por diseño", "Sin cuenta · Modo sin conexión")],
-        scan=("Buscar", "Escanear portada", "Escanear de nuevo", 15091493),
+        scan=15091493,
         reader=(503666, "Don Quijote de la Mancha", "Miguel de Cervantes Saavedra",
                 14428305, 2000),
         reading=[(82563, "Harry Potter y la piedra filosofal", "J. K. Rowling",
@@ -159,6 +147,191 @@ LOCALES = {
         searches=["allende", "borges", "zafón"],
     ),
 }
+TRANSLATED = {
+    "cs": ("cs", ["Alenka v říši divů", "Harry Potter a Kámen mudrců",
+                  "Projekt Hail Mary", "Jméno větru", "Kirké", "Duna",
+                  "Půlnoční knihovna", "Hobit", "1984", "Malý princ"],
+           [("Vaše knihy, offline", "Bez účtu · Bez reklam"),
+            ("Přejděte z Goodreads", "Import polic přes CSV"),
+            ("Najděte jakoukoli knihu", "Rychlé offline hledání"),
+            ("Neztraťte žádnou sérii", "Série a autoři"),
+            ("Objevte další četbu", "Tipy přímo v telefonu"),
+            ("Čtěte vlastní soubory", FORMATS),
+            ("Naskenujte jakoukoli obálku", "Rozpoznáno v telefonu"),
+            ("Soukromí z principu", "Bez účtu · Offline přepínač")],
+           (7924103, "Kolo času", "Robert Jordan", 980232)),
+    "et": ("et", ["Alice imedemaal", "Harry Potter ja tarkade kivi", "Projekt Hail Mary",
+                  "Tuule nimi", "Kirke", "Düün", "Südaööraamatukogu", "Hobit", "1984",
+                  "Väike prints"],
+           [("Sinu raamatud, offline", "Ilma konto ja reklaamita"),
+            ("Tule üle Goodreadsist", "Riiulite import CSV-ga"),
+            ("Leia iga raamat", "Kiire offline-otsing"),
+            ("Ära kaota sarju", "Sarjad ja autorid"),
+            ("Leia järgmine lugemine", "Soovitused sinu telefonis"),
+            ("Loe oma faile", FORMATS),
+            ("Skaneeri iga kaant", "Tuvastatakse telefonis"),
+            ("Privaatne algusest peale", "Ilma kontota · Offline-lüliti")]),
+    "fi": ("fi", ["Liisan seikkailut ihmemaassa", "Harry Potter ja viisasten kivi",
+                  "Project Hail Mary", "Tuulen nimi", "Kirke", "Dyyni",
+                  "Keskiyön kirjasto", "Hobitti", "1984", "Pikku prinssi"],
+           [("Kirjasi, offline", "Ei tiliä · Ei mainoksia"),
+            ("Vaihda Goodreadsista", "Tuo hyllyt CSV:llä"),
+            ("Löydä mikä tahansa kirja", "Nopea offline-haku"),
+            ("Älä hukkaa sarjaa", "Sarjat ja kirjailijat"),
+            ("Löydä seuraava luettava", "Suositukset puhelimessasi"),
+            ("Lue omia tiedostoja", FORMATS),
+            ("Skannaa mikä tahansa kansi", "Tunnistus puhelimessa"),
+            ("Yksityinen suunnittelusta", "Ei tiliä · Offline-kytkin")],
+           (492658, "Salamavaras", "Rick Riordan", 8966702)),
+    "ko": ("ko", ["이상한 나라의 앨리스", "해리 포터와 마법사의 돌", "프로젝트 헤일메리",
+                  "바람의 이름", "키르케", "듄", "미드나잇 라이브러리", "호빗", "1984",
+                  "어린 왕자"],
+           [("내 책, 오프라인으로", "계정 없음 · 광고 없음"),
+            ("Goodreads에서 옮기기", "CSV로 서재 가져오기"),
+            ("어떤 책이든 찾기", "빠른 오프라인 검색"),
+            ("시리즈를 놓치지 마세요", "시리즈와 저자"),
+            ("다음 책 발견하기", "내 폰에서 만든 추천"),
+            ("내 파일 읽기", FORMATS),
+            ("표지를 스캔하세요", "내 폰에서 인식"),
+            ("처음부터 프라이빗", "계정 없음 · 오프라인 스위치")],
+           (16817120, "우리들의 일그러진 영웅", "이문열", 12635092)),
+    "pl": ("pl", ["Alicja w Krainie Czarów", "Harry Potter i Kamień Filozoficzny",
+                  "Projekt Hail Mary", "Imię wiatru", "Kirke", "Diuna",
+                  "Biblioteka O Północy", "Hobbit", "1984", "Mały Książę"],
+           [("Twoje książki, offline", "Bez konta · Bez reklam"),
+            ("Przejdź z Goodreads", "Import półek z CSV"),
+            ("Znajdź każdą książkę", "Szybkie wyszukiwanie offline"),
+            ("Nie gub serii", "Serie i autorzy"),
+            ("Odkryj następną lekturę", "Propozycje na Twoim telefonie"),
+            ("Czytaj własne pliki", FORMATS),
+            ("Zeskanuj każdą okładkę", "Rozpoznawana na telefonie"),
+            ("Prywatność z założenia", "Bez konta · Przełącznik offline")],
+           (262421, "Przygody Sherlocka Holmesa", "Arthur Conan Doyle", 13379276)),
+    "sv": ("sv", ["Alice i Underlandet", "Harry Potter och De Vises Sten",
+                  "Project Hail Mary", "Vindens namn", "Circe", "Dune",
+                  "Midnattsbiblioteket", "Hobbiten", "1984", "Lille prinsen"],
+           [("Dina böcker, offline", "Inget konto · Inga annonser"),
+            ("Byt från Goodreads", "Importera hyllor via CSV"),
+            ("Hitta vilken bok som helst", "Snabb offlinesökning"),
+            ("Tappa aldrig en serie", "Serier och författare"),
+            ("Hitta nästa läsning", "Tips på din telefon"),
+            ("Läs dina egna filer", FORMATS),
+            ("Skanna vilket omslag som helst", "Känns igen på din telefon"),
+            ("Privat från grunden", "Inget konto · Offlinereglage")],
+           (492658, "Född till hjälte", "Rick Riordan", 8966702)),
+    "ru": ("ru-RU", ["Алиса в Стране чудес", "Гарри Поттер и философский камень",
+                     "Проект «Аве Мария»", "Имя ветра", "Цирцея", "Дюна",
+                     "Библиотека полуночи", "Хоббит", "1984", "Маленький принц"],
+           [("Ваши книги, офлайн", "Без аккаунта · Без рекламы"),
+            ("Уходите из Goodreads", "Импорт полок через CSV"),
+            ("Найдите любую книгу", "Быстрый офлайн-поиск"),
+            ("Не теряйте серии", "Серии и авторы"),
+            ("Найдите что почитать", "Подборки на вашем телефоне"),
+            ("Читайте свои файлы", FORMATS),
+            ("Сканируйте любую обложку", "Распознаётся на телефоне"),
+            ("Приватность по умолчанию", "Без аккаунта · Офлайн-режим")]),
+}
+
+
+IN_LANGUAGE = {
+    "cs": {21745884: ("Spasitel", 11200092), 8479867: ("Jméno větru", 11480483),
+           18012166: ("Kirke", 8739376), 893414: ("Duna", 12375564),
+           20965973: ("Půlnoční knihovna", 10313767), 1168083: ("1984", 14416004)},
+    "et": {21745884: ("Ave Maria", 11200092), 8479867: ("Tuule nimi", 11480483),
+           18012166: ("Kirke", 8739376), 893414: ("Düün", 12375564),
+           20965973: ("Kesköö raamatukogu", 10313767),
+           27482: ("Kääbik, ehk, Sinna ja tagasi", 14627509),
+           1168083: ("Loomade farm", 14416004), 10263: ("Väike prints", 10708272),
+           138052: ("Alice Imedemaal", 10870770)},
+    "fi": {21745884: ("Operaatio Ave Maria", 11200092),
+           8479867: ("Tuulen nimi", 11480483), 18012166: ("Kirke", 8739376),
+           893414: ("Dyyni", 12375564), 20965973: ("Keskiyön kirjasto", 10313767),
+           27482: ("Hobitti", 14627509), 1168083: ("Vuonna 1984", 14416004),
+           10263: ("Pikku Prinssi", 10708272),
+           138052: ("Liisan seikkailut ihmemaassa", 10870770)},
+    "ko": {21745884: ("프로젝트 해일메리", 15216589),
+           138052: ("이상한 나라의 앨리스", 12797926)},
+    "pl": {21745884: ("Projekt Hail Mary", 13442034), 8479867: (None, 11218173),
+           18012166: ("Kirke", 8349106), 893414: ("Diuna", 10488703),
+           20965973: ("Biblioteka o północy", 10313767),
+           1168083: ("Rok 1984", 9374398)},
+    "sv": {82563: ("Harry Potter och de vises sten", 15155833),
+           21745884: ("Uppdrag Hail Mary", 11200092),
+           8479867: ("Vindens namn", 11480483), 18012166: ("Kirke", 14353785),
+           20965973: ("Midnattsbiblioteket", 12241903), 27482: ("Bilbo", 14625950),
+           1168083: ("1984", 14585290), 10263: ("Lille prinsen", 10708272),
+           138052: ("Alice i Underlandet", 10870770)},
+}
+
+
+def in_language(book, local):
+    if book[0] not in local:
+        return book
+    title, cover = local[book[0]]
+    return (book[0], title or book[1], book[2], cover, *book[4:])
+
+
+def translated(folder, titles, copy, series=None, scan=None, local=None):
+    english = LOCALES["en"]
+    alice, potter, hail, wind, circe, dune, midnight, hobbit, nineteen, prince = titles
+
+    def retitle(books, names):
+        return [(book[0], name, *book[2:]) for book, name in zip(books, names)]
+
+    local = local or {}
+    reading = retitle(english["reading"], [potter, hail])
+    shelves = dict(
+        reading=reading if series is None else [series, reading[1]],
+        want=retitle(english["want"], [wind, circe, dune, midnight]),
+        finished=retitle(english["finished"], [hobbit, nineteen, prince]),
+    )
+    return english | dict(
+        folder=folder,
+        copy=copy,
+        scan=scan or english["scan"],
+        reader=in_language((english["reader"][0], alice, *english["reader"][2:]), local),
+        **{name: [in_language(book, local) for book in books]
+           for name, books in shelves.items()},
+    )
+
+
+LOCALES |= {
+    language: translated(*values, local=IN_LANGUAGE.get(language))
+    for language, values in TRANSLATED.items()
+}
+LOCALES["ru"]["catalogue"] = "en"
+
+
+STRINGS = ROOT / "android/app/src/main/res"
+
+
+@cache
+def strings(language):
+    folder = "values" if language == "en" else f"values-{language}"
+    tree = ElementTree.parse(STRINGS / folder / "strings.xml")
+    return {item.get("name"): item.text for item in tree.getroot().iter("string")}
+
+
+def label(language, name):
+    translated = strings(language).get(name) or strings("en")[name]
+    return translated.replace("\\'", "'")
+
+
+def prefix(language, name):
+    return label(language, name).split("%")[0].strip()
+
+
+def with_labels(language):
+    return LOCALES[language] | dict(
+        language=language,
+        tabs=tuple(label(language, name) for name in ("home", "library", "explore")),
+        settings=(label(language, "settings"), label(language, "download_all_short")),
+        cover=prefix(language, "cover_of"),
+        about=label(language, "about_book"),
+        scan=(label(language, "search"), label(language, "scan"),
+              label(language, "scan_again"), LOCALES[language]["scan"]),
+    )
+
 
 NODE = re.compile(
     r'text="([^"]*)"[^>]*content-desc="([^"]*)"[^>]*'
@@ -218,7 +391,8 @@ def library(locale, theme):
     pages = [34, 22, 41, 27, 30, 25, 38, 21, 29, 45, 23, 31, 26, 18]
     activity = {str(today - datetime.timedelta(days)): count
                 for days, count in enumerate(pages)}
-    settings = dict(onboarded=True, language=locale["language"], theme=theme,
+    settings = dict(onboarded=True, language=locale.get("catalogue", locale["language"]),
+                    theme=theme,
                     wallpaperColors=False, dailyGoal=20, onlineCovers=True,
                     checkUpdates=False, lastCatalogueCheck=now, lastAppCheck=now)
     values = dict(entries=entries, progress=progress, activity=activity,
@@ -295,7 +469,7 @@ def settled(timeout=20):
     previous = screencap()
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        time.sleep(0.8)
+        time.sleep(0.4)
         current = screencap()
         if current == previous:
             return current
@@ -311,17 +485,21 @@ def swipe(distance, duration=900):
     shell("input", "swipe", "540", "1600", "540", str(1600 - distance), str(duration))
 
 
-def scroll_to(label, target):
+def scroll_to(label):
+    previous = None
     for _ in range(12):
-        found = find(label)(nodes())
+        current = nodes()
+        found = find(label)(current)
         if not found:
             swipe(800)
             continue
-        distance = int(found[0][3]) - target
-        if abs(distance) <= 12:
+        top = int(found[0][3])
+        above = [int(node[5]) for node in current if STATUS_BAR < int(node[5]) <= top]
+        distance = max(above, default=STATUS_BAR) - STATUS_BAR
+        if distance <= 12 or distance == previous:
             return
-        slop = TOUCH_SLOP if distance > 0 else -TOUCH_SLOP
-        swipe(max(-1000, min(1000, distance)) + slop, 1500)
+        previous = distance
+        swipe(min(1000, distance) + TOUCH_SLOP, 1500)
     raise TimeoutError(label)
 
 
@@ -351,13 +529,42 @@ def full_page():
 
 
 def download_packs(locale):
+    language = locale["language"]
     title, button = locale["settings"]
     tap(title)
-    wait(find(locale["tabs"][0]))
-    if not find(button, exact=False)(nodes()):
+    tap(label(language, "catalogue"))
+    tap(label(language, "check_catalogue"))
+    try:
+        wait(find(button), timeout=60)
+    except TimeoutError:
         return
-    tap(button, exact=False)
-    wait(lambda current: not find(button, exact=False)(current), timeout=900)
+    tap(button)
+    wait(lambda current: not find(button)(current), timeout=900)
+
+
+def has_series(locale):
+    try:
+        wait(covers(locale, 4), timeout=6)
+    except TimeoutError:
+        return False
+    return True
+
+
+def series_book(locale, current):
+    shelved = [*locale["reading"], *locale["want"], *locale["finished"]]
+    pages = [current, *[book for book in shelved if book is not current]]
+    for index, book in enumerate(pages):
+        try:
+            if index:
+                tap(locale["tabs"][1], timeout=8)
+                tap(book[1], timeout=8)
+                wait(find(book[2]))
+            scroll_to(locale["about"])
+        except TimeoutError:
+            continue
+        if has_series(locale):
+            return
+    log(f"{locale['language']}: no book with a series in this catalogue")
 
 
 def capture(locale, folder):
@@ -384,8 +591,7 @@ def capture(locale, folder):
     details = settled()
     save("3_book", details)
 
-    scroll_to(locale["about"], STATUS_BAR + 20)
-    wait(covers(locale, 4))
+    series_book(locale, book)
     save("4_series", with_status_bar(settled(), details))
 
     tap(explore)
@@ -411,6 +617,11 @@ def capture_settings(locale, folder):
     log(f"{locale['language']}: 8_settings")
 
 
+def sheet_title_top():
+    lower = [int(node[3]) for node in nodes() if node[0] and int(node[3]) > 1200]
+    return min(lower)
+
+
 def capture_scan(locale, folder):
     search, scan, again, _ = locale["scan"]
     folder.mkdir(parents=True, exist_ok=True)
@@ -421,11 +632,12 @@ def capture_scan(locale, folder):
     while not find(again)(nodes()):
         if time.monotonic() - started > 180:
             raise TimeoutError(again)
-        if time.monotonic() - started > 30:
+        if time.monotonic() - started > 15:
             shell("input", "tap", "540", "800")
         time.sleep(2)
-    time.sleep(4)
+    time.sleep(2)
     (folder / "7_scan.png").write_bytes(settled())
+    (folder / "7_scan.txt").write_text(str(sheet_title_top()))
     log(f"{locale['language']}: 7_scan")
 
 
@@ -510,6 +722,9 @@ def scene_frame(table, volume, shadow, step):
 
 
 def render_scene(cover):
+    path = CACHE / f"scene-{cover}.mp4"
+    if path.exists():
+        return path
     folder = CACHE / "scene"
     shutil.rmtree(folder, ignore_errors=True)
     folder.mkdir()
@@ -519,7 +734,6 @@ def render_scene(cover):
     for step in range(VIDEO_FRAMES):
         frame = scene_frame(table, volume, shadow, step)
         frame.save(folder / f"{step:03d}.jpg", quality=92)
-    path = CACHE / "scene.mp4"
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "10", "-i",
                     folder / "%03d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", path],
                    check=True)
@@ -558,20 +772,39 @@ def raw_folder(language, theme):
 ONLY = {"7_scan": capture_scan, "8_settings": capture_settings}
 
 
+def night(theme):
+    shell("cmd", "uimode", "night", "yes" if theme == "Dark" else "no")
+
+
+def capture_language(locale, themes, only):
+    seed(locale, "System")
+    launch()
+    if "catalogue" not in locale:
+        download_packs(locale)
+    for theme in themes:
+        log(f"{locale['language']}: {theme}")
+        night(theme)
+        demo_mode()
+        launch()
+        ONLY.get(only, capture)(locale, raw_folder(locale["language"], theme))
+
+
+def by_scan_cover(plan):
+    groups = {}
+    for language, themes in plan:
+        groups.setdefault(LOCALES[language]["scan"], []).append((language, themes))
+    return groups
+
+
 def capture_all(plan, only):
-    prepare_device()
+    if adb("get-state", timeout=10).strip() == b"device":
+        prepare_device()
     try:
-        for language, themes in plan:
-            locale = LOCALES[language] | dict(language=language)
+        for cover, group in by_scan_cover(plan).items():
             if only in (None, "7_scan"):
-                restart_emulator(render_scene(locale["scan"][3]))
-            for theme in themes:
-                log(f"{language}: {theme}")
-                seed(locale, theme)
-                launch()
-                download_packs(locale)
-                launch()
-                ONLY.get(only, capture)(locale, raw_folder(language, theme))
+                restart_emulator(render_scene(cover))
+            for language, themes in group:
+                capture_language(with_labels(language), themes, only)
     finally:
         shell("am", "force-stop", PACKAGE)
         shell(*DEMO, "exit")
@@ -583,11 +816,15 @@ def output_folder(locale, theme):
     return FASTLANE / locale["folder"] / "images/phoneScreenshots"
 
 
-def without_band(screen):
-    top, bottom = CUT
-    joined = Image.new(screen.mode, (screen.width, screen.height - bottom + top))
-    joined.paste(screen.crop((0, 0, screen.width, top)))
-    joined.paste(screen.crop((0, bottom, screen.width, screen.height)), (0, top))
+def without_band(screen, title_top):
+    scale = screen.height / SCENE_SIZE[1]
+    bottom_of_book = BOOK_CENTER + (BOOK_HEIGHT + PAGES) // 2
+    start = round((bottom_of_book + BAND_MARGIN) * scale)
+    empty = title_top - SHEET_MARGIN - start
+    band = max(0, min(title_top - SHEET_TITLE_TARGET, empty))
+    joined = Image.new(screen.mode, (screen.width, screen.height - band))
+    joined.paste(screen.crop((0, 0, screen.width, start)))
+    joined.paste(screen.crop((0, start + band, screen.width, screen.height)), (0, start))
     return joined
 
 
@@ -603,7 +840,8 @@ def compose_all(plan, only):
             for index, (name, (headline, detail)) in screens:
                 screen = Image.open(raw_folder(language, theme) / f"{name}.png")
                 if name == "7_scan":
-                    screen = without_band(screen)
+                    title_top = (raw_folder(language, theme) / "7_scan.txt").read_text()
+                    screen = without_band(screen, int(title_top))
                 dark = theme == "Dark"
                 tile = tiles.compose(screen, index, headline, detail, size, dark)
                 tile.save(target / f"{name}.jpg", quality=90, optimize=True)

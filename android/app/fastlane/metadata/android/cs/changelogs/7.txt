@@ -1,0 +1,1 @@
+• Otevřete libovolný soubor knihy: importujte ho v Knihovně, použijte Otevřít v aplikaci nebo ho sdílejte do Shelf. Nastavte vlastní zdroj katalogu (repozitář GitHub, vydání Gitea/Forgejo nebo adresa manifestu) a server obálek, nebo importujte soubory katalogu bez stahování. Čistší první spuštění a jasná nápověda, když není nainstalován žádný katalog.

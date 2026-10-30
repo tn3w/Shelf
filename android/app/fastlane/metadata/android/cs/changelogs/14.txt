@@ -1,0 +1,8 @@
+• Estonská aplikace a katalog, obálky z národní knihovny
+• Německý katalog roste na 388 000 knih s obálkami z DNB
+• Zdarma dostupné e-knihy z otevřených zdrojů a vaše vlastní zdroje
+• Otevírá MOBI, AZW3, CBR, CB7, DOCX, ODT a RTF
+• Vyhledávání: názvy sérií najdou každý díl, čistší názvy, méně duplicit
+• Bezpečnější: pouze https, aktualizace aplikace den po vydání
+• Opravy zhroucení čtečky, importu a obnovy
+• Katalog aktualizován
