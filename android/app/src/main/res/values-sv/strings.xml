@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Om</string>
     <string name="about_book">Om boken</string>
@@ -330,10 +331,10 @@
     <string name="free_books_variable_taken">Namnet används redan</string>
     <string name="free_books_step">Steg %d</string>
     <string name="free_books_step_add">Lägg till steg</string>
-    <string name="free_books_headers">Headers</string>
+    <string name="free_books_headers">Rubriker</string>
     <string name="free_books_header_add">Lägg till header</string>
     <string name="free_books_header_value">Värde</string>
-    <string name="free_books_languages">Språk</string>
+    <string name="free_books_languages">Källans språk</string>
     <string name="free_books_attribute">Attribut</string>
     <string name="free_books_form_help">{name} infogar en variabel URL-kodad, {+name} som den är. Sökningen känner till {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} och {isbns}; varje regel lägger till sitt namn. En sökning med {isbn} provar bokens ISBN ett i taget och behåller alla resultat. Regler kör CSS, sedan JSON-sökväg, sedan attribut, sedan regex (första gruppen); XML-sidor tolkas som XML. Regler med namnen size (byte) och format beskriver filen, skip hoppar över posten. Relativa länkar tolkas mot föregående sida.</string>
     <string name="free_books_test">Testa</string>
