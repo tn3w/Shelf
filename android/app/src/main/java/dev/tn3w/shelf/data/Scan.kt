@@ -16,6 +16,8 @@ import kotlin.math.min
 
 private const val PROBED_LINES = 2
 private const val WEAK_FRAMES = 3
+private const val FINE_LINES = 3
+private const val SAME_LINE_OVERLAP = 0.3f
 private const val MIN_QUALITY = 3.0
 private const val CERTAIN_INFORMATION = 12.0
 private const val AUTHOR_INFORMATION = 6.0
@@ -64,10 +66,31 @@ private class Choice(
 private fun <T, R> parallel(items: List<T>, transform: (T) -> R): List<R> =
     items.parallelStream().map(transform).collect(Collectors.toList())
 
+private fun overlap(first: LineBox, second: LineBox): Float {
+    val width = min(first.right, second.right) - max(first.left, second.left)
+    val height = min(first.bottom, second.bottom) - max(first.top, second.top)
+    if (width <= 0 || height <= 0) return 0f
+    return width * height / min(first.width * first.height, second.width * second.height)
+}
+
 private fun sameRow(first: LineBox, second: LineBox): Boolean {
     val vertical = min(first.bottom, second.bottom) - max(first.top, second.top)
     val horizontal = min(first.right, second.right) - max(first.left, second.left)
     return horizontal > 0 && vertical > 0.4f * min(first.height, second.height)
+}
+
+internal fun finerLines(
+    frame: Gray,
+    rotation: Double,
+    scale: Int,
+    coarse: List<LineBox>,
+): List<LineBox> {
+    if (scale == 1) return emptyList()
+    val sharp = View(frame, rotation, 1)
+    return findLines(sharp.render(frame))
+        .map { it.scaled(1f / scale) }
+        .filter { line -> coarse.none { overlap(it, line) > SAME_LINE_OVERLAP } }
+        .take(FINE_LINES)
 }
 
 class Reader(
@@ -80,9 +103,13 @@ class Reader(
     private var weak = 0
 
     private fun layout(frame: Gray, small: Gray, angle: Double, turned: Boolean): Layout {
-        val view =
-            View(frame, if (turned) angle + PI / 2 else angle, detectionScale(frame))
-        return Layout(view, findLines(view.render(small)).take(settings.lines), turned)
+        val rotation = if (turned) angle + PI / 2 else angle
+        val scale = detectionScale(frame)
+        val view = View(frame, rotation, scale)
+        val coarse = findLines(view.render(small))
+        val fine = finerLines(frame, rotation, scale, coarse)
+        val lines = coarse.take(settings.lines - FINE_LINES) + fine
+        return Layout(view, lines.take(settings.lines), turned)
     }
 
     private fun line(view: View, box: LineBox, flipped: Boolean): TextLine {

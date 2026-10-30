@@ -448,6 +448,17 @@ class ScanTest {
     }
 
     @Test
+    fun finerPassAddsOnlyLinesTheCoarsePassMissed() {
+        val frame = cover(duneCover.map { (text, size) -> text to size * 2 }, 1280, 960)
+        val fine = finerLines(frame, 0.0, 2, emptyList())
+        assertTrue(fine.isNotEmpty() && fine.size <= 3)
+        assertTrue(fine.all { it.right <= 640f && it.bottom <= 480f })
+        val known = findLines(View(frame, 0.0, 1).render(frame)).map { it.scaled(0.5f) }
+        assertTrue(finerLines(frame, 0.0, 2, known).isEmpty())
+        assertTrue(finerLines(frame, 0.0, 1, emptyList()).isEmpty())
+    }
+
+    @Test
     fun blurryFrameReadsNothing() {
         val flat = Gray(640, 480, FloatArray(640 * 480) { 128f })
         assertEquals(emptyList<TextLine>(), Reader(model, ScanSettings()).read(flat))
