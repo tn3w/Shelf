@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">À propos</string>
     <string name="about_book">À propos du livre</string>
@@ -44,7 +45,7 @@
     <string name="genres">Genres</string>
     <string name="goal_reached">Objectif atteint. À demain !</string>
     <string name="home">Accueil</string>
-    <string name="import_to_start">Importer un fichier</string>
+    <string name="import_to_start">Importez un fichier pour commencer</string>
     <string name="install">Installer</string>
     <string name="install_anyway">Installer quand même</string>
     <string name="larger_text">Texte plus grand</string>
