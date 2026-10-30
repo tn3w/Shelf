@@ -166,8 +166,6 @@
     <string name="next_in_series_subtitle">Jätka iga sarjaga sealt, kus pooleli jäi.</string>
     <string name="not_for_me">Pole minu jaoks</string>
     <string name="machine_translated">Masintõlge</string>
-    <string name="author_images">Autorifotod</string>
-    <string name="author_images_hint">Too autorite portreed Open Libraryst.</string>
     <string name="catalogue_updates">Kataloogi uuendused</string>
     <string name="catalogue_updates_hint">Kontrolli kord kuus uusi kataloogipakette ja väikesi uuendusi.</string>
     <string name="check_catalogue">Kontrolli kataloogi uuendusi</string>
@@ -195,16 +193,12 @@
     <string name="language_auto">Automaatne</string>
     <string name="reading_settings">Lugemine</string>
     <string name="reading_hint">Päeva eesmärk, tekst ja lehekeeramine.</string>
-    <string name="stat_books">Raamatud</string>
-    <string name="stat_streak">Päeva järjest</string>
     <string name="settings_footer">Avatud lähtekoodiga MIT-litsentsi all. Sinu raamatukogu jääb sellesse seadmesse.</string>
     <string name="privacy_requests_hint">Päringud kasutavad ainult https-i ega sisalda identifikaatoreid ega küpsiseid.</string>
     <string name="black_theme">Täismust</string>
     <string name="black_theme_hint">Must taust tumedas režiimis. Säästab OLED-ekraanidel energiat.</string>
     <string name="wallpaper_colors">Taustapildi värvid</string>
     <string name="wallpaper_colors_hint">Toonib rakendust taustapildi värvidega.</string>
-    <string name="reduce_motion">Vähenda liikumist</string>
-    <string name="reduce_motion_hint">Vähem animatsioone. Sobib e-tindiga ekraanidele.</string>
     <string name="e_ink">E-tindi režiim</string>
     <string name="e_ink_hint">Must valgel, animatsioonideta, kohene lehepööre, suuremad puutealad.</string>
     <string name="reader">Lugeja</string>
@@ -237,7 +231,6 @@
     <string name="download_all_short">Laadi kõik alla</string>
     <string name="csv_progress">Raamatute sobitamine… %d%%</string>
     <string name="delete_all">Kustuta kõik</string>
-    <string name="delete_all_languages">Kustuta kõik keeled</string>
     <string name="offline_forced">Võrgule ligipääsu pole antud, seega jääb Shelf võrguühenduseta.</string>
     <string name="offline_mode">Võrguühenduseta režiim</string>
     <string name="offline_mode_hint">Võrku ei kasutata üldse: pole uuendusi, kataloogi värskendusi ega pilte.</string>
@@ -262,14 +255,6 @@
     <string name="import_failed">Mõned failid pole Shelfi kataloogifailid.</string>
     <string name="own_sources">Omad serverid ja failid</string>
     <string name="own_sources_hint">Kasuta isehostitud kataloogi- või kaaneserverit või impordi kataloogifailid.</string>
-    <string name="cover_source">Kaaneserver</string>
-    <string name="cover_source_hint">Open Library kaaneserveri baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
-    <string name="dnb_cover_source">DNB kaaneserver</string>
-    <string name="dnb_cover_source_hint">Saksa Rahvusraamatukogu kaaneteenuse baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
-    <string name="digar_cover_source">DIGAR-i kaaneserver</string>
-    <string name="digar_cover_source_hint">Rahvusraamatukogu DIGAR-i arhiivi baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
-    <string name="bookbites_cover_source_hint">Rootsi raamatute Bookbitesi kaaneteenuse baas-URL, ainult https. Tühi tähendab vaikimisi serverit.</string>
-    <string name="bookbites_cover_source">Bookbitesi kaaneserver</string>
     <string name="catalogue_incomplete">Impordi ühe keele nii põhi- kui ka pingereafail.</string>
     <string name="no_catalogue">Kataloogi pole veel paigaldatud. Raamatute sirvimiseks laadi see alla või impordi kataloogifailid seadetes. Oma faile saad importida raamatukogus.</string>
     <string name="open_settings">Ava seaded</string>
@@ -311,9 +296,6 @@
     <string name="provider_own">Oma allikas</string>
     <string name="free_books_own">Omad allikad</string>
     <string name="free_books_own_hint">Mis tahes sait, kohalik server või API, kirjeldatud andmetena: otsing, eraldamine, lisapäringud, allalaadimine. Skripte ei käivitata. Salvestatakse ainult sellesse seadmesse; eksporditud failid sisaldavad päiseid, näiteks API-võtmeid.</string>
-    <string name="instant_source">Kiirallikas</string>
-    <string name="instant_source_hint">Failita raamatu puhul laadib lugemisnupp sellest allikast esimese vaste alla ja avab selle. Vaste puudumisel küsib see faili.</string>
-    <string name="instant_source_off">Väljas</string>
     <string name="free_books_add">Loo allikas</string>
     <string name="free_books_import">Impordi fail</string>
     <string name="free_books_export">Ekspordi fail</string>
@@ -341,8 +323,6 @@
         <item quantity="one">%1$d allikas %2$d-st imporditud</item>
         <item quantity="other">%1$d allikat %2$d-st imporditud</item>
     </plurals>
-    <string name="free_books_debug">Silumistest</string>
-    <string name="free_books_debug_saved">Silumislogi salvestatud</string>
     <string name="transfers">Allalaadimised ja importimised</string>
     <string name="transfer_running">Allalaadimise või importimise lõpetamine</string>
 </resources>

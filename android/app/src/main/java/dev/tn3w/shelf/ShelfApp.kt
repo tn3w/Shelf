@@ -158,15 +158,14 @@ class ShelfApp :
         }
     }
 
-    fun removePacks(language: String, pack: String? = null, everywhere: Boolean = false) =
+    fun removePacks(language: String, pack: String? = null) =
         scope.launch(Dispatchers.IO) {
             val stopped = downloadJobs.keys.filter {
-                everywhere || it == "$language-$pack" ||
-                    (pack == null && it.startsWith("$language-"))
+                it == "$language-$pack" || (pack == null && it.startsWith("$language-"))
             }
             stopped.forEach { downloadJobs.remove(it)?.cancelAndJoin() }
             _downloads.update { it - stopped.toSet() }
-            packs.remove(language.takeUnless { everywhere }, pack)
+            packs.remove(language, pack)
             reload(language)
         }
 

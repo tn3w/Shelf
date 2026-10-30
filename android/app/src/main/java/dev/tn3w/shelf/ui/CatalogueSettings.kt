@@ -71,7 +71,7 @@ fun CatalogueSettings() {
 private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean) {
     val viewModel = settingsViewModel()
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
-    val (storage, total, release) = produceState(Triple(0L, 0L, ""), packs, language) {
+    val (storage, release) = produceState(0L to "", packs, language) {
         value = viewModel.storage(language)
     }.value
     val details = listOfNotNull(
@@ -106,11 +106,6 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 viewModel.removePacks(language)
             }
         }
-        if (total > storage) {
-            ActionRow(R.string.delete_all_languages, Icons.Outlined.Delete) {
-                viewModel.removePacks(language, everywhere = true)
-            }
-        }
         if (!offline) CatalogueCheck(language)
     }
 }
@@ -128,69 +123,6 @@ private fun CatalogueCheck(language: String) {
     ) { viewModel.checkCatalogue(language) }
 }
 
-private class SourceField(
-    @StringRes val title: Int,
-    @StringRes val hint: Int,
-    val default: String,
-    val current: (Settings) -> String,
-    val isValid: (String) -> Boolean,
-    val save: SettingsViewModel.(String) -> Unit,
-)
-
-private val CATALOGUE_SOURCE = SourceField(
-    R.string.catalogue_source,
-    R.string.catalogue_source_hint,
-    REPOSITORY,
-    Settings::catalogueSource,
-    ::isValidSource,
-) { source -> changeCatalogueSource(source) }
-
-private val COVER_SOURCE = SourceField(
-    R.string.cover_source,
-    R.string.cover_source_hint,
-    COVERS,
-    Settings::coverSource,
-    ::isValidCoverSource,
-) { source -> updateSettings { it.copy(coverSource = source) } }
-
-private val DNB_COVER_SOURCE = SourceField(
-    R.string.dnb_cover_source,
-    R.string.dnb_cover_source_hint,
-    DNB_COVERS,
-    Settings::dnbCoverSource,
-    ::isValidCoverSource,
-) { source -> updateSettings { it.copy(dnbCoverSource = source) } }
-
-private val DIGAR_COVER_SOURCE = SourceField(
-    R.string.digar_cover_source,
-    R.string.digar_cover_source_hint,
-    DIGAR_COVERS,
-    Settings::digarCoverSource,
-    ::isValidCoverSource,
-) { source -> updateSettings { it.copy(digarCoverSource = source) } }
-
-private val BOOKBITES_COVER_SOURCE = SourceField(
-    R.string.bookbites_cover_source,
-    R.string.bookbites_cover_source_hint,
-    BOOKBITES_COVERS,
-    Settings::bookbitesCoverSource,
-    ::isValidCoverSource,
-) { source -> updateSettings { it.copy(bookbitesCoverSource = source) } }
-
-private val SOURCE_FIELDS = listOf(
-    CATALOGUE_SOURCE,
-    COVER_SOURCE,
-    DNB_COVER_SOURCE,
-    DIGAR_COVER_SOURCE,
-    BOOKBITES_COVER_SOURCE,
-)
-
-private val LIBRARY_COVER_SOURCES = mapOf(
-    "de" to DNB_COVER_SOURCE,
-    "et" to DIGAR_COVER_SOURCE,
-    "sv" to BOOKBITES_COVER_SOURCE,
-)
-
 private val LIBRARY_NOTES = mapOf(
     "de" to R.string.dnb_note,
     "et" to R.string.erb_note,
@@ -205,50 +137,45 @@ private val LIBRARY_NOTES = mapOf(
 fun SourceRows(language: String, settings: Settings) {
     val viewModel = settingsViewModel()
     val statuses by viewModel.statuses.collectAsStateWithLifecycle()
-    var editing by rememberSaveable { mutableStateOf<Int?>(null) }
+    var editing by rememberSaveable { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.importCatalogue(language, uris)
     }
 
-    val libraryCovers = LIBRARY_COVER_SOURCES[language]
-    listOfNotNull(CATALOGUE_SOURCE, COVER_SOURCE, libraryCovers).forEach { field ->
-        val value = field.current(settings).ifEmpty { field.default }
-        LinkRow(stringResource(field.title), value.removePrefix("https://")) {
-            editing = field.title
-        }
+    val source = settings.catalogueSource.ifEmpty { REPOSITORY }
+    LinkRow(stringResource(R.string.catalogue_source), source.removePrefix("https://")) {
+        editing = true
     }
     ActionRow(
         R.string.import_catalogue,
         Icons.Outlined.FileOpen,
         statuses[SettingsAction.CatalogueImport]?.let { stringResource(it) },
     ) { picker.launch(arrayOf("*/*")) }
-    SOURCE_FIELDS.firstOrNull { it.title == editing }?.let { field ->
-        SourceDialog(field, field.current(settings), onDismiss = { editing = null }) {
-            editing = null
-            field.save(viewModel, it)
-        }
+    if (!editing) return
+    SourceDialog(settings.catalogueSource, onDismiss = { editing = false }) {
+        editing = false
+        viewModel.changeCatalogueSource(it)
     }
 }
 
 @Composable
 private fun SourceDialog(
-    field: SourceField,
     current: String,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(current) }
-    val valid = field.isValid(text)
+    val valid = isValidSource(text)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(field.title)) },
+        title = { Text(stringResource(R.string.catalogue_source)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(field.hint))
+                Text(stringResource(R.string.catalogue_source_hint))
                 OutlinedTextField(
                     text,
                     { text = it.trim() },
-                    placeholder = { Text(field.default) },
+                    placeholder = { Text(REPOSITORY) },
                     singleLine = true,
                     isError = !valid,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

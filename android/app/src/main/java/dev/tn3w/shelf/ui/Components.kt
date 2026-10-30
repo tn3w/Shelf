@@ -108,13 +108,7 @@ fun BookCover(
             )
             return@Box
         }
-        val url = book.coverUrl(
-            settings.coverHost,
-            "L",
-            settings.dnbCoverHost,
-            settings.digarCoverHost,
-            settings.bookbitesCoverHost,
-        )
+        val url = book.coverUrl("L")
         if (offline || !settings.onlineCovers || url == null || failed) {
             DrawnCover(book)
             return@Box
@@ -168,10 +162,10 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-            if (settings == null || offline || !settings.authorImages) return@Box
+            if (settings == null || offline || !settings.onlineCovers) return@Box
             val photo = if (small) "S" else "M"
             AsyncImage(
-                model = author.photoUrl(settings.coverHost, photo),
+                model = author.photoUrl(photo),
                 contentDescription = author.name,
                 contentScale = ContentScale.Crop,
                 onSuccess = { loaded = true },

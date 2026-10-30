@@ -53,8 +53,6 @@ const val LATEST_RELEASE = "https://api.github.com/repos/$REPOSITORY/releases/la
 fun isValidSource(source: String) =
     source.isEmpty() || GITHUB_REPOSITORY.matches(source) || source.startsWith("https://")
 
-fun isValidCoverSource(source: String) = source.isEmpty() || source.startsWith("https://")
-
 private const val MANIFEST_NAME = "manifest.json"
 
 @Serializable
@@ -204,9 +202,8 @@ class Packs(private val context: Context) {
 
     fun removeBundledCopies() = deleteAll(bundled)
 
-    fun storageBytes(language: String? = null) =
-        downloaded().filter { language == null || it.language == language }
-            .sumOf { binOf(it.id).length() }
+    fun storageBytes(language: String) = downloaded().filter { it.language == language }
+        .sumOf { binOf(it.id).length() }
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
@@ -362,10 +359,9 @@ class Packs(private val context: Context) {
         )
     }
 
-    fun remove(language: String?, pack: String?) = deleteAll(
+    fun remove(language: String, pack: String?) = deleteAll(
         downloaded().filter {
-            (language == null || it.language == language) &&
-                (pack == null || it.pack == pack)
+            it.language == language && (pack == null || it.pack == pack)
         },
     )
 

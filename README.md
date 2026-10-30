@@ -131,8 +131,7 @@ Every source is a JSON recipe: data only, nothing executed. Built-ins ship in
 [Internet Archive](android/app/src/main/assets/sources/internet-archive.json) (Lucene query, regex over JSON).
 
 Own sources: Settings › Free books › **Own sources**. Create in form or file, import or
-export `shelf-sources.json` (device only, not backed up). **Test** traces each request;
-**Debug test** also saves pages and headers (values hidden) to `shelf-source-debug.txt`.
+export `shelf-sources.json` (device only, not backed up). **Test** traces each request.
 
 | Key | Meaning |
 |---|---|
@@ -253,7 +252,7 @@ title + writer (surname, first initial) → one book.
 
 Covers: Open Library → DNB (ISBN), DIGAR thumbnail (ERB 856 `nlib-digar` id), Bookbites
 (LIBRIS, ISBN) or Open Library by ISBN (other libraries), view time only → drawn. Wide
-jacket scans show front half. DNB/DIGAR/Bookbites servers configurable.
+jacket scans show front half. Author photos from Open Library follow **Online covers**.
 
 Search folds Latin accents (Polish, Czech too) and keeps Hangul syllables; builder and
 app tokenize alike.

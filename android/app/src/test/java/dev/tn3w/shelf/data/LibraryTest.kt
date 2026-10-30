@@ -115,13 +115,10 @@ class LibraryTest {
             onlineCovers = false,
             checkUpdates = false,
             catalogueSource = "owner/repo",
-            coverSource = "https://a",
         )
         val imported = Settings(
             catalogueSource = "https://evil.example/manifest.json",
-            coverSource = "https://evil.example",
             providers = setOf("gutenberg"),
-            instantSource = "gutenberg",
             backupFolder = "content://other",
         )
         val merged = LibraryState(settings = current)

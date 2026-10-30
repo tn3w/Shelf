@@ -24,7 +24,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import dev.tn3w.shelf.BuildConfig
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.data.*
@@ -32,13 +31,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.time.OffsetDateTime
 import java.util.UUID
 
 private val SOURCE_TYPES =
     arrayOf("application/json", "text/plain", "application/octet-stream")
 private val SEARCH_FIELDS = listOf("title", "author", "cover")
-private const val DEBUG_FILE = "shelf-source-debug.txt"
 private const val TRACE_LINE_CHARACTERS = 3_000
 private val EDITOR_MODES = mapOf(
     false to R.string.free_books_form,
@@ -54,10 +51,6 @@ class SourcesViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val lines = _lines.asStateFlow()
     private val _running = MutableStateFlow(false)
     val running = _running.asStateFlow()
-    private val _report = MutableStateFlow<String?>(null)
-    val report = _report.asStateFlow()
-    private val _reportStatus = MutableStateFlow<Int?>(null)
-    val reportStatus = _reportStatus.asStateFlow()
 
     fun import(uri: Uri) {
         viewModelScope.launch {
@@ -85,25 +78,12 @@ class SourcesViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }
     }
 
-    fun test(recipe: Recipe, query: Query, debug: Boolean) {
+    fun test(recipe: Recipe, query: Query) {
         _running.value = true
-        _reportStatus.value = null
         _lines.value = emptyList()
         viewModelScope.launch {
-            trace(recipe, query, debug).collect { line -> _lines.update { it + line } }
+            trace(recipe, query).collect { line -> _lines.update { it + line } }
             _running.value = false
-            if (debug) _report.value = debugReport(recipe, query, _lines.value)
-        }
-    }
-
-    fun saveReport(uri: Uri?) {
-        val text = _report.value ?: return
-        _report.value = null
-        if (uri == null) return
-        viewModelScope.launch {
-            val done = app.writeTo(uri) { it.write(text.toByteArray()) }
-            _reportStatus.value =
-                if (done) R.string.free_books_debug_saved else R.string.export_failed
         }
     }
 }
@@ -530,19 +510,13 @@ private fun TestPanel(recipe: Recipe?) {
     var author by rememberSaveable { mutableStateOf(sampleAuthor) }
     var isbn by rememberSaveable { mutableStateOf("") }
     val running by viewModel.running.collectAsStateWithLifecycle()
-    val report by viewModel.report.collectAsStateWithLifecycle()
-    val saved by viewModel.reportStatus.collectAsStateWithLifecycle()
     val lines by viewModel.lines.collectAsStateWithLifecycle()
-    val saver = rememberLauncherForActivityResult(CreateDocument("text/plain")) {
-        viewModel.saveReport(it)
-    }
-    LaunchedEffect(report) { if (report != null) saver.launch(DEBUG_FILE) }
 
-    fun run(ready: Recipe, debug: Boolean) {
+    fun run(ready: Recipe) {
         val isbns = listOf(isbn.trim()).filter { it.isNotEmpty() }
             .map { normalizedIsbn(it) ?: it }
         val query = Query(title, author, viewModel.bookLanguage(settings), isbns)
-        viewModel.test(ready, query, debug)
+        viewModel.test(ready, query)
     }
 
     Heading(R.string.free_books_test)
@@ -553,38 +527,18 @@ private fun TestPanel(recipe: Recipe?) {
     val ready = recipe?.takeIf {
         !offline && !running && (title.isNotBlank() || isbn.isNotBlank())
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button({ ready?.let { run(it, debug = false) } }, enabled = ready != null) {
-            IconLabel(Icons.Outlined.PlayArrow, R.string.free_books_test)
-        }
-        OutlinedButton({
-            ready?.let { run(it, debug = true) }
-        }, enabled = ready != null) {
-            IconLabel(Icons.Outlined.BugReport, R.string.free_books_debug)
-        }
+    Button({ ready?.let(::run) }, enabled = ready != null) {
+        IconLabel(Icons.Outlined.PlayArrow, R.string.free_books_test)
     }
     if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
-    saved?.let { Text(stringResource(it), style = MaterialTheme.typography.bodySmall) }
     lines.forEach { Text(it.take(TRACE_LINE_CHARACTERS), style = codeStyle()) }
 }
 
 private fun describe(error: Throwable) =
     "${error::class.java.simpleName}: ${firstLine(error)}"
 
-private fun debugReport(recipe: Recipe, query: Query, lines: List<String>) = buildString {
-    appendLine("Shelf ${BuildConfig.VERSION_NAME} (${BuildConfig.FLAVOR}) source debug")
-    appendLine("Time: ${OffsetDateTime.now()}")
-    appendLine("Query: ${query.title} · ${query.author} · ${query.language}")
-    appendLine()
-    appendLine("Recipe (headers, query values, bodies and cookies hidden):")
-    appendLine(recipe.redacted().toText())
-    appendLine()
-    appendLine("Trace:")
-    lines.forEach { appendLine(recipe.redact(it)) }
-}
-
-private fun trace(recipe: Recipe, query: Query, verbose: Boolean) = channelFlow {
-    val source = Provider(recipe, log = { trySend(it) }, verbose = verbose)
+private fun trace(recipe: Recipe, query: Query) = channelFlow {
+    val source = Provider(recipe, log = { trySend(it) })
     runSuspendCatching { source.probe(query) }.onFailure { send("✕ ${describe(it)}") }
 }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 

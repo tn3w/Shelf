@@ -58,7 +58,7 @@
     <string name="more_by">More by %s</string>
     <string name="no_results">No results.</string>
     <string name="online_covers">Load covers</string>
-    <string name="online_covers_hint">Fetch cover images from Open Library, DNB, DIGAR and Bookbites.</string>
+    <string name="online_covers_hint">Fetch covers from Open Library, DNB, DIGAR and Bookbites, author photos from Open Library.</string>
     <string name="open_failed">This file could not be opened.</string>
     <string name="page_failed">This page could not be displayed.</string>
     <string name="open_library_license">Open Library data license</string>
@@ -166,8 +166,6 @@
     <string name="next_in_series_subtitle">Continue where each series left off.</string>
     <string name="not_for_me">Not for me</string>
     <string name="machine_translated">Machine translated</string>
-    <string name="author_images">Author photos</string>
-    <string name="author_images_hint">Fetch author portraits from Open Library.</string>
     <string name="catalogue_updates">Catalogue updates</string>
     <string name="catalogue_updates_hint">Check monthly for new catalogue packs and small updates.</string>
     <string name="check_catalogue">Check for catalogue updates</string>
@@ -195,16 +193,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Reading</string>
     <string name="reading_hint">Daily goal, text and page turns.</string>
-    <string name="stat_books">Books</string>
-    <string name="stat_streak">Day streak</string>
     <string name="settings_footer">Open source under the MIT license. Your library stays on this device.</string>
     <string name="privacy_requests_hint">Requests use https only and carry no identifiers or cookies.</string>
     <string name="black_theme">Pure black</string>
     <string name="black_theme_hint">Black background in dark mode. Saves power on OLED screens.</string>
     <string name="wallpaper_colors">Wallpaper colours</string>
     <string name="wallpaper_colors_hint">Tint the app with colours from your wallpaper.</string>
-    <string name="reduce_motion">Reduce motion</string>
-    <string name="reduce_motion_hint">Fewer animations. Good for e-ink screens.</string>
     <string name="e_ink">E-ink mode</string>
     <string name="e_ink_hint">Black on white, no animations, instant page turns, larger touch targets.</string>
     <string name="reader">Reader</string>
@@ -237,7 +231,6 @@
     <string name="download_all_short">Download all</string>
     <string name="csv_progress">Matching books… %d%%</string>
     <string name="delete_all">Delete all</string>
-    <string name="delete_all_languages">Delete all languages</string>
     <string name="offline_forced">Network access is not granted, so Shelf stays offline.</string>
     <string name="offline_mode">Offline mode</string>
     <string name="offline_mode_hint">No network at all: no updates, no catalogue refresh, no images.</string>
@@ -262,14 +255,6 @@
     <string name="import_failed">Some files are not Shelf catalogue files.</string>
     <string name="own_sources">Own servers and files</string>
     <string name="own_sources_hint">Use a self-hosted catalogue or cover server, or import catalogue files.</string>
-    <string name="cover_source">Cover server</string>
-    <string name="cover_source_hint">Base URL of an Open Library covers server, https only. Empty means the default.</string>
-    <string name="dnb_cover_source">DNB cover server</string>
-    <string name="dnb_cover_source_hint">Base URL of the German National Library cover service, https only. Empty means the default.</string>
-    <string name="digar_cover_source">DIGAR cover server</string>
-    <string name="digar_cover_source_hint">Base URL of the DIGAR archive of the National Library of Estonia, https only. Empty means the default.</string>
-    <string name="bookbites_cover_source">Bookbites cover server</string>
-    <string name="bookbites_cover_source_hint">Base URL of the Bookbites cover service for Swedish books, https only. Empty means the default.</string>
     <string name="catalogue_incomplete">Import both the core and the ranks file of one language.</string>
     <string name="no_catalogue">No catalogue installed yet. Download one or import catalogue files in Settings to browse books. Your own files can be imported in Library.</string>
     <string name="open_settings">Open settings</string>
@@ -313,9 +298,6 @@
     <string name="provider_own">Own source</string>
     <string name="free_books_own">Own sources</string>
     <string name="free_books_own_hint">Any site, local server or API, described as data: search, extract, more requests, download. No scripts run. Stored on this device only; exported files include headers such as API keys.</string>
-    <string name="instant_source">Instant source</string>
-    <string name="instant_source_hint">On a book without a file, the read button downloads the first match from this source and opens it. Without a match, it asks for a file.</string>
-    <string name="instant_source_off">Off</string>
     <string name="free_books_add">Create source</string>
     <string name="free_books_import">Import file</string>
     <string name="free_books_export">Export file</string>
@@ -343,8 +325,6 @@
         <item quantity="one">%1$d of %2$d source imported</item>
         <item quantity="other">%1$d of %2$d sources imported</item>
     </plurals>
-    <string name="free_books_debug">Debug test</string>
-    <string name="free_books_debug_saved">Debug log saved</string>
     <string name="free_books_isbn" translatable="false">ISBN</string>
     <string name="free_books_test_title" translatable="false">Pride and Prejudice</string>
     <string name="free_books_test_author" translatable="false">Jane Austen</string>

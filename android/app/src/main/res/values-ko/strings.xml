@@ -158,8 +158,6 @@
     <string name="next_in_series_subtitle">각 시리즈를 멈춘 곳에서 이어 읽으세요.</string>
     <string name="not_for_me">관심 없음</string>
     <string name="machine_translated">기계 번역</string>
-    <string name="author_images">작가 사진</string>
-    <string name="author_images_hint">Open Library에서 작가 사진을 가져옵니다.</string>
     <string name="catalogue_updates">카탈로그 업데이트</string>
     <string name="catalogue_updates_hint">매달 새 카탈로그 팩과 작은 업데이트를 확인합니다.</string>
     <string name="check_catalogue">카탈로그 업데이트 확인</string>
@@ -187,16 +185,12 @@
     <string name="language_auto">자동</string>
     <string name="reading_settings">읽기</string>
     <string name="reading_hint">하루 목표, 글자, 페이지 넘기기.</string>
-    <string name="stat_books">책</string>
-    <string name="stat_streak">연속 일수</string>
     <string name="settings_footer">MIT 라이선스의 오픈 소스. 서재는 이 기기에 남습니다.</string>
     <string name="privacy_requests_hint">요청은 https만 사용하며 식별자나 쿠키를 포함하지 않습니다.</string>
     <string name="black_theme">완전한 검정</string>
     <string name="black_theme_hint">어두운 모드에서 검은 배경. OLED 화면에서 전력을 아낍니다.</string>
     <string name="wallpaper_colors">배경화면 색상</string>
     <string name="wallpaper_colors_hint">배경화면의 색으로 앱을 꾸밉니다.</string>
-    <string name="reduce_motion">움직임 줄이기</string>
-    <string name="reduce_motion_hint">애니메이션을 줄입니다. 전자잉크 화면에 좋습니다.</string>
     <string name="e_ink">전자잉크 모드</string>
     <string name="e_ink_hint">흰 바탕에 검은 글자, 애니메이션 없음, 즉시 페이지 넘김, 더 큰 터치 영역.</string>
     <string name="reader">리더</string>
@@ -229,7 +223,6 @@
     <string name="download_all_short">모두 다운로드</string>
     <string name="csv_progress">책 맞추는 중… %d%%</string>
     <string name="delete_all">모두 삭제</string>
-    <string name="delete_all_languages">모든 언어 삭제</string>
     <string name="offline_forced">네트워크 권한이 없어 Shelf가 오프라인으로 유지됩니다.</string>
     <string name="offline_mode">오프라인 모드</string>
     <string name="offline_mode_hint">네트워크를 전혀 사용하지 않음: 업데이트, 카탈로그 새로 고침, 이미지 없음.</string>
@@ -254,14 +247,6 @@
     <string name="import_failed">일부 파일은 Shelf 카탈로그 파일이 아닙니다.</string>
     <string name="own_sources">내 서버와 파일</string>
     <string name="own_sources_hint">직접 호스팅하는 카탈로그나 표지 서버를 쓰거나 카탈로그 파일을 가져오세요.</string>
-    <string name="cover_source">표지 서버</string>
-    <string name="cover_source_hint">Open Library 표지 서버의 기본 URL, https만 가능. 비워 두면 기본값.</string>
-    <string name="dnb_cover_source">DNB 표지 서버</string>
-    <string name="dnb_cover_source_hint">독일 국립도서관 표지 서비스의 기본 URL, https만 가능. 비워 두면 기본값.</string>
-    <string name="digar_cover_source">DIGAR 표지 서버</string>
-    <string name="digar_cover_source_hint">에스토니아 국립도서관 DIGAR 아카이브의 기본 URL, https만 가능. 비워 두면 기본값.</string>
-    <string name="bookbites_cover_source">Bookbites 표지 서버</string>
-    <string name="bookbites_cover_source_hint">스웨덴 책용 Bookbites 표지 서비스의 기본 URL, https만 가능. 비워 두면 기본값.</string>
     <string name="catalogue_incomplete">한 언어의 기본 파일과 순위 파일을 모두 가져오세요.</string>
     <string name="no_catalogue">아직 설치된 카탈로그가 없습니다. 책을 둘러보려면 설정에서 카탈로그를 다운로드하거나 카탈로그 파일을 가져오세요. 내 파일은 서재에서 가져올 수 있습니다.</string>
     <string name="open_settings">설정 열기</string>
@@ -305,9 +290,6 @@
     <string name="provider_own">내 소스</string>
     <string name="free_books_own">내 소스</string>
     <string name="free_books_own_hint">모든 사이트, 로컬 서버 또는 API를 데이터로 기술합니다: 검색, 추출, 추가 요청, 다운로드. 스크립트는 실행되지 않습니다. 이 기기에만 저장되며, 내보낸 파일에는 API 키 같은 헤더가 포함됩니다.</string>
-    <string name="instant_source">즉시 소스</string>
-    <string name="instant_source_hint">파일이 없는 책에서 읽기 버튼은 이 소스의 첫 결과를 다운로드해 엽니다. 결과가 없으면 파일을 요청합니다.</string>
-    <string name="instant_source_off">끔</string>
     <string name="free_books_add">소스 만들기</string>
     <string name="free_books_import">파일 가져오기</string>
     <string name="free_books_export">파일 내보내기</string>
@@ -334,6 +316,4 @@
     <plurals name="free_books_imported">
         <item quantity="other">소스 %2$d개 중 %1$d개 가져옴</item>
     </plurals>
-    <string name="free_books_debug">디버그 테스트</string>
-    <string name="free_books_debug_saved">디버그 로그 저장됨</string>
 </resources>

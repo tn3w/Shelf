@@ -51,16 +51,9 @@ fun OkHttpClient.forDownloads() = newBuilder()
 private val FORM = "application/x-www-form-urlencoded".toMediaType()
 private const val MAX_PAGE_BYTES = 5L * 1024 * 1024
 private val REGEX_TIME = 2.seconds
-private const val DEBUG_ITEMS = 5
-private const val DEBUG_PAGE_CHARACTERS = 100_000
 private val PLACEHOLDER = Regex("""\{(\+?)(\w+)\}""")
 private val URL_ATTRIBUTES = setOf("href", "src", "url", "action", "poster")
 private val HOST = Regex("""://(?:\{\w+\}\.)?([^/:?#{]+)""")
-private const val HIDDEN = "<hidden>"
-private val QUERY_VALUE = Regex("""([?&][^=&\s"]+=)[^&\s#"{][^&\s#"]*""")
-private val SECRET_HEADER =
-    Regex("""(?im)^(\s*< (?:set-cookie|cookie|authorization|proxy-authorization):).*$""")
-private val BODY_LINE = Regex("""(?m)^(\s*body:).*$""")
 private val ISBN_VARIABLE = Regex("""\{\+?isbns?\}""")
 private val SINGLE_ISBN = Regex("""\{\+?isbn\}""")
 private const val ISBN_TRIES = 5
@@ -162,15 +155,7 @@ fun recipesText(recipes: List<Recipe>) =
 fun Settings.enabledProviders(recipes: List<Recipe>) =
     recipes.filter { it.id in providers }.map(::Provider)
 
-fun Settings.instantProvider(recipes: List<Recipe>, language: String) =
-    recipes.firstOrNull { it.id == instantSource }?.let(::Provider)
-        ?.takeIf { it.serves(language) }
-
-data class Provider(
-    val recipe: Recipe,
-    private val log: (String) -> Unit = {},
-    private val verbose: Boolean = false,
-) {
+data class Provider(val recipe: Recipe, private val log: (String) -> Unit = {}) {
     val id
         get() = recipe.id
     val name
@@ -216,12 +201,11 @@ data class Provider(
         val page = fetch(recipe.search, variables, base = null)
         val items = recipe.search.items?.all(page).orEmpty()
         log("${items.size} items")
-        return items.mapIndexedNotNull { index, item -> offer(item, variables, index) }
+        return items.mapNotNull { offer(it, variables) }
     }
 
-    private fun offer(item: Scope, variables: Map<String, String>, index: Int): Offer? {
+    private fun offer(item: Scope, variables: Map<String, String>): Offer? {
         val fields = recipe.search.fields.extract(item)
-        if (verbose && index < DEBUG_ITEMS) log("item ${index + 1}: $fields")
         if ("skip" in fields) return null
         val title = fields["title"] ?: return null
         val format = fields["format"]?.lowercase()?.takeIf { it in READABLE_EXTENSIONS }
@@ -276,7 +260,6 @@ data class Provider(
         return request(downloads, offer.link, null).also {
             val type = it.header("Content-Type").orEmpty()
             log("  ${it.code} · $type · ${elapsed(started)}")
-            if (verbose) logHeaders(it)
         }
     }
 
@@ -288,21 +271,13 @@ data class Provider(
         val url = resolve(base, expand(step.url, variables))
         val body = step.body?.let { expand(it, variables) }
         log("${if (body == null) "GET" else "POST"} $url")
-        if (verbose && body != null) log("  body: $body")
         val started = TimeSource.Monotonic.markNow()
         return request(client, url, body).use { response ->
             val text = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
             log("  ${response.code} · ${text.length} characters · ${elapsed(started)}")
-            if (verbose) {
-                logHeaders(response)
-                log("  page:\n${text.take(DEBUG_PAGE_CHARACTERS)}")
-            }
             Scope(response.request.url.toString(), text)
         }
     }
-
-    private fun logHeaders(response: Response) =
-        response.headers.forEach { (name, value) -> log("  < $name: $value") }
 
     private val client by lazy {
         http.newBuilder().addNetworkInterceptor { chain ->
@@ -329,11 +304,6 @@ data class Provider(
         generateSequence(response) { it.priorResponse }.toList().asReversed()
             .zipWithNext { prior, next -> log("  ${prior.code} → ${next.request.url}") }
         if (response.isSuccessful) return response
-        if (verbose) {
-            logHeaders(response)
-            val error = response.stream.readAtMost(MAX_PAGE_BYTES).decodeToString()
-            log("  page:\n${error.take(DEBUG_PAGE_CHARACTERS)}")
-        }
         response.close()
         throw HttpException(response.code, response.request.url.toString())
     }
@@ -506,28 +476,6 @@ private fun Query.variables(): Map<String, String> {
 
 private fun elapsed(started: ValueTimeMark) =
     "${started.elapsedNow().inWholeMilliseconds} ms"
-
-private fun hideQuery(url: String) = url.replace(QUERY_VALUE, "$1$HIDDEN")
-
-private fun RecipeStep.redacted() = copy(
-    url = hideQuery(url),
-    body = body?.let {
-        HIDDEN
-    },
-)
-
-fun Recipe.redacted() = copy(
-    headers = headers.mapValues { HIDDEN },
-    search = search.redacted(),
-    steps = steps.map { it.redacted() },
-    download = hideQuery(download),
-)
-
-fun Recipe.redact(text: String) = headers.values.filter { it.isNotBlank() }
-    .fold(text) { result, secret -> result.replace(secret, HIDDEN) }
-    .let(::hideQuery)
-    .replace(SECRET_HEADER, "$1 $HIDDEN")
-    .replace(BODY_LINE, "$1 $HIDDEN")
 
 fun Recipe.problems(): List<String> = buildList {
     if (name.isBlank()) add("name is empty")

@@ -42,8 +42,6 @@ data class Related(
 )
 
 class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
-    private val _instant = MutableStateFlow<Float?>(null)
-    val instant = _instant.asStateFlow()
     private val _offers = MutableStateFlow<Map<Offer, Download>>(emptyMap())
     val offers = _offers.asStateFlow()
     val details = catalogueState {
@@ -76,31 +74,6 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
 
     fun import(book: Book, uri: Uri) {
         detached { app.open(book.work.takeIf { library.importBook(book, uri) }) }
-    }
-
-    fun instantProvider(settings: Settings): Provider? {
-        val recipes = sources.bundled + sources.own.value
-        return settings.instantProvider(recipes, bookLanguage(settings))
-    }
-
-    fun downloadInstantly(book: Book, settings: Settings) {
-        if (_instant.value != null) return
-        _instant.value = 0f
-        viewModelScope.launch {
-            val offer = instantOffer(book, settings)
-            val done = offer != null &&
-                transfer({ _instant.value = it }) { library.download(book, offer, it) }
-            _instant.value = null
-            if (done) app.open(book.work) else app.show(R.string.free_books_failed)
-        }
-    }
-
-    private suspend fun instantOffer(book: Book, settings: Settings): Offer? {
-        val provider = instantProvider(settings) ?: return null
-        val language = bookLanguage(settings)
-        val isbns = isbnsOf(book, catalogue = provider.usesIsbn)
-        val query = Query(book.title, book.author, language, isbns)
-        return runSuspendCatching { provider.search(query) }.getOrNull()?.firstOrNull()
     }
 
     fun download(book: Book, offer: Offer) {
@@ -236,7 +209,7 @@ private fun BookHeader(
             Modifier.padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ReadButton(book, position, hasFile, online, navigator, viewModel)
+            ReadButton(book, position, hasFile, navigator, viewModel)
             ShelfToggle(
                 shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
@@ -274,31 +247,17 @@ private fun ReadButton(
     book: Book,
     position: Progress?,
     hasFile: Boolean,
-    online: Boolean,
     navigator: Navigator,
     viewModel: BookViewModel,
 ) {
-    val settings = loadedSettings()
-    val download by viewModel.instant.collectAsStateWithLifecycle()
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let { viewModel.import(book, it) }
     }
-    fun open() {
-        val instant = settings?.takeIf { online && viewModel.instantProvider(it) != null }
-        when {
-            hasFile -> navigator.reader(book.work)
-            instant != null -> viewModel.downloadInstantly(book, instant)
-            else -> picker.launch(arrayOf("*/*"))
-        }
-    }
+    fun open() =
+        if (hasFile) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
 
-    Button(onClick = ::open, enabled = download == null) {
-        val progress = download
-        if (progress == null) {
-            Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
-        } else {
-            DownloadProgress(progress, 18.dp)
-        }
+    Button(onClick = ::open) {
+        Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
         val label = position?.fraction?.let {
             stringResource(R.string.continue_percent, (it * 100).toInt())
         } ?: stringResource(if (position != null) R.string.resume else R.string.start)

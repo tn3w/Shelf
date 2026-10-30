@@ -211,37 +211,29 @@ class CatalogueTest {
     fun coverUrlPrefersOpenLibraryThenLibrary() {
         val book = Book(1, "T")
         val dnb = LibraryCover(DNB, "9783833911316")
-        assertNull(book.coverUrl(COVERS, "L"))
+        assertNull(book.coverUrl("L"))
         assertEquals(
             "https://portal.dnb.de/opac/mvb/cover?isbn=9783833911316",
-            book.copy(libraryCover = dnb).coverUrl(COVERS, "L"),
+            book.copy(libraryCover = dnb).coverUrl("L"),
         )
         assertEquals(
             "$COVERS/b/id/7-L.jpg",
-            book.copy(cover = 7, libraryCover = dnb).coverUrl(COVERS, "L"),
-        )
-        assertEquals(
-            "https://mirror.example/opac/mvb/cover?isbn=9783833911316",
-            book.copy(libraryCover = dnb).coverUrl(COVERS, "L", "https://mirror.example"),
+            book.copy(cover = 7, libraryCover = dnb).coverUrl("L"),
         )
         val unknown = LibraryCover(99, "9783833911316")
-        assertNull(book.copy(libraryCover = unknown).coverUrl(COVERS, "L"))
+        assertNull(book.copy(libraryCover = unknown).coverUrl("L"))
         val digar = book.copy(libraryCover = LibraryCover(DIGAR, "882325"))
         assertEquals(
             "https://www.digar.ee/arhiiv/nlib-digar:882325?thumb=1",
-            digar.coverUrl(COVERS, "L"),
-        )
-        assertEquals(
-            "https://m/arhiiv/nlib-digar:882325?thumb=1",
-            digar.coverUrl(COVERS, "L", DNB_COVERS, "https://m"),
+            digar.coverUrl("L"),
         )
         val isbn = book.copy(libraryCover = LibraryCover(ISBN_COVER, "9788327154491"))
         assertEquals(
             "$COVERS/b/isbn/9788327154491-L.jpg?default=false",
-            isbn.coverUrl(COVERS, "L"),
+            isbn.coverUrl("L"),
         )
         val bookbites = book.copy(libraryCover = LibraryCover(BOOKBITES, "9789176291689"))
-        assertEquals("$BOOKBITES_COVERS/9789176291689", bookbites.coverUrl(COVERS, "L"))
+        assertEquals("$BOOKBITES_COVERS/9789176291689", bookbites.coverUrl("L"))
     }
 
     @Test
@@ -293,10 +285,10 @@ class CatalogueTest {
 
     @Test
     fun syntheticAuthorsHaveNoPhoto() {
-        assertNull(Author(SYNTHETIC + 13395351, "Jeff Kinney").photoUrl(COVERS, "M"))
+        assertNull(Author(SYNTHETIC + 13395351, "Jeff Kinney").photoUrl("M"))
         assertEquals(
             "$COVERS/a/olid/OL7A-M.jpg?default=false",
-            Author(7, "Jeff Kinney").photoUrl(COVERS, "M"),
+            Author(7, "Jeff Kinney").photoUrl("M"),
         )
     }
 }

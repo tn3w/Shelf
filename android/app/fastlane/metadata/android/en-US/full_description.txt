@@ -11,6 +11,6 @@ Shelf is an offline book catalogue built from Open Library and the national libr
 * Reader for EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT and HTML files, imported or opened from any app
 * Reader comfort: text size, spacing, margins, typeface, paper and night pages, page keys
 * Catalogues in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean and Finnish with optional genre packs
-* Self-hostable: own catalogue source and cover server, or import catalogue files
+* Self-hostable: own catalogue source, or import catalogue files
 
-No tracking, no ads, no accounts. Shelf only contacts GitHub (or your own catalogue source) for catalogue downloads and, if enabled, Open Library and its host archive.org, the DNB, DIGAR and Bookbites (or your own cover servers) for covers and author photos.
+No tracking, no ads, no accounts. Shelf only contacts GitHub (or your own catalogue source) for catalogue downloads and, if enabled, Open Library and its host archive.org, the DNB, DIGAR and Bookbites for covers and author photos.

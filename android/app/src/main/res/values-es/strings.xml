@@ -173,8 +173,6 @@
     <string name="next_in_series_subtitle">Continúa donde dejaste cada saga.</string>
     <string name="not_for_me">No es para mí</string>
     <string name="machine_translated">Traducción automática</string>
-    <string name="author_images">Fotos de autores</string>
-    <string name="author_images_hint">Descargar retratos de autores de Open Library.</string>
     <string name="catalogue_updates">Actualizaciones del catálogo</string>
     <string name="catalogue_updates_hint">Buscar cada mes paquetes nuevos y actualizaciones pequeñas.</string>
     <string name="check_catalogue">Buscar actualizaciones del catálogo</string>
@@ -202,16 +200,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Lectura</string>
     <string name="reading_hint">Objetivo diario, texto y páginas.</string>
-    <string name="stat_books">Libros</string>
-    <string name="stat_streak">Días seguidos</string>
     <string name="settings_footer">Código abierto con licencia MIT. Tu biblioteca se queda en este dispositivo.</string>
     <string name="privacy_requests_hint">Las solicitudes usan solo https, sin identificadores ni cookies.</string>
     <string name="black_theme">Negro puro</string>
     <string name="black_theme_hint">Fondo negro en modo oscuro. Ahorra batería en pantallas OLED.</string>
     <string name="wallpaper_colors">Colores del fondo</string>
     <string name="wallpaper_colors_hint">Teñir la app con los colores de tu fondo de pantalla.</string>
-    <string name="reduce_motion">Reducir movimiento</string>
-    <string name="reduce_motion_hint">Menos animaciones. Ideal para pantallas e-ink.</string>
     <string name="e_ink">Modo e-ink</string>
     <string name="e_ink_hint">Negro sobre blanco, sin animaciones, pasar página al instante, botones más grandes.</string>
     <string name="reader">Lector</string>
@@ -244,7 +238,6 @@
     <string name="download_all_short">Descargar todo</string>
     <string name="csv_progress">Buscando libros… %d%%</string>
     <string name="delete_all">Eliminar todo</string>
-    <string name="delete_all_languages">Eliminar todos los idiomas</string>
     <string name="offline_forced">Sin permiso de red, Shelf permanece sin conexión.</string>
     <string name="offline_mode">Modo sin conexión</string>
     <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin catálogo, sin imágenes.</string>
@@ -269,14 +262,6 @@
     <string name="import_failed">Algunos archivos no son archivos de catálogo de Shelf.</string>
     <string name="own_sources">Servidores y archivos propios</string>
     <string name="own_sources_hint">Usa un servidor de catálogo o de portadas propio, o importa archivos de catálogo.</string>
-    <string name="cover_source">Servidor de portadas</string>
-    <string name="cover_source_hint">URL base de un servidor de portadas de Open Library, solo https. Vacío significa el predeterminado.</string>
-    <string name="dnb_cover_source">Servidor de portadas DNB</string>
-    <string name="dnb_cover_source_hint">URL base del servicio de portadas de la Biblioteca Nacional de Alemania, solo https. Vacío significa el predeterminado.</string>
-    <string name="digar_cover_source">Servidor de portadas DIGAR</string>
-    <string name="digar_cover_source_hint">URL base del archivo DIGAR de la Biblioteca Nacional de Estonia, solo https. Vacío significa el predeterminado.</string>
-    <string name="bookbites_cover_source_hint">URL base del servicio de portadas Bookbites para libros suecos, solo https. Vacío significa el predeterminado.</string>
-    <string name="bookbites_cover_source">Servidor de portadas Bookbites</string>
     <string name="catalogue_incomplete">Importa el archivo core y el archivo ranks de un mismo idioma.</string>
     <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
     <string name="open_settings">Abrir ajustes</string>
@@ -320,9 +305,6 @@
     <string name="provider_own">Fuente propia</string>
     <string name="free_books_own">Fuentes propias</string>
     <string name="free_books_own_hint">Cualquier sitio, servidor local o API, descrito como datos: buscar, extraer, más peticiones, descargar. No se ejecutan scripts. Solo se guarda en este dispositivo; los archivos exportados incluyen cabeceras como claves de API.</string>
-    <string name="instant_source">Fuente instantánea</string>
-    <string name="instant_source_hint">En un libro sin archivo, el botón de leer descarga el primer resultado de esta fuente y lo abre. Sin resultados, pide un archivo.</string>
-    <string name="instant_source_off">Desactivada</string>
     <string name="free_books_add">Crear fuente</string>
     <string name="free_books_import">Importar archivo</string>
     <string name="free_books_export">Exportar archivo</string>
@@ -351,6 +333,4 @@
         <item quantity="other">%1$d de %2$d fuentes importadas</item>
         <item quantity="many">%1$d de %2$d fuentes importadas</item>
     </plurals>
-    <string name="free_books_debug">Prueba de depuración</string>
-    <string name="free_books_debug_saved">Registro de depuración guardado</string>
 </resources>

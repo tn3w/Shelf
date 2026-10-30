@@ -152,7 +152,7 @@ fun ShelfTheme(settings: Settings, content: @Composable () -> Unit) {
         dark -> DarkColors
         else -> LightColors
     }
-    val reducedMotion = systemReducedMotion() || settings.reduceMotion || settings.eInk
+    val reducedMotion = systemReducedMotion() || settings.eInk
     val touchTarget = if (settings.eInk) EInkTouchTarget else 48.dp
     CompositionLocalProvider(
         LocalReducedMotion provides reducedMotion,

@@ -181,8 +181,6 @@
     <string name="next_in_series_subtitle">Kontynuuj każdą serię tam, gdzie skończyłeś.</string>
     <string name="not_for_me">Nie dla mnie</string>
     <string name="machine_translated">Przetłumaczone maszynowo</string>
-    <string name="author_images">Zdjęcia autorów</string>
-    <string name="author_images_hint">Pobieraj portrety autorów z Open Library.</string>
     <string name="catalogue_updates">Aktualizacje katalogu</string>
     <string name="catalogue_updates_hint">Co miesiąc sprawdzaj nowe pakiety katalogu i drobne aktualizacje.</string>
     <string name="check_catalogue">Sprawdź aktualizacje katalogu</string>
@@ -210,16 +208,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Czytanie</string>
     <string name="reading_hint">Cel dzienny, tekst i przewracanie stron.</string>
-    <string name="stat_books">Książki</string>
-    <string name="stat_streak">Dni z rzędu</string>
     <string name="settings_footer">Otwarte oprogramowanie na licencji MIT. Twoja biblioteka zostaje na tym urządzeniu.</string>
     <string name="privacy_requests_hint">Żądania używają tylko https i nie zawierają identyfikatorów ani ciasteczek.</string>
     <string name="black_theme">Czysta czerń</string>
     <string name="black_theme_hint">Czarne tło w trybie ciemnym. Oszczędza energię na ekranach OLED.</string>
     <string name="wallpaper_colors">Kolory tapety</string>
     <string name="wallpaper_colors_hint">Barwi aplikację kolorami z tapety.</string>
-    <string name="reduce_motion">Ogranicz animacje</string>
-    <string name="reduce_motion_hint">Mniej animacji. Dobre dla ekranów e-ink.</string>
     <string name="e_ink">Tryb e-ink</string>
     <string name="e_ink_hint">Czarne na białym, bez animacji, natychmiastowe przewracanie stron, większe pola dotyku.</string>
     <string name="reader">Czytnik</string>
@@ -252,7 +246,6 @@
     <string name="download_all_short">Pobierz wszystko</string>
     <string name="csv_progress">Dopasowywanie książek… %d%%</string>
     <string name="delete_all">Usuń wszystko</string>
-    <string name="delete_all_languages">Usuń wszystkie języki</string>
     <string name="offline_forced">Brak dostępu do sieci, więc Shelf pozostaje offline.</string>
     <string name="offline_mode">Tryb offline</string>
     <string name="offline_mode_hint">Całkowicie bez sieci: bez aktualizacji, odświeżania katalogu i obrazów.</string>
@@ -277,14 +270,6 @@
     <string name="import_failed">Niektóre pliki nie są plikami katalogu Shelf.</string>
     <string name="own_sources">Własne serwery i pliki</string>
     <string name="own_sources_hint">Użyj własnego serwera katalogu lub okładek albo zaimportuj pliki katalogu.</string>
-    <string name="cover_source">Serwer okładek</string>
-    <string name="cover_source_hint">Bazowy URL serwera okładek Open Library, tylko https. Puste oznacza domyślny.</string>
-    <string name="dnb_cover_source">Serwer okładek DNB</string>
-    <string name="dnb_cover_source_hint">Bazowy URL usługi okładek Niemieckiej Biblioteki Narodowej, tylko https. Puste oznacza domyślny.</string>
-    <string name="digar_cover_source">Serwer okładek DIGAR</string>
-    <string name="digar_cover_source_hint">Bazowy URL archiwum DIGAR Estońskiej Biblioteki Narodowej, tylko https. Puste oznacza domyślny.</string>
-    <string name="bookbites_cover_source">Serwer okładek Bookbites</string>
-    <string name="bookbites_cover_source_hint">Bazowy URL usługi okładek Bookbites dla szwedzkich książek, tylko https. Puste oznacza domyślny.</string>
     <string name="catalogue_incomplete">Zaimportuj plik podstawowy i plik rankingu jednego języka.</string>
     <string name="no_catalogue">Nie zainstalowano jeszcze katalogu. Pobierz go lub zaimportuj pliki katalogu w Ustawieniach, aby przeglądać książki. Własne pliki możesz zaimportować w Bibliotece.</string>
     <string name="open_settings">Otwórz ustawienia</string>
@@ -328,9 +313,6 @@
     <string name="provider_own">Własne źródło</string>
     <string name="free_books_own">Własne źródła</string>
     <string name="free_books_own_hint">Dowolna strona, serwer lokalny lub API, opisane jako dane: wyszukiwanie, wyodrębnianie, kolejne żądania, pobieranie. Żadne skrypty nie są uruchamiane. Zapisywane tylko na tym urządzeniu; eksportowane pliki zawierają nagłówki, np. klucze API.</string>
-    <string name="instant_source">Źródło natychmiastowe</string>
-    <string name="instant_source_hint">Przy książce bez pliku przycisk czytania pobiera pierwszy wynik z tego źródła i go otwiera. Bez wyniku prosi o plik.</string>
-    <string name="instant_source_off">Wył.</string>
     <string name="free_books_add">Utwórz źródło</string>
     <string name="free_books_import">Importuj plik</string>
     <string name="free_books_export">Eksportuj plik</string>
@@ -360,6 +342,4 @@
         <item quantity="many">Zaimportowano %1$d z %2$d źródeł</item>
         <item quantity="other">Zaimportowano %1$d z %2$d źródeł</item>
     </plurals>
-    <string name="free_books_debug">Test debugowania</string>
-    <string name="free_books_debug_saved">Zapisano log debugowania</string>
 </resources>

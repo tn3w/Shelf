@@ -143,8 +143,8 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     fun downloadPack(language: String, pack: String) = app.download(language, pack)
 
-    fun removePacks(language: String, pack: String? = null, everywhere: Boolean = false) {
-        app.removePacks(language, pack, everywhere)
+    fun removePacks(language: String, pack: String? = null) {
+        app.removePacks(language, pack)
     }
 
     suspend fun packs(language: String) = withContext(Dispatchers.IO) {
@@ -157,7 +157,7 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     suspend fun storage(language: String) = withContext(Dispatchers.IO) {
         val month = app.packs.months()[language].orEmpty()
-        Triple(app.packs.storageBytes(language), app.packs.storageBytes(), month)
+        app.packs.storageBytes(language) to month
     }
 
     fun showUpdate(available: Release?) {
@@ -287,7 +287,6 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
 
 @Composable
 private fun SettingsOverview(navigator: Navigator) {
-    LibraryStats(navigator::library)
     SettingsGroup {
         SettingsPage.entries.drop(1).forEach { page ->
             LinkRow(stringResource(page.title), stringResource(page.summary), page.icon) {
@@ -298,37 +297,6 @@ private fun SettingsOverview(navigator: Navigator) {
     SettingsGroup(
         stringResource(R.string.about), stringResource(R.string.settings_footer),
     ) { AboutRows() }
-}
-
-@Composable
-private fun LibraryStats(onOpen: () -> Unit) {
-    val library = shelfViewModel().library
-    val saved by library.saved.collectAsStateWithLifecycle(emptyList())
-    val habit by library.habit.collectAsStateWithLifecycle(null)
-    val stats = listOf(
-        saved.size to R.string.stat_books,
-        saved.count { it.shelf == Shelf.Read } to R.string.finished,
-        (habit?.streak ?: 0) to R.string.stat_streak,
-    )
-    SettingsGroup {
-        Row(
-            Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = 16.dp),
-        ) {
-            stats.forEach { (value, label) ->
-                Column(
-                    Modifier.weight(1f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        value.toString(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Hint(stringResource(label))
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -366,9 +334,6 @@ private fun DisplaySettings(settings: Settings, update: SettingsUpdate) {
             settings.wallpaperColors,
         ) { on -> update { it.copy(wallpaperColors = on) } }
     }
-    SwitchRow(
-        R.string.reduce_motion, R.string.reduce_motion_hint, settings.reduceMotion,
-    ) { on -> update { it.copy(reduceMotion = on) } }
 }
 
 @Composable
@@ -524,12 +489,6 @@ private fun PrivacySettings() {
             settings.onlineCovers,
             enabled = !offline,
         ) { value -> update { it.copy(onlineCovers = value) } }
-        SwitchRow(
-            R.string.author_images,
-            R.string.author_images_hint,
-            settings.authorImages,
-            enabled = !offline,
-        ) { value -> update { it.copy(authorImages = value) } }
         SwitchRow(
             R.string.catalogue_updates,
             R.string.catalogue_updates_hint,

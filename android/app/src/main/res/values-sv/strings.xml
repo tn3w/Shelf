@@ -166,8 +166,6 @@
     <string name="next_in_series_subtitle">Fortsätt där varje serie slutade.</string>
     <string name="not_for_me">Inte för mig</string>
     <string name="machine_translated">Maskinöversatt</string>
-    <string name="author_images">Författarfoton</string>
-    <string name="author_images_hint">Hämta författarporträtt från Open Library.</string>
     <string name="catalogue_updates">Kataloguppdateringar</string>
     <string name="catalogue_updates_hint">Leta varje månad efter nya katalogpaket och små uppdateringar.</string>
     <string name="check_catalogue">Sök efter kataloguppdateringar</string>
@@ -195,16 +193,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Läsning</string>
     <string name="reading_hint">Dagligt mål, text och sidbyten.</string>
-    <string name="stat_books">Böcker</string>
-    <string name="stat_streak">Dagar i rad</string>
     <string name="settings_footer">Öppen källkod under MIT-licensen. Ditt bibliotek stannar på enheten.</string>
     <string name="privacy_requests_hint">Förfrågningar använder bara https och innehåller inga identifierare eller cookies.</string>
     <string name="black_theme">Helsvart</string>
     <string name="black_theme_hint">Svart bakgrund i mörkt läge. Sparar ström på OLED-skärmar.</string>
     <string name="wallpaper_colors">Bakgrundsfärger</string>
     <string name="wallpaper_colors_hint">Färga appen med färger från din bakgrundsbild.</string>
-    <string name="reduce_motion">Minska rörelse</string>
-    <string name="reduce_motion_hint">Färre animationer. Bra för e-bläckskärmar.</string>
     <string name="e_ink">E-bläckläge</string>
     <string name="e_ink_hint">Svart på vitt, inga animationer, direkta sidbyten, större tryckytor.</string>
     <string name="reader">Läsare</string>
@@ -237,7 +231,6 @@
     <string name="download_all_short">Ladda ner alla</string>
     <string name="csv_progress">Matchar böcker… %d%%</string>
     <string name="delete_all">Radera alla</string>
-    <string name="delete_all_languages">Radera alla språk</string>
     <string name="offline_forced">Nätverksåtkomst saknas, så Shelf förblir offline.</string>
     <string name="offline_mode">Offlineläge</string>
     <string name="offline_mode_hint">Inget nätverk alls: inga uppdateringar, ingen katalogförnyelse, inga bilder.</string>
@@ -262,14 +255,6 @@
     <string name="import_failed">Vissa filer är inte katalogfiler för Shelf.</string>
     <string name="own_sources">Egna servrar och filer</string>
     <string name="own_sources_hint">Använd en egen katalog- eller omslagsserver, eller importera katalogfiler.</string>
-    <string name="cover_source">Omslagsserver</string>
-    <string name="cover_source_hint">Bas-URL för en Open Library-omslagsserver, bara https. Tomt betyder standard.</string>
-    <string name="dnb_cover_source">DNB-omslagsserver</string>
-    <string name="dnb_cover_source_hint">Bas-URL för Tysklands nationalbiblioteks omslagstjänst, bara https. Tomt betyder standard.</string>
-    <string name="digar_cover_source">DIGAR-omslagsserver</string>
-    <string name="digar_cover_source_hint">Bas-URL för DIGAR-arkivet vid Estlands nationalbibliotek, bara https. Tomt betyder standard.</string>
-    <string name="bookbites_cover_source">Bookbites-omslagsserver</string>
-    <string name="bookbites_cover_source_hint">Bas-URL för Bookbites omslagstjänst för svenska böcker, bara https. Tomt betyder standard.</string>
     <string name="catalogue_incomplete">Importera både kärn- och rankningsfilen för ett språk.</string>
     <string name="no_catalogue">Ingen katalog är installerad än. Ladda ner en eller importera katalogfiler i Inställningar för att bläddra bland böcker. Egna filer kan importeras i Bibliotek.</string>
     <string name="open_settings">Öppna inställningar</string>
@@ -313,9 +298,6 @@
     <string name="provider_own">Egen källa</string>
     <string name="free_books_own">Egna källor</string>
     <string name="free_books_own_hint">Valfri webbplats, lokal server eller API, beskrivet som data: sökning, extrahering, fler förfrågningar, nedladdning. Inga skript körs. Sparas bara på enheten; exporterade filer innehåller headers som API-nycklar.</string>
-    <string name="instant_source">Direktkälla</string>
-    <string name="instant_source_hint">På en bok utan fil laddar läsknappen ner första träffen från den här källan och öppnar den. Utan träff frågar den efter en fil.</string>
-    <string name="instant_source_off">Av</string>
     <string name="free_books_add">Skapa källa</string>
     <string name="free_books_import">Importera fil</string>
     <string name="free_books_export">Exportera fil</string>
@@ -343,6 +325,4 @@
         <item quantity="one">%1$d av %2$d källa importerad</item>
         <item quantity="other">%1$d av %2$d källor importerade</item>
     </plurals>
-    <string name="free_books_debug">Felsökningstest</string>
-    <string name="free_books_debug_saved">Felsökningslogg sparad</string>
 </resources>

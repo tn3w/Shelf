@@ -166,8 +166,6 @@
     <string name="next_in_series_subtitle">Jatka jokaista sarjaa siitä, mihin jäit.</string>
     <string name="not_for_me">Ei minulle</string>
     <string name="machine_translated">Konekäännetty</string>
-    <string name="author_images">Kirjailijakuvat</string>
-    <string name="author_images_hint">Hae kirjailijoiden kuvat Open Librarysta.</string>
     <string name="catalogue_updates">Luettelopäivitykset</string>
     <string name="catalogue_updates_hint">Tarkista kuukausittain uudet luettelopaketit ja pienet päivitykset.</string>
     <string name="check_catalogue">Tarkista luettelopäivitykset</string>
@@ -195,16 +193,12 @@
     <string name="language_auto">Automaattinen</string>
     <string name="reading_settings">Lukeminen</string>
     <string name="reading_hint">Päivätavoite, teksti ja sivunkääntö.</string>
-    <string name="stat_books">Kirjat</string>
-    <string name="stat_streak">Päivän putki</string>
     <string name="settings_footer">Avointa lähdekoodia MIT-lisenssillä. Kirjastosi pysyy tällä laitteella.</string>
     <string name="privacy_requests_hint">Pyynnöt käyttävät vain https:ää eivätkä sisällä tunnisteita tai evästeitä.</string>
     <string name="black_theme">Täysmusta</string>
     <string name="black_theme_hint">Musta tausta tummassa tilassa. Säästää virtaa OLED-näytöillä.</string>
     <string name="wallpaper_colors">Taustakuvan värit</string>
     <string name="wallpaper_colors_hint">Sävytä sovellus taustakuvasi väreillä.</string>
-    <string name="reduce_motion">Vähennä liikettä</string>
-    <string name="reduce_motion_hint">Vähemmän animaatioita. Sopii e-mustenäytöille.</string>
     <string name="e_ink">E-mustetila</string>
     <string name="e_ink_hint">Musta valkoisella, ei animaatioita, välitön sivunkääntö, suuremmat kosketusalueet.</string>
     <string name="reader">Lukija</string>
@@ -237,7 +231,6 @@
     <string name="download_all_short">Lataa kaikki</string>
     <string name="csv_progress">Kirjoja yhdistetään… %d %%</string>
     <string name="delete_all">Poista kaikki</string>
-    <string name="delete_all_languages">Poista kaikki kielet</string>
     <string name="offline_forced">Verkkoyhteyttä ei ole sallittu, joten Shelf pysyy offline-tilassa.</string>
     <string name="offline_mode">Offline-tila</string>
     <string name="offline_mode_hint">Ei verkkoa lainkaan: ei päivityksiä, luettelon päivitystä eikä kuvia.</string>
@@ -262,14 +255,6 @@
     <string name="import_failed">Osa tiedostoista ei ole Shelfin luettelotiedostoja.</string>
     <string name="own_sources">Omat palvelimet ja tiedostot</string>
     <string name="own_sources_hint">Käytä omaa luettelo- tai kansipalvelinta tai tuo luettelotiedostoja.</string>
-    <string name="cover_source">Kansipalvelin</string>
-    <string name="cover_source_hint">Open Libraryn kansipalvelimen perus-URL, vain https. Tyhjä tarkoittaa oletusta.</string>
-    <string name="dnb_cover_source">DNB:n kansipalvelin</string>
-    <string name="dnb_cover_source_hint">Saksan kansalliskirjaston kansipalvelun perus-URL, vain https. Tyhjä tarkoittaa oletusta.</string>
-    <string name="digar_cover_source">DIGARin kansipalvelin</string>
-    <string name="digar_cover_source_hint">Viron kansalliskirjaston DIGAR-arkiston perus-URL, vain https. Tyhjä tarkoittaa oletusta.</string>
-    <string name="bookbites_cover_source">Bookbitesin kansipalvelin</string>
-    <string name="bookbites_cover_source_hint">Ruotsalaisten kirjojen Bookbites-kansipalvelun perus-URL, vain https. Tyhjä tarkoittaa oletusta.</string>
     <string name="catalogue_incomplete">Tuo yhden kielen sekä perus- että sijoitustiedosto.</string>
     <string name="no_catalogue">Luetteloa ei ole vielä asennettu. Lataa luettelo tai tuo luettelotiedostoja Asetuksissa selataksesi kirjoja. Omat tiedostot voi tuoda Kirjastossa.</string>
     <string name="open_settings">Avaa asetukset</string>
@@ -313,9 +298,6 @@
     <string name="provider_own">Oma lähde</string>
     <string name="free_books_own">Omat lähteet</string>
     <string name="free_books_own_hint">Mikä tahansa sivusto, paikallinen palvelin tai API kuvattuna tietoina: haku, poiminta, lisäpyynnöt, lataus. Skriptejä ei suoriteta. Tallennetaan vain tälle laitteelle; viedyt tiedostot sisältävät otsakkeet, kuten API-avaimet.</string>
-    <string name="instant_source">Pikalähde</string>
-    <string name="instant_source_hint">Kirjassa, jolla ei ole tiedostoa, lukupainike lataa tämän lähteen ensimmäisen osuman ja avaa sen. Ilman osumaa se pyytää tiedostoa.</string>
-    <string name="instant_source_off">Pois</string>
     <string name="free_books_add">Luo lähde</string>
     <string name="free_books_import">Tuo tiedosto</string>
     <string name="free_books_export">Vie tiedosto</string>
@@ -343,6 +325,4 @@
         <item quantity="one">%1$d/%2$d lähde tuotu</item>
         <item quantity="other">%1$d/%2$d lähdettä tuotu</item>
     </plurals>
-    <string name="free_books_debug">Vianetsintätesti</string>
-    <string name="free_books_debug_saved">Vianetsintäloki tallennettu</string>
 </resources>

@@ -18,18 +18,20 @@ const val ISBN_COVER = 3
 const val BOOKBITES = 4
 
 data class Author(val number: Int, val name: String) {
-    fun photoUrl(host: String, size: String) =
-        "$host/a/olid/OL${number}A-$size.jpg?default=false".takeIf { number < SYNTHETIC }
+    fun photoUrl(size: String) =
+        "$COVERS/a/olid/OL${number}A-$size.jpg?default=false".takeIf {
+            number < SYNTHETIC
+        }
 }
 
 @Serializable
 data class LibraryCover(val source: Int, @SerialName("isbn") val key: String) {
-    fun url(host: String, dnbHost: String, digarHost: String, bookbitesHost: String) =
-        when (source) {
-            DNB -> "$dnbHost/opac/mvb/cover?isbn=$key"
-            DIGAR -> "$digarHost/arhiiv/nlib-digar:$key?thumb=1"
-            ISBN_COVER -> "$host/b/isbn/$key-L.jpg?default=false"
-            BOOKBITES -> "$bookbitesHost/$key"
+    val url
+        get() = when (source) {
+            DNB -> "$DNB_COVERS/opac/mvb/cover?isbn=$key"
+            DIGAR -> "$DIGAR_COVERS/arhiiv/nlib-digar:$key?thumb=1"
+            ISBN_COVER -> "$COVERS/b/isbn/$key-L.jpg?default=false"
+            BOOKBITES -> "$BOOKBITES_COVERS/$key"
             else -> null
         }
 }
@@ -49,19 +51,8 @@ data class Book(
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
 
-    fun coverUrl(
-        host: String,
-        size: String,
-        dnbHost: String = DNB_COVERS,
-        digarHost: String = DIGAR_COVERS,
-        bookbitesHost: String = BOOKBITES_COVERS,
-    ) = if (cover ==
-        0
-    ) {
-        libraryCover?.url(host, dnbHost, digarHost, bookbitesHost)
-    } else {
-        "$host/b/id/$cover-$size.jpg"
-    }
+    fun coverUrl(size: String) =
+        if (cover == 0) libraryCover?.url else "$COVERS/b/id/$cover-$size.jpg"
 }
 
 private val COMPANION = Regex(

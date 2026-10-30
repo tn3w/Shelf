@@ -182,8 +182,6 @@
     <string name="next_in_series_subtitle">Продолжайте с того места, где остановились в каждой серии.</string>
     <string name="not_for_me">Не для меня</string>
     <string name="machine_translated">Машинный перевод</string>
-    <string name="author_images">Фото авторов</string>
-    <string name="author_images_hint">Получать портреты авторов из Open Library.</string>
     <string name="catalogue_updates">Обновления каталога</string>
     <string name="catalogue_updates_hint">Раз в месяц проверять новые пакеты каталога и небольшие обновления.</string>
     <string name="check_catalogue">Проверить обновления каталога</string>
@@ -211,16 +209,12 @@
     <string name="language_auto">Авто</string>
     <string name="reading_settings">Чтение</string>
     <string name="reading_hint">Дневная цель, текст и перелистывание.</string>
-    <string name="stat_books">Книги</string>
-    <string name="stat_streak">Дней подряд</string>
     <string name="settings_footer">Открытый исходный код под лицензией MIT. Ваша библиотека остаётся на этом устройстве.</string>
     <string name="privacy_requests_hint">Запросы идут только по https и не содержат идентификаторов и cookie.</string>
     <string name="black_theme">Чисто чёрная</string>
     <string name="black_theme_hint">Чёрный фон в тёмном режиме. Экономит заряд на OLED-экранах.</string>
     <string name="wallpaper_colors">Цвета обоев</string>
     <string name="wallpaper_colors_hint">Окрашивать приложение в цвета ваших обоев.</string>
-    <string name="reduce_motion">Меньше анимации</string>
-    <string name="reduce_motion_hint">Меньше анимаций. Подходит для e-ink-экранов.</string>
     <string name="e_ink">Режим e-ink</string>
     <string name="e_ink_hint">Чёрное на белом, без анимаций, мгновенное перелистывание, крупные элементы управления.</string>
     <string name="reader">Читалка</string>
@@ -253,7 +247,6 @@
     <string name="download_all_short">Скачать все</string>
     <string name="csv_progress">Поиск книг… %d%%</string>
     <string name="delete_all">Удалить все</string>
-    <string name="delete_all_languages">Удалить все языки</string>
     <string name="offline_forced">Доступ к сети не разрешён, поэтому Shelf работает офлайн.</string>
     <string name="offline_mode">Офлайн-режим</string>
     <string name="offline_mode_hint">Совсем без сети: без обновлений, обновления каталога и изображений.</string>
@@ -278,14 +271,6 @@
     <string name="import_failed">Некоторые файлы не являются файлами каталога Shelf.</string>
     <string name="own_sources">Свои серверы и файлы</string>
     <string name="own_sources_hint">Используйте собственный сервер каталога или обложек либо импортируйте файлы каталога.</string>
-    <string name="cover_source">Сервер обложек</string>
-    <string name="cover_source_hint">Базовый URL сервера обложек Open Library, только https. Пусто — по умолчанию.</string>
-    <string name="dnb_cover_source">Сервер обложек DNB</string>
-    <string name="dnb_cover_source_hint">Базовый URL сервиса обложек Немецкой национальной библиотеки, только https. Пусто — по умолчанию.</string>
-    <string name="digar_cover_source">Сервер обложек DIGAR</string>
-    <string name="digar_cover_source_hint">Базовый URL архива DIGAR Национальной библиотеки Эстонии, только https. Пусто — по умолчанию.</string>
-    <string name="bookbites_cover_source">Сервер обложек Bookbites</string>
-    <string name="bookbites_cover_source_hint">Базовый URL сервиса обложек Bookbites для шведских книг, только https. Пусто — по умолчанию.</string>
     <string name="catalogue_incomplete">Импортируйте оба файла одного языка: основной и с рейтингами.</string>
     <string name="no_catalogue">Каталог ещё не установлен. Скачайте его или импортируйте файлы каталога в настройках, чтобы просматривать книги. Свои файлы можно импортировать в библиотеке.</string>
     <string name="open_settings">Открыть настройки</string>
@@ -329,9 +314,6 @@
     <string name="provider_own">Свой источник</string>
     <string name="free_books_own">Свои источники</string>
     <string name="free_books_own_hint">Любой сайт, локальный сервер или API, описанные данными: поиск, извлечение, дополнительные запросы, загрузка. Скрипты не выполняются. Хранится только на этом устройстве; в экспортируемые файлы входят заголовки, например ключи API.</string>
-    <string name="instant_source">Мгновенный источник</string>
-    <string name="instant_source_hint">Для книги без файла кнопка чтения скачивает первое совпадение из этого источника и открывает его. Без совпадения запрашивается файл.</string>
-    <string name="instant_source_off">Выкл.</string>
     <string name="free_books_add">Создать источник</string>
     <string name="free_books_import">Импорт файла</string>
     <string name="free_books_export">Экспорт файла</string>
@@ -361,6 +343,4 @@
         <item quantity="many">Импортировано %1$d источников из %2$d</item>
         <item quantity="other">Импортировано %1$d источника из %2$d</item>
     </plurals>
-    <string name="free_books_debug">Отладочный тест</string>
-    <string name="free_books_debug_saved">Журнал отладки сохранён</string>
 </resources>

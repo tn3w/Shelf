@@ -23,7 +23,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -43,29 +42,6 @@ fun FreeBookSettings() {
         stringResource(R.string.free_books_own),
         stringResource(R.string.free_books_own_hint),
     ) { OwnSourceRows(settings, update, enabled = !offline) }
-    SettingsGroup(
-        stringResource(R.string.instant_source),
-        stringResource(R.string.instant_source_hint),
-    ) { InstantSourceRows(settings, update, enabled = !offline) }
-}
-
-@Composable
-private fun InstantSourceRows(
-    settings: Settings,
-    update: SettingsUpdate,
-    enabled: Boolean,
-) {
-    val language = shelfViewModel().bookLanguage(settings)
-    val recipes = allRecipes().filter { Provider(it).serves(language) }
-    val selected = settings.instantProvider(recipes, language)?.id.orEmpty()
-    val options = listOf("" to stringResource(R.string.instant_source_off)) +
-        recipes.map { it.id to it.name }
-    options.forEach { (id, name) ->
-        fun select() = update { it.copy(instantSource = id) }
-        SettingRow(name, enabled = enabled, onClick = ::select) {
-            RadioButton(selected = id == selected, onClick = ::select, enabled = enabled)
-        }
-    }
 }
 
 @Composable
@@ -296,9 +272,9 @@ private fun OfferCover(url: String?) = Box(
 }
 
 @Composable
-fun DownloadProgress(value: Float, size: Dp = 24.dp) {
+private fun DownloadProgress(value: Float) {
     val progress by animateFloatAsState(value)
-    val modifier = Modifier.size(size)
+    val modifier = Modifier.size(24.dp)
     if (value > 0f) {
         CircularProgressIndicator(progress = { progress }, modifier, strokeWidth = 3.dp)
     } else {

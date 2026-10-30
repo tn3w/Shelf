@@ -111,7 +111,6 @@ data class Settings(
     val theme: ThemeMode = ThemeMode.System,
     val blackTheme: Boolean = false,
     val wallpaperColors: Boolean = true,
-    val reduceMotion: Boolean = false,
     val eInk: Boolean = false,
     val dailyGoal: Int = 10,
     val fontScale: Float = 1f,
@@ -126,35 +125,17 @@ data class Settings(
     val readerBrightness: Float? = null,
     val offline: Boolean = false,
     val onlineCovers: Boolean = true,
-    val authorImages: Boolean = true,
     val catalogueUpdates: Boolean = true,
     val checkUpdates: Boolean = true,
     val lastCatalogueCheck: Long = 0,
     val lastAppCheck: Long = 0,
     val availableUpdate: Release? = null,
     val catalogueSource: String = "",
-    val coverSource: String = "",
-    val dnbCoverSource: String = "",
-    val digarCoverSource: String = "",
-    val bookbitesCoverSource: String = "",
     val providers: Set<String> = emptySet(),
-    val instantSource: String = "",
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
     val backupFolder: String = "",
-) {
-    val coverHost
-        get() = coverSource.ifEmpty { COVERS }.trimEnd('/')
-
-    val dnbCoverHost
-        get() = dnbCoverSource.ifEmpty { DNB_COVERS }.trimEnd('/')
-
-    val digarCoverHost
-        get() = digarCoverSource.ifEmpty { DIGAR_COVERS }.trimEnd('/')
-
-    val bookbitesCoverHost
-        get() = bookbitesCoverSource.ifEmpty { BOOKBITES_COVERS }.trimEnd('/')
-}
+)
 
 fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
 
@@ -709,19 +690,13 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     margin = imported.margin.coerceIn(MARGIN_RANGE),
     offline = current.offline,
     onlineCovers = current.onlineCovers,
-    authorImages = current.authorImages,
     catalogueUpdates = current.catalogueUpdates,
     checkUpdates = current.checkUpdates,
     lastCatalogueCheck = current.lastCatalogueCheck,
     lastAppCheck = current.lastAppCheck,
     availableUpdate = current.availableUpdate,
     catalogueSource = current.catalogueSource,
-    coverSource = current.coverSource,
-    dnbCoverSource = current.dnbCoverSource,
-    digarCoverSource = current.digarCoverSource,
-    bookbitesCoverSource = current.bookbitesCoverSource,
     providers = current.providers,
-    instantSource = current.instantSource,
     backupFolder = current.backupFolder,
 )
 

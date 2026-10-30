@@ -182,8 +182,6 @@
     <string name="next_in_series_subtitle">Pokračujte tam, kde každá série skončila.</string>
     <string name="not_for_me">Není pro mě</string>
     <string name="machine_translated">Strojově přeloženo</string>
-    <string name="author_images">Fotky autorů</string>
-    <string name="author_images_hint">Stahovat portréty autorů z Open Library.</string>
     <string name="catalogue_updates">Aktualizace katalogu</string>
     <string name="catalogue_updates_hint">Každý měsíc hledat nové balíčky katalogu a drobné aktualizace.</string>
     <string name="check_catalogue">Zkontrolovat aktualizace katalogu</string>
@@ -211,16 +209,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Čtení</string>
     <string name="reading_hint">Denní cíl, text a otáčení stránek.</string>
-    <string name="stat_books">Knihy</string>
-    <string name="stat_streak">Dní v řadě</string>
     <string name="settings_footer">Open source pod licencí MIT. Vaše knihovna zůstává v tomto zařízení.</string>
     <string name="privacy_requests_hint">Požadavky používají jen https a neobsahují identifikátory ani cookies.</string>
     <string name="black_theme">Čistě černá</string>
     <string name="black_theme_hint">Černé pozadí v tmavém režimu. Šetří energii na displejích OLED.</string>
     <string name="wallpaper_colors">Barvy tapety</string>
     <string name="wallpaper_colors_hint">Obarví aplikaci barvami z tapety.</string>
-    <string name="reduce_motion">Omezit animace</string>
-    <string name="reduce_motion_hint">Méně animací. Vhodné pro displeje e-ink.</string>
     <string name="e_ink">Režim e-ink</string>
     <string name="e_ink_hint">Černá na bílé, bez animací, okamžité otáčení stránek, větší dotykové plochy.</string>
     <string name="reader">Čtečka</string>
@@ -253,7 +247,6 @@
     <string name="download_all_short">Stáhnout vše</string>
     <string name="csv_progress">Párování knih… %d %%</string>
     <string name="delete_all">Smazat vše</string>
-    <string name="delete_all_languages">Smazat všechny jazyky</string>
     <string name="offline_forced">Přístup k síti není povolen, Shelf proto zůstává offline.</string>
     <string name="offline_mode">Režim offline</string>
     <string name="offline_mode_hint">Žádná síť: žádné aktualizace, obnova katalogu ani obrázky.</string>
@@ -278,14 +271,6 @@
     <string name="import_failed">Některé soubory nejsou soubory katalogu Shelf.</string>
     <string name="own_sources">Vlastní servery a soubory</string>
     <string name="own_sources_hint">Použijte vlastní server katalogu nebo obálek, nebo importujte soubory katalogu.</string>
-    <string name="cover_source">Server obálek</string>
-    <string name="cover_source_hint">Základní URL serveru obálek Open Library, jen https. Prázdné znamená výchozí.</string>
-    <string name="dnb_cover_source">Server obálek DNB</string>
-    <string name="dnb_cover_source_hint">Základní URL služby obálek Německé národní knihovny, jen https. Prázdné znamená výchozí.</string>
-    <string name="digar_cover_source">Server obálek DIGAR</string>
-    <string name="digar_cover_source_hint">Základní URL archivu DIGAR Estonské národní knihovny, jen https. Prázdné znamená výchozí.</string>
-    <string name="bookbites_cover_source">Server obálek Bookbites</string>
-    <string name="bookbites_cover_source_hint">Základní URL služby obálek Bookbites pro švédské knihy, jen https. Prázdné znamená výchozí.</string>
     <string name="catalogue_incomplete">Importujte základní soubor i soubor pořadí jednoho jazyka.</string>
     <string name="no_catalogue">Zatím není nainstalován žádný katalog. Stáhněte ho nebo importujte soubory katalogu v Nastavení. Vlastní soubory lze importovat v Knihovně.</string>
     <string name="open_settings">Otevřít nastavení</string>
@@ -329,9 +314,6 @@
     <string name="provider_own">Vlastní zdroj</string>
     <string name="free_books_own">Vlastní zdroje</string>
     <string name="free_books_own_hint">Libovolný web, místní server nebo API popsané jako data: hledání, extrakce, další požadavky, stažení. Nespouštějí se žádné skripty. Uloženo jen v tomto zařízení; exportované soubory obsahují hlavičky, např. klíče API.</string>
-    <string name="instant_source">Okamžitý zdroj</string>
-    <string name="instant_source_hint">U knihy bez souboru tlačítko čtení stáhne první výsledek z tohoto zdroje a otevře ho. Bez výsledku požádá o soubor.</string>
-    <string name="instant_source_off">Vypnuto</string>
     <string name="free_books_add">Vytvořit zdroj</string>
     <string name="free_books_import">Importovat soubor</string>
     <string name="free_books_export">Exportovat soubor</string>
@@ -361,6 +343,4 @@
         <item quantity="many">Importováno %1$d z %2$d zdrojů</item>
         <item quantity="other">Importováno %1$d z %2$d zdrojů</item>
     </plurals>
-    <string name="free_books_debug">Ladicí test</string>
-    <string name="free_books_debug_saved">Ladicí log uložen</string>
 </resources>

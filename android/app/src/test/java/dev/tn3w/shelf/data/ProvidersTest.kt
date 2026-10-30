@@ -165,23 +165,6 @@ class ProvidersTest {
     }
 
     @Test
-    fun instantSourceIsOffByDefault() {
-        val recipes = listOf(bundled("gutenberg"))
-        assertNull(Settings().instantProvider(recipes, "en"))
-        assertNull(Settings(instantSource = "gone").instantProvider(recipes, "en"))
-        val chosen = Settings(instantSource = "gutenberg").instantProvider(recipes, "en")
-        assertEquals("gutenberg", chosen?.id)
-    }
-
-    @Test
-    fun instantSourceSkippedForUnservedLanguage() {
-        val recipes = listOf(htmlRecipe().copy(id = "english", languages = setOf("en")))
-        val settings = Settings(instantSource = "english")
-        assertEquals("english", settings.instantProvider(recipes, "en")?.id)
-        assertNull(settings.instantProvider(recipes, "de"))
-    }
-
-    @Test
     fun bundledSourcesAreValidRecipes() {
         val files = SOURCES.listFiles().orEmpty()
         assertTrue(files.isNotEmpty())
@@ -459,16 +442,6 @@ class ProvidersTest {
     }
 
     @Test
-    fun debugTraceAddsHeadersPagesAndItems() = runBlocking<Unit> {
-        val lines = mutableListOf<String>()
-        Provider(htmlRecipe(), log = { lines += it }, verbose = true)
-            .probe(Query("Pride", "", "en"))
-        assertTrue(lines.any { it.startsWith("  < Content-length: ") })
-        assertTrue(lines.any { it.startsWith("  page:") && "<li class=\"book\">" in it })
-        assertTrue(lines.any { it.startsWith("item 2: ") && "Illustrated" in it })
-    }
-
-    @Test
     fun runawayRegexStopsWithAnError() = runBlocking<Unit> {
         val recipe = htmlRecipe().copy(
             search = htmlRecipe().search.copy(
@@ -509,12 +482,6 @@ class ProvidersTest {
     fun providersWithSameRecipeAreEqualKeys() {
         val results = mapOf(Provider(htmlRecipe()) to 1)
         assertEquals(1, results[Provider(htmlRecipe())])
-    }
-
-    @Test
-    fun redactedRecipeHidesHeaderValues() {
-        val hidden = mapOf("Authorization" to "<hidden>")
-        assertEquals(hidden, htmlRecipe().redacted().headers)
     }
 
     @Test
@@ -562,27 +529,6 @@ class ProvidersTest {
             "abcd".byteInputStream().readAtMost(3)
         }.exceptionOrNull()
         assertTrue(error is IOException)
-    }
-
-    @Test
-    fun debugReportHidesSecrets() {
-        val recipe = htmlRecipe().copy(
-            search = htmlRecipe().search.copy(body = "secret=b0dy"),
-            download = "https://example.org/get?apikey=abc123&md5={md5}",
-        )
-        val trace = listOf(
-            "GET https://example.org/get?apikey=abc123&md5=emma",
-            "  body: secret=b0dy",
-            "  < Set-Cookie: session=s3cret",
-            "  < Content-Type: text/html",
-            "  page: echo $TOKEN",
-        ).map(recipe::redact)
-        val text = recipe.redacted().toText() + trace
-        listOf("abc123", "emma", "b0dy", "s3cret", TOKEN).forEach {
-            assertFalse(it, it in text)
-        }
-        assertTrue("Content-Type: text/html" in text)
-        assertTrue("md5={md5}" in text)
     }
 
     @Test

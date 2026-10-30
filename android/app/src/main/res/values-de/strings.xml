@@ -166,8 +166,6 @@
     <string name="next_in_series_subtitle">Dort weiterlesen, wo jede Reihe aufgehört hat.</string>
     <string name="not_for_me">Nichts für mich</string>
     <string name="machine_translated">Maschinell übersetzt</string>
-    <string name="author_images">Autorenfotos</string>
-    <string name="author_images_hint">Autorenbilder von Open Library laden.</string>
     <string name="catalogue_updates">Katalog-Updates</string>
     <string name="catalogue_updates_hint">Monatlich nach neuen Paketen und kleinen Updates suchen.</string>
     <string name="check_catalogue">Nach Katalog-Updates suchen</string>
@@ -195,16 +193,12 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Lesen</string>
     <string name="reading_hint">Tagesziel, Schrift und Umblättern.</string>
-    <string name="stat_books">Bücher</string>
-    <string name="stat_streak">Tage in Folge</string>
     <string name="settings_footer">Open Source unter MIT-Lizenz. Deine Bibliothek bleibt auf diesem Gerät.</string>
     <string name="privacy_requests_hint">Anfragen nur über https, ohne Kennungen oder Cookies.</string>
     <string name="black_theme">Reines Schwarz</string>
     <string name="black_theme_hint">Schwarzer Hintergrund im dunklen Design. Spart Strom auf OLED-Displays.</string>
     <string name="wallpaper_colors">Hintergrundfarben</string>
     <string name="wallpaper_colors_hint">Die App mit Farben deines Hintergrundbilds einfärben.</string>
-    <string name="reduce_motion">Weniger Bewegung</string>
-    <string name="reduce_motion_hint">Weniger Animationen. Gut für E-Ink-Displays.</string>
     <string name="e_ink">E-Ink-Modus</string>
     <string name="e_ink_hint">Schwarz auf Weiß, keine Animationen, sofortiges Umblättern, größere Tippflächen.</string>
     <string name="reader">Lesemodus</string>
@@ -237,7 +231,6 @@
     <string name="download_all_short">Alle herunterladen</string>
     <string name="csv_progress">Bücher werden abgeglichen… %d%%</string>
     <string name="delete_all">Alle löschen</string>
-    <string name="delete_all_languages">Alle Sprachen löschen</string>
     <string name="offline_forced">Kein Netzwerkzugriff erlaubt, Shelf bleibt offline.</string>
     <string name="offline_mode">Offline-Modus</string>
     <string name="offline_mode_hint">Gar kein Netzwerk: keine Updates, keine Katalogsuche, keine Bilder.</string>
@@ -262,14 +255,6 @@
     <string name="import_failed">Einige Dateien sind keine Shelf-Katalogdateien.</string>
     <string name="own_sources">Eigene Server und Dateien</string>
     <string name="own_sources_hint">Selbst gehosteten Katalog- oder Cover-Server nutzen oder Katalogdateien importieren.</string>
-    <string name="cover_source">Cover-Server</string>
-    <string name="cover_source_hint">Basis-URL eines Open-Library-Cover-Servers, nur https. Leer bedeutet Standard.</string>
-    <string name="dnb_cover_source">DNB-Cover-Server</string>
-    <string name="dnb_cover_source_hint">Basis-URL des Cover-Dienstes der Deutschen Nationalbibliothek, nur https. Leer bedeutet Standard.</string>
-    <string name="digar_cover_source">DIGAR-Coverserver</string>
-    <string name="digar_cover_source_hint">Basis-URL des DIGAR-Archivs der Estnischen Nationalbibliothek, nur https. Leer bedeutet Standard.</string>
-    <string name="bookbites_cover_source_hint">Basis-URL des Bookbites-Coverdienstes für schwedische Bücher, nur https. Leer bedeutet Standard.</string>
-    <string name="bookbites_cover_source">Bookbites-Coverserver</string>
     <string name="catalogue_incomplete">Importiere die Core- und die Ranks-Datei einer Sprache.</string>
     <string name="no_catalogue">Noch kein Katalog installiert. Lade einen herunter oder importiere Katalogdateien in den Einstellungen, um Bücher zu entdecken. Eigene Dateien importierst du in der Bibliothek.</string>
     <string name="open_settings">Einstellungen öffnen</string>
@@ -313,9 +298,6 @@
     <string name="provider_own">Eigene Quelle</string>
     <string name="free_books_own">Eigene Quellen</string>
     <string name="free_books_own_hint">Jede Website, jeder lokale Server oder jede API, als Daten beschrieben: suchen, auslesen, weitere Anfragen, herunterladen. Es laufen keine Skripte. Nur auf diesem Gerät gespeichert; exportierte Dateien enthalten Header wie API-Schlüssel.</string>
-    <string name="instant_source">Sofortquelle</string>
-    <string name="instant_source_hint">Bei einem Buch ohne Datei lädt der Lesen-Knopf den ersten Treffer dieser Quelle und öffnet ihn. Ohne Treffer fragt er nach einer Datei.</string>
-    <string name="instant_source_off">Aus</string>
     <string name="free_books_add">Quelle erstellen</string>
     <string name="free_books_import">Datei importieren</string>
     <string name="free_books_export">Datei exportieren</string>
@@ -343,6 +325,4 @@
         <item quantity="one">%1$d von %2$d Quelle importiert</item>
         <item quantity="other">%1$d von %2$d Quellen importiert</item>
     </plurals>
-    <string name="free_books_debug">Debug-Test</string>
-    <string name="free_books_debug_saved">Debug-Protokoll gespeichert</string>
 </resources>
