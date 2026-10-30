@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">O aplikaci</string>
     <string name="about_book">O této knize</string>
@@ -228,7 +229,7 @@
     <string name="margins">Okraje</string>
     <string name="typeface">Písmo</string>
     <string name="page_color">Barva stránky</string>
-    <string name="spacing_compact">Úzké</string>
+    <string name="spacing_compact">Kompaktní</string>
     <string name="normal">Normální</string>
     <string name="spacing_relaxed">Volné</string>
     <string name="margin_narrow">Úzké</string>
@@ -337,7 +338,7 @@
     <string name="free_books_export_headers">Obsahuje uložené hlavičky, např. cookies nebo tokeny</string>
     <string name="free_books_form">Formulář</string>
     <string name="free_books_file">Soubor</string>
-    <string name="free_books_name">Název</string>
+    <string name="free_books_name">Jméno</string>
     <string name="free_books_url">URL</string>
     <string name="free_books_body">Tělo POST (volitelné)</string>
     <string name="free_books_items">Položky</string>
