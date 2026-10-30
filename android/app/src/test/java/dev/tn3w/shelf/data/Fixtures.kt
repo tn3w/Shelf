@@ -26,6 +26,7 @@ data class Fixture(
     val isbns: List<String> = emptyList(),
     val libraryIsbn: String = "",
     val digar: Int = 0,
+    val alternate: String = "",
 )
 
 class Bytes {
@@ -108,7 +109,8 @@ private class Postings(val titles: List<Int>, val authors: List<Int>)
 
 private fun terms(books: List<Fixture>, authors: List<String>): Map<String, Postings> {
     val titles = books.withIndex().flatMap { (local, book) ->
-        tokenize("${book.title} ${book.subtitle} ${book.series.orEmpty()}").map {
+        val heads = "${book.title} ${book.subtitle} ${book.alternate}"
+        tokenize("$heads ${book.series.orEmpty()}").map {
             it to
                 local
         }
@@ -228,7 +230,9 @@ fun segmentBuffer(
             varint(series.indexOf(book.series) + 1)
         }
     }
-    val heads = books.map { "${it.title}\u001f${it.subtitle}\u001f".toByteArray() }
+    val heads = books.map {
+        "${it.title}\u001f${it.subtitle}\u001f${it.alternate}".toByteArray()
+    }
     val authorRecords = authors.map { name ->
         val locals = books.indices.filter { books[it].author == name }
         bytes { varint(numberOf(name)).varint(0).text(name).postings(locals) }

@@ -17,6 +17,7 @@ import kotlin.math.min
 private const val PROBED_LINES = 2
 private const val WEAK_FRAMES = 3
 private const val FINE_LINES = 3
+private val VOLUME_MARK = Regex("\\s*\\[\\d+/\\d+]")
 private const val SAME_LINE_OVERLAP = 0.3f
 private const val MIN_QUALITY = 3.0
 private const val CERTAIN_INFORMATION = 12.0
@@ -410,6 +411,13 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
                 }
         }
 
+    private fun sameBook(work: Int): List<String> {
+        val book = catalogue.book(work) ?: return identity(catalogue, work)
+        val alternate = book.alternate.replace(VOLUME_MARK, "")
+        if (alternate.isBlank()) return identity(catalogue, work)
+        return tokenize(mainTitle(alternate)) + tokenize(book.author)
+    }
+
     fun scores(lines: List<TextLine>): Map<Int, Double> {
         val words = words(lines)
         if (words.isEmpty()) return emptyMap()
@@ -429,7 +437,7 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
             }
             .filterValues { it > 0.05 }
             .entries
-            .groupBy { identity(catalogue, it.key) }
+            .groupBy { sameBook(it.key) }
             .values
             .associate { same -> same.maxBy { popularity(it.key) }.toPair() }
     }

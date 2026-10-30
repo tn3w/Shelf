@@ -617,6 +617,29 @@ class ScanTest {
     }
 
     @Test
+    fun editionsSharingAnAlternateTitleCountAsOneBook() {
+        val original = "Harry Potter and the Philosopher's Stone"
+
+        fun edition(work: Int, title: String, alternate: String, score: Int) =
+            Fixture(work, title, "J. K. Rowling", alternate = alternate, score = score)
+
+        val catalogue = catalogue(
+            listOf(
+                edition(1, "해리 포터 시리즈", original, 90),
+                edition(2, "해리포터와 마법사의 돌 I", "$original [1/2]", 3),
+                edition(3, "해리 포터와 마법사의 돌 II", "$original [2/2]", 1),
+            ),
+        )
+        val lines = listOf(
+            TextLine("HARRY POTTER", 1f, 40f),
+            TextLine("Philosopher's Stone", 1f, 20f),
+            TextLine("J.K. ROWLING", 1f, 20f),
+        )
+        val scores = Matcher(catalogue, Searcher(catalogue)).scores(lines)
+        assertEquals(setOf(1), scores.keys)
+    }
+
+    @Test
     fun gluedWordWithTypoSplitsIntoKnownWords() {
         val catalogue = catalogue(
             listOf(
