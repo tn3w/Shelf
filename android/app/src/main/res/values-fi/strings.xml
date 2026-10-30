@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Tietoja</string>
     <string name="about_book">Tietoja kirjasta</string>
@@ -244,7 +245,7 @@
     <string name="import_book">Tuo kirja</string>
     <string name="own_book">Lisää oma kirja</string>
     <string name="add_own_book">Lisää ”%s” omana kirjana</string>
-    <string name="title">Nimi</string>
+    <string name="title">Otsikko</string>
     <string name="author">Kirjailija</string>
     <string name="add">Lisää</string>
     <string name="choose_cover">Valitse kansi</string>
@@ -290,7 +291,7 @@
     <string name="since_year">Vuodesta %d</string>
     <string name="search_library">Hae kirjastostasi</string>
     <string name="grid_view">Ruudukko</string>
-    <string name="list_view">Luettelo</string>
+    <string name="list_view">Lista</string>
     <string name="in_library">Kirjastossasi</string>
     <string name="clear_filters">Tyhjennä suodattimet</string>
     <string name="sort_filter">Järjestä ja suodata</string>
