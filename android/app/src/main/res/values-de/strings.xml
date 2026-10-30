@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Über</string>
     <string name="about_book">Über dieses Buch</string>
@@ -44,7 +45,7 @@
     <string name="genres">Genres</string>
     <string name="goal_reached">Tagesziel erreicht. Bis morgen!</string>
     <string name="home">Startseite</string>
-    <string name="import_to_start">Datei importieren</string>
+    <string name="import_to_start">Zum Start eine Datei importieren</string>
     <string name="install">Installieren</string>
     <string name="install_anyway">Trotzdem installieren</string>
     <string name="larger_text">Größerer Text</string>
@@ -96,7 +97,7 @@
     <string name="reading">Lese ich</string>
     <string name="recent">Zuletzt gesucht</string>
     <string name="remove_pack">%s entfernen</string>
-    <string name="resume">Weiterlesen</string>
+    <string name="resume">Fortsetzen</string>
     <string name="retry_item">%s erneut versuchen</string>
     <string name="search">Suche</string>
     <string name="search_hint">Bücher und Autoren</string>
