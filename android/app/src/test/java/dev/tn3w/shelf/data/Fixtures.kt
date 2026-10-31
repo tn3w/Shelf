@@ -7,7 +7,7 @@ import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
 
 val TAGS =
-    listOf("fiction", "nonfiction", "fantasy", "magic", "dragons", "space", "crime")
+    listOf("fiction", "nonfiction", "fantasy", "magic", "dragons", "space", "crime", "childrens")
 private const val RECORDS_PER_BLOCK = 2
 private const val TERMS_PER_BLOCK = 3
 private const val COMPLETION_LIMIT = 12
@@ -216,6 +216,7 @@ fun segmentBuffer(
     month: String = "2000-01",
     base: String? = null,
     tombstones: List<Int> = emptyList(),
+    tagTable: List<String> = TAGS,
 ): ByteBuffer {
     val books = unsorted.sortedBy { it.work }
     val authors = books.map { it.author }.distinct()
@@ -226,7 +227,7 @@ fun segmentBuffer(
         bytes {
             varint(1).varint(authors.indexOf(book.author))
             varint(if (book.year == 0) 0 else book.year - 1400).varint(0)
-            varint(book.tags.size).apply { book.tags.forEach { byte(TAGS.indexOf(it)) } }
+            varint(book.tags.size).apply { book.tags.forEach { byte(tagTable.indexOf(it)) } }
             varint(series.indexOf(book.series) + 1)
         }
     }
@@ -241,7 +242,7 @@ fun segmentBuffer(
         val members = unsorted.filter { it.series == name }.map { it.work }
         bytes { text(name).varint(members.size).apply { members.forEach(::varint) } }
     }
-    val tagRows = TAGS.map { slug ->
+    val tagRows = tagTable.map { slug ->
         val locals = books.indices.filter { slug in books[it].tags }
         bytes { text(slug).text(slug).text("genre").varint(locals.size).postings(locals) }
     }

@@ -57,7 +57,7 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         Related(
             recommender.series(found),
             recommender.byAuthor(found),
-            recommender.similar(found),
+            recommender.similar(seedBook(work) ?: found),
         )
     }
 

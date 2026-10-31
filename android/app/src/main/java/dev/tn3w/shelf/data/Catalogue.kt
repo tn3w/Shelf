@@ -16,6 +16,8 @@ const val DNB = 1
 const val DIGAR = 2
 const val ISBN_COVER = 3
 const val BOOKBITES = 4
+private const val QUALITY_STEPS = 255.0
+private const val GALLOP = 8
 
 data class Author(val number: Int, val name: String) {
     fun photoUrl(size: String) =
@@ -134,9 +136,17 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 
     private val works by lazy { allWorks() }
-    private val scores by lazy {
-        FloatArray(works.size) { ranks?.popularity(works[it])?.score?.toFloat() ?: 0f }
+    private val ranked by lazy {
+        val scores = FloatArray(works.size)
+        val qualities = ByteArray(works.size)
+        works.forEachIndexed { index, work ->
+            val popularity = ranks?.popularity(work) ?: return@forEachIndexed
+            scores[index] = popularity.score.toFloat()
+            qualities[index] = (QUALITY_STEPS * qualityOf(popularity)).toInt().toByte()
+        }
+        scores to qualities
     }
+    private val scores get() = ranked.first
 
     fun warmUp() = maxScore
 
@@ -157,6 +167,42 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         works.binarySearch(work).let { if (it < 0) 0.0 else scores[it].toDouble() }
 
     fun popularity(work: Int) = ln(1 + score(work)) / ln(1 + maxScore)
+
+    /** Number of visible works; positions below index the score arrays. */
+    val indexed get() = works.size
+
+    fun workAt(index: Int) = works[index]
+
+    fun popularityAt(index: Int) = ln(1 + scores[index]) / ln(1 + maxScore)
+
+    /**
+     * Positions of [items] among all works, -1 for absent ones. Posting lists arrive as
+     * ascending runs, one per segment, so a moving pointer replaces most binary searches.
+     */
+    fun indexesOf(items: IntArray): IntArray {
+        val all = works
+        val result = IntArray(items.size)
+        var pointer = 0
+        for ((position, work) in items.withIndex()) {
+            if (pointer >= all.size || all[pointer] > work) pointer = 0
+            var steps = 0
+            while (pointer < all.size && all[pointer] < work && steps < GALLOP) {
+                pointer++
+                steps++
+            }
+            if (pointer < all.size && all[pointer] < work) {
+                val found = all.binarySearch(work, pointer, all.size)
+                pointer = if (found >= 0) found else -found - 1
+            }
+            result[position] = if (pointer < all.size && all[pointer] == work) pointer else -1
+        }
+        return result
+    }
+
+    /** Reader count and smoothed rating in [0, 1], see [qualityOf]. */
+    fun quality(work: Int) = works.binarySearch(work).let {
+        if (it < 0) 0.0 else (ranked.second[it].toInt() and 0xFF) / QUALITY_STEPS
+    }
 
     fun tagCount(tag: Int) = tagCounts[tag] ?: 0
 
@@ -235,7 +281,25 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 
     fun popularWorks(limit: Int, tag: Int? = null) =
-        topWorks(if (tag == null) works else tagWorks(tag), limit)
+        if (tag == null) topOfAll(limit) else topWorks(tagWorks(tag), limit)
+
+    /** [topWorks] over every work, reading scores by index instead of by lookup. */
+    private fun topOfAll(limit: Int): List<Int> {
+        if (limit <= 0) return emptyList()
+        val scores = scores
+        val heap = PriorityQueue<Int>(limit + 1) { left, right ->
+            scores[left].compareTo(scores[right])
+        }
+        for (index in works.indices) {
+            if (heap.size < limit) {
+                heap.add(index)
+            } else if (scores[index] > scores[heap.peek()!!]) {
+                heap.poll()
+                heap.add(index)
+            }
+        }
+        return heap.sortedByDescending { scores[it] }.map { works[it] }
+    }
 
     fun topWorks(works: IntArray, limit: Int): List<Int> {
         if (limit <= 0) return emptyList()
@@ -258,7 +322,12 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     }
 
     private fun authorRecords(author: Author): Sequence<Pair<Segment, AuthorRecord>> {
-        val token = tokenize(author.name).maxByOrNull { it.length }
+        val token = tokenize(author.name)
+            .distinct()
+            .map { token -> token to segments.sumOf { it.term(token)?.authorSlots?.size ?: 0 } }
+            .filter { it.second > 0 }
+            .minByOrNull { it.second }
+            ?.first
             ?: return emptySequence()
         return segments.asSequence().flatMap { segment ->
             val slots = segment.term(token)?.authorSlots ?: IntArray(0)
@@ -273,6 +342,13 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
         .flatMap { (segment, record) -> visibleWorks(segment, record.works).toList() }
         .distinct()
         .toList()
+
+    /** A book from another language's catalogue, its tag ids mapped onto this one's. */
+    fun adopt(book: Book, from: Catalogue): Book {
+        if (from === this || from.tags == tags) return book
+        val ids = from.tags.associate { tag -> tag.id to tagBySlug[tag.slug]?.id }
+        return book.copy(tags = book.tags.mapNotNull { ids[it] })
+    }
 
     fun authorBorn(author: Author) =
         authorRecords(author).firstOrNull { it.second.born > 0 }?.second?.born ?: 0
@@ -315,11 +391,19 @@ class Loaded(
     loadOthers: () -> List<Catalogue> = { emptyList() },
 ) {
     val searcher = Searcher(catalogue)
-    val recommender = Recommender(catalogue)
     val others by lazy(loadOthers)
+    val recommender = Recommender(catalogue, ::foreignBook)
 
     fun catalogueOf(work: Int) =
         (listOf(catalogue) + others).firstOrNull { it.locate(work) != null }
 
     fun book(work: Int) = catalogueOf(work)?.book(work)
+
+    /** A work only another installed language has, ready to seed this catalogue. */
+    private fun foreignBook(work: Int) = others.firstNotNullOfOrNull { other ->
+        other.book(work)?.let { catalogue.adopt(it, other) }
+    }
+
+    /** The book as a recommendation seed for the current catalogue. */
+    fun seedBook(work: Int) = catalogue.book(work) ?: foreignBook(work)
 }
