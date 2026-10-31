@@ -1,6 +1,6 @@
-• Katalogi szwedzki, polski, czeski, koreański i fiński z bibliotek narodowych; aplikacja także w tych językach i po rosyjsku
-• Francuski katalog rośnie do ponad 600 000 książek dzięki Francuskiej Bibliotece Narodowej
+• Katalogi szwedzki, polski, czeski, koreański i fiński; aplikacja także w tych językach i po rosyjsku
+• Francuski katalog rośnie do ponad 600 000 książek
 • Wybór języka katalogów; mniejsza aplikacja, w pakiecie tylko angielski
 • Wyszukiwanie rozumie polskie, czeskie i koreańskie litery
 • Tryb e-ink i jasność przesunięciem w czytniku
-• Automatyczna dzienna kopia do wybranego folderu, 7 najnowszych
+• Dzienna kopia do wybranego folderu, 7 najnowszych
