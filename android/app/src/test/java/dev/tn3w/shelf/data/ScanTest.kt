@@ -697,6 +697,30 @@ class ScanTest {
     }
 
     @Test
+    fun seriesNameOnCoverConfirmsVolumeWithStrippedTitle() {
+        val volume = Fixture(1, "The Thief", "Rick Riordan", series = "Percy Jackson")
+        val other = Fixture(2, "The Thief", "Bo Bee", score = 9)
+        val filler = (3..200).map { Fixture(it, "Other Story $it", "Cy Dee") }
+        val catalogue = catalogue(listOf(volume, other) + filler)
+        val lines =
+            listOf(TextLine("PERCY JACKSON", 1f, 40f), TextLine("THE THIEF", 1f, 30f))
+        val scores = Matcher(catalogue, Searcher(catalogue)).scores(lines)
+        val rule = StopRule(ScanSettings())
+        val stops = (1..5).map { rule.update(scores) }
+        assertEquals(1, stops.last())
+    }
+
+    @Test
+    fun seriesNameAloneDoesNotPickVolume() {
+        val volumes = (1..3).map { Fixture(it, "Volume $it", series = "Percy Jackson") }
+        val filler = (4..60).map { Fixture(it, "Other Story $it", "Cy Dee") }
+        val catalogue = catalogue(volumes + filler)
+        val scores = Matcher(catalogue, Searcher(catalogue))
+            .scores(listOf(TextLine("PERCY JACKSON", 1f, 40f)))
+        assertTrue(scores.isEmpty())
+    }
+
+    @Test
     fun sampleHandlesSinglePixelAxes() {
         assertEquals(7f, Gray(1, 1, floatArrayOf(7f)).sample(3f, 2f), 0f)
         assertEquals(5f, Gray(1, 2, floatArrayOf(4f, 6f)).sample(0f, 0.5f), 0.01f)

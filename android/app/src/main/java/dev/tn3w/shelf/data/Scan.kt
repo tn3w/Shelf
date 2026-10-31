@@ -196,6 +196,7 @@ private class Word(
 
 private class BookProfile(
     val titles: List<List<String>>,
+    val withSeries: List<List<String>>,
     val authors: List<List<String>>,
     val tokens: Set<String>,
     val popularity: Double,
@@ -243,6 +244,9 @@ fun identity(catalogue: Catalogue, work: Int) = catalogue.book(work)?.let { book
     val words = title.filterNot { token -> token.all(Char::isDigit) }.ifEmpty { title }
     words + tokenize(book.authors.firstOrNull()?.name.orEmpty())
 } ?: listOf(work.toString())
+
+private fun seriesWords(catalogue: Catalogue, work: Int) =
+    tokenize(catalogue.series(work)?.name.orEmpty()).filter { it !in ARTICLES }
 
 class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) {
     private val hits = LruCache<String, Map<Int, Double>>(CACHE_SIZE)
@@ -308,7 +312,14 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
                 catalogue.series(work)?.name.orEmpty(),
         )
         val tokens = (titles.flatten() + authors.flatten() + extra).toSet()
-        return BookProfile(titles, authors, tokens, popularity(work))
+        val withSeries = titles + seriesNamed(work, titles)
+        return BookProfile(titles, withSeries, authors, tokens, popularity(work))
+    }
+
+    private fun seriesNamed(work: Int, titles: List<List<String>>): List<List<String>> {
+        val series = seriesWords(catalogue, work)
+        if (series.isEmpty()) return emptyList()
+        return titles.filterNot { it.containsAll(series) }.map { series + it }
     }
 
     private fun candidates(words: List<Word>): List<Int> {
@@ -356,8 +367,8 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
     }
 
     private fun score(profile: BookProfile, words: List<Word>): Double {
-        val title = profile.titles.maxOfOrNull { coverage(it, words, false) } ?: 0.0
-        if (title == 0.0) return 0.0
+        if (profile.titles.none { coverage(it, words, false) > 0 }) return 0.0
+        val title = profile.withSeries.maxOf { coverage(it, words, false) }
         val author = profile.authors.maxOfOrNull { coverage(it, words, true) } ?: 0.0
         val prominent = words.filter {
             it.prominent && it.text.length >= 3 && it.text !in ARTICLES &&
@@ -371,7 +382,7 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
             }.toDouble() / prominent.size
         }
         val precision = precision(profile, words)
-        val information = profile.titles.maxOf { tokens ->
+        val information = profile.withSeries.maxOf { tokens ->
             tokens.sumOf { weight(it) * best(it, words) }
         }
         val certainty =
@@ -383,7 +394,7 @@ class Matcher(private val catalogue: Catalogue, private val searcher: Searcher) 
     }
 
     private fun precision(profile: BookProfile, words: List<Word>): Double {
-        val titleTokens = profile.titles.flatten()
+        val titleTokens = profile.withSeries.flatten()
         val counted = words.filter { it.text.length >= 3 && it.text !in ARTICLES }
         val lines = counted.groupBy { it.line }.values.filter { line ->
             line.any { word -> titleTokens.any { fits(it, word.text) } }
@@ -555,7 +566,8 @@ class Scanner(
         ?: others().firstNotNullOfOrNull { it.bookOfIsbn(isbn) }
 
     private fun matched(lines: List<TextLine>, work: Int): List<Dot> {
-        val words = identity(catalogue, work).filter { it.length >= 3 }
+        val words = (identity(catalogue, work) + seriesWords(catalogue, work))
+            .filter { it.length >= 3 }
         return lines.filter { line ->
             tokenize(line.text.replace(LETTER_GAP, "")).any { token ->
                 words.any { similarity(it, token) >= 0.75 }

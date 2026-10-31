@@ -48,7 +48,8 @@ and finds authors, series and ISBNs.
 <td width="33%" valign="top">
 
 ### 📷 Scan a cover
-Point your camera at a book. Shelf reads the title on your phone and finds it.
+Point your camera at a book. Shelf reads the title and series on your phone and
+finds it.
 Barcodes work too.
 
 </td>

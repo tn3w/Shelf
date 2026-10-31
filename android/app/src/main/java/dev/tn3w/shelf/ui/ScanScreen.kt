@@ -1,22 +1,28 @@
 package dev.tn3w.shelf.ui
 
 import android.Manifest.permission.CAMERA
+import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.graphics.Bitmap
+import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.graphics.RectF
+import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
+import android.media.Image
+import android.media.ImageReader
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.SystemClock
 import android.util.Size
+import android.view.Surface
+import android.view.TextureView
 import androidx.annotation.StringRes
-import androidx.camera.compose.CameraXViewfinder
-import androidx.camera.core.CameraSelector.DEFAULT_BACK_CAMERA
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.core.SurfaceRequest
-import androidx.camera.core.resolutionselector.AspectRatioStrategy
-import androidx.camera.core.resolutionselector.ResolutionSelector
-import androidx.camera.core.resolutionselector.ResolutionStrategy
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,7 +44,10 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
@@ -48,23 +57,12 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.flow.*
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.abs
 import kotlin.math.max
 
+private const val ANALYSIS_PIXELS = 1280 * 960
+private const val PREVIEW_LIMIT = 1920
 private const val TAP_MILLIS = 1000
-private val FOUR_BY_THREE = AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
-private val PREVIEW_SIZE = ResolutionSelector.Builder()
-    .setAspectRatioStrategy(FOUR_BY_THREE)
-    .build()
-private val ANALYSIS_SIZE = ResolutionSelector.Builder()
-    .setAspectRatioStrategy(FOUR_BY_THREE)
-    .setResolutionStrategy(
-        ResolutionStrategy(
-            Size(1280, 960),
-            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
-        ),
-    )
-    .build()
 
 class Marks(val dots: List<Dot>, val width: Float, val height: Float)
 
@@ -201,77 +199,35 @@ private fun CameraPreview(
     onFound: (Int, Bitmap?, Marks) -> Unit,
 ) {
     val context = LocalContext.current
-    val owner = LocalLifecycleOwner.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val haptics = LocalHapticFeedback.current
-    val found by rememberUpdatedState(onFound)
-    val shown by rememberUpdatedState(onShown)
-    var surface by remember { mutableStateOf<SurfaceRequest?>(null) }
-    val tappedAt = remember { AtomicLong() }
-    DisposableEffect(owner) {
-        if (ContextCompat.checkSelfPermission(context, CAMERA) != PERMISSION_GRANTED) {
-            onFailed(R.string.camera_denied)
-            return@DisposableEffect onDispose {}
-        }
-        val closed = AtomicBoolean(false)
-        val streaming = AtomicBoolean(false)
-        val worker = Executors.newSingleThreadExecutor()
-        val main = ContextCompat.getMainExecutor(context)
-        val analysis =
-            ImageAnalysis.Builder().setResolutionSelector(ANALYSIS_SIZE).build()
-        analysis.setAnalyzer(worker) { image ->
-            if (streaming.compareAndSet(false, true)) main.execute { shown() }
-            val tapped = SystemClock.uptimeMillis() - tappedAt.get() < TAP_MILLIS
-            val result = image.use { runCatching { recognize(it, analyze, tapped) } }
-            val (work, frame, marks) = result.getOrNull() ?: return@setAnalyzer
-            main.execute {
-                if (closed.compareAndSet(false, true)) found(work, frame, marks)
-            }
-        }
-        val preview = Preview.Builder().setResolutionSelector(PREVIEW_SIZE).build()
-        preview.setSurfaceProvider(main) { surface = it }
-        val provider = ProcessCameraProvider.getInstance(context)
-        provider.addListener({
-            if (closed.get()) return@addListener
-            runCatching {
-                val camera = provider.get()
-                camera.bindToLifecycle(owner, DEFAULT_BACK_CAMERA, preview, analysis)
-            }.onFailure { onFailed(R.string.camera_failed) }
-        }, main)
-        onDispose {
-            closed.set(true)
-            analysis.clearAnalyzer()
-            worker.shutdown()
-            if (provider.isDone) runCatching { provider.get().unbind(preview, analysis) }
+    val latest by rememberUpdatedState(onFound)
+    val view = remember { TextureView(context) }
+    val camera = remember {
+        Camera(context, view, analyze, onFailed, onShown) { work, frame, marks ->
+            latest(work, frame, marks)
         }
     }
-    val tap = Modifier.pointerInput(Unit) {
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) camera.open()
+            if (event == Lifecycle.Event.ON_PAUSE) camera.close()
+        }
+        lifecycle.addObserver(observer)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            camera.close()
+        }
+    }
+    val tap = Modifier.pointerInput(camera) {
         detectTapGestures {
             haptics.performHapticFeedback(HapticFeedbackType.ContextClick)
-            tappedAt.set(SystemClock.uptimeMillis())
+            camera.capture()
         }
     }
     Box(Modifier.fillMaxSize().then(tap)) {
-        surface?.let { CameraXViewfinder(it, Modifier.fillMaxSize()) }
+        AndroidView({ view }, Modifier.fillMaxSize())
     }
-}
-
-private fun recognize(
-    image: ImageProxy,
-    analyze: (Gray, Boolean) -> Step,
-    tapped: Boolean,
-): Triple<Int, Bitmap?, Marks>? {
-    val degrees = image.imageInfo.rotationDegrees
-    val frame = grayOf(image)
-    val step = analyze(frame, tapped)
-    val work = step.work ?: return null
-    val picture = runCatching { upright(image.toBitmap(), degrees) }.getOrNull()
-    return Triple(work, picture, upright(step.dots, frame, degrees))
-}
-
-private fun upright(bitmap: Bitmap, degrees: Int): Bitmap {
-    if (degrees == 0) return bitmap
-    val turn = Matrix().apply { postRotate(degrees.toFloat()) }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, turn, true)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -295,10 +251,11 @@ private fun ScanSheet(book: Book, onAgain: () -> Unit, onOpen: (Book, String) ->
     }
 }
 
-private fun grayOf(image: ImageProxy): Gray {
+private fun fourByThree(size: Size) = size.width * 3 == size.height * 4
+
+private fun grayOf(image: Image): Gray {
     val plane = image.planes[0]
     val bytes = ByteArray(plane.buffer.remaining()).also(plane.buffer::get)
-    plane.buffer.rewind()
     return Gray.of(bytes, image.width, image.height, plane.rowStride)
 }
 
@@ -315,4 +272,254 @@ private fun upright(dots: List<Dot>, frame: Gray, degrees: Int): Marks {
     }
     if (degrees % 180 == 0) return Marks(turned, width, height)
     return Marks(turned, height, width)
+}
+
+private val cameraHandler by lazy {
+    Handler(HandlerThread("camera").apply { start() }.looper)
+}
+
+private class Camera(
+    private val context: Context,
+    private val view: TextureView,
+    private val analyze: (Gray, Boolean) -> Step,
+    private val onFailed: (Int) -> Unit,
+    private val onShown: () -> Unit,
+    private val onFound: (Int, Bitmap?, Marks) -> Unit,
+) : TextureView.SurfaceTextureListener {
+    private val manager = context.getSystemService(CameraManager::class.java)
+    private val busy = AtomicBoolean(false)
+    private var device: CameraDevice? = null
+    private var reader: ImageReader? = null
+    private var surface: Surface? = null
+    private var worker = Executors.newSingleThreadExecutor()
+
+    @Volatile
+    private var running = false
+    private var degrees = 0
+    private var generation = 0
+    private var retried = false
+    private var shown = false
+
+    @Volatile
+    private var tappedAt = 0L
+
+    fun capture() {
+        tappedAt = SystemClock.uptimeMillis()
+    }
+
+    fun open() {
+        running = true
+        shown = false
+        if (!view.isAvailable) {
+            view.surfaceTextureListener = this
+            return
+        }
+        if (ContextCompat.checkSelfPermission(context, CAMERA) !=
+            PERMISSION_GRANTED
+        ) {
+            return onFailed(R.string.camera_denied)
+        }
+        try {
+            configure()
+        } catch (_: CameraAccessException) {
+            onFailed(R.string.camera_failed)
+        }
+    }
+
+    private fun configure() {
+        val id = manager.cameraIdList.firstOrNull {
+            manager.getCameraCharacteristics(it).get(CameraCharacteristics.LENS_FACING) ==
+                CameraCharacteristics.LENS_FACING_BACK
+        } ?: manager.cameraIdList.firstOrNull() ?: return
+        val characteristics = manager.getCameraCharacteristics(id)
+        val map =
+            characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                ?: return
+        val sensor = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+        degrees = (sensor - displayRotation() * 90 + 360) % 360
+        val previews = map.getOutputSizes(SurfaceTexture::class.java)
+        val preview = previews.filter { fourByThree(it) && it.width <= PREVIEW_LIMIT }
+            .maxByOrNull { it.width } ?: previews.first()
+        val analysis = map.getOutputSizes(ImageFormat.YUV_420_888).minBy {
+            abs(it.width * it.height - ANALYSIS_PIXELS) +
+                if (fourByThree(it)) 0 else 1_000_000
+        }
+        if (worker.isShutdown) worker = Executors.newSingleThreadExecutor()
+        view.surfaceTexture?.setDefaultBufferSize(preview.width, preview.height)
+        transform(preview)
+        cameraHandler.post { start(id, analysis) }
+    }
+
+    fun close() {
+        running = false
+        retried = false
+        worker.shutdown()
+        cameraHandler.post(::stop)
+    }
+
+    private fun start(id: String, analysis: Size) {
+        reader =
+            ImageReader.newInstance(
+                analysis.width, analysis.height, ImageFormat.YUV_420_888, 2,
+            )
+                .apply { setOnImageAvailableListener(::onImage, cameraHandler) }
+        val callback = DeviceCallback(++generation)
+        try {
+            manager.openCamera(id, callback, cameraHandler)
+        } catch (_: SecurityException) {
+            view.post { onFailed(R.string.camera_denied) }
+        } catch (_: CameraAccessException) {
+            fail(callback.attempt)
+        }
+    }
+
+    private fun fail(attempt: Int) {
+        if (attempt != generation) return
+        stop()
+        view.post {
+            if (!running) return@post
+            if (retried) return@post onFailed(R.string.camera_failed)
+            retried = true
+            open()
+        }
+    }
+
+    private fun stop() {
+        generation++
+        device?.close()
+        reader?.close()
+        surface?.release()
+        device = null
+        reader = null
+        surface = null
+    }
+
+    inner class DeviceCallback(val attempt: Int) : CameraDevice.StateCallback() {
+        override fun onOpened(camera: CameraDevice) {
+            if (attempt != generation) return camera.close()
+            device = camera
+            val preview = Surface(view.surfaceTexture).also { surface = it }
+            val surfaces = listOfNotNull(preview, reader?.surface)
+
+            val callback = SessionCallback(camera, surfaces)
+
+            @Suppress("DEPRECATION")
+            camera.createCaptureSession(surfaces, callback, cameraHandler)
+        }
+
+        override fun onDisconnected(camera: CameraDevice) = lost(camera)
+
+        override fun onError(camera: CameraDevice, error: Int) = lost(camera)
+
+        private fun lost(camera: CameraDevice) {
+            camera.close()
+            fail(attempt)
+        }
+    }
+
+    private class SessionCallback(
+        private val camera: CameraDevice,
+        private val surfaces: List<Surface>,
+    ) : CameraCaptureSession.StateCallback() {
+        override fun onConfigured(session: CameraCaptureSession) {
+            val template = CameraDevice.TEMPLATE_PREVIEW
+            val request = camera.createCaptureRequest(template).apply {
+                surfaces.forEach(::addTarget)
+                set(
+                    CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE,
+                )
+            }
+            runCatching { session.setRepeatingRequest(request.build(), null, null) }
+        }
+
+        override fun onConfigureFailed(session: CameraCaptureSession) = session.close()
+    }
+
+    private fun onImage(source: ImageReader) {
+        val image = runCatching { source.acquireLatestImage() }.getOrNull() ?: return
+        if (!busy.compareAndSet(false, true)) return image.close()
+        val frame = runCatching { image.use(::grayOf) }.getOrNull()
+        if (frame == null) return busy.set(false)
+        runCatching {
+            worker.execute {
+                if (running) {
+                    val tapped = SystemClock.uptimeMillis() - tappedAt < TAP_MILLIS
+                    val step = analyze(frame, tapped)
+                    val work = step.work
+                    if (work != null) {
+                        val marks = upright(step.dots, frame, degrees)
+                        view.post { finish(work, marks) }
+                    }
+                }
+                busy.set(false)
+            }
+        }.onFailure { busy.set(false) }
+    }
+
+    private fun finish(work: Int, marks: Marks) {
+        if (!running) return
+        val frame = snapshot()
+        close()
+        onFound(work, frame, marks)
+    }
+
+    private fun snapshot(): Bitmap? {
+        val raw = view.bitmap ?: return null
+        val frame = Bitmap.createBitmap(raw.width, raw.height, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(frame).drawBitmap(raw, view.getTransform(null), null)
+        raw.recycle()
+        return frame
+    }
+
+    private fun displayRotation() = view.display?.rotation ?: Surface.ROTATION_0
+
+    private fun transform(preview: Size) {
+        val width = view.width.toFloat()
+        val height = view.height.toFloat()
+        if (width == 0f || height == 0f) return
+        val rotation = displayRotation()
+        val centerX = width / 2
+        val centerY = height / 2
+        val matrix = Matrix()
+        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
+            val buffer = RectF(0f, 0f, preview.height.toFloat(), preview.width.toFloat())
+            buffer.offset(centerX - buffer.centerX(), centerY - buffer.centerY())
+            val screen = RectF(0f, 0f, width, height)
+            matrix.setRectToRect(screen, buffer, Matrix.ScaleToFit.FILL)
+            val scale = max(height / preview.height, width / preview.width)
+            matrix.postScale(scale, scale, centerX, centerY)
+            matrix.postRotate(90f * (rotation - 2), centerX, centerY)
+        } else {
+            val content = preview.height.toFloat() / preview.width
+            val screen = width / height
+            val stretch = content / screen
+            matrix.setScale(max(stretch, 1f), max(1 / stretch, 1f), centerX, centerY)
+            val turn = if (rotation == Surface.ROTATION_180) 180f else 0f
+            matrix.postRotate(turn, centerX, centerY)
+        }
+        view.setTransform(matrix)
+    }
+
+    override fun onSurfaceTextureAvailable(
+        texture: SurfaceTexture,
+        width: Int,
+        height: Int,
+    ) {
+        if (running) open()
+    }
+
+    override fun onSurfaceTextureSizeChanged(
+        texture: SurfaceTexture,
+        width: Int,
+        height: Int,
+    ) = Unit
+
+    override fun onSurfaceTextureDestroyed(texture: SurfaceTexture) = true
+
+    override fun onSurfaceTextureUpdated(texture: SurfaceTexture) {
+        if (shown) return
+        shown = true
+        onShown()
+    }
 }
