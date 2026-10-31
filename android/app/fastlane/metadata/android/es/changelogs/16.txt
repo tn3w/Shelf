@@ -1,6 +1,6 @@
-• Catálogos en sueco, polaco, checo, coreano y finés de sus bibliotecas nacionales; app también en estos idiomas y ruso
-• El catálogo francés crece a más de 600 000 libros con la Biblioteca Nacional de Francia
+• Catálogos en sueco, polaco, checo, coreano y finés; app también en estos idiomas y ruso
+• El catálogo francés crece a más de 600 000 libros
 • Selector de idioma de catálogos; app más ligera, solo se incluye inglés
 • La búsqueda entiende letras polacas, checas y coreanas
 • Modo e-ink y brillo deslizando en el lector
-• Copia diaria automática en una carpeta que elijas, con las 7 más recientes
+• Copia diaria en una carpeta que elijas, con las 7 más recientes
