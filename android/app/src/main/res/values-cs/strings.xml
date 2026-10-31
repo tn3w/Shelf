@@ -58,7 +58,7 @@
     <string name="more_by">Další od: %s</string>
     <string name="no_results">Žádné výsledky.</string>
     <string name="online_covers">Načítat obálky</string>
-    <string name="online_covers_hint">Stahovat obálky z Open Library, DNB, DIGAR a Bookbites.</string>
+    <string name="online_covers_hint">Stahovat obálky z Open Library, DNB, DIGAR a Bookbites, fotografie autorů z Open Library.</string>
     <string name="open_failed">Tento soubor nelze otevřít.</string>
     <string name="page_failed">Tuto stránku nelze zobrazit.</string>
     <string name="open_library_license">Licence dat Open Library</string>

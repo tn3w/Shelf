@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Acerca de</string>
     <string name="about_book">Sobre este libro</string>
@@ -57,7 +58,7 @@
     <string name="more_by">Más de %s</string>
     <string name="no_results">Sin resultados.</string>
     <string name="online_covers">Cargar portadas</string>
-    <string name="online_covers_hint">Descargar portadas de Open Library, la DNB, DIGAR y Bookbites.</string>
+    <string name="online_covers_hint">Descargar portadas de Open Library, la DNB, DIGAR y Bookbites, y fotos de autores de Open Library.</string>
     <string name="open_failed">No se pudo abrir el archivo.</string>
     <string name="page_failed">No se pudo mostrar esta página.</string>
     <string name="open_library_license">Licencia de datos de Open Library</string>
