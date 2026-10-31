@@ -58,7 +58,7 @@
     <string name="more_by">Lisää tekijältä %s</string>
     <string name="no_results">Ei tuloksia.</string>
     <string name="online_covers">Lataa kannet</string>
-    <string name="online_covers_hint">Hae kansikuvat Open Librarysta, DNB:stä, DIGARista ja Bookbitesista.</string>
+    <string name="online_covers_hint">Hae kansikuvat Open Librarysta, DNB:stä, DIGARista ja Bookbitesista, kirjailijakuvat Open Librarysta.</string>
     <string name="open_failed">Tiedostoa ei voitu avata.</string>
     <string name="page_failed">Sivua ei voitu näyttää.</string>
     <string name="open_library_license">Open Libraryn tietojen lisenssi</string>
