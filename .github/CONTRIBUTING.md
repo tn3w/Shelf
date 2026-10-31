@@ -274,6 +274,10 @@ In-app update downloads `shelf-update.apk` (smaller). Before install, bundled pa
 start. `shelf-fdroid.apk` is the F-Droid recipe's `Binaries:` reference: F-Droid
 rebuilds it from source and ships it only if the builds match.
 
+Size: only app locales and compressed native libs ship. `inter.ttf` is Inter at `opsz`
+14, `wght` 400–800, without private-use glyphs (`fonttools varLib.instancer`,
+`pyftsubset`).
+
 Format with `ktlint -F "android/app/src/**/*.kt"`.
 
 Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, app installed, `ffmpeg`):

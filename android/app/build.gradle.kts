@@ -15,6 +15,11 @@ val catalogueFormat = 2
 val bundledLanguage = "en"
 val bundledPacks = listOf("core", "ranks")
 val localCatalogue = providers.gradleProperty("localCatalogue")
+val appLocales = file("src/main/res").list().orEmpty()
+    .filter { it.matches(Regex("values-[a-z]{2,3}(-r[A-Z]{2})?")) }
+    .map { it.removePrefix("values-") }
+    .plus(bundledLanguage)
+    .sorted()
 
 data class Distribution(
     val catalogue: Boolean,
@@ -90,14 +95,22 @@ android {
     androidResources {
         noCompress += "bin"
         generateLocaleConfig = true
+        localeFilters += appLocales
     }
 
     packaging {
         jniLibs {
+            useLegacyPackaging = true
             keepDebugSymbols += "**/*.so"
         }
         resources {
-            excludes += "org/apache/commons/codec/**"
+            excludes += listOf(
+                "org/apache/commons/codec/**",
+                "kotlin/**",
+                "DebugProbesKt.bin",
+                "META-INF/*.version",
+                "META-INF/version-control-info.textproto",
+            )
         }
     }
 
