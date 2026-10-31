@@ -1,4 +1,4 @@
-use crate::catalog::{Entry, MAX_SERIES_MEMBERS, is_mostly_latin, series_key, tokenize};
+use crate::catalog::{Entry, MAX_SERIES_MEMBERS, is_mostly_latin, series_key, title_key, tokenize};
 use crate::dumps::Book;
 use crate::tags;
 use crate::{Built, LANGUAGES};
@@ -27,6 +27,10 @@ const MAX_SERIES_NAME: usize = 80;
 
 const VOLUME_MARKERS: &[&str] = &[
     "no", "nos", "v", "vol", "volume", "bk", "book", "part", "pt", "band", "tome", "issue",
+];
+
+const SERIES_MARKERS: &[&str] = &[
+    "seria", "seeria", "nivel", "level", "serie", "série", "bk", "bk.", "vol", "vol.",
 ];
 
 const GENERIC_SERIES: &[&str] = &[
@@ -106,13 +110,45 @@ fn strip_volume_suffix(name: &str) -> &str {
     }
 }
 
+fn strip_marked_number(name: &str) -> &str {
+    let tail = name
+        .rsplit_once(' ')
+        .filter(|(_, number)| number.parse::<u16>().is_ok());
+    let marked = tail.and_then(|(rest, _)| rest.rsplit_once(' '));
+    match marked {
+        Some((head, marker)) if SERIES_MARKERS.contains(&marker.to_lowercase().as_str()) => head,
+        _ => name,
+    }
+}
+
+fn without_dashes(name: &str) -> &str {
+    match name.split_once("--") {
+        Some((head, tail)) if tail.trim().is_empty() || position_of(tail).is_some() => head,
+        _ => name,
+    }
+}
+
+fn without_open_bracket(mut name: &str) -> &str {
+    while name.matches('(').count() > name.matches(')').count() {
+        name = name[..name.rfind('(').unwrap_or(0)].trim_end();
+    }
+    name
+}
+
 fn clean_series_name(raw: &str) -> Option<String> {
-    let name = tidy(strip_volume_suffix(tidy(raw)));
+    let name = tidy(without_dashes(tidy(raw)));
+    let name = tidy(strip_marked_number(strip_volume_suffix(
+        without_open_bracket(name),
+    )));
+    let name = name.strip_suffix("-sarja").unwrap_or(name);
+    let name = name.trim_end_matches('-').trim_end();
     let lowered = name.to_ascii_lowercase();
     let plain = (MIN_SERIES_NAME..=MAX_SERIES_NAME).contains(&name.len())
         && is_mostly_latin(name)
         && name.chars().any(char::is_alphabetic)
         && position_of(name).is_none()
+        && !name.contains(" / ")
+        && !lowered.contains("bestseller")
         && !GENERIC_SERIES.contains(&lowered.as_str());
     plain.then(|| name.to_string())
 }
@@ -315,7 +351,7 @@ fn dominant_author(chosen: &[Chosen], members: &[usize]) -> Option<u32> {
     (largest.len() * 2 > members.len()).then_some(largest[0])
 }
 
-fn reading_order(chosen: &[Chosen], mut members: Vec<usize>) -> Vec<usize> {
+fn reading_order(chosen: &[Chosen], mut members: Vec<usize>) -> (Vec<usize>, bool) {
     let mut positions: Vec<u16> = members
         .iter()
         .map(|&index| chosen[index].entry.series_position)
@@ -323,16 +359,31 @@ fn reading_order(chosen: &[Chosen], mut members: Vec<usize>) -> Vec<usize> {
     positions.sort_unstable();
     positions.dedup();
     let numbered = positions.len() == members.len() && !positions.contains(&0);
-    members.sort_by_key(|&index| {
-        let (entry, book) = (chosen[index].entry, chosen[index].book);
-        let lead = if numbered {
-            entry.series_position
-        } else {
-            book.year
-        };
-        (lead, index)
-    });
+    let volume = |index: usize| chosen[index].entry.series_position;
+    let year = |index: usize| chosen[index].book.year;
+    let anchor = |index: usize| {
+        let earlier = members
+            .iter()
+            .filter(|&&other| volume(other) > 0 && year(other) <= year(index));
+        earlier.map(|&other| volume(other)).max().unwrap_or(0)
+    };
+    let mut keyed: Vec<((u16, bool, u16), usize)> = members
+        .iter()
+        .map(|&index| match volume(index) {
+            0 => ((anchor(index), true, year(index)), index),
+            known => ((known, false, year(index)), index),
+        })
+        .collect();
+    keyed.sort_unstable();
+    members = keyed.into_iter().map(|(_, index)| index).collect();
+    (members, numbered)
+}
+
+fn is_single_title(chosen: &[Chosen], members: &[usize], name: &str) -> bool {
+    let key = series_key(name);
     members
+        .iter()
+        .all(|&index| title_key(&chosen[index].entry.title, &[]) == key)
 }
 
 fn group_series(chosen: &mut [Chosen]) -> Vec<Series> {
@@ -353,11 +404,15 @@ fn group_series(chosen: &mut [Chosen]) -> Vec<Series> {
             .into_iter()
             .filter(|&index| chosen[index].book.authors.first() == Some(&author))
             .collect();
-        kept.truncate(MAX_SERIES_MEMBERS);
+        let numbered = |index: &usize| chosen[*index].entry.series_position > 0;
+        if kept.iter().filter(|index| numbered(index)).count() * 2 > kept.len() {
+            kept.retain(numbered);
+        }
         if kept.len() < MIN_SERIES_MEMBERS {
             continue;
         }
-        let ordered = reading_order(chosen, kept);
+        let (mut ordered, numbered) = reading_order(chosen, kept);
+        ordered.truncate(MAX_SERIES_MEMBERS);
         let mut spellings: Vec<&str> = ordered
             .iter()
             .map(|&index| chosen[index].entry.series.as_str())
@@ -367,6 +422,9 @@ fn group_series(chosen: &mut [Chosen]) -> Vec<Series> {
             .chunk_by(|a, b| a == b)
             .max_by_key(|same| same.len())
             .expect("members")[0];
+        if !numbered && is_single_title(chosen, &ordered, name) {
+            continue;
+        }
         let members = ordered
             .iter()
             .map(|&index| chosen[index].book.work)
@@ -375,8 +433,19 @@ fn group_series(chosen: &mut [Chosen]) -> Vec<Series> {
             name: name.to_string(),
             members,
         });
+        let volumes: Vec<u16> = ordered
+            .iter()
+            .map(|&index| chosen[index].entry.series_position)
+            .filter(|&volume| volume > 0)
+            .collect();
+        let distinct = volumes
+            .iter()
+            .all(|volume| volumes.iter().filter(|other| *other == volume).count() == 1);
         for (order, &index) in ordered.iter().enumerate() {
-            chosen[index].series = Some((series.len() - 1, order as u16 + 1));
+            let volume = chosen[index].entry.series_position;
+            let known = distinct && !volumes.is_empty();
+            let order = if known { volume } else { order as u16 + 1 };
+            chosen[index].series = Some((series.len() - 1, order));
         }
     }
     series
@@ -450,6 +519,64 @@ pub fn write_manifest(
 mod tests {
     use super::*;
 
+    #[test]
+    fn unconfirmed_members_left_out_of_numbered_series() {
+        let entry = |series_position| {
+            let mut entry = Entry::default();
+            entry.series = "Discworld".to_string();
+            entry.series_position = series_position;
+            entry
+        };
+        let book = |work| Book {
+            work,
+            authors: vec![7],
+            ..Book::default()
+        };
+        let entries = [entry(1), entry(2), entry(0)];
+        let books = [book(1), book(2), book(3)];
+        let mut chosen: Vec<Chosen> = entries
+            .iter()
+            .zip(&books)
+            .map(|(entry, book)| Chosen {
+                entry,
+                book,
+                pack: CORE,
+                series: None,
+            })
+            .collect();
+        let series = group_series(&mut chosen);
+        assert_eq!(series[0].members, [1, 2]);
+        assert!(chosen[2].series.is_none());
+    }
+
+    #[test]
+    fn unnumbered_members_keep_numbered_order() {
+        let entry = |series_position| {
+            let mut entry = Entry::default();
+            entry.series_position = series_position;
+            entry
+        };
+        let book = |year| Book {
+            year,
+            ..Book::default()
+        };
+        let entries = [entry(1), entry(2), entry(0), entry(3)];
+        let books = [book(1990), book(1991), book(1991), book(1992)];
+        let chosen: Vec<Chosen> = entries
+            .iter()
+            .zip(&books)
+            .map(|(entry, book)| Chosen {
+                entry,
+                book,
+                pack: CORE,
+                series: None,
+            })
+            .collect();
+        let (ordered, numbered) = reading_order(&chosen, vec![3, 2, 1, 0]);
+        assert_eq!(ordered, [0, 1, 2, 3]);
+        assert!(!numbered);
+    }
+
     fn saved(state: &State, name: &str) -> (State, Vec<u8>) {
         let file = format!("{name}-{}.bin", std::process::id());
         let path = std::env::temp_dir().join(file);
@@ -484,5 +611,27 @@ mod tests {
         assert_eq!(loaded.works[0].work, 5);
         assert!(aliased_bytes.starts_with(&plain_bytes));
         assert_eq!(aliased_bytes.len(), plain_bytes.len() + 4 + 4 + 8);
+    }
+
+    #[test]
+    fn series_names_cleaned() {
+        for (raw, expected) in [
+            ("La casa del árbol --", Some("La casa del árbol")),
+            (
+                "Elige tu propia aventura -- 2",
+                Some("Elige tu propia aventura"),
+            ),
+            ("Oxford reading tree -- bk.5", Some("Oxford reading tree")),
+            ("Pisma zebrane. Seria 2", Some("Pisma zebrane")),
+            ("The Black Jewels (", Some("The Black Jewels")),
+            ("Teosed / Rudolf Sirge", None),
+            ("AnWel Trilogie", Some("AnWel Trilogie")),
+            ("Harry Potter -sarja", Some("Harry Potter")),
+            ("Harry Potter-sarja", Some("Harry Potter")),
+            ("New York Times'i bestseller nr. 1", None),
+        ] {
+            let name = clean_series_name(raw);
+            assert_eq!(name.as_deref(), expected, "{raw}");
+        }
     }
 }

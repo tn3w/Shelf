@@ -58,7 +58,7 @@ fn usage() -> ! {
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
          [--base-url <url>] [--languages en,de,...] [--dump <dir>] \
-         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf=<file>[,<file>]]"
+         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf|bnb=<file>[,<file>]]"
     );
     std::process::exit(2)
 }
@@ -437,6 +437,11 @@ fn dump_works(job: &Job, placed: &[Placed]) {
                 series,
                 work.year.to_string(),
                 work.isbns.len().to_string(),
+                work.tags
+                    .iter()
+                    .map(|&tag| tags::slug(tag))
+                    .collect::<Vec<_>>()
+                    .join(","),
             ]
             .join("\t")
         })

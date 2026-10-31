@@ -132,6 +132,7 @@ pub enum Source {
     Nlk,
     Fennica,
     Bnf,
+    Bnb,
 }
 
 pub const DNB_COVER: u8 = 1;
@@ -150,6 +151,7 @@ impl Source {
             ("nlk", Source::Nlk),
             ("fennica", Source::Fennica),
             ("bnf", Source::Bnf),
+            ("bnb", Source::Bnb),
         ];
         let found = all.iter().find(|(known, _)| *known == name);
         found.map(|&(_, source)| source)
@@ -174,6 +176,7 @@ impl Source {
             Source::Nlk => "ko",
             Source::Fennica => "fi",
             Source::Bnf => "fr",
+            Source::Bnb => "en",
         };
         crate::language_index(code)
     }
@@ -185,7 +188,7 @@ impl Source {
             Source::Nkp => b"</record>",
             Source::Bnp | Source::Bnf => b"\x1d",
             Source::Nlk => linked::NLK_SEPARATOR,
-            Source::Libris => b"\n",
+            Source::Libris | Source::Bnb => b"\n",
         }
     }
 
@@ -199,7 +202,7 @@ impl Source {
             Source::Bnp => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNP),
             Source::Bnf => marc::bnf_record(&Marc::binary(bytes)?),
             Source::Nlk => linked::nlk_record(text()?),
-            Source::Libris => None,
+            Source::Libris | Source::Bnb => None,
         }
     }
 
@@ -350,15 +353,101 @@ fn record_id(identifier: &str) -> Option<u32> {
     (id > 0 && id < MAX_DNB_ID).then_some(id)
 }
 
-pub fn clean(text: &str) -> String {
-    let unescaped = catalog::ENTITIES.iter().fold(
-        text.replace('@', "").replace("&amp;amp;", "&amp;"),
-        |text, (entity, character)| text.replace(entity, character),
-    );
-    unescaped.nfc().collect::<String>().trim().to_string()
+const WINDOWS_1252: [(char, u8); 27] = [
+    ('€', 0x80),
+    ('‚', 0x82),
+    ('ƒ', 0x83),
+    ('„', 0x84),
+    ('…', 0x85),
+    ('†', 0x86),
+    ('‡', 0x87),
+    ('ˆ', 0x88),
+    ('‰', 0x89),
+    ('Š', 0x8a),
+    ('‹', 0x8b),
+    ('Œ', 0x8c),
+    ('Ž', 0x8e),
+    ('‘', 0x91),
+    ('’', 0x92),
+    ('“', 0x93),
+    ('”', 0x94),
+    ('•', 0x95),
+    ('–', 0x96),
+    ('—', 0x97),
+    ('˜', 0x98),
+    ('™', 0x99),
+    ('š', 0x9a),
+    ('›', 0x9b),
+    ('œ', 0x9c),
+    ('ž', 0x9e),
+    ('Ÿ', 0x9f),
+];
+const MOJIBAKE_LEADS: [char; 4] = ['Ã', 'Â', 'Å', 'â'];
+const INVISIBLE: [char; 6] = [
+    '\u{200b}', '\u{200c}', '\u{200d}', '\u{2060}', '\u{feff}', '\u{ad}',
+];
+
+pub fn unmojibaked(text: &str) -> String {
+    if !text.contains(MOJIBAKE_LEADS) {
+        return text.to_string();
+    }
+    let byte = |character: char| {
+        let latin = u8::try_from(u32::from(character)).ok();
+        latin.or_else(|| {
+            WINDOWS_1252
+                .iter()
+                .find(|pair| pair.0 == character)
+                .map(|p| p.1)
+        })
+    };
+    let bytes: Option<Vec<u8>> = text.chars().map(byte).collect();
+    let decoded = bytes.and_then(|bytes| String::from_utf8(bytes).ok());
+    decoded.unwrap_or_else(|| text.to_string())
 }
 
-fn capitalized(text: &str) -> String {
+fn without_garbage(text: &str) -> String {
+    let text = text.replace("\u{1b}p0", "").replace("\u{1b}s", "");
+    let kept = text
+        .chars()
+        .filter(|character| !INVISIBLE.contains(character) && *character != '\u{fffd}')
+        .filter(|character| !character.is_control() || character.is_whitespace());
+    kept.collect()
+}
+
+fn numeric_entities(text: &str) -> String {
+    let mut decoded = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find("&#") {
+        let digits = &rest[start + 2..];
+        let end = digits.find(';').filter(|&end| (1..=7).contains(&end));
+        let code = end.and_then(|end| digits[..end].parse::<u32>().ok());
+        let Some((code, end)) = code.and_then(char::from_u32).zip(end) else {
+            decoded.push_str(&rest[..start + 2]);
+            rest = digits;
+            continue;
+        };
+        decoded.push_str(&rest[..start]);
+        decoded.push(code);
+        rest = &digits[end + 1..];
+    }
+    decoded + rest
+}
+
+pub fn sanitized(text: &str) -> String {
+    let unescaped = catalog::ENTITIES.iter().fold(
+        numeric_entities(&unmojibaked(text)).replace("&amp;amp;", "&amp;"),
+        |text, (entity, character)| text.replace(entity, character),
+    );
+    let garbageless = without_garbage(&unescaped);
+    let words: Vec<&str> = garbageless.split_whitespace().collect();
+    words.join(" ").nfc().collect()
+}
+
+pub fn clean(text: &str) -> String {
+    sanitized(&text.replace('@', "")).trim().to_string()
+}
+
+pub fn capitalized(text: &str) -> String {
     let mut characters = text.chars();
     characters.next().map_or_else(String::new, |first| {
         first.to_uppercase().chain(characters).collect()
@@ -479,7 +568,205 @@ pub fn author_name(statement: &str) -> String {
     let name = clean(first.trim_matches(['[', ']', ' ', '.']));
     let role = ROLES.contains(&name.to_lowercase().as_str());
     let usable = name.starts_with(char::is_uppercase) && name.len() <= MAX_NAME_BYTES && !role;
-    if usable { name } else { String::new() }
+    if usable {
+        normalized_name(&name)
+    } else {
+        String::new()
+    }
+}
+
+const AUTHOR_ROLES: [&str; 8] = [
+    "narrator",
+    "illustrator",
+    "translator",
+    "editor",
+    "author",
+    "ed.",
+    "eds.",
+    "trans.",
+];
+const LEGAL_SUFFIXES: [&str; 6] = ["ltd", "ltd.", "inc", "inc.", "s.a.", "gmbh"];
+const NAME_SUFFIXES: [&str; 7] = ["jr", "sr", "ii", "iii", "iv", "esq", "phd"];
+const NAME_PARTICLES: [&str; 14] = [
+    "von", "van", "de", "der", "den", "da", "di", "du", "la", "le", "del", "zu", "af", "bin",
+];
+const NOT_PEOPLE: [&str; 13] = [
+    "books",
+    "publishing",
+    "publishers",
+    "publisher",
+    "verlag",
+    "förlag",
+    "forlag",
+    "editorial",
+    "edizioni",
+    "éditions",
+    "editions",
+    "kidkiddos",
+    "time-life",
+];
+const NOT_NAMES: [&str; 17] = [
+    "various",
+    "anonymous",
+    "unknown",
+    "none",
+    "n/a",
+    "dr",
+    "text",
+    "anon",
+    "anonym",
+    "germany",
+    "sweden",
+    "spain",
+    "great britain",
+    "france",
+    "poland",
+    "united states",
+    "czech republic",
+];
+const ADDRESS_MARKS: [&str; 6] = ["www.", "http", ".com", ".org", ".net", "@"];
+const TRANSLITERATION_MARKS: [char; 5] = ['\u{2b9}', '\u{2ba}', '\u{360}', '\u{361}', '\u{362}'];
+
+fn without_brackets(text: &str) -> String {
+    let mut depth = 0usize;
+    let mut kept = String::with_capacity(text.len());
+    for character in text.chars() {
+        match character {
+            '(' | '[' => depth += 1,
+            ')' | ']' => depth = depth.saturating_sub(1),
+            _ if depth == 0 => kept.push(character),
+            _ => {}
+        }
+    }
+    kept
+}
+
+fn is_word(word: &str, wanted: &str) -> bool {
+    word.trim_end_matches('.').eq_ignore_ascii_case(wanted)
+}
+
+fn without_et_al(words: Vec<&str>) -> Vec<&str> {
+    let mut kept = Vec::with_capacity(words.len());
+    let mut index = 0;
+    while index < words.len() {
+        let word = words[index];
+        let pair = is_word(word, "et") && words.get(index + 1).is_some_and(|w| is_word(w, "al"));
+        index += if pair { 2 } else { 1 };
+        if !pair && !is_word(word, "m.fl") {
+            kept.push(word);
+        }
+    }
+    kept
+}
+
+fn cased(word: &str, all_shouted: bool) -> String {
+    let lowered = word.to_lowercase();
+    if NAME_PARTICLES.contains(&lowered.as_str()) {
+        return lowered;
+    }
+    let first_upper = word.chars().next().is_some_and(char::is_uppercase);
+    if !all_shouted && first_upper {
+        return word.to_string();
+    }
+    lowered
+        .split('-')
+        .map(capitalized)
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+fn inverted(name: &str) -> String {
+    let Some((last, first)) = name.split_once(", ") else {
+        return name.to_string();
+    };
+    let suffix = NAME_SUFFIXES.contains(&first.trim_end_matches('.').to_lowercase().as_str());
+    let plausible = last.split_whitespace().count() <= 3 && first.split_whitespace().count() <= 4;
+    if first.contains(',') || suffix || !plausible {
+        return name.to_string();
+    }
+    format!("{first} {last}")
+}
+
+pub type SpellingQuality = (Reverse<usize>, usize);
+
+pub fn spelling_quality(name: &str) -> SpellingQuality {
+    let flaws = name.split_whitespace().filter(|word| {
+        let letters: Vec<char> = word.chars().filter(|c| c.is_alphabetic()).collect();
+        let capitals = letters.iter().filter(|c| c.is_uppercase()).count();
+        let shouted = letters.len() > 1 && capitals == letters.len() || capitals > 2;
+        let doubled = matches!(letters.as_slice(), [_, second, third, ..]
+            if second.is_uppercase() && third.is_lowercase());
+        shouted || doubled || letters.len() > 2 && word.ends_with('.')
+    });
+    let accented = name
+        .chars()
+        .filter(|c| c.is_alphabetic() && !c.is_ascii() || *c == '\'')
+        .count();
+    (Reverse(flaws.count()), accented)
+}
+
+pub fn normalized_name(raw: &str) -> String {
+    let transliterated: String = clean(raw)
+        .chars()
+        .filter(|character| !TRANSLITERATION_MARKS.contains(character))
+        .map(|character| match character {
+            'ĭ' => 'i',
+            'Ĭ' => 'I',
+            other => other,
+        })
+        .collect();
+    let head = transliterated.split(';').next().unwrap_or_default();
+    let head = without_brackets(&head.replace("...", " "));
+    let words = head
+        .split_whitespace()
+        .filter(|word| !word.chars().any(|character| character.is_ascii_digit()))
+        .collect();
+    let mut words = without_et_al(words);
+    while let Some(last) = words.last() {
+        let lowered = last.trim_end_matches(',').to_lowercase();
+        if !AUTHOR_ROLES.contains(&lowered.as_str()) && !LEGAL_SUFFIXES.contains(&lowered.as_str())
+        {
+            break;
+        }
+        words.pop();
+    }
+    let joined = words.join(" ");
+    let name = joined.trim_matches(|c: char| !c.is_alphanumeric() && !".'".contains(c));
+    let last_word = name.rsplit(' ').next().unwrap_or_default();
+    let abbreviated =
+        last_word.len() <= 3 || NAME_SUFFIXES.contains(&last_word.trim_end_matches('.'));
+    let name = if abbreviated {
+        name
+    } else {
+        name.trim_end_matches('.')
+    };
+    let name = inverted(name);
+    let letters = name.chars().filter(|character| character.is_alphabetic());
+    let (total, shouted) = letters.fold((0, 0), |(total, shouted), character| {
+        (total + 1, shouted + usize::from(character.is_uppercase()))
+    });
+    let lowered = name.to_lowercase();
+    let lowered = lowered.trim_matches(['(', ')', '.']);
+    let minimum = if name.is_ascii() { 3 } else { 2 };
+    let rejected = total < minimum
+        || NOT_NAMES.contains(&lowered)
+        || ADDRESS_MARKS.iter().any(|mark| lowered.contains(mark))
+        || lowered
+            .split_whitespace()
+            .any(|word| NOT_PEOPLE.contains(&word))
+        || name.len() > MAX_NAME_BYTES;
+    if rejected {
+        return String::new();
+    }
+    let uniform = total > 3 && (shouted == total || shouted == 0);
+    if !uniform {
+        return name;
+    }
+    let words: Vec<String> = name
+        .split(' ')
+        .map(|word| cased(word, shouted == total))
+        .collect();
+    words.join(" ")
 }
 
 pub fn hash(parts: &[&[u8]]) -> u64 {
@@ -902,7 +1189,7 @@ fn drop_publisher_series(records: &mut [Record]) {
     }
 }
 
-fn most_common<T: Ord + Clone>(values: impl Iterator<Item = T>) -> Option<T> {
+pub fn most_common<T: Ord + Clone>(values: impl Iterator<Item = T>) -> Option<T> {
     let mut sorted: Vec<T> = values.collect();
     sorted.sort();
     let runs = sorted.chunk_by(|left, right| left == right);
@@ -933,6 +1220,7 @@ fn load_source(source: Source, location: &str) -> Vec<Record> {
     let started = Instant::now();
     let records = match source {
         Source::Libris => linked::libris_records(location),
+        Source::Bnb => linked::bnb_records(location),
         _ => {
             let mut records = Vec::new();
             let reader = dumps::open_location(location, source.separator());
@@ -1149,6 +1437,16 @@ impl Library {
         most_common(named.map(|record| record.series.as_str())).unwrap_or_default()
     }
 
+    fn any_series(&self, group: usize) -> &str {
+        let named = self
+            .members(group)
+            .filter(|record| !record.series.is_empty());
+        let numbered = Some(self.series(group)).filter(|series| !series.is_empty());
+        numbered
+            .or_else(|| most_common(named.map(|record| record.series.as_str())))
+            .unwrap_or_default()
+    }
+
     fn title(&self, group: usize) -> String {
         let series = self.series(group);
         let titles: Vec<String> = self
@@ -1324,6 +1622,12 @@ impl Library {
     }
 
     fn orphan(&self, group: usize, work: u32, author: u32) -> Option<Book> {
+        if self
+            .members(group)
+            .all(|record| record.source == Source::Bnb)
+        {
+            return None;
+        }
         let title = self.title(group);
         if title.is_empty() || catalog::is_bad_title(&title) {
             return None;
@@ -1428,8 +1732,15 @@ impl Library {
     fn index(&self, placed: &[Placed], titles: &mut Titles, isbns: &mut Isbns) {
         let named: HashSet<(u32, usize)> = placed
             .iter()
-            .map(|placed| (placed.work, self.languages[placed.group]))
-            .filter(|&(work, language)| titles.has_local_title(work, language))
+            .map(|placed| {
+                (
+                    placed.work,
+                    self.languages[placed.group],
+                    self.any_series(placed.group),
+                )
+            })
+            .filter(|&(work, language, series)| titles.has_local_title(work, language, series))
+            .map(|(work, language, _)| (work, language))
             .collect();
         let mut rows = Vec::new();
         for &Placed { work, group } in placed {
@@ -2290,6 +2601,147 @@ mod tests {
         assert_eq!(kept, ["Hannibal", "Ivanhoe"]);
     }
 
+    fn entries_of(
+        books: Vec<Book>,
+        titles: &[(u32, usize, &str, (&str, u16))],
+    ) -> Vec<catalog::Entry> {
+        let mut authors = Authors::default();
+        authors.add(7, "J. K. Rowling");
+        let mut books = books;
+        for book in &mut books {
+            book.eligible = per_language(&[(1, true)]);
+            book.scores = per_language(&[(1, 200.0)]);
+        }
+        let mut shelf = Titles::default();
+        for &(work, language, title, series) in titles {
+            shelf.add((work, language as u8), title, series, 2000);
+        }
+        shelf.sort();
+        catalog::candidates(&books, &shelf, &authors, 1, None)
+    }
+
+    #[test]
+    fn unnumbered_copy_of_numbered_volume_dropped() {
+        let title = "Harry Potter und der Stein der Weisen";
+        let books = vec![
+            open_library_book(1, title, 7),
+            open_library_book(2, title, 7),
+        ];
+        let titles = [(1, 1, title, ("Harry Potter", 1)), (2, 1, title, ("", 0))];
+        let entries = entries_of(books, &titles);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].series_position, 1);
+    }
+
+    #[test]
+    fn library_title_replaces_bare_series_name_of_unnumbered_series() {
+        let record = Record {
+            source: Source::Bnb,
+            id: Source::Bnb.local_id("1"),
+            language: 1,
+            isbns: vec![straw_isbn()],
+            title: "Jetzt reicht's!".to_string(),
+            series: "Gregs Tagebuch".to_string(),
+            name: "Jeff Kinney".to_string(),
+            author: Source::Bnb.author_id("Jeff Kinney"),
+            ..Record::default()
+        };
+        let mut library = Library::from_records(vec![record]);
+        library.match_editions(&Isbns::from_rows(vec![(42, 0, straw_isbn())]));
+        let mut authors = Authors::default();
+        authors.add(7, "Jeff Kinney");
+        let mut titles = Titles::default();
+        titles.add((42, 1), "Gregs Tagebuch", ("", 0), 2009);
+        let book = open_library_book(42, "The Last Straw", 7);
+        let run = titled_run(
+            &library,
+            vec![claimed(&library, book, &authors)],
+            &[],
+            titles,
+        );
+        let records = run.titles.of(42);
+        let names: Vec<&str> = records
+            .iter()
+            .map(|record| run.titles.title(record))
+            .collect();
+        assert!(names.contains(&"Jetzt reicht's!"), "{names:?}");
+    }
+
+    #[test]
+    fn eponymous_series_opener_keeps_title() {
+        let title = "The Mysterious Benedict Society";
+        let labelled = "The Mysterious Benedict Society (The Mysterious Benedict Society #1)";
+        let books = vec![open_library_book(1, labelled, 7)];
+        let titles = [(1, 1, labelled, ("", 0)), (1, 1, "", (title, 1))];
+        let entries = entries_of(books, &titles);
+        assert_eq!(entries[0].title, title);
+    }
+
+    #[test]
+    fn real_title_replaces_bare_series_name() {
+        let books = vec![open_library_book(1, "Discworld", 7)];
+        let titles = [
+            (1, 1, "Discworld", ("", 0)),
+            (1, 1, "Mort", ("A Discworld", 0)),
+            (1, 1, "Discworld Box Set Edition", ("", 0)),
+            (1, 1, "Discworld Box Set Edition", ("", 0)),
+        ];
+        let entries = entries_of(books, &titles);
+        assert_eq!(entries[0].title, "Mort");
+    }
+
+    #[test]
+    fn series_prefix_dropped_from_titles() {
+        let title = "Warrior Cats - In die Wildnis";
+        let books = vec![open_library_book(1, title, 7)];
+        let entries = entries_of(books, &[(1, 1, title, ("Warrior Cats", 1))]);
+        assert_eq!(entries[0].title, "In die Wildnis");
+    }
+
+    #[test]
+    fn franchise_series_used_when_local_title_names_it() {
+        let local = "Harry Potter und der Orden des Phönix";
+        let books = vec![open_library_book(1, local, 7)];
+        let titles = [
+            (
+                1,
+                0,
+                "Harry Potter and the Order of the Phoenix",
+                ("Harry Potter", 5),
+            ),
+            (1, 1, local, ("", 0)),
+        ];
+        let entries = entries_of(books, &titles);
+        assert_eq!(
+            (&entries[0].series[..], entries[0].series_position),
+            ("Harry Potter", 5)
+        );
+    }
+
+    #[test]
+    fn numbered_volumes_survive_stripped_tails() {
+        let mut authors = Authors::default();
+        authors.add(7, "Atsushi Ohkubo");
+        let mut books = vec![
+            open_library_book(1, "Soul Eater, Vol. 1", 7),
+            open_library_book(2, "Soul Eater, Vol. 2", 7),
+        ];
+        let mut titles = Titles::default();
+        for book in &mut books {
+            book.eligible = per_language(&[(1, true)]);
+            book.scores = per_language(&[(1, 200.0)]);
+            titles.add((book.work, 1), &book.title, ("", 0), 2000);
+        }
+        titles.sort();
+        let entries = catalog::candidates(&books, &titles, &authors, 1, None);
+        let mut kept: Vec<(&str, u16)> = entries
+            .iter()
+            .map(|entry| (&entry.title[..], entry.series_position))
+            .collect();
+        kept.sort_unstable();
+        assert_eq!(kept, [("Soul Eater, Vol. 1", 1), ("Soul Eater, Vol. 2", 2)]);
+    }
+
     #[test]
     fn isbn_match_enriches_open_library_work() {
         let library = matched(&[STRAW], 42);
@@ -2367,5 +2819,85 @@ mod tests {
         let run = run(&library, vec![book], &[]);
         assert_eq!(run.books[0].scores, per_language(&[(0, 200.0)]));
         assert!(run.books[0].library_cover.is_none());
+    }
+
+    #[test]
+    fn names_normalised() {
+        for (raw, expected) in [
+            ("Hargreaves, Roger", "Roger Hargreaves"),
+            ("Wróblewski, Jerzy.", "Jerzy Wróblewski"),
+            ("Kennedy, Daniel Joseph, 1862-1930", "Daniel Joseph Kennedy"),
+            ("Chekhov, Anton Pavlovich", "Anton Pavlovich Chekhov"),
+            ("Grover Gardner narrator", "Grover Gardner"),
+            ("Lisa Flanagan (Narrator)", "Lisa Flanagan"),
+            ("Kelsey (Illustrator) Oseid", "Kelsey Oseid"),
+            ("Philippa (1954- ) Gregory", "Philippa Gregory"),
+            ("E. M. (Edith Martha) 189 Almedingen", "E. M. Almedingen"),
+            ("MICHAEL A. LEBOWITZ", "Michael A. Lebowitz"),
+            ("ellen queen", "Ellen Queen"),
+            ("Ana Momplet Chico;", "Ana Momplet Chico"),
+            ("Hans-Werner et al. Bartsch", "Hans-Werner Bartsch"),
+            ("\u{1b}p0\u{1b}sAsne Seierstad", "Asne Seierstad"),
+            ("Emmi ItÃ¤ranta", "Emmi Itäranta"),
+            ("Nikolaĭ Vasilʹevich  Gogolʹ", "Nikolai Vasilevich Gogol"),
+            ("Martin Luther King, Jr.", "Martin Luther King, Jr."),
+            (
+                "Jose Echegaray ; translated by Hannah Lynch",
+                "Jose Echegaray",
+            ),
+        ] {
+            assert_eq!(normalized_name(raw), expected, "{raw}");
+        }
+    }
+
+    #[test]
+    fn non_people_rejected_as_names() {
+        for raw in [
+            "-",
+            "B",
+            "0",
+            "(none)",
+            "FF 8282",
+            "Various",
+            "Dr",
+            "et al",
+            "Great Britain.",
+            "Time-Life Books",
+            "Kidkiddos Books",
+            "dskimp2000naver.com",
+            "www.kindermusik.de",
+        ] {
+            assert_eq!(normalized_name(raw), "", "{raw}");
+        }
+    }
+
+    #[test]
+    fn controls_and_markup_removed() {
+        assert_eq!(sanitized("\u{98}L'\u{9c}arche"), "L'arche");
+        assert_eq!(sanitized("Yht\u{fffd}\u{fffd} sirkusta"), "Yht sirkusta");
+        assert_eq!(sanitized("PostÅ™iÅ¾iny"), "Postřižiny");
+        assert_eq!(sanitized("a &#4928; b"), "a \u{1340} b");
+    }
+
+    #[test]
+    fn placeholder_and_future_years_ignored() {
+        assert_eq!(dumps::year_of("1900"), 0);
+        assert_eq!(dumps::year_of("1800"), 0);
+        assert_eq!(dumps::year_of("2099"), 0);
+        assert_eq!(dumps::year_of("c1954"), 1954);
+    }
+
+    #[test]
+    fn best_spelling_preferred() {
+        let better = |good: &str, bad: &str| {
+            assert!(spelling_quality(good) > spelling_quality(bad), "{good}");
+        };
+        better("Ed McBain", "ED McBAIN");
+        better("Marion Lennox", "MArion Lennox");
+        better("Christie Watson", "Christie WATSON");
+        better("Helmi Üprus", "Helmi Uprus");
+        better("Eugène Sue", "Eugène. Sue");
+        better("Andrea Kane", "Andrea KANe");
+        assert_eq!(normalized_name("© Mattel"), "Mattel");
     }
 }

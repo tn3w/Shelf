@@ -3,7 +3,7 @@ use crate::dumps::{Facts, Signal, TitleRecord, Titles};
 use crate::libraries::{self, SYNTHETIC};
 use crate::release::State;
 use crate::{LANGUAGE_COUNT, LANGUAGES};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::LazyLock;
 
 pub const DESCRIPTION_MIN_SCORE: f32 = 400.0;
@@ -16,7 +16,11 @@ const MAX_TITLE_BYTES: usize = 160;
 const FOREIGN_TITLE_WORDS: usize = 3;
 const DESCRIPTION_TARGET: usize = 480;
 const DESCRIPTION_LIMIT: usize = 1000;
-const MAX_TAG_BYTES: usize = 80;
+const MAX_TAG_BYTES: usize = 400;
+const MIN_DESCRIPTION_BYTES: usize = 20;
+const REPEATED_PHRASE_WORDS: usize = 6;
+const MAX_PHRASE_REPEATS: usize = 3;
+const MIN_SENTENCE_KEPT_BYTES: usize = 80;
 const JUDGED_HEAD_BYTES: usize = 40;
 const MIN_PARAGRAPH_BYTES: usize = 60;
 const SHORT_LEAD_BYTES: usize = 200;
@@ -39,6 +43,52 @@ const COVER_TITLE_POINTS: i32 = 20;
 const COVER_SPECIAL_PENALTY: i32 = 25;
 const COVER_SCAN_PENALTY: i32 = 20;
 const COVER_LISTED_POINTS: i32 = 10;
+
+const PLACEHOLDER_DESCRIPTIONS: &[&str] = &[
+    "this is a duplicate",
+    "this work:",
+    "redirected to",
+    "duplicate of",
+    "book digitized by google",
+    "legends of dune",
+    "amazon.com review",
+];
+
+const LOW_CONTENT_PREFIXES: &[&str] = &[
+    "carnet de notes",
+    "carnet de mots de passe",
+    "diabetes tagebuch",
+    "diabetes-tagebuch",
+    "schulheft",
+    "kalender 20",
+    "adult coloring",
+    "goal planner",
+    "password book",
+    "password log",
+    "blank lined",
+];
+const LOW_CONTENT_TITLES: &[&str] = &["notebook", "planner", "carnet", "cuaderno", "notizbuch"];
+const JUNK_TITLES: &[&str] = &[
+    "hardcover",
+    "paperback",
+    "special edition",
+    "edition",
+    "untitled",
+];
+const NOISE_WORDS: &[&str] = &[
+    "imported",
+    "paperback",
+    "hardcover",
+    "książka",
+    "ksiazka",
+    "microform",
+    "polish text",
+    "korean translation",
+    "sic",
+    "audiobook",
+    "large print",
+];
+const VOLUME_WORDS: &[&str] = &["book", "bk", "bk.", "vol", "vol.", "volume", "no.", "part"];
 
 const TAIL_MARKERS: &[&str] = &[
     "-- back cover",
@@ -181,6 +231,8 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "og af ikke til på ved når hendes havde bliver mod ikkje frå eit jeg hvad hvor",
 ];
 
+const KINDRED_LANGUAGES: [(&str, &str); 1] = [("et", "fi")];
+
 const BAD_TITLE_PREFIXES: &[&str] = &[
     "annual report",
     "proceedings of",
@@ -199,6 +251,7 @@ const BAD_TITLE_PREFIXES: &[&str] = &[
 ];
 
 const COLLECTION_MARKERS: &[&str] = &[
+    "bundle",
     "box set",
     "boxed set",
     "box-set",
@@ -449,6 +502,10 @@ pub fn target_language(key: &str) -> Option<usize> {
 }
 
 pub fn edition_title(title: &str, subtitle: &str) -> String {
+    let (title, subtitle) = (
+        &libraries::sanitized(title),
+        &libraries::sanitized(subtitle),
+    );
     if title.len() > MAX_TITLE_BYTES {
         return String::new();
     }
@@ -516,8 +573,23 @@ pub fn is_foreign_isbn(isbn: &str) -> bool {
     })
 }
 
+fn is_address_or_number(title: &str) -> bool {
+    let digits = title.chars().filter(char::is_ascii_digit).count();
+    let numeric = title
+        .chars()
+        .all(|c| c.is_ascii_digit() || "- xX".contains(c));
+    title.starts_with("www.") || title.starts_with("http") || numeric && digits >= 9
+}
+
 pub fn is_bad_title(title: &str) -> bool {
-    let lowered = title.to_ascii_lowercase();
+    let lowered = title.trim().to_ascii_lowercase();
+    let low_content = LOW_CONTENT_TITLES.contains(&lowered.as_str())
+        || LOW_CONTENT_PREFIXES
+            .iter()
+            .any(|prefix| lowered.starts_with(prefix));
+    if JUNK_TITLES.contains(&lowered.as_str()) || low_content || is_address_or_number(&lowered) {
+        return true;
+    }
     let listed = BAD_TITLE_PREFIXES
         .iter()
         .any(|prefix| lowered.starts_with(prefix));
@@ -654,7 +726,11 @@ fn tidy(text: &str) -> String {
         .lines()
         .filter(|line| !is_link_definition(line))
         .map(|line| {
-            line.trim_matches([' ', '\t', '*', '_', '#', '>'])
+            let words: Vec<&str> = line.split_whitespace().collect();
+            words
+                .join(" ")
+                .trim_matches(['*', '_', '#', '>'])
+                .trim()
                 .to_string()
         });
     let mut cleaned = String::new();
@@ -760,8 +836,53 @@ fn without_tail(text: String) -> String {
     }
 }
 
+fn without_lead_marker(paragraph: &str) -> &str {
+    let bare = paragraph.trim_start_matches(['•', '·', '-', '*', ' ']);
+    let digits = bare.trim_start_matches(|c: char| c.is_ascii_digit());
+    let numbered = digits.len() < bare.len() && digits.starts_with(". ");
+    if numbered {
+        digits[2..].trim_start()
+    } else {
+        bare
+    }
+}
+
+fn has_repeated_phrase(text: &str) -> bool {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let mut seen: HashMap<&[&str], usize> = HashMap::new();
+    words.windows(REPEATED_PHRASE_WORDS).any(|phrase| {
+        let count = seen.entry(phrase).or_default();
+        *count += 1;
+        *count >= MAX_PHRASE_REPEATS
+    })
+}
+
+fn ends_cleanly(text: &str) -> String {
+    let closers = ['.', '!', '?', '…', '"', ')', '»', '”', '“', '’', '。'];
+    let unfinished = text.ends_with("...") || !text.ends_with(closers);
+    let stop = [". ", "! ", "? "]
+        .iter()
+        .filter_map(|mark| text.rfind(mark))
+        .max();
+    match stop.filter(|&at| unfinished && at + 1 >= MIN_SENTENCE_KEPT_BYTES) {
+        Some(at) => text[..=at].to_string(),
+        None => text.to_string(),
+    }
+}
+
+fn is_placeholder(text: &str) -> bool {
+    let lowered = text.to_lowercase();
+    text.len() < MIN_DESCRIPTION_BYTES
+        || PLACEHOLDER_DESCRIPTIONS
+            .iter()
+            .any(|marker| lowered.starts_with(marker))
+}
+
 pub fn clean_description(text: &str) -> String {
-    let cut = text.find("\n\n----").unwrap_or(text.len());
+    let text = libraries::unmojibaked(text);
+    let garbage = |c: char| c == '\u{fffd}' || ('\u{80}'..='\u{9f}').contains(&c);
+    let text: String = text.chars().filter(|&c| !garbage(c)).collect();
+    let cut = text.find("----------").unwrap_or(text.len());
     let mut text = text[..cut].trim().replace('\r', "");
     for (entity, character) in ENTITIES {
         text = text.replace(entity, character);
@@ -790,10 +911,11 @@ pub fn clean_description(text: &str) -> String {
     }
     let kept = without_tail(truncate(kept));
     let kept = without_wrapping_quotes(&kept);
-    if is_reader_comment(kept) {
+    let kept = ends_cleanly(without_lead_marker(kept));
+    if is_reader_comment(&kept) || is_placeholder(&kept) || has_repeated_phrase(&kept) {
         return String::new();
     }
-    kept.to_string()
+    kept
 }
 
 fn without_quotations(text: &str) -> String {
@@ -884,12 +1006,17 @@ fn stop_word_hits(text: &str) -> ([usize; SOURCE_LANGUAGES.len()], usize) {
     (hits, count)
 }
 
+fn is_kindred(left: usize, right: usize) -> bool {
+    let pair = (SOURCE_LANGUAGES[left], SOURCE_LANGUAGES[right]);
+    KINDRED_LANGUAGES.contains(&pair) || KINDRED_LANGUAGES.contains(&(pair.1, pair.0))
+}
+
 pub fn is_foreign_title(title: &str, language: usize) -> bool {
     let (hits, words) = stop_word_hits(title);
     let foreign = hits
         .iter()
         .enumerate()
-        .any(|(other, &count)| other != language && count > 0);
+        .any(|(other, &count)| other != language && count > 0 && !is_kindred(other, language));
     words >= FOREIGN_TITLE_WORDS && hits[language] == 0 && foreign
 }
 
@@ -923,6 +1050,10 @@ pub fn is_mostly_latin(text: &str) -> bool {
 pub fn is_mostly_hangul(text: &str) -> bool {
     text.chars().any(char::is_alphabetic)
         && is_mostly(text, |character| HANGUL.contains(&character))
+}
+
+pub fn is_romanised_korean(text: &str) -> bool {
+    text.contains(['ŭ', 'ŏ', 'Ŭ', 'Ŏ', 'ʻ'])
 }
 
 pub fn is_native_script(text: &str, language: usize) -> bool {
@@ -1093,13 +1224,157 @@ fn adopt_series(entries: &mut [Entry], writers: &[String]) {
     }
 }
 
+fn is_volume_number(label: &str) -> bool {
+    let Some((marker, number)) = label.rsplit_once(' ') else {
+        return false;
+    };
+    let marker = marker.to_lowercase();
+    let numeric = !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit());
+    numeric && VOLUME_WORDS.contains(&marker.rsplit(' ').next().unwrap_or_default())
+}
+
+fn is_noise(inner: &str) -> bool {
+    let lowered = inner.trim().to_lowercase();
+    let numbered = lowered
+        .rsplit_once('#')
+        .is_some_and(|(name, number)| !name.trim().is_empty() && number.parse::<u16>().is_ok());
+    let counted = lowered.contains(' ') && is_volume_number(&lowered);
+    lowered.ends_with("edition") || NOISE_WORDS.contains(&lowered.as_str()) || numbered || counted
+}
+
+fn without_noise(title: &str) -> String {
+    let mut kept = String::with_capacity(title.len());
+    let mut rest = title;
+    while let Some(start) = rest.find(['(', '[']) {
+        let closer = if rest[start..].starts_with('(') {
+            ')'
+        } else {
+            ']'
+        };
+        let end = rest[start..].find(closer).map(|end| start + end);
+        kept.push_str(&rest[..start]);
+        let Some(end) = end else {
+            rest = &rest[start + 1..];
+            continue;
+        };
+        if !is_noise(&rest[start + 1..end]) {
+            kept.push_str(&rest[start..=end]);
+        }
+        rest = &rest[end + 1..];
+    }
+    kept + rest
+}
+
+fn without_volume_tail(title: &str) -> &str {
+    let numbered = title.rsplit_once(" #");
+    let numbered = numbered.filter(|(_, number)| number.parse::<u16>().is_ok());
+    if let Some((head, _)) = numbered {
+        return head;
+    }
+    match title.rsplit_once(", ") {
+        Some((head, tail)) if is_volume_number(&tail.to_lowercase()) => head,
+        _ => title,
+    }
+}
+
+fn without_responsibility(title: &str) -> &str {
+    let outside = |(at, _): &(usize, &str)| {
+        let before = &title[..*at];
+        before.matches(['(', '[']).count() == before.matches([')', ']']).count()
+    };
+    let responsibility = |(at, _): &(usize, &str)| {
+        let tail = &title[at + 3..];
+        tail.contains(';') || tail.starts_with(char::is_lowercase)
+    };
+    let mut slashes = title.match_indices(" / ").filter(outside);
+    let cut = slashes.find(responsibility);
+    let head = cut.map_or(title, |(at, _)| &title[..at]);
+    if head.is_empty() { title } else { head }
+}
+
+fn without_series_prefix<'a>(title: &'a str, series: &str) -> &'a str {
+    let head = title.get(..series.len()).unwrap_or_default();
+    if series.is_empty() || head.to_lowercase() != series.to_lowercase() {
+        return title;
+    }
+    let rest = &title[head.len()..];
+    let remainder = [" - ", " – ", ": ", ". "]
+        .iter()
+        .find_map(|separator| rest.strip_prefix(separator))
+        .unwrap_or_default();
+    let first = remainder
+        .split(' ')
+        .next()
+        .unwrap_or_default()
+        .to_lowercase();
+    let labelled =
+        VOLUME_WORDS.contains(&first.as_str()) || remainder.starts_with(char::is_numeric);
+    if remainder.is_empty() || labelled {
+        title
+    } else {
+        remainder
+    }
+}
+
+fn without_series_tail<'a>(title: &'a str, series: &str) -> &'a str {
+    let bracketed = title
+        .strip_suffix(')')
+        .and_then(|head| head.rsplit_once(" ("));
+    match bracketed {
+        Some((head, inner)) if !series.is_empty() && series_key(inner) == series_key(series) => {
+            head
+        }
+        _ => title,
+    }
+}
+
+fn tail_series(title: &str) -> Option<(String, u16)> {
+    let bracketed = title
+        .strip_suffix(')')
+        .and_then(|head| head.rsplit_once(" ("));
+    let inner = bracketed.map_or(title, |(_, inner)| inner);
+    let (name, number) = match inner.rsplit_once(" #") {
+        Some(numbered) => numbered,
+        None if is_volume_number(&inner.to_lowercase()) => {
+            let (labelled, number) = inner.rsplit_once(' ')?;
+            (labelled.rsplit_once(' ')?.0, number)
+        }
+        None => return None,
+    };
+    let number: u16 = number
+        .parse()
+        .ok()
+        .filter(|&number| (1..=MAX_SERIES_MEMBERS as u16).contains(&number))?;
+    let name = name.trim_end_matches(',').trim();
+    (name.len() >= 4).then(|| (name.to_string(), number))
+}
+
+fn listed_series(alternate: &str, title: &str) -> Option<(String, u16)> {
+    let listed = alternate.rsplit(';').next()?.trim();
+    let (name, rest) = listed.split_once(". ")?;
+    let (name, number) = name.rsplit_once(' ')?;
+    let number: u16 = number
+        .parse()
+        .ok()
+        .filter(|&number| (1..=MAX_SERIES_MEMBERS as u16).contains(&number))?;
+    let named = name.trim().len() >= 4 && title_key(rest, &[]) == title_key(title, &[]);
+    named.then(|| (name.trim().to_string(), number))
+}
+
 fn tidy_title(title: &str) -> String {
-    let mut title = title.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut title = libraries::sanitized(title);
     for tag in EDITION_TAGS {
         if let Some(start) = title.to_ascii_lowercase().find(tag) {
             title.replace_range(start..start + tag.len(), "");
         }
     }
+    let title = without_noise(without_responsibility(&title));
+    let title = match title.rsplit_once(" - ") {
+        Some((head, tail)) if tail.to_lowercase().ends_with("edition") => head.to_string(),
+        _ => title,
+    };
+    let title = without_volume_tail(title.trim());
+    let title = title.trim_end_matches([' ', ';', '/', ':', '=', ',', '-', '–']);
     let title = title.trim();
     let title = match title.rsplit_once(". ") {
         Some((head, tail)) if libraries::is_genre(tail.trim_end_matches('.')) => head,
@@ -1146,6 +1421,7 @@ fn curated_points(book: &Book, cover: u32, edition_year: u16) -> i32 {
     }
 }
 
+#[derive(Default)]
 pub struct Entry {
     pub book: usize,
     pub title: String,
@@ -1193,6 +1469,7 @@ impl<'a> Resolver<'a> {
             .iter()
             .map(|record| self.spelling(record, series))
             .filter(|title| is_native_script(title, self.language))
+            .filter(|title| LANGUAGES[self.language] != "ko" || !is_romanised_korean(title))
             .map(|title| (title_key(title, &[]), title, 0))
             .filter(|ballot| !ballot.0.is_empty())
             .collect();
@@ -1208,6 +1485,10 @@ impl<'a> Resolver<'a> {
         };
         let retitle = (best.spelling.to_string(), work_title.to_string());
         if best.key == own_key {
+            return keep;
+        }
+        let foreign = |title: &str| is_foreign_title(title, self.language);
+        if foreign(best.spelling) && !work_title.is_empty() && !foreign(work_title) {
             return keep;
         }
         if own == 0 || own_key.is_empty() || !is_native_script(work_title, self.language) {
@@ -1297,7 +1578,7 @@ impl<'a> Resolver<'a> {
             .filter(|record| self.is_local(record))
             .collect();
         let (series, series_position) = self.choose_series(&local);
-        let (franchise, _) = self.choose_series(&records);
+        let (franchise, franchise_position) = self.choose_series(&records);
         let voters = if local.is_empty() { &records } else { &local };
         let (mut title, mut alternate) = self.choose_title(&book.title, "", voters);
         if is_series_label(&title, &franchise) {
@@ -1305,7 +1586,47 @@ impl<'a> Resolver<'a> {
         }
         let stripped = without_volume_prefix(&title, &series);
         let title = stripped.map_or(title, |(title, _)| title);
-        let title = tidy_title(&title);
+        let title = without_series_prefix(&title, &series).to_string();
+        let raw = libraries::sanitized(&title);
+        let tail = tail_series(&raw);
+        let tidied = tidy_title(&title);
+        let bare = |(name, _): &(String, u16)| title_key(name, &[]) == title_key(&tidied, &[]);
+        let title = if tail.as_ref().is_some_and(bare) && !raw.ends_with(')') {
+            raw
+        } else {
+            tidied
+        };
+        alternate = tidy_title(&alternate);
+        let mut series = series;
+        let mut series_position = series_position;
+        if let Some(found) = tail.filter(|_| series.is_empty()) {
+            (series, series_position) = found;
+        }
+        if series.is_empty() {
+            let listed = listed_series(&alternate, &title);
+            if let Some((name, position)) = listed {
+                (series, series_position) = (name, position);
+                alternate.clear();
+            }
+        }
+        let words = |text: &str| format!(" {text} ");
+        let named = words(&title_key(&title, &[])).contains(&words(&series_key(&franchise)));
+        if series.is_empty() && !franchise.is_empty() && named {
+            (series, series_position) = (franchise, franchise_position);
+        }
+        let mut title = without_series_tail(&title, &series).to_string();
+        let bare = |candidate: &str| series_key(candidate) == series_key(&series);
+        if !series.is_empty() && bare(&title) {
+            let serial = |record: &&&TitleRecord| bare(self.titles.series(record));
+            let titles = voters
+                .iter()
+                .filter(serial)
+                .map(|record| tidy_title(self.title(record)));
+            let named = titles.filter(|candidate| !candidate.is_empty() && !bare(candidate));
+            if let Some(named) = libraries::most_common(named) {
+                alternate = std::mem::replace(&mut title, named);
+            }
+        }
         if !series.is_empty() && series_key(&alternate) == series_key(&series) {
             alternate.clear();
         }
@@ -1385,13 +1706,13 @@ pub fn candidates(
             .then(b.score.total_cmp(&a.score))
             .then(a.book.cmp(&b.book))
     });
-    let mut seen = HashSet::new();
+    let mut seen: HashMap<_, Vec<u16>> = HashMap::new();
     let touched = |entry: &Entry| {
         let cover = books[entry.book].library_cover;
         cover.is_some_and(|cover| cover.language == language)
     };
     let guarded = entries.iter().any(touched);
-    let mut matched: HashMap<(String, String), bool> = HashMap::new();
+    let mut matched: HashMap<(String, String, u16), bool> = HashMap::new();
     entries.retain(|entry| {
         let book = &books[entry.book];
         let names: Vec<&str> = book
@@ -1404,12 +1725,18 @@ pub fn candidates(
         let author = writer
             .clone()
             .or_else(|| book.authors.first().map(u32::to_string));
-        let fresh = seen.insert((title_key(&entry.title, &names), author));
+        let position = entry.series_position;
+        let positions = seen
+            .entry((title_key(&entry.title, &names), author))
+            .or_default();
+        let volume = position > 0 && !positions.contains(&position) && !positions.contains(&0);
+        let fresh = positions.is_empty() || volume;
+        positions.push(position);
         let writer = writer.filter(|_| guarded);
         let title = || libraries::match_key(&entry.title);
-        let library_key = writer.map(|writer| (title(), writer));
+        let library_key = writer.map(|writer| (title(), writer, position));
         let library_key =
-            library_key.filter(|(title, writer)| !title.is_empty() && !writer.is_empty());
+            library_key.filter(|(title, writer, _)| !title.is_empty() && !writer.is_empty());
         let repeated = library_key.is_some_and(|library_key| {
             let earlier = matched.get(&library_key).copied();
             matched.insert(library_key, earlier.unwrap_or(false) || touched(entry));
@@ -1666,5 +1993,183 @@ mod tests {
             let detected = detect_language(text).map(|index| SOURCE_LANGUAGES[index]);
             assert_eq!(detected, Some(language), "{text}");
         }
+    }
+
+    #[test]
+    fn titles_stripped_of_catalogue_noise() {
+        for (title, expected) in [
+            ("\u{98}Le \u{9c}petit sapin", "Le petit sapin"),
+            (
+                "Rozkosz / Gabriele d'Annunzio ; z włoskiego przełożył",
+                "Rozkosz",
+            ),
+            ("Byłem--", "Byłem"),
+            ("Framgångens pris ;", "Framgångens pris"),
+            ("Just kids [Imported] [Paperback]", "Just kids"),
+            ("Kim (Standard Edition)", "Kim"),
+            ("Kim - Illustrated Edition", "Kim"),
+            ("Waylander (Drenai Tales, Book 4)", "Waylander"),
+            ("Sapphique (Incarceron #2)", "Sapphique"),
+            ("1Q84, Book 1", "1Q84"),
+            ("Mia paket #3", "Mia paket"),
+            ("[Dina Rubina", "Dina Rubina"),
+            ("Humboldts gÃ¥va", "Humboldts gåva"),
+            ("Mia\u{200b}  paket &#63;", "Mia paket ?"),
+            ("Das Buch (Band 2)", "Das Buch (Band 2)"),
+        ] {
+            assert_eq!(tidy_title(title), expected, "{title}");
+        }
+    }
+
+    #[test]
+    fn junk_titles_rejected() {
+        for title in [
+            "Hardcover",
+            "www.laska.cz",
+            "9788375780123",
+            "Box Books Bundle",
+        ] {
+            assert!(is_bad_title(title), "{title}");
+        }
+        assert!(!is_bad_title("Der Hobbit"));
+    }
+
+    #[test]
+    fn description_placeholders_dropped() {
+        let sentence = "Eine lange Geschichte über zwei Schwestern, die ihr Dorf verlassen. ";
+        let truncated = format!("{sentence}{sentence}Und dann kam der Winter mit...");
+        let placeholders = [
+            "This is a duplicate. Please update your lists. See",
+            "Redirected to another work in the catalogue.",
+            "Short.",
+            "Amazon.com Review A fine tale of two sisters leaving home.",
+        ];
+        for placeholder in placeholders {
+            assert!(clean_description(placeholder).is_empty(), "{placeholder}");
+        }
+        assert!(clean_description(&truncated).ends_with("verlassen."));
+        let cut = format!("{sentence}\n\n---------- German-language description: Hallo");
+        assert!(!clean_description(&cut).contains("German-language"));
+        let looping = "Hän oli vain yksi niistä. ".repeat(6);
+        assert!(clean_description(&looping).is_empty());
+        let marked = format!("• {sentence}");
+        assert!(clean_description(&marked).starts_with("Eine"));
+    }
+
+    #[test]
+    fn series_listed_in_alternate_title_adopted() {
+        let found = listed_series("Pendragon 1. Taliesin", "Taliesin");
+        assert_eq!(found, Some(("Pendragon".to_string(), 1)));
+        let publisher = listed_series("Heyne Reihe 8449; Sprawl 1. Neuromancer", "Neuromancer");
+        assert_eq!(publisher, Some(("Sprawl".to_string(), 1)));
+        assert_eq!(listed_series("Pendragon 1. Taliesin", "Merlin"), None);
+    }
+
+    #[test]
+    fn series_prefix_needs_separator_and_real_title() {
+        assert_eq!(
+            without_series_prefix("Warrior Cats - In die Wildnis", "Warrior Cats"),
+            "In die Wildnis"
+        );
+        for title in [
+            "Scott Pilgrim's Precious Little Life",
+            "Vinland Saga: Book Twelve",
+            "Raider/Border Law",
+            "Discworld: 2",
+        ] {
+            let series = title.split(['\'', '/', ':']).next().unwrap_or_default();
+            assert_eq!(without_series_prefix(title, series), title);
+        }
+    }
+
+    #[test]
+    fn eponymous_opener_loses_bracketed_volume() {
+        let title = "The Mysterious Benedict Society (The Mysterious Benedict Society #1)";
+        let tail = tail_series(title);
+        assert_eq!(
+            tail,
+            Some(("The Mysterious Benedict Society".to_string(), 1))
+        );
+        assert_eq!(tidy_title(title), "The Mysterious Benedict Society");
+    }
+
+    #[test]
+    fn series_name_tail_dropped_once_known() {
+        let title = "The Lightning Thief (Percy Jackson)";
+        assert_eq!(
+            without_series_tail(title, "Percy Jackson"),
+            "The Lightning Thief"
+        );
+        assert_eq!(without_series_tail(title, "Redwall"), title);
+    }
+
+    #[test]
+    fn series_kept_from_stripped_title_tails() {
+        let drenai = tail_series("Waylander (Drenai Tales, Book 4)");
+        assert_eq!(drenai, Some(("Drenai Tales".to_string(), 4)));
+        let incarceron = tail_series("Sapphique (Incarceron #2)");
+        assert_eq!(incarceron, Some(("Incarceron".to_string(), 2)));
+        assert_eq!(tail_series("1Q84, Book 1"), Some(("1Q84".to_string(), 1)));
+        let manga = tail_series("Soul Eater, Vol. 3");
+        assert_eq!(manga, Some(("Soul Eater".to_string(), 3)));
+        let unit = tail_series("Wait for Dark (Bishop/Special Crimes Unit Book 5)");
+        assert_eq!(unit, Some(("Bishop/Special Crimes Unit".to_string(), 5)));
+        assert_eq!(tail_series("Das Buch (Band 2)"), None);
+    }
+
+    #[test]
+    fn low_content_titles_spare_real_books() {
+        for title in ["Diary", "Tagebuch", "Journal", "Cuaderno gris"] {
+            assert!(!is_bad_title(title), "{title}");
+        }
+        for title in [
+            "Notebook",
+            "Cuaderno",
+            "Carnet de Notes",
+            "Diabetes Tagebuch",
+        ] {
+            assert!(is_bad_title(title), "{title}");
+        }
+    }
+
+    #[test]
+    fn descriptions_without_sentence_break_kept_whole() {
+        let text = "Ein kurzer Klappentext ohne Satzende und mit Auslassung...";
+        assert_eq!(clean_description(text), text);
+        let quoted = "Sie sagte: „Komm mit, wir gehen jetzt gemeinsam nach Hause.“";
+        assert_eq!(clean_description(quoted), quoted);
+    }
+
+    #[test]
+    fn finnish_titles_with_shared_estonian_words_stay_local() {
+        let finnish = crate::language_index("fi");
+        assert!(!is_foreign_title("Harry Potter ja viisasten kivi", finnish));
+        assert!(is_foreign_title(
+            "Harry Potter and the Philosopher's Stone",
+            finnish
+        ));
+    }
+
+    #[test]
+    fn romanised_korean_detected() {
+        assert!(is_romanised_korean("Ŭiryo munje ŭi yullijŏk sŏngchʻal"));
+        assert!(!is_romanised_korean("의료 문제의 윤리적 성찰"));
+    }
+
+    #[test]
+    fn omnibus_titles_kept_whole() {
+        for title in ["Valloittava vauva / Neiti Järkevä", "Tiloja / Avaruuksia"] {
+            assert_eq!(tidy_title(title), title);
+        }
+        assert_eq!(
+            tidy_title("De engelska språkljuden / av Karl S. Hofsø"),
+            "De engelska språkljuden"
+        );
+    }
+
+    #[test]
+    fn slashes_inside_brackets_kept() {
+        let title = "A Little Fate (Winter Rose / Witching Hour)";
+        assert_eq!(tidy_title(title), title);
     }
 }

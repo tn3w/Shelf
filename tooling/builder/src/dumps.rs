@@ -1,18 +1,19 @@
 use crate::catalog::{self, Traits};
-use crate::libraries::Library;
+use crate::libraries::{self, Library};
 use crate::release;
 use crate::tags::{self, Classes};
 use crate::{Built, LANGUAGE_COUNT};
 use flate2::read::{DeflateDecoder, MultiGzDecoder};
 use serde_json::Value;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
 use std::path::Path;
-use std::sync::Mutex;
 use std::sync::mpsc::{self, SyncSender};
+use std::sync::{LazyLock, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const BLOCK_BYTES: usize = 8 << 20;
 const MAX_RETRIES: u32 = 12;
@@ -436,11 +437,20 @@ fn first_cover(value: &Value) -> u32 {
     cover.and_then(|id| u32::try_from(id).ok()).unwrap_or(0)
 }
 
+const PLACEHOLDER_YEARS: [u16; 2] = [1800, 1900];
+const SECONDS_PER_YEAR: u64 = 31_556_952;
+
+static LATEST_YEAR: LazyLock<u16> = LazyLock::new(|| {
+    let since_epoch = SystemTime::now().duration_since(UNIX_EPOCH);
+    let years = since_epoch.map_or(0, |elapsed| elapsed.as_secs() / SECONDS_PER_YEAR);
+    1971 + years as u16
+});
+
 pub fn year_of(text: &str) -> u16 {
     text.split(|character: char| !character.is_ascii_digit())
         .filter(|digits| digits.len() == 4)
         .filter_map(|digits| digits.parse().ok())
-        .find(|year| (1450..=2100).contains(year))
+        .find(|year| (1450..=*LATEST_YEAR).contains(year) && !PLACEHOLDER_YEARS.contains(year))
         .unwrap_or(0)
 }
 
@@ -505,6 +515,7 @@ pub struct Authors {
     names: String,
     entries: Vec<AuthorEntry>,
     library: HashMap<u32, AuthorEntry>,
+    twins: HashMap<u32, u32>,
 }
 
 pub struct Author<'a> {
@@ -525,6 +536,13 @@ impl Authors {
             name,
             birth: entry.birth,
         })
+    }
+
+    pub fn canonical(&self, mut id: u32) -> u32 {
+        while let Some(&next) = self.twins.get(&id) {
+            id = next;
+        }
+        id
     }
 
     pub fn add(&mut self, id: u32, name: &str) {
@@ -563,20 +581,42 @@ pub fn authors(source: &str) -> Authors {
         if text(&author, "entity_type") == "org" {
             return None;
         }
-        let name = latin_name(&author)?.to_string();
+        let name = libraries::normalized_name(latin_name(&author)?);
+        if name.is_empty() {
+            return None;
+        }
         let birth = year_of(text(&author, "birth_date"));
-        Some((ol_id(field(line, 1))?, name, birth))
+        let key = libraries::name_key(&name);
+        let identity =
+            (!key.is_empty()).then(|| libraries::hash(&[key.as_bytes(), &birth.to_le_bytes()]));
+        let quality = libraries::spelling_quality(&name);
+        Some((ol_id(field(line, 1))?, name, birth, identity, quality))
     };
-    scan(source, "authors", parse, |(id, name, birth)| {
-        let start = u32::try_from(authors.names.len()).expect("author names under 4 GB");
-        authors.names.push_str(&name);
-        let length = name.len() as u8;
-        *slot(&mut authors.entries, id) = AuthorEntry {
-            start,
-            length,
-            birth,
-        };
-    });
+    let mut firsts: HashMap<u64, (u32, libraries::SpellingQuality)> = HashMap::new();
+    scan(
+        source,
+        "authors",
+        parse,
+        |(id, name, birth, identity, quality)| {
+            if let Some(identity) = identity {
+                let (first, known) = *firsts.entry(identity).or_insert((id, quality));
+                let better = (quality, Reverse(id)) > (known, Reverse(first));
+                let (representative, twin) = if better { (id, first) } else { (first, id) };
+                if twin != representative {
+                    authors.twins.insert(twin, representative);
+                    firsts.insert(identity, (representative, quality.max(known)));
+                }
+            }
+            let start = u32::try_from(authors.names.len()).expect("author names under 4 GB");
+            authors.names.push_str(&name);
+            let length = name.len() as u8;
+            *slot(&mut authors.entries, id) = AuthorEntry {
+                start,
+                length,
+                birth,
+            };
+        },
+    );
     authors
 }
 
@@ -642,10 +682,14 @@ pub struct Titles {
 }
 
 impl Titles {
-    pub fn has_local_title(&self, work: u32, language: usize) -> bool {
+    pub fn has_local_title(&self, work: u32, language: usize, series: &str) -> bool {
         let local = |record: &&TitleRecord| record.language as usize == language;
         let mut records = self.of(work).iter().filter(local);
-        records.any(|record| !catalog::is_foreign_title(self.title(record), language))
+        records.any(|record| {
+            let title = self.title(record);
+            let named = catalog::series_key(title) == catalog::series_key(series);
+            !named && !catalog::is_foreign_title(title, language)
+        })
     }
 
     pub fn of(&self, work: u32) -> &[TitleRecord] {
@@ -1024,6 +1068,7 @@ pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isb
     (facts, titles, shapes, Isbns::from_rows(isbns))
 }
 
+#[derive(Default)]
 pub struct Book {
     pub work: u32,
     pub title: String,
@@ -1073,11 +1118,15 @@ fn author_ids(work: &Value, authors: &Authors) -> Vec<u32> {
         let key = entry.get("author").and_then(|author| author.get("key"));
         key.or_else(|| entry.get("key"))?.as_str()
     });
-    let mut ids: Vec<u32> = keys
+    let known = keys
         .filter_map(|key| ol_id(key.as_bytes()))
-        .filter(|&id| authors.get(id).is_some())
-        .collect();
-    ids.dedup();
+        .filter(|&id| authors.get(id).is_some());
+    let mut ids: Vec<u32> = Vec::new();
+    for id in known.map(|id| authors.canonical(id)) {
+        if !ids.contains(&id) {
+            ids.push(id);
+        }
+    }
     ids.truncate(MAX_AUTHORS);
     ids
 }
@@ -1155,7 +1204,8 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         .copied()
         .unwrap_or_default();
     let sticky = context.sticky.get(id as usize).copied().unwrap_or(false);
-    let title = text(work, "title");
+    let title = libraries::sanitized(text(work, "title"));
+    let title = title.as_str();
     let authors = author_ids(work, context.authors);
     let subjects: Vec<&str> = strings(work, "subjects").collect();
     let description = catalog::clean_description(description_of(work));
@@ -1190,14 +1240,14 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         .iter()
         .chain(&claimed)
         .any(|&score| score >= catalog::DESCRIPTION_MIN_SCORE);
-    let year = match year_of(text(work, "first_publish_date")) {
-        0 => facts.first_year,
-        year => year,
+    let year = match (year_of(text(work, "first_publish_date")), facts.first_year) {
+        (0, year) | (year, 0) => year,
+        (published, edition) => published.min(edition),
     };
     Some(Book {
         work: id,
         title: title.to_string(),
-        subtitle: text(work, "subtitle").to_string(),
+        subtitle: libraries::sanitized(text(work, "subtitle")),
         tags: tags::confident_tags(subjects.into_iter(), &facts.classes, facts.editions),
         description_language: catalog::detect_language(&description),
         description: if described {

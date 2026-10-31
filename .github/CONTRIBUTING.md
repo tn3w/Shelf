@@ -183,10 +183,11 @@ Packs include ISBNs of editions in their language; older apps ignore them.
 <tr><td><a href="https://aleph.nkp.cz/data/">NKP</a> national catalogue</td><td>Czech editions, series, volumes, ISBNs, genres</td><td>CC0</td></tr>
 <tr><td><a href="https://lod.nl.go.kr/">NLK</a> LOD books</td><td>Korean editions, series, ISBNs, KDC forms</td><td>KOGL type 1</td></tr>
 <tr><td><a href="https://data.nationallibrary.fi/">Fennica</a></td><td>Finnish editions, series, volumes, ISBNs, genres</td><td>CC0</td></tr>
+<tr><td><a href="https://bl.iro.bl.uk/server/api/core/items/d194ffaf-4d53-4313-b6f2-25a97f92e99f">BNB</a> linked data (2018)</td><td>English series and titles for Open Library works</td><td>CC0</td></tr>
 </table>
 
 One library per catalogue: DNB → de, ERB → et, BnF → fr, LIBRIS → sv, BN → pl, NKP → cs,
-NLK → ko, Fennica → fi. Join Open Library works by ISBN, else title or original title +
+NLK → ko, Fennica → fi, BNB → en (joins only, adds no works). Join Open Library works by ISBN, else title or original title +
 author; per language, so editions never cross catalogues. Missing works get stable ids
 (DNB 1,000,000,000+, LIBRIS 1,200,000,000+, then 100,000,000 per library, ERB
 2,000,000,000+; all below 2³¹ for the app); later Open Library match → alias. Rank below
@@ -211,6 +212,12 @@ Titles drop series/volume prefixes (`Gregs Tagebuch 01 . Von Idioten umzingelt!`
 `Von Idioten umzingelt!`, `Band 2: Orwood` → `Orwood`), edition tags, `. Roman.`,
 trailing dots. Prefix naming writer's series → joins it. Series names searchable. Same
 title + writer (surname, first initial) → one book.
+
+Cleaning (all sources): control/zero-width chars, mojibake, entities fixed; MARC
+`/ responsibility`, store suffixes, `(Series #2)` tails dropped (tail → series); junk and
+low-content titles rejected. Authors normalized (`Last, First`, roles, dates, caps);
+same-name Open Library authors merged. Kids pack skips horror/thriller unless
+picture-book/middle-grade.
 
 Covers: Open Library → DNB (ISBN), DIGAR thumbnail (ERB 856 `nlib-digar` id), Bookbites
 (LIBRIS, ISBN) or Open Library by ISBN (other libraries), view time only → drawn. Wide
@@ -238,7 +245,7 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
   [--library libris=<libris-instances.ndjsonld.gz>,<libris-persons.ndjsonld.gz>] \
   [--library bnp=<bibs-ksiazka.marc>] [--library bnp=<bibs-e_book.marc>] \
   [--library nkp=<nkc.xml.gz>] [--library nlk=<book_json_*.zip>] \
-  [--library fennica=<Fennica-bib-*.zip>]
+  [--library fennica=<Fennica-bib-*.zip>] [--library bnb=<BNBLODBooks_*_nt.zip>]
 ```
 
 `--languages` builds only those catalogues: other languages' editions, titles and

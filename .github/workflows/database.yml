@@ -198,6 +198,10 @@ jobs:
             curl -sSfL --retry 10 --retry-all-errors -o "/mnt/dumps/$1" "$2"
           }
           case "$LANGUAGE" in
+            en)
+              stream BNBLODBooks_201805_nt.zip \
+                https://bl.iro.bl.uk/server/api/core/bitstreams/854541f3-3c72-4a9b-9e2c-eec92e12ecbd/content
+              library="bnb=/mnt/dumps/BNBLODBooks_201805_nt.zip" ;;
             fr)
               python3 tooling/bnf.py "$BNF_LINK" /mnt/dumps/bnf $BNF_FOLDERS
               library=$(printf ' --library bnf=%s' /mnt/dumps/bnf/*.zip)

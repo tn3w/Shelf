@@ -67,7 +67,8 @@ const MEMO_LIMIT: usize = 200_000;
 const AUTHOR_FILL_SHARE: f32 = 0.7;
 const AUTHOR_FILL_MINIMUM: usize = 2;
 
-const KIDS_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
+const ADULT_ONLY_TAGS: [&str; 3] = ["horror", "thriller", "true-crime"];
+const YOUNG_TAGS: [&str; 2] = ["picture-book", "middle-grade"];
 
 const BAD_SUBJECTS: &[&str] = &[
     "periodicals",
@@ -219,7 +220,9 @@ fn genre_pack(slug: &str) -> Option<&'static str> {
 
 pub fn pack_slug(tags: &[u8]) -> &'static str {
     let slugs: Vec<&str> = tags.iter().map(|&tag| slug(tag)).collect();
-    if slugs.iter().any(|slug| KIDS_TAGS.contains(slug)) {
+    let adult = slugs.iter().any(|slug| ADULT_ONLY_TAGS.contains(slug));
+    let young = slugs.iter().any(|slug| YOUNG_TAGS.contains(slug));
+    if young || !adult && slugs.contains(&"childrens") {
         return "kids";
     }
     if slugs.contains(&"young-adult") {
@@ -254,7 +257,7 @@ pub fn fill_author_tags(books: &mut [Book]) {
             let borrowable = books[index]
                 .tags
                 .iter()
-                .filter(|&&tag| is_genre_like(tag) || tag == fiction);
+                .filter(|&&tag| is_genre_like(tag) && category(tag) != Form || tag == fiction);
             borrowable.for_each(|&tag| *counts.entry(tag).or_default() += 1);
         }
         let needed = AUTHOR_FILL_SHARE * shelved.len() as f32;
@@ -673,5 +676,38 @@ pub fn confident_tags<'a>(
     support.0.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
     let fiction = support.of("fiction");
     let chosen = select_supported(support.0.clone(), fiction, seen.len() >= RICH_SUBJECTS);
-    with_nonfiction(resolve_reader(chosen, &reader, &support))
+    let chosen = with_nonfiction(resolve_reader(chosen, &reader, &support));
+    exclusive(chosen, &support)
+}
+
+fn exclusive(chosen: Vec<u8>, support: &Support) -> Vec<u8> {
+    let has = |slug: &str| chosen.contains(&tag(slug));
+    let mut dropped: Vec<&str> = Vec::new();
+    if has("graphic-novel") {
+        dropped.push("picture-book");
+    }
+    if has("fiction") && has("nonfiction") {
+        let fictional = support.of("fiction") >= support.of("nonfiction");
+        dropped.push(if fictional { "nonfiction" } else { "fiction" });
+    }
+    chosen
+        .into_iter()
+        .filter(|&found| !dropped.contains(&slug(found)))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pack(slugs: &[&str]) -> &'static str {
+        pack_slug(&slugs.iter().map(|slug| tag(slug)).collect::<Vec<_>>())
+    }
+
+    #[test]
+    fn kids_pack_keeps_young_genre_books() {
+        assert_eq!(pack(&["crime", "childrens"]), "kids");
+        assert_eq!(pack(&["horror", "childrens", "middle-grade"]), "kids");
+        assert_ne!(pack(&["horror", "childrens", "classics"]), "kids");
+    }
 }

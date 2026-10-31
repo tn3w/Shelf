@@ -2,7 +2,7 @@ use crate::catalog;
 use crate::dumps;
 use crate::libraries::{
     COMIC, EBOOK, HARDCOVER, MAX_VOLUME, PAPERBACK, Record, SYNTHETIC, Source, clean, first_number,
-    is_genre, is_numbered_genre, match_key, without_series,
+    is_genre, is_numbered_genre, match_key, normalized_name, without_series,
 };
 use crate::release;
 use crate::tags::Classes;
@@ -445,17 +445,7 @@ fn isbn_keys<'a>(values: impl Iterator<Item = &'a str>) -> Vec<u32> {
 }
 
 fn heading_name(heading: &str) -> String {
-    let heading = heading.trim_end_matches([',', ' ']);
-    let initial = heading.chars().rev().nth(1).is_some_and(char::is_uppercase);
-    let heading = clean(if initial {
-        heading
-    } else {
-        heading.trim_end_matches('.')
-    });
-    match heading.split_once(", ") {
-        Some((last, first)) => format!("{first} {last}"),
-        None => heading,
-    }
+    normalized_name(heading.trim_end_matches([',', ' ']))
 }
 
 fn series_of(marc: &Marc, tags: &[&str], name_code: char) -> (String, u16) {
@@ -621,16 +611,17 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
     let (main, part) = (marc.first("245", 'a'), marc.first("245", 'p'));
     let (title, series, volume) = titled(main, part, marc.first("245", 'n'), series)?;
     let audience = fixed.get(22).copied().unwrap_or(' ');
-    let picture = subjects.contains(&"picture books");
+    let comics = subjects.contains(&"comics & graphic novels");
+    let picture = subjects.contains(&"picture books") && !comics;
     let teen = audience == 'd' || has(profile.teens);
     let young = JUVENILE_AUDIENCES.contains(audience) || juvenile_class || has(profile.kids);
     let reader = Reader {
         kid: (young || picture) && !teen,
         teen,
         picture,
-        comics: subjects.contains(&"comics & graphic novels"),
-        poetry: form == 'p' || subjects.contains(&"poetry"),
-        drama: form == 'd' || subjects.contains(&"drama"),
+        comics,
+        poetry: form == 'p' || form != '0' && subjects.contains(&"poetry"),
+        drama: form == 'd' || form != '0' && subjects.contains(&"drama"),
         fiction: "1fj".contains(form),
     };
     let translated = marc.values("041", 'h').next().is_some();
@@ -671,8 +662,8 @@ fn bnf_name(marc: &Marc) -> String {
     };
     let surname = clean(author.get('a').unwrap_or_default());
     match author.get('b').map(clean) {
-        Some(given) if !given.is_empty() => format!("{given} {surname}"),
-        _ => surname,
+        Some(given) if !given.is_empty() => normalized_name(&format!("{given} {surname}")),
+        _ => normalized_name(&surname),
     }
 }
 

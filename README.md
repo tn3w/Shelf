@@ -185,5 +185,5 @@ Developers: building, architecture and the catalogue pipeline are in
 <a href=".github/CODE_OF_CONDUCT.md">Code of conduct</a> · Book data from
 <a href="https://openlibrary.org">Open Library</a> and the national libraries of Germany
 (DNB), Estonia (ERB), France (BnF), Sweden (LIBRIS), Poland (BN), the Czech Republic
-(NKP), Korea (NLK) and Finland (Fennica).
+(NKP), Korea (NLK), Finland (Fennica) and the UK (BNB, English series).
 </sub>
