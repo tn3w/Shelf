@@ -58,7 +58,7 @@
     <string name="more_by">Mehr von %s</string>
     <string name="no_results">Keine Treffer.</string>
     <string name="online_covers">Cover laden</string>
-    <string name="online_covers_hint">Coverbilder von Open Library, DNB, DIGAR und Bookbites laden.</string>
+    <string name="online_covers_hint">Coverbilder von Open Library, DNB, DIGAR und Bookbites laden, Autorenfotos von Open Library.</string>
     <string name="open_failed">Datei konnte nicht geöffnet werden.</string>
     <string name="page_failed">Diese Seite konnte nicht angezeigt werden.</string>
     <string name="open_library_license">Open-Library-Datenlizenz</string>
