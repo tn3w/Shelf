@@ -58,7 +58,7 @@
     <string name="more_by">Mer av %s</string>
     <string name="no_results">Inga resultat.</string>
     <string name="online_covers">Ladda omslag</string>
-    <string name="online_covers_hint">Hämta omslagsbilder från Open Library, DNB, DIGAR och Bookbites.</string>
+    <string name="online_covers_hint">Hämta omslagsbilder från Open Library, DNB, DIGAR och Bookbites, författarfoton från Open Library.</string>
     <string name="open_failed">Filen kunde inte öppnas.</string>
     <string name="page_failed">Sidan kunde inte visas.</string>
     <string name="open_library_license">Licens för Open Library-data</string>
