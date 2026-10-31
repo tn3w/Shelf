@@ -85,9 +85,7 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 downloads["$language-${info.pack}"],
                 offline,
                 onDownload = { viewModel.downloadPack(language, info.pack) },
-                onRemove = {
-                    viewModel.removePacks(language, info.pack.takeIf { it != "core" })
-                },
+                onRemove = { viewModel.removePacks(language, info.pack) },
             )
         }
         val pending = packs.filter { it.state != PackState.Installed }
@@ -222,8 +220,9 @@ private fun PackAction(
         }
     }
     val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
+        .takeIf { info.state != PackState.Available }
     val action = when {
-        offline -> remove.takeIf { info.removable }
+        offline -> remove
 
         download is Download.Failed ->
             PackButton(Icons.Outlined.ErrorOutline, R.string.retry_item, onDownload)
@@ -234,9 +233,7 @@ private fun PackAction(
         info.state == PackState.Update ->
             PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
 
-        info.removable -> remove
-
-        else -> null
+        else -> remove
     } ?: return Box(Modifier.size(48.dp))
     IconAction(action.icon, stringResource(action.label, label), action.onClick)
 }

@@ -90,7 +90,9 @@ fun UpdateDialog(release: Release, onDismiss: () -> Unit) {
                     val changed = relativeTime(release.changedAt, now)
                     Hint(stringResource(R.string.update_wait_note, changed))
                 }
-                progress?.let { value -> LinearProgressIndicator(progress = { value }) }
+                progress?.let { value ->
+                    LinearProgressIndicator(progress = { value }, drawStopIndicator = {})
+                }
                 failure?.let { Text(stringResource(it)) }
             }
         },

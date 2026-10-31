@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Aimekirjandus</string>
     <string name="pack_romance">Armastusromaanid</string>
     <string name="pack_scifi">Ulme</string>
+    <string name="pack_suggestion">Enamik selliseid raamatuid on paketis „%s“, mis pole veel paigaldatud. Laadi see alla, et näha palju rohkem.</string>
     <string name="pack_update">Uuendus saadaval</string>
     <string name="pack_young_adult">Noortele</string>
     <string name="page_of">Lehekülg %1$d / %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Seaded</string>
     <string name="other_books">Muud raamatud</string>
     <string name="show_all">Näita kõiki</string>
+    <string name="show_less">Näita vähem</string>
     <string name="similar">Võib-olla meeldib ka</string>
     <string name="like_title">Sarnased: %1$s</string>
     <string name="readers_also_like">Lugejatele meeldib ka</string>
@@ -143,8 +145,8 @@
         <item quantity="other">Selles sarjas on %d raamatut</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">%d valitud</item>
-        <item quantity="other">%d valitud</item>
+        <item quantity="one">%d raamat valitud</item>
+        <item quantity="other">%d raamatut valitud</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d päev järjest</item>

@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Documents</string>
     <string name="pack_romance">Romance</string>
     <string name="pack_scifi">Science-fiction</string>
+    <string name="pack_suggestion">La plupart des livres de ce type sont dans le pack « %s », qui n’est pas encore installé. Téléchargez-le pour en voir bien plus.</string>
     <string name="pack_update">Mise à jour disponible</string>
     <string name="pack_young_adult">Jeunes adultes</string>
     <string name="page_of">Page %1$d sur %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Paramètres</string>
     <string name="other_books">Autres livres</string>
     <string name="show_all">Tout afficher</string>
+    <string name="show_less">Afficher moins</string>
     <string name="similar">Vous aimerez aussi</string>
     <string name="like_title">Similaires à %1$s</string>
     <string name="readers_also_like">Les lecteurs aiment aussi</string>

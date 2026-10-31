@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Naučná literatura</string>
     <string name="pack_romance">Romantika</string>
     <string name="pack_scifi">Sci-fi</string>
+    <string name="pack_suggestion">Většina takových knih je v balíčku „%s“, který zatím není nainstalovaný. Stáhněte ho a uvidíte mnohem víc.</string>
     <string name="pack_update">Dostupná aktualizace</string>
     <string name="pack_young_adult">Pro mládež</string>
     <string name="page_of">Strana %1$d z %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Nastavení</string>
     <string name="other_books">Další knihy</string>
     <string name="show_all">Zobrazit vše</string>
+    <string name="show_less">Zobrazit méně</string>
     <string name="similar">Mohlo by se vám líbit</string>
     <string name="like_title">Podobné jako %1$s</string>
     <string name="readers_also_like">Čtenáři mají rádi také</string>
@@ -147,10 +149,10 @@
         <item quantity="other">%d knih v této sérii</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">Vybráno: %d</item>
-        <item quantity="few">Vybráno: %d</item>
-        <item quantity="many">Vybráno: %d</item>
-        <item quantity="other">Vybráno: %d</item>
+        <item quantity="one">Vybrána %d kniha</item>
+        <item quantity="few">Vybrány %d knihy</item>
+        <item quantity="many">Vybráno %d knihy</item>
+        <item quantity="other">Vybráno %d knih</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d den v řadě</item>
@@ -159,10 +161,10 @@
         <item quantity="other">%d dní v řadě</item>
     </plurals>
     <plurals name="editions">
-        <item quantity="one">%d vydání</item>
-        <item quantity="few">%d vydání</item>
-        <item quantity="many">%d vydání</item>
-        <item quantity="other">%d vydání</item>
+        <item quantity="one">%d dostupné vydání</item>
+        <item quantity="few">%d dostupná vydání</item>
+        <item quantity="many">%d dostupného vydání</item>
+        <item quantity="other">%d dostupných vydání</item>
     </plurals>
     <plurals name="keep_streak">
         <item quantity="one">Přečtěte dnes %d stranu a udržte sérii.</item>

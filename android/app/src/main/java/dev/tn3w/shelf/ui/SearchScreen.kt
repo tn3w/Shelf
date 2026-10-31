@@ -38,7 +38,7 @@ import kotlinx.coroutines.*
 private const val RESULT_LIMIT = 50
 private const val LIBRARY_LIMIT = 3
 
-private data class Results(
+data class Results(
     val completions: List<String>,
     val authors: List<Author>,
     val books: List<Book>,
@@ -66,6 +66,8 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
 
 class SearchViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val trending = catalogueState { recommender.popular(8) }
+    var results by mutableStateOf<Results?>(null)
+    var searched: Any? = null
 
     fun remember(query: String) {
         if (query.isNotBlank()) detached { library.remember(query) }
@@ -85,7 +87,6 @@ fun SearchScreen(navigator: Navigator) {
     var era by rememberSaveable { mutableStateOf<Int?>(null) }
     var sort by rememberSaveable { mutableStateOf(ResultSort.Relevance) }
     val filter = SearchFilter(tag, era?.let(ERAS::get), sort)
-    var results by remember { mutableStateOf<Results?>(null) }
     val library = viewModel.library
     val saved by library.saved.collectAsStateWithLifecycle(emptyList())
     val recent by library.recentSearches.collectAsStateWithLifecycle(emptyList())
@@ -95,14 +96,17 @@ fun SearchScreen(navigator: Navigator) {
 
     LaunchedEffect(query, loaded, filter) {
         val current = loaded ?: return@LaunchedEffect
-        if (query.isBlank()) {
-            results = null
-            return@LaunchedEffect
+        val key = Triple(query, filter, current)
+        if (viewModel.searched == key) return@LaunchedEffect
+        viewModel.results = if (query.isBlank()) {
+            null
+        } else {
+            delay(150)
+            withContext(Dispatchers.Default) {
+                current.results(query, filter, coroutineContext.job)
+            }
         }
-        delay(150)
-        results = withContext(Dispatchers.Default) {
-            current.results(query, filter, coroutineContext.job)
-        }
+        viewModel.searched = key
     }
 
     fun saveQuery() = viewModel.remember(query)
@@ -126,7 +130,7 @@ fun SearchScreen(navigator: Navigator) {
             onSubmit = { saveQuery() },
             onScan = scan(navigator),
         )
-        val current = results
+        val current = viewModel.results
         if (current != null) {
             ResultFilters(
                 facets = current.facets,

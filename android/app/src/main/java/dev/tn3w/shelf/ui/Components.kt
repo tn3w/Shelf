@@ -767,4 +767,4 @@ private fun Modifier.bleed(padding: Dp) = layout { measurable, constraints ->
 }
 
 fun LazyGridScope.fullBleed(content: @Composable () -> Unit) =
-    fullWidth { Box(Modifier.bleed(ScreenPadding)) { content() } }
+    fullWidth { Column(Modifier.bleed(ScreenPadding)) { content() } }

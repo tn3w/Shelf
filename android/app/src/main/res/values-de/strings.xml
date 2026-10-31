@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Sachbuch</string>
     <string name="pack_romance">Liebesroman</string>
     <string name="pack_scifi">Science-Fiction</string>
+    <string name="pack_suggestion">Die meisten Bücher dieser Art sind im Paket „%s“, das noch nicht installiert ist. Lade es herunter, um viele weitere zu sehen.</string>
     <string name="pack_update">Update verfügbar</string>
     <string name="pack_young_adult">Jugendbuch</string>
     <string name="page_of">Seite %1$d von %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Einstellungen</string>
     <string name="other_books">Weitere Bücher</string>
     <string name="show_all">Alle anzeigen</string>
+    <string name="show_less">Weniger anzeigen</string>
     <string name="similar">Das könnte dir gefallen</string>
     <string name="like_title">Ähnlich wie %1$s</string>
     <string name="readers_also_like">Leser mögen auch</string>
@@ -143,8 +145,8 @@
         <item quantity="other">%d Bücher in dieser Reihe</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">%d ausgewählt</item>
-        <item quantity="other">%d ausgewählt</item>
+        <item quantity="one">%d Buch ausgewählt</item>
+        <item quantity="other">%d Bücher ausgewählt</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d Tag am Stück</item>
@@ -163,8 +165,8 @@
         <item quantity="other">Noch %d Seiten für deine Serie.</item>
     </plurals>
     <plurals name="readers">
-        <item quantity="one">%d Leser</item>
-        <item quantity="other">%d Leser</item>
+        <item quantity="one">Von %d Person gelesen</item>
+        <item quantity="other">Von %d Personen gelesen</item>
     </plurals>
     <plurals name="start_streak">
         <item quantity="one">Lies %d Seite, um eine Serie zu starten.</item>

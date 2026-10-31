@@ -221,7 +221,9 @@ private fun DownloadBar(download: Download?) {
     if (download !is Download.Running) return
     val progress by animateFloatAsState(download.progress)
     LinearProgressIndicator(
-        progress = { progress }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        progress = { progress },
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        drawStopIndicator = {},
     )
 }
 

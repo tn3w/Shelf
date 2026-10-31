@@ -29,6 +29,32 @@ val PACKS = mapOf(
     "nonfiction" to R.string.pack_nonfiction,
     "general" to R.string.pack_general,
 )
+private val TAG_PACKS = mapOf(
+    "fantasy" to "fantasy",
+    "epic-fantasy" to "fantasy",
+    "urban-fantasy" to "fantasy",
+    "paranormal" to "fantasy",
+    "science-fiction" to "scifi",
+    "space-opera" to "scifi",
+    "dystopian" to "scifi",
+    "mystery" to "mystery",
+    "cozy-mystery" to "mystery",
+    "thriller" to "mystery",
+    "crime" to "mystery",
+    "romance" to "romance",
+    "regency-romance" to "romance",
+    "contemporary-romance" to "romance",
+    "historical-romance" to "romance",
+    "nonfiction" to "nonfiction",
+    "young-adult" to "young-adult",
+)
+
+fun packFor(tag: Tag) = when (tag.category) {
+    "topic" -> "nonfiction"
+    "audience" -> TAG_PACKS[tag.slug] ?: "kids"
+    else -> TAG_PACKS[tag.slug]
+}
+
 private fun labelParts(label: String) =
     label.split('-', '.').map { it.toIntOrNull() ?: 0 }
 
@@ -75,12 +101,7 @@ enum class PackState(@StringRes val label: Int) {
     Available(R.string.pack_available),
 }
 
-data class PackInfo(
-    val pack: String,
-    val state: PackState,
-    val bytes: Long,
-    val removable: Boolean = false,
-)
+data class PackInfo(val pack: String, val state: PackState, val bytes: Long)
 
 sealed interface Download {
     data class Running(val progress: Float) : Download
@@ -98,6 +119,8 @@ fun MutableStateFlow<Map<String, Download>>.claim(key: String): Boolean {
 private data class LocalFile(val id: String, val pack: String, val month: String) {
     val language
         get() = id.take(2)
+    val key
+        get() = "$language-$pack"
 }
 
 private val segmentName =
@@ -144,8 +167,10 @@ class Packs(private val context: Context) {
     }
     private val manifestFile = directory.resolve(MANIFEST_NAME)
     private val fetching = Mutex()
-    private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
-    private val bundledIds = bundled.map { it.id }.toSet()
+    private val hiddenFile = directory.resolve("hidden.txt")
+    private val assetFiles = context.assets.list("").orEmpty().mapNotNull(::parseName)
+    private val bundled
+        get() = hidden().let { hidden -> assetFiles.filter { it.key !in hidden } }
 
     private val _revision = MutableStateFlow(0)
     val revision = _revision.asStateFlow()
@@ -194,6 +219,13 @@ class Packs(private val context: Context) {
     private fun downloaded() =
         directory.listFiles().orEmpty().mapNotNull { parseName(it.name) }
 
+    private fun hidden() =
+        hiddenFile.takeIf { it.exists() }?.readLines()?.toSet().orEmpty()
+
+    @Synchronized
+    private fun updateHidden(change: (Set<String>) -> Set<String>) =
+        hiddenFile.writeText(change(hidden()).joinToString("\n"))
+
     private fun binOf(id: String) = directory.resolve("$id.bin")
 
     private fun deleteAll(files: List<LocalFile>) =
@@ -220,8 +252,8 @@ class Packs(private val context: Context) {
         changed()
     }
 
-    fun storageBytes(language: String) = downloaded().filter { it.language == language }
-        .sumOf { binOf(it.id).length() }
+    fun storageBytes(language: String) =
+        installed(language).distinctBy { it.id }.sumOf(::sizeOf)
 
     fun load(language: String): Catalogue {
         val files = (downloaded() + bundled).filter { it.language == language }
@@ -261,24 +293,20 @@ class Packs(private val context: Context) {
         val manifest = manifest
         val entries = manifest?.segments.orEmpty().filter { it.language == language }
         val offered = entries.map { it.pack }.toSet()
-        val missingRanks =
-            entries.filter { it.pack == "ranks" && it.id !in ids }.sumOf { it.size }
         val listed = PACKS.keys.filter { manifest == null || it in offered }
         return listed.map { pack ->
-            val needed = entries.filter { it.pack == pack }
-            val present = files.filter { it.pack == pack }
-            val missing = needed.filter { it.id !in ids }.sumOf { it.size }
-            val extra = if (pack == "core") missingRanks else 0
-            val removable = present.any { it.id !in bundledIds }
+            val parts = if (pack == "core") setOf(pack, "ranks") else setOf(pack)
+            val missing = entries.filter { it.pack in parts && it.id !in ids }
+                .sumOf { it.size }
             when {
-                present.isEmpty() ->
-                    PackInfo(pack, PackState.Available, needed.sumOf { it.size } + extra)
+                files.none { it.pack == pack } ->
+                    PackInfo(pack, PackState.Available, missing)
 
-                missing > 0 -> PackInfo(pack, PackState.Update, missing, removable)
+                missing > 0 -> PackInfo(pack, PackState.Update, missing)
 
                 else -> {
-                    val size = present.sumOf(::sizeOf)
-                    PackInfo(pack, PackState.Installed, size, removable)
+                    val size = files.filter { it.pack in parts }.sumOf(::sizeOf)
+                    PackInfo(pack, PackState.Installed, size)
                 }
             }
         }
@@ -389,11 +417,11 @@ class Packs(private val context: Context) {
     }
 
     fun remove(language: String, pack: String?) {
-        deleteAll(
-            downloaded().filter {
-                it.language == language && (pack == null || it.pack == pack)
-            },
-        )
+        val files = installed(language)
+        val left = files.filter { pack != null && it.pack != pack && it.pack != "ranks" }
+        val removed = files.filter { left.isEmpty() || it.pack == pack }
+        deleteAll(removed)
+        updateHidden { it + removed.map(LocalFile::key) }
         changed()
     }
 

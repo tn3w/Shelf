@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Literatura faktu</string>
     <string name="pack_romance">Romans</string>
     <string name="pack_scifi">Science fiction</string>
+    <string name="pack_suggestion">Większość takich książek jest w pakiecie „%s”, który nie jest jeszcze zainstalowany. Pobierz go, aby zobaczyć znacznie więcej.</string>
     <string name="pack_update">Dostępna aktualizacja</string>
     <string name="pack_young_adult">Młodzieżowe</string>
     <string name="page_of">Strona %1$d z %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Ustawienia</string>
     <string name="other_books">Inne książki</string>
     <string name="show_all">Pokaż wszystko</string>
+    <string name="show_less">Pokaż mniej</string>
     <string name="similar">Może ci się spodobać</string>
     <string name="like_title">Podobne do: %1$s</string>
     <string name="readers_also_like">Czytelnikom podoba się też</string>
@@ -147,10 +149,10 @@
         <item quantity="other">%d książki w tej serii</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">Wybrano: %d</item>
-        <item quantity="few">Wybrano: %d</item>
-        <item quantity="many">Wybrano: %d</item>
-        <item quantity="other">Wybrano: %d</item>
+        <item quantity="one">Wybrano %d książkę</item>
+        <item quantity="few">Wybrano %d książki</item>
+        <item quantity="many">Wybrano %d książek</item>
+        <item quantity="other">Wybrano %d książki</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d dzień z rzędu</item>

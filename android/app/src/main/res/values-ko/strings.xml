@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">논픽션</string>
     <string name="pack_romance">로맨스</string>
     <string name="pack_scifi">공상과학</string>
+    <string name="pack_suggestion">이런 책은 대부분 아직 설치되지 않은 ‘%s’ 팩에 있어요. 다운로드하면 훨씬 더 많이 볼 수 있어요.</string>
     <string name="pack_update">업데이트 있음</string>
     <string name="pack_young_adult">청소년</string>
     <string name="page_of">%2$d쪽 중 %1$d쪽</string>
@@ -102,6 +103,7 @@
     <string name="settings">설정</string>
     <string name="other_books">다른 책</string>
     <string name="show_all">모두 보기</string>
+    <string name="show_less">간단히 보기</string>
     <string name="similar">이런 책도 좋아할 거예요</string>
     <string name="like_title">%1$s와(과) 비슷한 책</string>
     <string name="readers_also_like">독자들이 함께 좋아하는 책</string>

@@ -9,9 +9,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.LibraryAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
@@ -93,6 +95,14 @@ class TagViewModel(app: ShelfApp, id: Int) : ShelfViewModel(app) {
     private val _sort = MutableStateFlow(TagSort.Popular)
     val sort = _sort.asStateFlow()
     val tag = catalogueState { catalogue.tags.getOrNull(id) }
+    val missingPack = catalogueState {
+        val pack = catalogue.tags.getOrNull(id)?.let(::packFor)
+            ?: return@catalogueState null
+        val language = catalogue.language
+        val missing = app.packs.packs(language)
+            .any { it.pack == pack && it.state == PackState.Available }
+        if (missing) language to pack else null
+    }
     val books = combine(loaded.filterNotNull(), sort) { current, order ->
         current.recommender.popular(90, id, order)
     }.asState()
@@ -100,6 +110,8 @@ class TagViewModel(app: ShelfApp, id: Int) : ShelfViewModel(app) {
     fun sortBy(order: TagSort) {
         _sort.value = order
     }
+
+    fun download(language: String, pack: String) = app.download(language, pack)
 }
 
 class SeriesViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
@@ -225,6 +237,9 @@ fun TagScreen(id: Int, navigator: Navigator) {
     val tag by viewModel.tag.collectAsStateWithLifecycle()
     val sort by viewModel.sort.collectAsStateWithLifecycle()
     val books by viewModel.books.collectAsStateWithLifecycle()
+    val missingPack by viewModel.missingPack.collectAsStateWithLifecycle()
+    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
+    val offline = loadedSettings()?.isOffline(LocalContext.current) ?: true
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
         BackBar(navigator::back, tag?.label.orEmpty())
         FilterRow {
@@ -236,7 +251,33 @@ fun TagScreen(id: Int, navigator: Navigator) {
                 )
             }
         }
-        BookGrid(books, "tag-$id", navigator::book)
+        BookGrid(books, "tag-$id", navigator::book, footer = {
+            val (language, pack) = missingPack?.takeIf { !offline } ?: return@BookGrid
+            fullWidth {
+                MissingPack(pack, downloads["$language-$pack"]) {
+                    viewModel.download(language, pack)
+                }
+            }
+        })
+    }
+}
+
+@Composable
+private fun MissingPack(pack: String, download: Download?, onDownload: () -> Unit) {
+    val label = stringResource(PACKS.getValue(pack))
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        val text = stringResource(R.string.pack_suggestion, label)
+        EmptyState(Icons.Outlined.LibraryAdd, text)
+        if (download is Download.Running) {
+            return@Column LinearProgressIndicator(
+                progress = { download.progress },
+                modifier = Modifier.width(160.dp).padding(vertical = 18.dp),
+                drawStopIndicator = {},
+            )
+        }
+        OutlinedButton(onClick = onDownload) {
+            Text(stringResource(R.string.download_item, label))
+        }
     }
 }
 

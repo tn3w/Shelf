@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Tietokirjat</string>
     <string name="pack_romance">Romantiikka</string>
     <string name="pack_scifi">Scifi</string>
+    <string name="pack_suggestion">Useimmat tällaiset kirjat ovat paketissa ”%s”, jota ei ole vielä asennettu. Lataa se nähdäksesi paljon enemmän.</string>
     <string name="pack_update">Päivitys saatavilla</string>
     <string name="pack_young_adult">Nuoret</string>
     <string name="page_of">Sivu %1$d/%2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Asetukset</string>
     <string name="other_books">Muut kirjat</string>
     <string name="show_all">Näytä kaikki</string>
+    <string name="show_less">Näytä vähemmän</string>
     <string name="similar">Saatat pitää myös näistä</string>
     <string name="like_title">Samankaltaisia: %1$s</string>
     <string name="readers_also_like">Lukijat pitävät myös näistä</string>
@@ -143,12 +145,12 @@
         <item quantity="other">%d kirjaa tässä sarjassa</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">%d valittu</item>
-        <item quantity="other">%d valittu</item>
+        <item quantity="one">%d kirja valittu</item>
+        <item quantity="other">%d kirjaa valittu</item>
     </plurals>
     <plurals name="day_streak">
-        <item quantity="one">%d päivän putki</item>
-        <item quantity="other">%d päivän putki</item>
+        <item quantity="one">Putki: %d päivä</item>
+        <item quantity="other">Putki: %d päivää</item>
     </plurals>
     <plurals name="editions">
         <item quantity="one">%d painos</item>

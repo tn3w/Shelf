@@ -683,7 +683,8 @@ fun LanguageChips(
         val pinned = option.isEmpty() || option == selected || option in installed
         pinned || option in MAIN_LANGUAGES
     }
-    val shown = if (expanded) options else options.filter(main)
+    val collapsed = options.filter(main)
+    val shown = if (expanded) options else collapsed
     FlowRow(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -704,13 +705,14 @@ fun LanguageChips(
                 leadingIcon = icon?.let { { ChipIcon(it) } },
             )
         }
-        if (shown.size < options.size) {
-            AssistChip(
-                onClick = { expanded = true },
-                label = { Text(stringResource(R.string.show_all), maxLines = 1) },
-                trailingIcon = { ChipIcon(Icons.Outlined.ExpandMore) },
-            )
-        }
+        if (collapsed.size == options.size) return@FlowRow
+        val label = if (expanded) R.string.show_less else R.string.show_all
+        val icon = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore
+        AssistChip(
+            onClick = { expanded = !expanded },
+            label = { Text(stringResource(label), maxLines = 1) },
+            trailingIcon = { ChipIcon(icon) },
+        )
     }
 }
 

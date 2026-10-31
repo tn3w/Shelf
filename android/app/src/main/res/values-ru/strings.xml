@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Научно-популярные</string>
     <string name="pack_romance">Романы о любви</string>
     <string name="pack_scifi">Научная фантастика</string>
+    <string name="pack_suggestion">Большинство таких книг находится в пакете «%s», который ещё не установлен. Скачайте его, чтобы увидеть намного больше.</string>
     <string name="pack_update">Доступно обновление</string>
     <string name="pack_young_adult">Для подростков</string>
     <string name="page_of">Страница %1$d из %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Настройки</string>
     <string name="other_books">Другие книги</string>
     <string name="show_all">Показать все</string>
+    <string name="show_less">Показать меньше</string>
     <string name="similar">Вам может понравиться</string>
     <string name="like_title">Похоже на %1$s</string>
     <string name="readers_also_like">Читателям также нравится</string>
@@ -147,10 +149,10 @@
         <item quantity="other">%d книги в этой серии</item>
     </plurals>
     <plurals name="selected_count">
-        <item quantity="one">Выбрано: %d</item>
-        <item quantity="few">Выбрано: %d</item>
-        <item quantity="many">Выбрано: %d</item>
-        <item quantity="other">Выбрано: %d</item>
+        <item quantity="one">Выбрана %d книга</item>
+        <item quantity="few">Выбрано %d книги</item>
+        <item quantity="many">Выбрано %d книг</item>
+        <item quantity="other">Выбрано %d книги</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d день подряд</item>

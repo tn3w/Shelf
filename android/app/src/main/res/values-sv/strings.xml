@@ -83,6 +83,7 @@
     <string name="pack_nonfiction">Facklitteratur</string>
     <string name="pack_romance">Romance</string>
     <string name="pack_scifi">Science fiction</string>
+    <string name="pack_suggestion">De flesta böcker av det här slaget finns i paketet ”%s”, som inte är installerat än. Ladda ner det för att se många fler.</string>
     <string name="pack_update">Uppdatering finns</string>
     <string name="pack_young_adult">Unga vuxna</string>
     <string name="page_of">Sida %1$d av %2$d</string>
@@ -102,6 +103,7 @@
     <string name="settings">Inställningar</string>
     <string name="other_books">Andra böcker</string>
     <string name="show_all">Visa alla</string>
+    <string name="show_less">Visa färre</string>
     <string name="similar">Du kanske också gillar</string>
     <string name="like_title">Liknande %1$s</string>
     <string name="readers_also_like">Läsare gillar också</string>

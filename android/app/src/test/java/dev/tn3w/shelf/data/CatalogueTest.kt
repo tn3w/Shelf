@@ -292,3 +292,18 @@ class CatalogueTest {
         )
     }
 }
+
+class PackForTest {
+    private fun pack(slug: String, category: String) =
+        packFor(Tag(0, slug, slug, category))
+
+    @Test
+    fun tagsSuggestTheirPack() {
+        assertEquals("kids", pack("picture-book", "audience"))
+        assertEquals("kids", pack("childrens", "audience"))
+        assertEquals("young-adult", pack("young-adult", "audience"))
+        assertEquals("nonfiction", pack("history", "topic"))
+        assertEquals("fantasy", pack("urban-fantasy", "genre"))
+        assertNull(pack("classics", "genre"))
+    }
+}
