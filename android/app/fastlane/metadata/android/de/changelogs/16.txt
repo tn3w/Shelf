@@ -1,6 +1,6 @@
-• Kataloge für Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch aus ihren Nationalbibliotheken; App auch in diesen Sprachen und Russisch
-• Französischer Katalog wächst mit der BnF auf über 600.000 Bücher
+• Kataloge für Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch; App auch in diesen Sprachen und Russisch
+• Französischer Katalog wächst auf über 600.000 Bücher
 • Sprachauswahl für Kataloge; kleinere App, nur Englisch dabei
 • Suche versteht polnische, tschechische und koreanische Zeichen
 • E-Ink-Modus und Helligkeit per Wischen im Reader
-• Automatisches Tagesbackup in einen Ordner deiner Wahl, 7 neueste bleiben
+• Tagesbackup in einen Ordner deiner Wahl, 7 neueste bleiben
