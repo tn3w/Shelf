@@ -1,20 +1,11 @@
-Shelf to katalog książek offline oparty na Open Library i bibliotekach narodowych Niemiec, Francji, Estonii, Szwecji, Polski, Czech, Korei i Finlandii.
+Shelf to prywatna aplikacja do książek offline. Cały katalog jest w twoim telefonie, zbudowany z Open Library, British Library i bibliotek narodowych. Bez konta, bez reklam, bez śledzenia.
 
-* Wyszukiwanie odporne na literówki z podpowiedziami
-* Odkrywaj gatunki, serie i autorów
-* Biblioteka z półkami: chcę przeczytać, czytam i przeczytane
-* Dodawaj własne książki, których brakuje w katalogu, z własną okładką
-* Zeskanuj okładkę lub kod kreskowy ISBN, aby znaleźć książkę, bezpośrednio na urządzeniu
-* Import i eksport CSV z Goodreads i StoryGraph
-* Automatyczna dzienna kopia zapasowa do wybranego folderu, na przykład folderu Syncthing
-* Dzienny cel czytania i serie
-* Osobiste rekomendacje obliczane na urządzeniu
-* Czytnik plików EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT i HTML, zaimportowanych lub otwieranych z dowolnej aplikacji
-* Darmowe e-booki z domeny publicznej lub na otwartych licencjach, z wybranych przez Ciebie źródeł albo własnych
-* Wygodne czytanie: rozmiar tekstu, interlinia, marginesy, krój pisma, strony papierowe i nocne, klawisze przewracania stron
-* Tryb e-ink i jasność ustawiana przesunięciem po stronie
-* Katalogi po angielsku, niemiecku, francusku, hiszpańsku, estońsku, szwedzku, polsku, czesku, koreańsku i fińsku z opcjonalnymi pakietami gatunków
-* Aplikacja po angielsku, niemiecku, francusku, hiszpańsku, estońsku, szwedzku, polsku, czesku, koreańsku, fińsku i rosyjsku
-* Możliwość własnego hostingu: własne źródło katalogu lub import plików katalogu
+* Wyszukiwanie odporne na literówki: tytuły, autorzy, serie i ISBN
+* Zeskanuj okładkę lub kod kreskowy, by znaleźć książkę
+* Półki Chcę przeczytać, Czytam i Przeczytane, dzienny cel i serie czytania
+* Przeglądaj gatunki, serie i autorów, z rekomendacjami liczonymi w telefonie
+* Czytaj EPUB, Kindle, PDF, komiksy, pliki Word i więcej
+* Import z Goodreads i StoryGraph
+* Katalogi po angielsku, niemiecku, francusku, hiszpańsku, estońsku, szwedzku, polsku, czesku, koreańsku i fińsku; aplikacja także po rosyjsku
 
-Bez śledzenia, bez reklam, bez kont. Shelf łączy się tylko z GitHubem (lub Twoim własnym źródłem katalogu) w celu pobierania katalogów oraz, jeśli włączysz, z Open Library i jego hostem archive.org, DNB, DIGAR i Bookbites w celu pobierania okładek i zdjęć autorów.
+Jeden przełącznik odcina całą sieć. Twoja biblioteka nigdy nie opuszcza telefonu.

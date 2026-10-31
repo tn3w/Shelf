@@ -1,6 +1,7 @@
-• Catálogos en sueco, polaco, checo, coreano y finés; app también en estos idiomas y ruso
-• El catálogo francés crece a más de 600 000 libros
-• Selector de idioma de catálogos; app más ligera, solo se incluye inglés
-• La búsqueda entiende letras polacas, checas y coreanas
-• Modo e-ink y brillo deslizando en el lector
-• Copia diaria en una carpeta que elijas, con las 7 más recientes
+• Nuevos catálogos e idiomas de la app: sueco, polaco, checo, coreano, finés; app también en ruso
+• El catálogo francés supera los 600 000 libros; el inglés suma datos de la British Library
+• Elige los idiomas del catálogo; app más ligera, solo incluye inglés
+• Recomendaciones: busca libros similares o combina varios
+• Diseños para tablet, modo e-ink y brillo deslizando en el lector
+• Copia diaria en una carpeta que elijas
+• Escáner de portadas más rápido y preciso

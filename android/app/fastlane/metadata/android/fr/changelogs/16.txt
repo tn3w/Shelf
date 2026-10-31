@@ -1,6 +1,7 @@
-• Catalogues suédois, polonais, tchèque, coréen et finnois ; appli aussi dans ces langues et en russe
-• Le catalogue français passe à plus de 600 000 livres
-• Sélecteur de langue des catalogues ; appli plus légère, seul l’anglais est inclus
-• La recherche comprend les lettres polonaises, tchèques et coréennes
-• Mode e-ink et luminosité par balayage dans le lecteur
-• Sauvegarde quotidienne dans un dossier au choix, 7 conservées
+• Nouveaux catalogues et langues : suédois, polonais, tchèque, coréen, finnois ; appli aussi en russe
+• Le catalogue français dépasse 600 000 livres ; l’anglais ajoute la British Library
+• Choix des langues du catalogue ; appli plus légère, anglais seul inclus
+• Recommandations : livres similaires ou plusieurs combinés
+• Mode tablette, mode e-ink et luminosité par balayage dans le lecteur
+• Sauvegarde quotidienne dans un dossier au choix
+• Scanner de couvertures plus rapide et précis

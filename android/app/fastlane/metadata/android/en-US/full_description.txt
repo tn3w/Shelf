@@ -1,20 +1,11 @@
-Shelf is an offline book catalogue built from Open Library and the national libraries of Germany, France, Estonia, Sweden, Poland, the Czech Republic, Korea and Finland.
+Shelf is a private, offline book app. The whole catalogue lives on your phone, built from Open Library, the British Library and national libraries. No account, no ads, no tracking.
 
-* Typo-tolerant search with completions
-* Explore genres, series and authors
-* Library with want-to-read, reading and finished shelves
-* Add your own books missing from the catalogue, with your own cover
-* Scan a book cover or ISBN barcode to find it, on device
-* Goodreads and StoryGraph CSV import and export
-* Automatic daily backup to a folder you choose, such as a Syncthing folder
-* Daily reading goal and streaks
-* Personal recommendations computed on the device
-* Reader for EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT and HTML files, imported or opened from any app
-* Free public domain and openly licensed ebooks from sources you choose, or your own
-* Reader comfort: text size, spacing, margins, typeface, paper and night pages, page keys
-* E-ink mode, and brightness by swiping on the page
-* Catalogues in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean and Finnish with optional genre packs
-* App in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean, Finnish and Russian
-* Self-hostable: own catalogue source, or import catalogue files
+* Typo-tolerant search for titles, authors, series and ISBNs
+* Scan a book cover or barcode to find it
+* Want to read, Reading and Finished shelves, daily goal and streaks
+* Explore genres, series and authors, with recommendations made on your phone
+* Read EPUB, Kindle, PDF, comics, Word files and more
+* Import from Goodreads and StoryGraph
+* Catalogues in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean and Finnish; app also in Russian
 
-No tracking, no ads, no accounts. Shelf only contacts GitHub (or your own catalogue source) for catalogue downloads and, if enabled, Open Library and its host archive.org, the DNB, DIGAR and Bookbites for covers and author photos.
+One switch turns off all network. Your library never leaves your phone.

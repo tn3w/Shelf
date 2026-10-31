@@ -1,20 +1,11 @@
-Shelf on võrguühenduseta raamatukataloog, mis põhineb Open Libraryl ning Saksamaa, Prantsusmaa, Eesti, Rootsi, Poola, Tšehhi, Korea ja Soome rahvusraamatukogudel.
+Shelf on privaatne võrguühenduseta raamatuäpp. Kogu kataloog on sinu telefonis, koostatud Open Libraryst, British Libraryst ja rahvusraamatukogudest. Ilma kontota, reklaamideta ja jälgimiseta.
 
-* Kirjavigu andestav otsing koos soovitustega
-* Avasta žanre, sarju ja autoreid
-* Raamatukogu riiulitega Tahan lugeda, Loen ja Loetud
-* Lisa oma raamatuid, mida kataloogis pole, oma kaanega
-* Skaneeri raamatu kaant või ISBN-vöötkoodi, et see leida, otse seadmes
-* Goodreadsi ja StoryGraphi CSV-import ja -eksport
-* Automaatne päevane varukoopia valitud kausta, näiteks Syncthingi kausta
-* Päevane lugemiseesmärk ja jadad
-* Isiklikud soovitused, mis arvutatakse seadmes
-* Lugeja EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-failidele, imporditud või avatud mis tahes rakendusest
-* Tasuta avalikus omandis ja avatud litsentsiga e-raamatud sinu valitud või oma allikatest
-* Lugemismugavus: teksti suurus, reavahe, veerised, kirjatüüp, paber- ja ööleheküljed, lehepööramisklahvid
-* E-ink-režiim ja eredus lehel pühkides
-* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea ja soome keeles valikuliste žanripakettidega
-* Rakendus inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea, soome ja vene keeles
-* Isehostitav: oma kataloogiallikas või kataloogifailide import
+* Trükivigu andestav otsing pealkirjade, autorite, sarjade ja ISBN-ide järgi
+* Skanni raamatu kaas või vöötkood ja leia raamat
+* Riiulid Tahan lugeda, Loen ja Loetud, päevane eesmärk ja lugemisrütm
+* Avasta žanre, sarju ja autoreid, soovitused arvutatakse telefonis
+* Loe EPUB-, Kindle-, PDF-, koomiksi-, Wordi- ja muid faile
+* Import Goodreadsist ja StoryGraphist
+* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea ja soome keeles; rakendus ka vene keeles
 
-Ei jälgimist, ei reklaame, ei kontosid. Shelf võtab ühendust ainult GitHubiga (või sinu enda kataloogiallikaga) kataloogide allalaadimiseks ning, kui lubad, Open Libraryga ja selle hostiga archive.org, DNB-ga, DIGAR-iga ja Bookbitesiga kaante ja autoripiltide jaoks.
+Üks lüliti katkestab kogu võrgu. Sinu raamatukogu ei lahku kunagi telefonist.

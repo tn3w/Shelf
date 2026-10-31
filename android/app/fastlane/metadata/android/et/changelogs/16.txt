@@ -1,6 +1,7 @@
-• Rootsi, poola, tšehhi, korea ja soome kataloogid; rakendus ka neis keeltes ja vene keeles
-• Prantsuse kataloog kasvab üle 600 000 raamatu
-• Kataloogi keele valik; väiksem rakendus, kaasas ainult inglise keel
-• Otsing mõistab poola, tšehhi ja korea tähti
-• E-ink-režiim ja eredus pühkides lugejas
-• Päevane varukoopia valitud kausta, säilib 7 uusimat
+• Uued kataloogid ja rakenduse keeled: rootsi, poola, tšehhi, korea, soome; rakendus ka vene keeles
+• Prantsuse kataloog kasvab üle 600 000 raamatu; inglise kataloog saab British Library andmed
+• Vali kataloogi keeled; väiksem rakendus, kaasas ainult inglise keel
+• Soovitused: leia sarnaseid raamatuid või ühenda mitu
+• Tahvelarvuti paigutus, e-tindi režiim ja eredus pühkides lugejas
+• Päevane varukoopia valitud kausta
+• Kiirem ja täpsem kaaneskanner

@@ -1,20 +1,11 @@
-Shelf är en offlinekatalog för böcker byggd på Open Library och nationalbiblioteken i Tyskland, Frankrike, Estland, Sverige, Polen, Tjeckien, Korea och Finland.
+Shelf är en privat bokapp som fungerar offline. Hela katalogen finns i telefonen, byggd från Open Library, British Library och nationalbibliotek. Inget konto, inga annonser, ingen spårning.
 
-* Feltolerant sökning med förslag
-* Utforska genrer, serier och författare
-* Bibliotek med hyllorna Vill läsa, Läser och Läst
-* Lägg till egna böcker som saknas i katalogen, med eget omslag
-* Skanna ett bokomslag eller en ISBN-streckkod för att hitta boken, direkt på enheten
-* Import och export av CSV från Goodreads och StoryGraph
-* Automatisk daglig säkerhetskopia till en mapp du väljer, till exempel en Syncthing-mapp
-* Dagligt läsmål och lässerier
-* Personliga rekommendationer beräknade på enheten
-* Läsare för EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- och HTML-filer, importerade eller öppnade från valfri app
-* Gratis e-böcker i det fria eller med öppen licens, från källor du väljer eller dina egna
-* Läskomfort: textstorlek, radavstånd, marginaler, typsnitt, pappers- och nattsidor, sidknappar
-* E-ink-läge och ljusstyrka genom att svepa på sidan
-* Kataloger på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska och finska med valfria genrepaket
-* Appen på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska, finska och ryska
-* Kan egenhostas: egen katalogkälla eller import av katalogfiler
+* Feltolerant sökning på titlar, författare, serier och ISBN
+* Skanna ett omslag eller en streckkod för att hitta boken
+* Hyllorna Vill läsa, Läser och Läst, dagligt mål och lässviter
+* Utforska genrer, serier och författare, med rekommendationer som beräknas i telefonen
+* Läs EPUB, Kindle, PDF, tecknade serier, Word-filer och mer
+* Import från Goodreads och StoryGraph
+* Kataloger på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska och finska; appen även på ryska
 
-Ingen spårning, inga annonser, inga konton. Shelf kontaktar bara GitHub (eller din egen katalogkälla) för nedladdning av kataloger och, om du aktiverar det, Open Library och dess värd archive.org, DNB, DIGAR och Bookbites för omslag och författarfoton.
+En knapp stänger av allt nätverk. Ditt bibliotek lämnar aldrig telefonen.

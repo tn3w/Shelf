@@ -1,20 +1,11 @@
-Shelf est un catalogue de livres hors ligne construit à partir d’Open Library et des bibliothèques nationales d’Allemagne, de France, d’Estonie, de Suède, de Pologne, de Tchéquie, de Corée et de Finlande.
+Shelf est une appli de livres privée et hors ligne. Tout le catalogue est sur votre téléphone, construit à partir d’Open Library, de la British Library et de bibliothèques nationales. Sans compte, sans pub, sans pistage.
 
-* Recherche tolérante aux fautes de frappe avec suggestions
-* Explorez genres, séries et auteurs
-* Bibliothèque avec étagères à lire, en cours et terminés
-* Ajoutez vos propres livres absents du catalogue, avec votre couverture
-* Scannez la couverture ou le code-barres ISBN d’un livre pour le trouver, sur l’appareil
-* Import et export CSV Goodreads et StoryGraph
-* Sauvegarde quotidienne automatique dans un dossier de votre choix, par exemple Syncthing
-* Objectif de lecture quotidien et séries
-* Recommandations personnelles calculées sur l’appareil
-* Lecteur pour les fichiers EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT et HTML, importés ou ouverts depuis n’importe quelle appli
-* Livres numériques gratuits du domaine public ou sous licence libre, depuis les sources de votre choix ou les vôtres
-* Confort de lecture : taille du texte, interligne, marges, police, pages papier et nuit, touches de page
-* Mode e-ink et luminosité par balayage sur la page
-* Catalogues en anglais, allemand, français, espagnol, estonien, suédois, polonais, tchèque, coréen et finnois avec packs de genres optionnels
-* Appli en anglais, allemand, français, espagnol, estonien, suédois, polonais, tchèque, coréen, finnois et russe
-* Auto-hébergeable : votre propre source de catalogue, ou import de fichiers de catalogue
+* Recherche tolérante aux fautes par titre, auteur, série et ISBN
+* Scannez une couverture ou un code-barres pour trouver un livre
+* Étagères À lire, En cours et Lus, objectif quotidien et séries de lecture
+* Explorez genres, séries et auteurs, avec des recommandations calculées sur votre téléphone
+* Lisez EPUB, Kindle, PDF, BD, fichiers Word et plus
+* Import depuis Goodreads et StoryGraph
+* Catalogues en anglais, allemand, français, espagnol, estonien, suédois, polonais, tchèque, coréen et finnois ; appli aussi en russe
 
-Aucun suivi, aucune publicité, aucun compte. Shelf ne contacte que GitHub (ou votre propre source de catalogue) pour les téléchargements de catalogue et, si activé, Open Library et son hébergeur archive.org, la DNB, DIGAR et Bookbites pour les couvertures et les photos d’auteurs.
+Un seul interrupteur coupe tout le réseau. Votre bibliothèque ne quitte jamais votre téléphone.

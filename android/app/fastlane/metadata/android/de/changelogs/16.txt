@@ -1,6 +1,7 @@
-• Kataloge für Schwedisch, Polnisch, Tschechisch, Koreanisch und Finnisch; App auch in diesen Sprachen und Russisch
-• Französischer Katalog wächst auf über 600.000 Bücher
-• Sprachauswahl für Kataloge; kleinere App, nur Englisch dabei
-• Suche versteht polnische, tschechische und koreanische Zeichen
-• E-Ink-Modus und Helligkeit per Wischen im Reader
-• Tagesbackup in einen Ordner deiner Wahl, 7 neueste bleiben
+• Neue Kataloge und App-Sprachen: Schwedisch, Polnisch, Tschechisch, Koreanisch, Finnisch; App auch auf Russisch
+• Französischer Katalog wächst auf über 600.000 Bücher; Englisch ergänzt um Daten der British Library
+• Katalogsprachen wählbar; kleinere App, nur Englisch dabei
+• Empfehlungen: ähnliche Bücher finden oder mehrere kombinieren
+• Tablet-Layouts, E-Ink-Modus und Helligkeit per Wischen im Reader
+• Tagesbackup in einen Ordner deiner Wahl
+• Schnellerer, genauerer Cover-Scanner

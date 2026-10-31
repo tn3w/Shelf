@@ -1,6 +1,7 @@
-• Swedish, Polish, Czech, Korean and Finnish catalogues; app also in these languages and Russian
-• French catalogue grows to over 600,000 books
-• Catalogue language picker; smaller app, only English is bundled
-• Search understands Polish, Czech and Korean letters
-• E-ink mode and brightness swipe in the reader
-• Daily backup to a folder you choose, keeping the newest 7
+• New catalogues and app languages: Swedish, Polish, Czech, Korean, Finnish; app also in Russian
+• French catalogue grows past 600,000 books; English adds British Library data
+• Pick catalogue languages; smaller app, only English built in
+• Recommendations: find similar books or blend several
+• Tablet layouts, e-ink mode and brightness swipe in the reader
+• Daily backup to a folder you choose
+• Faster, more accurate cover scanner

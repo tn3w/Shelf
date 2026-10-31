@@ -43,6 +43,7 @@ SHEET_MARGIN = 130
 SHEET_TITLE_TARGET = 1550
 VIDEO_FRAMES = 40
 PAGES = 24
+COVER_LOAD = 15
 
 LOCALES = {
     "en": dict(
@@ -80,7 +81,7 @@ LOCALES = {
               ("Lies deine eigenen Dateien", FORMATS),
               ("Scanne jedes Cover", "Erkannt auf dem Handy"),
               ("Privat von Grund auf", "Kein Konto · Offline-Schalter")],
-        scan=15157474,
+        scan=15157620,
         reader=(151411, "Alice im Wunderland", "Lewis Carroll", 8595966, 19778),
         reading=[(82563, "Harry Potter und der Stein der Weisen", "J. K. Rowling",
                   15155833),
@@ -321,12 +322,17 @@ def prefix(language, name):
     return label(language, name).split("%")[0].strip()
 
 
+def fragment(language, name):
+    return max(re.split(r"%\d\$s", label(language, name)), key=len).strip()
+
+
 def with_labels(language):
     return LOCALES[language] | dict(
         language=language,
         tabs=tuple(label(language, name) for name in ("home", "library", "explore")),
         settings=(label(language, "settings"), label(language, "download_all_short")),
         cover=prefix(language, "cover_of"),
+        picks=fragment(language, "because_you_read"),
         about=label(language, "about_book"),
         scan=(label(language, "search"), label(language, "scan"),
               label(language, "scan_again"), LOCALES[language]["scan"]),
@@ -461,6 +467,11 @@ def covers(locale, minimum):
     return condition
 
 
+def ready():
+    time.sleep(COVER_LOAD)
+    return settled()
+
+
 def screencap():
     return adb("exec-out", "screencap", "-p")
 
@@ -528,11 +539,20 @@ def full_page():
     raise TimeoutError("full reader page")
 
 
+def scroll_into_view(label):
+    for _ in range(12):
+        if find(label)(nodes()):
+            return
+        swipe(800)
+    raise TimeoutError(label)
+
+
 def download_packs(locale):
     language = locale["language"]
     title, button = locale["settings"]
     tap(title)
     tap(label(language, "catalogue"))
+    scroll_into_view(label(language, "check_catalogue"))
     tap(label(language, "check_catalogue"))
     try:
         wait(find(button), timeout=60)
@@ -579,24 +599,25 @@ def capture(locale, folder):
 
     wait(find(reader[1]))
     wait(covers(locale, 3))
-    save("1_home", settled())
+    save("1_home", ready())
 
     tap(library_tab)
     total = 1 + sum(len(locale[shelf]) for shelf in ("reading", "want", "finished"))
     wait(covers(locale, min(9, total)))
-    save("2_library", settled())
+    save("2_library", ready())
 
     tap(book[1])
     wait(find(book[2]))
-    details = settled()
+    details = ready()
     save("3_book", details)
 
     series_book(locale, book)
-    save("4_series", with_status_bar(settled(), details))
+    save("4_series", with_status_bar(ready(), details))
 
     tap(explore)
+    tap(locale["picks"], exact=False)
     wait(covers(locale, 3))
-    save("5_explore", settled())
+    save("5_explore", ready())
 
     tap(home)
     tap(reader[1])
@@ -763,6 +784,17 @@ def prepare_device():
                   "animator_duration_scale"):
         shell("settings", "put", "global", scale, "0")
     demo_mode()
+    wait_for_network()
+
+
+def wait_for_network(timeout=120):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if shell("ping", "-c1", "-W2", "covers.openlibrary.org").startswith("PING"):
+            time.sleep(5)
+            return
+        time.sleep(2)
+    raise TimeoutError("network")
 
 
 def raw_folder(language, theme):

@@ -1,20 +1,11 @@
-Shelf on offline-kirjaluettelo, joka perustuu Open Libraryyn sekä Saksan, Ranskan, Viron, Ruotsin, Puolan, Tšekin, Korean ja Suomen kansalliskirjastoihin.
+Shelf on yksityinen offline-kirjasovellus. Koko luettelo on puhelimessasi, koottu Open Librarysta, British Librarysta ja kansalliskirjastoista. Ei tiliä, ei mainoksia, ei seurantaa.
 
-* Kirjoitusvirheitä sietävä haku ehdotuksineen
-* Tutki lajeja, sarjoja ja kirjailijoita
-* Kirjasto, jossa on Haluan lukea-, Luen- ja Luettu-hyllyt
-* Lisää omia kirjoja, joita luettelossa ei ole, omalla kannella
-* Skannaa kirjan kansi tai ISBN-viivakoodi löytääksesi sen, suoraan laitteella
-* Goodreads- ja StoryGraph-CSV-tuonti ja -vienti
-* Automaattinen päivittäinen varmuuskopio valitsemaasi kansioon, esimerkiksi Syncthing-kansioon
-* Päivittäinen lukutavoite ja putket
-* Henkilökohtaiset suositukset laskettuna laitteella
-* Lukija EPUB-, MOBI-, AZW3-, PDF-, FB2-, CBZ-, CB7-, DOCX-, ODT-, RTF-, TXT- ja HTML-tiedostoille, tuotuina tai avattuina mistä tahansa sovelluksesta
-* Ilmaiset vapaasti käytettävät ja avoimella lisenssillä julkaistut e-kirjat valitsemistasi lähteistä tai omista lähteistä
-* Lukumukavuus: tekstin koko, riviväli, marginaalit, kirjasin, paperi- ja yösivut, sivunvaihtonäppäimet
-* E-ink-tila ja kirkkaus pyyhkäisemällä sivulla
-* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi ja suomeksi valinnaisin lajipaketein
-* Sovellus englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi, suomeksi ja venäjäksi
-* Voit isännöidä itse: oma luettelolähde tai luettelotiedostojen tuonti
+* Kirjoitusvirheitä sietävä haku nimille, kirjailijoille, sarjoille ja ISBN-tunnuksille
+* Skannaa kirjan kansi tai viivakoodi ja löydä kirja
+* Hyllyt Haluan lukea, Luen ja Luettu, päivätavoite ja lukuputket
+* Tutustu lajityyppeihin, sarjoihin ja kirjailijoihin, suositukset lasketaan puhelimessa
+* Lue EPUB-, Kindle-, PDF-, sarjakuva-, Word- ja muita tiedostoja
+* Tuonti Goodreadsista ja StoryGraphista
+* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi ja suomeksi; sovellus myös venäjäksi
 
-Ei seurantaa, ei mainoksia, ei tilejä. Shelf ottaa yhteyden vain GitHubiin (tai omaan luettelolähteeseesi) luettelolatauksia varten ja, jos otat käyttöön, Open Libraryyn ja sen isäntään archive.org, DNB:hen, DIGARiin ja Bookbitesiin kansia ja kirjailijakuvia varten.
+Yksi kytkin katkaisee kaiken verkon. Kirjastosi ei koskaan poistu puhelimesta.

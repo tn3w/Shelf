@@ -1,20 +1,11 @@
-Shelf je offline katalog knih postavený na Open Library a národních knihovnách Německa, Francie, Estonska, Švédska, Polska, Česka, Koreje a Finska.
+Shelf je soukromá offline aplikace na knihy. Celý katalog je ve vašem telefonu, sestavený z Open Library, British Library a národních knihoven. Bez účtu, bez reklam, bez sledování.
 
-* Vyhledávání odolné vůči překlepům s doplňováním
-* Objevujte žánry, série a autory
-* Knihovna s poličkami Chci číst, Čtu a Přečteno
-* Přidejte vlastní knihy chybějící v katalogu, s vlastní obálkou
-* Naskenujte obálku nebo čárový kód ISBN a knihu najděte přímo v zařízení
-* Import a export CSV z Goodreads a StoryGraph
-* Automatická denní záloha do zvolené složky, například složky Syncthing
-* Denní čtenářský cíl a série
-* Osobní doporučení počítaná v zařízení
-* Čtečka souborů EPUB, MOBI, AZW3, PDF, FB2, CBZ, CB7, DOCX, ODT, RTF, TXT a HTML, importovaných nebo otevřených z jakékoli aplikace
-* Volně dostupné e-knihy a e-knihy s otevřenou licencí ze zdrojů podle vašeho výběru nebo z vlastních
-* Pohodlné čtení: velikost textu, řádkování, okraje, písmo, papírové a noční stránky, tlačítka pro stránkování
-* Režim e-ink a jas přejetím prstem po stránce
-* Katalogy v angličtině, němčině, francouzštině, španělštině, estonštině, švédštině, polštině, češtině, korejštině a finštině s volitelnými žánrovými balíčky
-* Aplikace v angličtině, němčině, francouzštině, španělštině, estonštině, švédštině, polštině, češtině, korejštině, finštině a ruštině
-* Možnost vlastního hostingu: vlastní zdroj katalogu nebo import souborů katalogu
+* Vyhledávání odolné vůči překlepům podle názvu, autora, série a ISBN
+* Naskenujte obálku nebo čárový kód a najděte knihu
+* Police Chci číst, Čtu a Přečteno, denní cíl a čtenářské série
+* Objevujte žánry, série a autory, s doporučeními počítanými v telefonu
+* Čtěte EPUB, Kindle, PDF, komiksy, soubory Word a další
+* Import z Goodreads a StoryGraph
+* Katalogy v angličtině, němčině, francouzštině, španělštině, estonštině, švédštině, polštině, češtině, korejštině a finštině; aplikace i v ruštině
 
-Žádné sledování, žádné reklamy, žádné účty. Shelf kontaktuje pouze GitHub (nebo váš vlastní zdroj katalogu) kvůli stahování katalogů a, pokud to povolíte, Open Library a její hosting archive.org, DNB, DIGAR a Bookbites kvůli obálkám a fotografiím autorů.
+Jeden přepínač vypne veškerou síť. Vaše knihovna nikdy neopustí telefon.
