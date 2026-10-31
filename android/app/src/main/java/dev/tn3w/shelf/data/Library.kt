@@ -49,7 +49,6 @@ private const val LIBRARY_FILE = "library.json"
 private const val READING_FILE = "reading.json"
 private const val LEGACY_FILE = "datastore/library.preferences_pb"
 private const val BACKUP_ENTRY = "library.json"
-private const val COVER_CACHE = "covers"
 private const val BOOKS_PREFIX = "books/"
 private const val KEPT_BACKUPS = 7
 private val AUTOMATIC_BACKUP = Regex("""shelf-\d{4}-\d{2}-\d{2}\.zip""")
@@ -379,7 +378,6 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun deleteTemporaryFiles() = withContext(Dispatchers.IO) {
         booksDir.listFiles(File::isTemporary).orEmpty().forEach(File::delete)
-        context.cacheDir.resolve(COVER_CACHE).deleteRecursively()
         context.cacheDir.listFiles { file -> file.name.startsWith(EXTRACTED_PREFIX) }
             .orEmpty()
             .forEach(File::deleteRecursively)

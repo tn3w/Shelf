@@ -24,9 +24,8 @@ import dev.tn3w.shelf.data.*
 @Composable
 fun installedLanguages(): Set<String> {
     val viewModel = settingsViewModel()
-    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
-    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
-    return produceState(emptySet(), loaded, downloads.size) {
+    val revision by viewModel.packRevision.collectAsStateWithLifecycle()
+    return produceState(emptySet(), revision) {
         value = viewModel.installedLanguages()
     }.value
 }
@@ -34,11 +33,8 @@ fun installedLanguages(): Set<String> {
 @Composable
 fun packInfos(language: String): List<PackInfo>? {
     val viewModel = settingsViewModel()
-    val loaded by viewModel.loaded.collectAsStateWithLifecycle()
-    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
-    val refreshes by viewModel.refreshes.collectAsStateWithLifecycle()
-    val keys = arrayOf(language, loaded, downloads.size, refreshes)
-    return produceState<List<PackInfo>?>(null, *keys) {
+    val revision by viewModel.packRevision.collectAsStateWithLifecycle()
+    return produceState<List<PackInfo>?>(null, language, revision) {
         value = viewModel.packs(language)
     }.value
 }
@@ -113,14 +109,10 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
 @Composable
 private fun CatalogueCheck(language: String) {
     val viewModel = settingsViewModel()
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
-    ActionRow(
-        R.string.check_catalogue,
-        Icons.Outlined.Refresh,
-        statuses[SettingsAction.CatalogueCheck]?.let { stringResource(it) },
-        SettingsAction.CatalogueCheck in busy,
-    ) { viewModel.checkCatalogue(language) }
+    val (busy, status) = actionStatus(SettingsAction.CatalogueCheck)
+    ActionRow(R.string.check_catalogue, Icons.Outlined.Refresh, status, busy) {
+        viewModel.checkCatalogue(language)
+    }
 }
 
 private val LIBRARY_NOTES = mapOf(
@@ -136,7 +128,7 @@ private val LIBRARY_NOTES = mapOf(
 @Composable
 fun SourceRows(language: String, settings: Settings) {
     val viewModel = settingsViewModel()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val (_, importStatus) = actionStatus(SettingsAction.CatalogueImport)
     var editing by rememberSaveable { mutableStateOf(false) }
     val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
         if (uris.isNotEmpty()) viewModel.importCatalogue(language, uris)
@@ -149,7 +141,7 @@ fun SourceRows(language: String, settings: Settings) {
     ActionRow(
         R.string.import_catalogue,
         Icons.Outlined.FileOpen,
-        statuses[SettingsAction.CatalogueImport]?.let { stringResource(it) },
+        importStatus,
     ) { picker.launch(arrayOf("*/*")) }
     if (!editing) return
     SourceDialog(settings.catalogueSource, onDismiss = { editing = false }) {

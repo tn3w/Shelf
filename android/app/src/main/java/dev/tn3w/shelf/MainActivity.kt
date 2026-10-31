@@ -195,14 +195,17 @@ class MainActivity : AppCompatActivity() {
                     SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
                 )
             }
-            ShelfTheme(current) {
-                Surface(
-                    Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background,
-                ) {
-                    if (current.onboarded) {
-                        ShelfNavigation(current, viewModel)
-                    } else {
-                        OnboardingScreen()
+            CompositionLocalProvider(LocalSettings provides current) {
+                ShelfTheme(current) {
+                    Surface(
+                        Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        if (current.onboarded) {
+                            ShelfNavigation(current, viewModel)
+                        } else {
+                            OnboardingScreen()
+                        }
                     }
                 }
             }

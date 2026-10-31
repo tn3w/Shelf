@@ -253,7 +253,7 @@ private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
     Choice(BOOK_FORMATS, recipe.format, { onChange(recipe.copy(format = it)) }) {
         it.uppercase()
     }
-    LanguageChips(recipe.languages) { onChange(recipe.copy(languages = it)) }
+    RecipeLanguages(recipe.languages) { onChange(recipe.copy(languages = it)) }
     Heading(R.string.free_books_headers)
     HeaderRows(recipe.headers) { onChange(recipe.copy(headers = it)) }
     Hint(stringResource(R.string.free_books_form_help))
@@ -477,7 +477,7 @@ private fun HeaderRows(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun LanguageChips(selected: Set<String>, onChange: (Set<String>) -> Unit) {
+private fun RecipeLanguages(selected: Set<String>, onChange: (Set<String>) -> Unit) {
     Text(
         stringResource(R.string.free_books_languages),
         style = MaterialTheme.typography.bodyMedium,

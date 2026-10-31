@@ -56,7 +56,7 @@ fun HomeScreen(navigator: Navigator) {
     val saved by library.saved.collectAsStateWithLifecycle(null)
     val progress by library.progress.collectAsStateWithLifecycle(emptyMap())
     val habit by library.habit.collectAsStateWithLifecycle(null)
-    val settings by library.settings.collectAsStateWithLifecycle(Settings())
+    val settings = loadedSettings() ?: Settings()
     val scope = rememberCoroutineScope()
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val missing by viewModel.missing.collectAsStateWithLifecycle()

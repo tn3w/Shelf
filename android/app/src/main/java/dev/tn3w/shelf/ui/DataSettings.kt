@@ -103,12 +103,12 @@ private fun <I> FileRow(
     work: suspend (Uri) -> Boolean,
 ) {
     val viewModel = settingsViewModel()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val (_, status) = actionStatus(action)
     val launcher = rememberLauncherForActivityResult(contract) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         viewModel.runFileAction(action, success, failure) { work(uri) }
     }
-    ActionRow(title, icon, statuses[action]?.let { stringResource(it) }) {
+    ActionRow(title, icon, status) {
         launcher.launch(input)
     }
 }
@@ -118,13 +118,13 @@ private fun CsvRows() {
     val viewModel = settingsViewModel()
     val progress by viewModel.csvProgress.collectAsStateWithLifecycle()
     val report by viewModel.csvReport.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val (_, csvStatus) = actionStatus(SettingsAction.CsvImport)
     val import = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let(viewModel::importCsv)
     }
     val importStatus =
         progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
-            ?: statuses[SettingsAction.CsvImport]?.let { stringResource(it) }
+            ?: csvStatus
     ActionRow(
         R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
     ) { import.launch(arrayOf("*/*")) }

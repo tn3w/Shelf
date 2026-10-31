@@ -62,9 +62,9 @@ private val THEMES = ThemeMode.entries.associateWith { it.label }
 enum class SettingsPage(
     val icon: ImageVector,
     @StringRes val title: Int,
-    @StringRes val summary: Int,
+    @StringRes val summary: Int? = null,
 ) {
-    Main(Icons.Outlined.Settings, R.string.settings, R.string.settings),
+    Main(Icons.Outlined.Settings, R.string.settings),
     Catalogue(Icons.Outlined.AutoStories, R.string.catalogue, R.string.catalogue_hint),
     FreeBooks(
         Icons.Outlined.CloudDownload,
@@ -100,13 +100,12 @@ enum class SettingsAction {
     CsvExport,
 }
 
+data class ActionStatus(val busy: Boolean = false, @StringRes val message: Int? = null)
+
 class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
-    private val _statuses = MutableStateFlow<Map<SettingsAction, Int>>(emptyMap())
-    val statuses = _statuses.asStateFlow()
-    private val _busy = MutableStateFlow<Set<SettingsAction>>(emptySet())
-    val busy = _busy.asStateFlow()
-    private val _refreshes = MutableStateFlow(0)
-    val refreshes = _refreshes.asStateFlow()
+    private val _actions = MutableStateFlow<Map<SettingsAction, ActionStatus>>(emptyMap())
+    val actions = _actions.asStateFlow()
+    val packRevision = app.packs.revision
     private val _release = MutableStateFlow<Release?>(null)
     val release = _release.asStateFlow()
     private val _completeLanguage = MutableStateFlow<String?>(null)
@@ -117,15 +116,14 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val csvReport = _csvReport.asStateFlow()
 
     private fun runAction(action: SettingsAction, work: suspend () -> Int?) {
-        if (action in _busy.value) return
-        _busy.update { it + action }
-        _statuses.update { it - action }
+        if (_actions.value[action]?.busy == true) return
+        _actions.update { it + (action to ActionStatus(busy = true)) }
         viewModelScope.launch(Dispatchers.IO) {
+            var message: Int? = null
             try {
-                work()?.let { status -> _statuses.update { it + (action to status) } }
+                message = work()
             } finally {
-                _busy.update { it - action }
-                _refreshes.update { it + 1 }
+                _actions.update { it + (action to ActionStatus(message = message)) }
             }
         }
     }
@@ -188,15 +186,10 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }.getOrDefault(R.string.catalogue_check_failed)
     }
 
-    fun changeCatalogueSource(source: String) {
-        viewModelScope.launch {
-            detached {
-                app.changeSource(source)
-                val offline = library.settings.first().isOffline(app)
-                if (!offline) runSuspendCatching { app.packs.refreshManifest() }
-            }.join()
-            _refreshes.update { it + 1 }
-        }
+    fun changeCatalogueSource(source: String) = detached {
+        app.changeSource(source)
+        val offline = library.settings.first().isOffline(app)
+        if (!offline) runSuspendCatching { app.packs.refreshManifest() }
     }
 
     fun importCatalogue(language: String, uris: List<Uri>) =
@@ -252,10 +245,16 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
 fun settingsViewModel() = shelfViewModel(create = ::SettingsViewModel)
 
 @Composable
-fun loadedSettings(): Settings? {
-    val settings by shelfViewModel().library.settings.collectAsStateWithLifecycle(null)
-    return settings
+fun actionStatus(action: SettingsAction): Pair<Boolean, String?> {
+    val actions by settingsViewModel().actions.collectAsStateWithLifecycle()
+    val status = actions[action] ?: ActionStatus()
+    return status.busy to status.message?.let { stringResource(it) }
 }
+
+val LocalSettings = compositionLocalOf<Settings?> { null }
+
+@Composable
+fun loadedSettings() = LocalSettings.current
 
 @Composable
 fun rememberSettings(): Pair<Settings, SettingsUpdate>? {
@@ -288,8 +287,9 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
 @Composable
 private fun SettingsOverview(navigator: Navigator) {
     SettingsGroup {
-        SettingsPage.entries.drop(1).forEach { page ->
-            LinkRow(stringResource(page.title), stringResource(page.summary), page.icon) {
+        SettingsPage.entries.forEach { page ->
+            val summary = page.summary ?: return@forEach
+            LinkRow(stringResource(page.title), stringResource(summary), page.icon) {
                 navigator.settings(page)
             }
         }
@@ -622,6 +622,13 @@ fun SwitchRow(
 ) { Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) }
 
 @Composable
+private fun ChoiceTitle(@StringRes title: Int) = Text(
+    stringResource(title),
+    style = MaterialTheme.typography.bodyLarge,
+    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+)
+
+@Composable
 fun <T> Choice(
     options: List<T>,
     selected: T,
@@ -629,13 +636,7 @@ fun <T> Choice(
     @StringRes title: Int? = null,
     label: @Composable (T) -> String,
 ) {
-    title?.let {
-        Text(
-            stringResource(it),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-        )
-    }
+    title?.let { ChoiceTitle(it) }
     SingleChoiceSegmentedButtonRow(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
@@ -675,13 +676,7 @@ fun LanguageChips(
     installed: Set<String> = emptySet(),
     onSelect: (String) -> Unit,
 ) {
-    title?.let {
-        Text(
-            stringResource(it),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
-        )
-    }
+    title?.let { ChoiceTitle(it) }
     val auto = stringResource(R.string.language_auto)
     var expanded by rememberSaveable { mutableStateOf(false) }
     val main = { option: String ->
@@ -743,16 +738,13 @@ private fun AboutRows() {
     val uri = LocalUriHandler.current
     val context = LocalContext.current
     val settings = loadedSettings() ?: return
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
-    val statuses by viewModel.statuses.collectAsStateWithLifecycle()
+    val (checking, status) = actionStatus(SettingsAction.UpdateCheck)
     val release by viewModel.release.collectAsStateWithLifecycle()
-    val checking = SettingsAction.UpdateCheck in busy
-    val status = statuses[SettingsAction.UpdateCheck]
     val available = settings.availableUpdate?.takeIf(Updater::isAvailable)
     val version =
         stringResource(R.string.version, BuildConfig.VERSION_NAME, BuildConfig.FLAVOR)
     val found = available?.let { updateSummary(it) }
-    val summary = listOfNotNull(version, found ?: status?.let { stringResource(it) })
+    val summary = listOfNotNull(version, found ?: status)
 
     if (Updater.supported(context) && !settings.isOffline(context)) {
         ActionRow(

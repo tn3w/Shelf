@@ -609,17 +609,13 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
 }
 
 @Composable
-private fun TileGrid(header: LazyGridScope.() -> Unit, body: LazyGridScope.() -> Unit) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(GridTileWidth),
-        contentPadding = PaddingValues(ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        header()
-        body()
-    }
-}
+private fun TileGrid(content: LazyGridScope.() -> Unit) = LazyVerticalGrid(
+    columns = GridCells.Adaptive(GridTileWidth),
+    contentPadding = PaddingValues(ScreenPadding),
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    verticalArrangement = Arrangement.spacedBy(20.dp),
+    content = content,
+)
 
 private fun LazyGridScope.skeletonTiles() =
     items(12) { SkeletonTile(Modifier.fillMaxWidth()) }
@@ -638,7 +634,8 @@ fun BookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(header) {
+) = TileGrid {
+    header()
     if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
 }
 
@@ -648,7 +645,8 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
-) = TileGrid(header) {
+) = TileGrid {
+    header()
     if (groups == null) return@TileGrid skeletonTiles()
     val labelled = groups.size > 1 || groups.firstOrNull()?.series != null
     groups.forEach { group ->

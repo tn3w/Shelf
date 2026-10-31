@@ -95,7 +95,7 @@ private fun readerViewModel(work: Int) = shelfViewModel { ReaderViewModel(it, wo
 
 @Immutable
 private data class ReaderState(
-    val work: Int,
+    val viewModel: ReaderViewModel,
     val title: String,
     val navigator: Navigator,
     val onFontScale: ((Float) -> Unit)?,
@@ -155,7 +155,7 @@ internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
 @Composable
 fun ReaderScreen(work: Int, navigator: Navigator) {
     val viewModel = readerViewModel(work)
-    val settings by viewModel.library.settings.collectAsStateWithLifecycle(Settings())
+    val settings = loadedSettings() ?: Settings()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val title = saved.firstOrNull { it.work == work }?.title.orEmpty()
     val opened by viewModel.opened.collectAsStateWithLifecycle()
@@ -165,8 +165,10 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
         onDispose { view.keepScreenOn = false }
     }
 
-    val state = remember(work, title, navigator, settings.volumeKeys) {
-        ReaderState(work, title, navigator, viewModel::changeFont, settings.volumeKeys)
+    val state = remember(viewModel, title, navigator, settings.volumeKeys) {
+        ReaderState(
+            viewModel, title, navigator, viewModel::changeFont, settings.volumeKeys,
+        )
     }
     val palette = pagePalette(settings)
     Surface(
@@ -505,7 +507,7 @@ private fun Pages(
     save: (Int) -> Progress,
     page: @Composable (Int) -> Unit,
 ) {
-    val viewModel = readerViewModel(state.work)
+    val viewModel = state.viewModel
     val scope = rememberCoroutineScope()
     var chrome by viewModel::chrome
     var showChapters by viewModel::showChapters

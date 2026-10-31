@@ -415,13 +415,13 @@ class Searcher(private val catalogue: Catalogue) {
 
     fun find(title: String, author: String): Book? {
         val wanted = tokenize(mainTitle(title))
-        val surname = tokenize(author).lastOrNull()
+        val surname = surname(author)
         return search("${wanted.joinToString(" ")} $author", 5).firstOrNull { book ->
             val titles = listOf(book.title, book.alternate).map {
                 tokenize(mainTitle(it))
             }
             wanted in titles &&
-                (surname == null || book.authors.any { surname in tokenize(it.name) })
+                (surname.isEmpty() || book.authors.any { surname in tokenize(it.name) })
         }
     }
 

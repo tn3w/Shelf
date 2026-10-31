@@ -133,7 +133,7 @@ class ShelfApp :
 
     fun <T> transfer(work: suspend CoroutineScope.() -> T) = scope.async(Dispatchers.IO) {
         val first = _activeTransfers.getAndUpdate { it + 1 } == 0
-        if (first && BuildConfig.TRANSFER_SERVICE) TransferService.start(this@ShelfApp)
+        if (first && BuildConfig.UPDATER) TransferService.start(this@ShelfApp)
         try {
             work()
         } finally {

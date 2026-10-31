@@ -225,10 +225,9 @@ data class Provider(val recipe: Recipe, private val log: (String) -> Unit = {}) 
             val found = step.fields.extract(page)
             found.forEach { (name, value) -> log("  $name = $value") }
             val missing = step.fields.keys.firstOrNull { it !in found }
-            if (missing !=
-                null
-            ) {
-                return null.also { log("$missing not found on ${page.base}") }
+            if (missing != null) {
+                log("$missing not found on ${page.base}")
+                return null
             }
             variables = variables + found
             base = page.base
@@ -465,7 +464,7 @@ private fun Query.variables(): Map<String, String> {
         "title" to title,
         "author" to author,
         "titleWords" to tokenize(mainTitle(title)).joinToString(" "),
-        "surname" to tokenize(author).lastOrNull().orEmpty(),
+        "surname" to surname(author),
         "language" to language,
         "language3" to (BIBLIOGRAPHIC_CODES[language] ?: locale.isO3Language),
         "languageName" to locale.getDisplayLanguage(Locale.ENGLISH),

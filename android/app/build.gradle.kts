@@ -25,7 +25,6 @@ data class Distribution(
     val catalogue: Boolean,
     val scanModel: Boolean,
     val updater: Boolean,
-    val transferService: Boolean = updater,
 )
 
 val distributions = mapOf(
@@ -57,9 +56,6 @@ android {
                 buildConfigField("boolean", "BUNDLED_CATALOGUE", "${distribution.catalogue}")
                 buildConfigField("boolean", "BUNDLED_SCAN_MODEL", "${distribution.scanModel}")
                 buildConfigField("boolean", "UPDATER", "${distribution.updater}")
-                buildConfigField(
-                    "boolean", "TRANSFER_SERVICE", "${distribution.transferService}",
-                )
             }
         }
     }

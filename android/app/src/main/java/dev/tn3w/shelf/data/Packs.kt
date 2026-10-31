@@ -141,17 +141,25 @@ class Packs(private val context: Context) {
     private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
 
-    init {
-        removeBundledCopies()
-    }
+    private val _revision = MutableStateFlow(0)
+    val revision = _revision.asStateFlow()
+
+    private fun changed() = _revision.update { it + 1 }
 
     @Volatile
     var source = ""
+        set(value) {
+            field = value
+            changed()
+        }
 
     val manifest: Manifest?
         get() = newest(stored(), bundledManifest.takeIf { source.isEmpty() })
 
-    fun forgetManifest() = manifestFile.delete()
+    fun forgetManifest() {
+        manifestFile.delete()
+        changed()
+    }
 
     private fun stored(): Manifest? {
         if (!manifestFile.exists()) return null
@@ -190,17 +198,21 @@ class Packs(private val context: Context) {
     private fun installed(language: String) =
         (bundled + downloaded()).filter { it.language == language }
 
-    fun copyBundled() = bundled
-        .filterNot { binOf(it.id).exists() }
-        .forEach { file ->
+    fun copyBundled() {
+        bundled.filterNot { binOf(it.id).exists() }.forEach { file ->
             replaceFile(binOf(file.id)) { temporary ->
                 context.assets.open("${file.id}.bin").use { input ->
                     temporary.outputStream().use { input.copyTo(it) }
                 }
             }
         }
+        changed()
+    }
 
-    fun removeBundledCopies() = deleteAll(bundled)
+    fun removeBundledCopies() {
+        deleteAll(bundled)
+        changed()
+    }
 
     fun storageBytes(language: String) = downloaded().filter { it.language == language }
         .sumOf { binOf(it.id).length() }
@@ -280,6 +292,7 @@ class Packs(private val context: Context) {
         }
         storeManifest(text.toByteArray())
         removeObsolete(manifest)
+        changed()
         manifest
     }
 
@@ -303,11 +316,13 @@ class Packs(private val context: Context) {
             }
         }
             .isSuccess
+            .also { changed() }
     }
 
     private fun importManifest(bytes: ByteArray): Boolean {
         parseManifest(bytes.decodeToString()) ?: return false
         storeManifest(bytes)
+        changed()
         return true
     }
 
@@ -334,18 +349,22 @@ class Packs(private val context: Context) {
             val missing = entries.filter { it.id !in ids }
             val total = missing.sumOf { it.size }.coerceAtLeast(1)
             var done = 0L
-            for (entry in missing) {
-                fetching.withLock {
-                    if (entry.id !in localIds()) {
-                        fetch(entry) {
-                            ensureActive()
-                            onProgress((done + it).toFloat() / total)
+            try {
+                for (entry in missing) {
+                    fetching.withLock {
+                        if (entry.id !in localIds()) {
+                            fetch(entry) {
+                                ensureActive()
+                                onProgress((done + it).toFloat() / total)
+                            }
                         }
                     }
+                    done += entry.size
                 }
-                done += entry.size
+                prune(language, entries)
+            } finally {
+                changed()
             }
-            prune(language, entries)
             onProgress(1f)
         }
 
@@ -359,11 +378,14 @@ class Packs(private val context: Context) {
         )
     }
 
-    fun remove(language: String, pack: String?) = deleteAll(
-        downloaded().filter {
-            it.language == language && (pack == null || it.pack == pack)
-        },
-    )
+    fun remove(language: String, pack: String?) {
+        deleteAll(
+            downloaded().filter {
+                it.language == language && (pack == null || it.pack == pack)
+            },
+        )
+        changed()
+    }
 
     private suspend fun fetch(entry: ManifestEntry, onBytes: (Long) -> Unit) =
         replaceFile(binOf(entry.id)) { temporary ->
