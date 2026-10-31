@@ -58,7 +58,7 @@
     <string name="more_by">Veel autorilt %s</string>
     <string name="no_results">Tulemusi pole.</string>
     <string name="online_covers">Laadi kaanepildid</string>
-    <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist.</string>
+    <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist, autorite fotod Open Libraryst.</string>
     <string name="open_failed">Seda faili ei saanud avada.</string>
     <string name="page_failed">Seda lehte ei saanud kuvada.</string>
     <string name="open_library_license">Open Library andmete litsents</string>
