@@ -1,6 +1,6 @@
-• Swedish, Polish, Czech, Korean and Finnish catalogues from their national libraries; app also in these languages and Russian
-• French catalogue grows to over 600,000 books with the French National Library
+• Swedish, Polish, Czech, Korean and Finnish catalogues; app also in these languages and Russian
+• French catalogue grows to over 600,000 books
 • Catalogue language picker; smaller app, only English is bundled
 • Search understands Polish, Czech and Korean letters
 • E-ink mode and brightness swipe in the reader
-• Automatic daily backup to a folder you choose, keeping the newest 7
+• Daily backup to a folder you choose, keeping the newest 7

@@ -1,6 +1,6 @@
-• Ruotsin, puolan, tšekin, korean ja suomen luettelot kansalliskirjastoista; sovellus myös näillä kielillä ja venäjäksi
-• Ranskalainen luettelo kasvaa yli 600 000 kirjaan Ranskan kansalliskirjaston avulla
+• Ruotsin, puolan, tšekin, korean ja suomen luettelot; sovellus myös näillä kielillä ja venäjäksi
+• Ranskalainen luettelo kasvaa yli 600 000 kirjaan
 • Luettelon kielenvalinta; pienempi sovellus, mukana vain englanti
 • Haku ymmärtää puolan, tšekin ja korean kirjaimet
 • E-ink-tila ja kirkkaus pyyhkäisemällä lukijassa
-• Automaattinen päivittäinen varmuuskopio valittuun kansioon, 7 uusinta säilyy
+• Päivittäinen varmuuskopio valittuun kansioon, 7 uusinta säilyy

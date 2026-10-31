@@ -1,6 +1,6 @@
-• Katalogy švédský, polský, český, korejský a finský z národních knihoven; aplikace také v těchto jazycích a ruštině
-• Francouzský katalog roste na více než 600 000 knih s Francouzskou národní knihovnou
+• Katalogy švédský, polský, český, korejský a finský; aplikace také v těchto jazycích a ruštině
+• Francouzský katalog roste na více než 600 000 knih
 • Výběr jazyka katalogů; menší aplikace, součástí je jen angličtina
 • Vyhledávání rozumí polským, českým a korejským písmenům
 • Režim e-ink a jas přejetím prstem ve čtečce
-• Automatická denní záloha do zvolené složky, uchovává se posledních 7
+• Denní záloha do zvolené složky, uchovává se posledních 7

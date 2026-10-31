@@ -1,6 +1,6 @@
-• Catalogues suédois, polonais, tchèque, coréen et finnois issus de leurs bibliothèques nationales ; appli aussi dans ces langues et en russe
-• Le catalogue français passe à plus de 600 000 livres avec la BnF
-• Sélecteur de langue des catalogues ; appli plus légère, seul l’anglais est inclus
+• Catalogues suédois, polonais, tchèque, coréen et finnois ; appli aussi dans ces langues et en russe
+• Le catalogue français passe à plus de 600 000 livres
+• Sélecteur de langue des catalogues ; appli plus légère, seul l’anglais est inclus
 • La recherche comprend les lettres polonaises, tchèques et coréennes
 • Mode e-ink et luminosité par balayage dans le lecteur
-• Sauvegarde quotidienne automatique dans un dossier au choix, 7 conservées
+• Sauvegarde quotidienne dans un dossier au choix, 7 conservées
