@@ -58,7 +58,7 @@
     <string name="more_by">Plus de %s</string>
     <string name="no_results">Aucun résultat.</string>
     <string name="online_covers">Charger les couvertures</string>
-    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library, la DNB, DIGAR et Bookbites.</string>
+    <string name="online_covers_hint">Récupérer les couvertures depuis Open Library, la DNB, DIGAR et Bookbites, et les photos d\'auteurs depuis Open Library.</string>
     <string name="open_failed">Impossible d\'ouvrir ce fichier.</string>
     <string name="page_failed">Impossible d\'afficher cette page.</string>
     <string name="open_library_license">Licence des données Open Library</string>
