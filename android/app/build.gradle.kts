@@ -8,9 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-10-17"
+val catalogueRelease = "catalogue-2026-10-31"
 val catalogueManifestSha256 =
-    "2ed459dcc1d45cb2ea33eaa7fcea0cf3374802f281e81bc3c113a6e19a3edefc"
+    "4aef7287ffe0c150ee81aa45b7fbdab435b0c5aabe074195e4be66fd2ab5b0a2"
 val catalogueFormat = 2
 val bundledLanguage = "en"
 val bundledPacks = listOf("core", "ranks")
@@ -200,6 +200,10 @@ androidComponents.onVariants { variant ->
     if (!distribution.scanModel) {
         variant.androidResources.ignoreAssetsPatterns.add("scan.bin")
     }
+}
+
+tasks.withType<Test>().configureEach {
+    mustRunAfter("minifyGithubReleaseWithR8")
 }
 
 tasks.register<JavaExec>("scanBench") {

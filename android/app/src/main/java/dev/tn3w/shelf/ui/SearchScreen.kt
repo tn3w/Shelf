@@ -91,6 +91,7 @@ fun SearchScreen(navigator: Navigator) {
     val recent by library.recentSearches.collectAsStateWithLifecycle(emptyList())
     val trending by viewModel.trending.collectAsStateWithLifecycle()
     var addingOwn by rememberSaveable { mutableStateOf(false) }
+    val selection = rememberSelection()
 
     LaunchedEffect(query, loaded, filter) {
         val current = loaded ?: return@LaunchedEffect
@@ -117,7 +118,7 @@ fun SearchScreen(navigator: Navigator) {
         .orEmpty()
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).imePadding()) {
-        LargeTitle(stringResource(R.string.search))
+        SelectableTitle(stringResource(R.string.search), selection, navigator)
         SearchField(
             query = query,
             onChange = { query = it },
@@ -169,9 +170,10 @@ fun SearchScreen(navigator: Navigator) {
             }
             val ownedWorks = owned.map { it.work }.toSet()
             val found = current.books.filter { it.work !in ownedWorks }
-            books(R.string.in_library, owned.map { it.toBook() }, "owned", openBook)
+            val ownedBooks = owned.map { it.toBook() }
+            books(R.string.in_library, ownedBooks, "owned", selection, openBook)
             val catalogue = R.string.catalogue.takeIf { owned.isNotEmpty() }
-            books(catalogue, found, "search", openBook)
+            books(catalogue, found, "search", selection, openBook)
             item(key = "own") {
                 IconSuggestionRow(
                     Icons.Outlined.LibraryAdd,
@@ -188,6 +190,7 @@ private fun LazyListScope.books(
     @StringRes header: Int?,
     books: List<Book>,
     origin: String,
+    selection: Selection,
     onOpen: (Book, String) -> Unit,
 ) {
     if (books.isEmpty()) return
@@ -195,7 +198,9 @@ private fun LazyListScope.books(
         item(key = "$origin-header") { SectionHeader(stringResource(header)) }
     }
     items(books, key = { "$origin-${it.work}" }) { book ->
-        Column(Modifier.animateItem()) { BookListItem(book, origin, onOpen = onOpen) }
+        Column(Modifier.animateItem()) {
+            BookListItem(book, origin, selection = selection, onOpen = onOpen)
+        }
     }
 }
 

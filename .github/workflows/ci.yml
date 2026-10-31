@@ -40,7 +40,7 @@ jobs:
 
       - run: >
           ./gradlew assembleGithubDebug lintGithubDebug lintFdroidRelease
-          testGithubDebugUnitTest testFdroidDebugUnitTest
+          minifyGithubReleaseWithR8 testGithubDebugUnitTest testFdroidDebugUnitTest
 
   builder:
     runs-on: ubuntu-latest

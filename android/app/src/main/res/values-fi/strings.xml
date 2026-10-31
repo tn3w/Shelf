@@ -89,8 +89,6 @@
     <string name="pages_of_goal">%1$d / %2$d sivua</string>
     <string name="percent_read">%d %% luettu</string>
     <string name="popular">Suositut</string>
-    <string name="popular_now">Nyt suosittua</string>
-    <string name="popular_now_subtitle">Mitä lukijat kaikkialla avaavat.</string>
     <string name="popular_subtitle">Lukijoiden suosikit kaikkialla.</string>
     <string name="privacy">Yksityisyys</string>
     <string name="privacy_note">Ei seurantaa, mainoksia, tilejä eikä tunnisteita. Shelf käyttää verkkoa vain siihen, minkä kytket päälle tai napautat: luettelopaketit GitHubista tai omasta lähteestäsi, sovelluspäivitykset GitHubista, kannet Open Librarysta, DNB:stä, DIGARista ja Bookbitesista, kirjailijakuvat Open Librarysta. Offline-tila pysäyttää kaiken. Kirjastosi pysyy tällä laitteella.</string>
@@ -105,6 +103,13 @@
     <string name="other_books">Muut kirjat</string>
     <string name="show_all">Näytä kaikki</string>
     <string name="similar">Saatat pitää myös näistä</string>
+    <string name="like_title">Samankaltaisia: %1$s</string>
+    <string name="readers_also_like">Lukijat pitävät myös näistä</string>
+    <string name="after_series">Tämän sarjan jälkeen</string>
+    <string name="start_from">Aloita…</string>
+    <string name="top_rated">Parhaiten arvioidut</string>
+    <string name="find_similar">Etsi samankaltaisia</string>
+    <string name="because_you_read_author">Koska luet kirjailijaa %1$s</string>
     <string name="smaller_text">Pienempi teksti</string>
     <string name="source_code">Lähdekoodi</string>
     <string name="start">Lue tiedosto</string>
@@ -136,6 +141,10 @@
     <plurals name="books_in_series">
         <item quantity="one">%d kirja tässä sarjassa</item>
         <item quantity="other">%d kirjaa tässä sarjassa</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%d valittu</item>
+        <item quantity="other">%d valittu</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d päivän putki</item>

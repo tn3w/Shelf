@@ -7,6 +7,7 @@ import org.junit.Test
 
 private val MAGIC = listOf("fiction", "fantasy", "magic")
 private val CRIME = listOf("fiction", "crime")
+private const val SEA = "Sailors cross stormy oceans aboard ships"
 
 private fun book(
     work: Int,
@@ -17,8 +18,17 @@ private fun book(
     year: Int = 0,
     score: Int = 5,
     description: String = "",
+    rating: Double = 4.0,
 ) = Fixture(
-    work, title, author, tags, series, year = year, score = score, description = description,
+    work,
+    title,
+    author,
+    tags,
+    series,
+    year = year,
+    score = score,
+    description = description,
+    rating = rating,
 )
 
 /** Unrelated nonfiction, so that the tags under test stay informative. */
@@ -107,7 +117,8 @@ class RecommendSeedTest {
     fun recentReadingLeadsTheLibraryList() {
         val books = (1..10).map { book(it, MAGIC) } + (11..20).map { book(it, CRIME) }
         val catalogue = shelf(books)
-        val fantasyFirst = listOf(saved(1, 1), saved(2, 2), saved(11, 100), saved(12, 101))
+        val fantasyFirst =
+            listOf(saved(1, 1), saved(2, 2), saved(11, 100), saved(12, 101))
         val recent = catalogue.recommend(RecommendSeed.Library(fantasyFirst))
         assertTrue(recent.first().book.work in 13..20)
         val crimeFirst = listOf(saved(11, 1), saved(12, 2), saved(1, 100), saved(2, 101))
@@ -119,7 +130,8 @@ class RecommendSeedTest {
     fun lighterTasteStillGetsAPlace() {
         val books = (1..30).map { book(it, MAGIC, score = 60) } +
             (31..60).map { book(it, CRIME, score = 2) }
-        val entries = listOf(saved(31, 1), saved(32, 2), saved(1, 10), saved(2, 11), saved(3, 12))
+        val entries =
+            listOf(saved(31, 1), saved(32, 2), saved(1, 10), saved(2, 11), saved(3, 12))
         val found = shelf(books).recommend(RecommendSeed.Library(entries))
         assertTrue(found.any { it.book.work in 33..60 })
         assertTrue(found.count { it.book.work in 4..30 } > found.size / 2)
@@ -205,9 +217,56 @@ class RecommendSeedTest {
         val found = catalogue.recommend(RecommendSeed.Work(catalogue.book(1)!!))
         assertTrue(found.isNotEmpty())
         found.forEach {
-            assertTrue(it.signals.keys.containsAll(listOf("sim", "era", "quality", "lang")))
+            val expected = listOf("sim", "era", "quality", "lang")
+            assertTrue(it.signals.keys.containsAll(expected))
         }
         assertEquals(found.sortedByDescending { it.score }, found)
+    }
+
+    @Test
+    fun everySeedRecommendsOtherBooks() {
+        val books = (1..3).map { book(it, author = "Saga Smith", series = "Ember") } +
+            (10..19).map { book(it) }
+        val catalogue = shelf(books)
+        val recommender = Recommender(catalogue)
+        val first = catalogue.book(1)!!
+        val seeds = listOf(
+            RecommendSeed.Work(first) to 1..3,
+            RecommendSeed.Saga(first) to 1..3,
+            RecommendSeed.Writer(author("Saga Smith")) to 1..3,
+            RecommendSeed.Mix(listOf(first, catalogue.book(10)!!)) to (1..3) + 10,
+        )
+        seeds.forEach { (seed, excluded) ->
+            val found = recommender.recommended(seed, 5).map { it.work }
+            assertEquals(recommender.recommend(seed, 5).works(), found)
+            assertTrue(found.isNotEmpty())
+            assertTrue(found.none { it in excluded })
+        }
+    }
+
+    @Test
+    fun mixBlendsEveryPickedTaste() {
+        val books = (1..10).map { book(it, MAGIC) } + (11..20).map { book(it, CRIME) }
+        val catalogue = shelf(books)
+        val found = catalogue.recommend(RecommendSeed.Mix(catalogue.books(listOf(1, 11))))
+        assertTrue(found.works().any { it in 2..10 })
+        assertTrue(found.works().any { it in 12..20 })
+        assertTrue(found.works().none { it == 1 || it == 11 })
+    }
+
+    @Test
+    fun tagBooksSortByPopularityOrRating() {
+        val books = listOf(
+            book(1, CRIME, score = 30, rating = 3.5),
+            book(2, CRIME, score = 20, rating = 4.8),
+            book(3, CRIME, score = 10, rating = 4.2),
+        )
+        val catalogue = shelf(books)
+        val crime = catalogue.tagBySlug.getValue("crime").id
+        fun order(sort: TagSort) =
+            Recommender(catalogue).popular(3, crime, sort).map { it.work }
+        assertEquals(listOf(1, 2, 3), order(TagSort.Popular))
+        assertEquals(listOf(2, 3, 1), order(TagSort.Rated))
     }
 }
 
@@ -234,10 +293,10 @@ class SeedContentTest {
     @Test
     fun sharedDescriptionWordsBreakTagTies() {
         val books = listOf(
-            book(1, description = "An orphan wizard enters Hogwarts castle to study spells"),
-            book(2, description = "A detective walks foggy London streets solving murders"),
-            book(3, description = "Young wizard students at Hogwarts castle learn spells"),
-        ) + (10..20).map { book(it, description = "Sailors cross stormy oceans aboard ships") }
+            book(1, description = "An orphan wizard enters Hogwarts castle for spells"),
+            book(2, description = "A detective walks foggy London streets at night"),
+            book(3, description = "Young wizard pupils at Hogwarts castle learn spells"),
+        ) + (10..20).map { book(it, description = SEA) }
         val catalogue = shelf(books)
         val found = catalogue.recommend(RecommendSeed.Work(catalogue.book(1)!!))
         assertEquals(3, found.first().book.work)
@@ -246,11 +305,12 @@ class SeedContentTest {
 
     @Test
     fun authorNamesInDescriptionsDoNotCount() {
+        val quill = "Mira Quill"
         val books = listOf(
-            book(1, author = "Mira Quill", description = "Mira Quill writes about lighthouses"),
-            book(2, author = "Mira Quill", description = "Mira Quill writes about orchards"),
+            book(1, author = quill, description = "$quill writes about lighthouses"),
+            book(2, author = quill, description = "$quill writes about orchards"),
             book(3, description = "Keepers tend remote lighthouses through winter"),
-        ) + (10..20).map { book(it, description = "Sailors cross stormy oceans aboard ships") }
+        ) + (10..20).map { book(it, description = SEA) }
         val catalogue = shelf(books)
         val found = catalogue.recommend(RecommendSeed.Work(catalogue.book(1)!!))
         val text = found.associate { it.book.work to it.signals.getValue("text") }
@@ -300,14 +360,16 @@ class FeedbackTest {
 
     @Test
     fun translationsOfOneBookAppearOnce() {
+        val dragon = "The Dragon"
         val books = listOf(
-            Fixture(30, "Wyrmfire", "Anna Wyrm", MAGIC, alternate = "The Dragon", score = 9),
-            Fixture(31, "Wyrmfeuer", "Anna Wyrm", MAGIC, alternate = "The Dragon", score = 8),
+            Fixture(30, "Wyrmfire", "Anna Wyrm", MAGIC, score = 9, alternate = dragon),
+            Fixture(31, "Wyrmfeuer", "Anna Wyrm", MAGIC, score = 8, alternate = dragon),
         ) + (1..12).map { book(it) }
         val catalogue = shelf(books)
         val found = catalogue.recommend(RecommendSeed.Work(catalogue.book(1)!!)).works()
         assertEquals(1, found.count { it in 30..31 })
-        val owned = catalogue.recommend(RecommendSeed.Library(listOf(saved(30, 1)))).works()
+        val library = RecommendSeed.Library(listOf(saved(30, 1)))
+        val owned = catalogue.recommend(library).works()
         assertTrue(31 !in owned)
     }
 }

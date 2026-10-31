@@ -89,8 +89,6 @@
     <string name="pages_of_goal">%1$d / %2$d pages</string>
     <string name="percent_read">%d%% lu</string>
     <string name="popular">Populaires</string>
-    <string name="popular_now">Populaires en ce moment</string>
-    <string name="popular_now_subtitle">Ce que les lecteurs ouvrent partout.</string>
     <string name="popular_subtitle">Aimés des lecteurs.</string>
     <string name="privacy">Confidentialité</string>
     <string name="privacy_note">Aucun pistage, aucune publicité, aucun compte, aucun identifiant. Shelf n\'utilise le réseau que pour ce que vous activez ou touchez : paquets du catalogue depuis GitHub ou votre propre source, mises à jour depuis GitHub, couvertures depuis Open Library, la DNB, DIGAR et Bookbites, photos d\'auteurs depuis Open Library. Le mode hors ligne arrête tout. Votre bibliothèque reste sur l\'appareil.</string>
@@ -105,6 +103,13 @@
     <string name="other_books">Autres livres</string>
     <string name="show_all">Tout afficher</string>
     <string name="similar">Vous aimerez aussi</string>
+    <string name="like_title">Similaires à %1$s</string>
+    <string name="readers_also_like">Les lecteurs aiment aussi</string>
+    <string name="after_series">Après cette série</string>
+    <string name="start_from">Partir de…</string>
+    <string name="top_rated">Les mieux notés</string>
+    <string name="find_similar">Livres similaires</string>
+    <string name="because_you_read_author">Parce que vous lisez %1$s</string>
     <string name="smaller_text">Texte plus petit</string>
     <string name="source_code">Code source</string>
     <string name="start">Lire un fichier</string>
@@ -138,6 +143,11 @@
         <item quantity="one">%d livre dans cette série</item>
         <item quantity="other">%d livres dans cette série</item>
         <item quantity="many">%d livres dans cette série</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+        <item quantity="many">%d sélectionnés</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d jour d\'affilée</item>

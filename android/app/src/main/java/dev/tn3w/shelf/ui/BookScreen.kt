@@ -25,6 +25,8 @@ import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
+import dev.tn3w.shelf.SimilarKind
+import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -57,7 +59,7 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         Related(
             recommender.series(found),
             recommender.byAuthor(found),
-            recommender.similar(seedBook(work) ?: found),
+            recommender.recommended(RecommendSeed.Work(seedBook(work) ?: found)),
         )
     }
 
@@ -137,7 +139,13 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         if (similar.isNotEmpty()) {
             item {
                 val title = stringResource(R.string.similar)
-                BookSection(title, similar, "similar", navigator::book, shared = false)
+                val more = {
+                    navigator.similar(SimilarRoute(SimilarKind.Books, listOf(work)))
+                }
+                BookSection(
+                    title, similar, "similar", navigator::book,
+                    onMore = more, shared = false,
+                )
             }
         }
         item { Spacer(Modifier.height(24.dp)) }

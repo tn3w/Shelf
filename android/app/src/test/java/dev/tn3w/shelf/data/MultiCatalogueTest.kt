@@ -30,7 +30,9 @@ class MultiCatalogueTest {
     private val primary = language("de", PRIMARY)
     private val other = language("en", OTHER, TAGS.reversed())
     private val loaded = Loaded(primary) { listOf(other) }
-    private val library = (101..104).map { Saved(it, Shelf.Read, it.toLong(), added = it.toLong()) }
+    private val library = (101..104).map {
+        Saved(it, Shelf.Read, it.toLong(), added = it.toLong())
+    }
 
     @Test
     fun adoptMapsTagsBySlug() {
@@ -54,7 +56,8 @@ class MultiCatalogueTest {
     @Test
     fun foreignBookSeedsTheCurrentCatalogue() {
         val seed = loaded.seedBook(101)!!
-        val similar = loaded.recommender.similar(seed, 5).map { it.work }
+        val similar = loaded.recommender.recommended(RecommendSeed.Work(seed), 5)
+            .map { it.work }
         assertTrue(similar.isNotEmpty())
         assertTrue(similar.all { it in 11..20 })
         assertEquals(primary.book(3)?.work, loaded.seedBook(3)?.work)

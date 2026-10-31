@@ -75,7 +75,12 @@ enum class PackState(@StringRes val label: Int) {
     Available(R.string.pack_available),
 }
 
-data class PackInfo(val pack: String, val state: PackState, val bytes: Long)
+data class PackInfo(
+    val pack: String,
+    val state: PackState,
+    val bytes: Long,
+    val removable: Boolean = false,
+)
 
 sealed interface Download {
     data class Running(val progress: Float) : Download
@@ -140,6 +145,7 @@ class Packs(private val context: Context) {
     private val manifestFile = directory.resolve(MANIFEST_NAME)
     private val fetching = Mutex()
     private val bundled = context.assets.list("").orEmpty().mapNotNull(::parseName)
+    private val bundledIds = bundled.map { it.id }.toSet()
 
     private val _revision = MutableStateFlow(0)
     val revision = _revision.asStateFlow()
@@ -263,13 +269,17 @@ class Packs(private val context: Context) {
             val present = files.filter { it.pack == pack }
             val missing = needed.filter { it.id !in ids }.sumOf { it.size }
             val extra = if (pack == "core") missingRanks else 0
+            val removable = present.any { it.id !in bundledIds }
             when {
                 present.isEmpty() ->
                     PackInfo(pack, PackState.Available, needed.sumOf { it.size } + extra)
 
-                missing > 0 -> PackInfo(pack, PackState.Update, missing)
+                missing > 0 -> PackInfo(pack, PackState.Update, missing, removable)
 
-                else -> PackInfo(pack, PackState.Installed, present.sumOf(::sizeOf))
+                else -> {
+                    val size = present.sumOf(::sizeOf)
+                    PackInfo(pack, PackState.Installed, size, removable)
+                }
             }
         }
     }

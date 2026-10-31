@@ -41,7 +41,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: >
           ./gradlew assembleGithubRelease assembleUpdateRelease assembleFdroidRelease
-          --parallel
+          testGithubDebugUnitTest --tests dev.tn3w.shelf.ReleaseRouteTest --parallel
 
       - name: Collect
         run: |

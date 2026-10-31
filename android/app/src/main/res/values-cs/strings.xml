@@ -89,8 +89,6 @@
     <string name="pages_of_goal">%1$d / %2$d stran</string>
     <string name="percent_read">Přečteno %d %%</string>
     <string name="popular">Oblíbené</string>
-    <string name="popular_now">Právě oblíbené</string>
-    <string name="popular_now_subtitle">Co čtenáři všude otevírají.</string>
     <string name="popular_subtitle">Oblíbené u čtenářů po celém světě.</string>
     <string name="privacy">Soukromí</string>
     <string name="privacy_note">Žádné sledování, reklamy, účty ani identifikátory. Shelf používá síť jen pro to, co zapnete nebo na co klepnete: balíčky katalogu z GitHubu nebo vašeho zdroje, aktualizace aplikace z GitHubu, obálky z Open Library, DNB, DIGAR a Bookbites, fotky autorů z Open Library. Režim offline vše zastaví. Vaše knihovna zůstává v tomto zařízení.</string>
@@ -105,6 +103,13 @@
     <string name="other_books">Další knihy</string>
     <string name="show_all">Zobrazit vše</string>
     <string name="similar">Mohlo by se vám líbit</string>
+    <string name="like_title">Podobné jako %1$s</string>
+    <string name="readers_also_like">Čtenáři mají rádi také</string>
+    <string name="after_series">Po této sérii</string>
+    <string name="start_from">Začněte od…</string>
+    <string name="top_rated">Nejlépe hodnocené</string>
+    <string name="find_similar">Najít podobné</string>
+    <string name="because_you_read_author">Protože čtete %1$s</string>
     <string name="smaller_text">Menší text</string>
     <string name="source_code">Zdrojový kód</string>
     <string name="start">Číst soubor</string>
@@ -140,6 +145,12 @@
         <item quantity="few">%d knihy v této sérii</item>
         <item quantity="many">%d knihy v této sérii</item>
         <item quantity="other">%d knih v této sérii</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">Vybráno: %d</item>
+        <item quantity="few">Vybráno: %d</item>
+        <item quantity="many">Vybráno: %d</item>
+        <item quantity="other">Vybráno: %d</item>
     </plurals>
     <plurals name="day_streak">
         <item quantity="one">%d den v řadě</item>

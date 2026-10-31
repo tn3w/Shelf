@@ -83,6 +83,7 @@ fun LibraryScreen(navigator: Navigator) {
     var addingOwn by rememberSaveable { mutableStateOf(false) }
     var options by rememberSaveable { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
+    val selection = rememberSelection()
     LaunchedEffect(searching) { if (searching) focus.requestFocus() }
 
     fun change(update: (Settings) -> Settings) = viewModel.updateSettings(update)
@@ -93,7 +94,7 @@ fun LibraryScreen(navigator: Navigator) {
     }
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        LargeTitle(stringResource(R.string.library)) {
+        SelectableTitle(stringResource(R.string.library), selection, navigator) {
             if (!saved.isNullOrEmpty()) {
                 val icon = with(Icons.Outlined) { if (searching) SearchOff else Search }
                 IconAction(icon, stringResource(R.string.search_library), ::toggleSearch)
@@ -132,9 +133,9 @@ fun LibraryScreen(navigator: Navigator) {
             EmptyState(Icons.AutoMirrored.Outlined.LibraryBooks, stringResource(empty))
         }
         if (list) {
-            LibraryList(shown.orEmpty(), navigator)
+            LibraryList(shown.orEmpty(), navigator, selection)
         } else {
-            BookGrid(shown?.map { it.toBook() }, "library", navigator::book)
+            BookGrid(shown?.map { it.toBook() }, "library", navigator::book, selection)
         }
     }
     if (addingOwn) OwnBookSheet("", navigator) { addingOwn = false }
@@ -246,7 +247,11 @@ fun GenreChip(genres: List<Tag>, current: Int?, onSelect: (Int?) -> Unit) =
     )
 
 @Composable
-private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
+private fun LibraryList(
+    entries: List<Saved>,
+    navigator: Navigator,
+    selection: Selection,
+) {
     LazyVerticalGrid(
         GridCells.Adaptive(ListColumnWidth),
         contentPadding = PaddingValues(vertical = 8.dp),
@@ -262,6 +267,7 @@ private fun LibraryList(entries: List<Saved>, navigator: Navigator) {
                     saved.toBook(),
                     "library",
                     detail = detail.joinToString(" · "),
+                    selection = selection,
                     onOpen = navigator::book,
                 )
             }

@@ -19,7 +19,8 @@ import kotlin.math.sqrt
  * The report goes to SHELF_EVAL_OUT (default build/reports/recommend-eval.txt).
  */
 private val RELEASE = System.getenv("SHELF_CATALOGUE")?.let(::File)
-private val OUTPUT = File(System.getenv("SHELF_EVAL_OUT") ?: "build/reports/recommend-eval.txt")
+private val OUTPUT =
+    File(System.getenv("SHELF_EVAL_OUT") ?: "build/reports/recommend-eval.txt")
 private const val TOP = 10
 private const val RUNS = 5
 
@@ -53,8 +54,11 @@ sealed interface EvalSeed {
     }
 
     /** Sparse seed: a resolved work that carries at most [maxTags] tags. */
-    data class Sparse(override val language: String, val query: String, val maxTags: Int) :
-        EvalSeed {
+    data class Sparse(
+        override val language: String,
+        val query: String,
+        val maxTags: Int,
+    ) : EvalSeed {
         override val label = "sparse: $query"
     }
 }
@@ -123,7 +127,8 @@ fun interface Engine {
 private fun library(books: List<Book>, stars: List<Int> = emptyList()) =
     books.mapIndexed { index, book ->
         val at = 1_000L * (index + 1)
-        Saved(book.work, Shelf.Read, at, rating = stars.getOrElse(index) { 0 }, added = at)
+        val rating = stars.getOrElse(index) { 0 }
+        Saved(book.work, Shelf.Read, at, rating = rating, added = at)
     }
 
 /** The shipped engine: [Recommender.recommend]. */
@@ -152,11 +157,15 @@ private fun homeRows(
         val because = row.sources.joinToString(", ") { it.title }.take(60)
         val label = row.author?.name ?: because
         out.appendLine("   row ${row.kind} [$label]")
-        out.appendLine("      " + row.books.take(6).joinToString("; ") { it.title.take(30) })
+        val titles = row.books.take(6).joinToString("; ") { it.title.take(30) }
+        out.appendLine("      $titles")
     }
     val all = rows.flatMap { it.books }
     out.appendLine(
-        "   rows=%d books=%d crossDups=%d owned=%d foreign=%d authorMax=%d time=%.1fms".format(
+        (
+            "   rows=%d books=%d crossDups=%d owned=%d foreign=%d " +
+                "authorMax=%d time=%.1fms"
+            ).format(
             rows.size, all.size, all.size - all.distinctBy(::titleOf).size,
             all.count { book -> entries.any { it.work == book.work } },
             all.count { looksForeign(it.title, language) },
@@ -185,17 +194,22 @@ fun resolve(catalogue: Catalogue, searcher: Searcher, seed: EvalSeed): Resolved?
     fun first(query: String) = searcher.search(query, 5).firstOrNull { !it.isCompanion }
     return when (seed) {
         is EvalSeed.Work -> first(seed.query)?.let { Resolved(seed, listOf(it), null) }
+
         is EvalSeed.Saga -> searcher.search(seed.query, 10)
             .firstOrNull { !it.isCompanion && catalogue.series(it.work) != null }
             ?.let { Resolved(seed, listOf(it), null) }
-        is EvalSeed.Writer -> searcher.authors(searcher.lookup(seed.name), 1).firstOrNull()
+
+        is EvalSeed.Writer -> searcher.authors(searcher.lookup(seed.name), 1)
+            .firstOrNull()
             ?.let { author ->
                 val top = catalogue.authorWorks(author).maxByOrNull(catalogue::score)
                 Resolved(seed, listOfNotNull(top?.let(catalogue::book)), author)
             }
+
         is EvalSeed.Shelfful -> seed.queries.mapNotNull(::first)
             .takeIf { it.isNotEmpty() }
             ?.let { Resolved(seed, it, null) }
+
         is EvalSeed.Sparse -> searcher.search(seed.query, 200)
             .filter { !it.isCompanion && it.tags.size in 1..seed.maxTags }
             .maxByOrNull { catalogue.score(it.work) }
@@ -216,7 +230,8 @@ private val STOPWORDS = mapOf(
 )
 
 /** Harness-side guess: a title written in English inside another catalogue language. */
-private val ENGLISH = setOf("the", "of", "and", "with", "from", "my", "your", "this", "that", "is")
+private val ENGLISH =
+    setOf("the", "of", "and", "with", "from", "my", "your", "this", "that", "is")
 
 fun looksForeign(title: String, language: String): Boolean {
     if (language == "ko") return title.none { it in '\uac00'..'\ud7a3' }
@@ -242,7 +257,8 @@ private class Diagnostics(val catalogue: Catalogue, seeds: List<Book>) {
     fun cosine(tags: List<Int>): Double {
         val other = vector(tags)
         val dot = other.entries.sumOf { (tag, value) -> value * (profile[tag] ?: 0.0) }
-        val norm = sqrt(other.values.sumOf { it * it }) * sqrt(profile.values.sumOf { it * it })
+        val norm =
+            sqrt(other.values.sumOf { it * it }) * sqrt(profile.values.sumOf { it * it })
         return if (norm == 0.0) 0.0 else dot / norm
     }
 
@@ -338,12 +354,14 @@ fun evaluate(engine: Engine, folder: File, out: Appendable): List<SeedReport> {
             val books = lines.map { it.book }
             val report = SeedReport(
                 seed.label, language, lines, times.sorted()[RUNS / 2],
-                authorMax = books.groupingBy { it.author }.eachCount().values.maxOrNull() ?: 0,
+                authorMax = books.groupingBy { it.author }.eachCount().values
+                    .maxOrNull() ?: 0,
                 seriesMax = books.mapNotNull { catalogue.series(it.work)?.name }
                     .groupingBy { it }.eachCount().values.maxOrNull() ?: 0,
                 duplicates = books.size - books.distinctBy(::titleOf).size,
                 foreign = books.count { looksForeign(it.title, language) },
-                seedAuthorShare = books.count { diagnostics.signals(it)["seedAuthor"]!! > 0 }
+                seedAuthorShare = books
+                    .count { diagnostics.signals(it)["seedAuthor"]!! > 0 }
                     .toDouble() / books.size.coerceAtLeast(1),
                 meanCosine = books.map { diagnostics.cosine(it.tags) }.average()
                     .takeIf { !it.isNaN() } ?: 0.0,
@@ -356,10 +374,10 @@ fun evaluate(engine: Engine, folder: File, out: Appendable): List<SeedReport> {
                     "   -> n=%d authorMax=%d seriesMax=%d dups=%d foreign=%d " +
                         "seedAuthor=%.0f%% cos=%.2f medianReaders=%d time=%.1fms"
                     ).format(
-                        books.size, report.authorMax, report.seriesMax, report.duplicates,
-                        report.foreign, 100 * report.seedAuthorShare, report.meanCosine,
-                        report.medianReaders, report.millis,
-                    ),
+                    books.size, report.authorMax, report.seriesMax, report.duplicates,
+                    report.foreign, 100 * report.seedAuthorShare, report.meanCosine,
+                    report.medianReaders, report.millis,
+                ),
             )
         }
     }
@@ -369,14 +387,14 @@ fun evaluate(engine: Engine, folder: File, out: Appendable): List<SeedReport> {
             "seeds=%d meanCos=%.3f meanLogReaders=%.2f authorMax>3=%d seriesMax>2=%d " +
                 "dups=%d foreign=%d empty<%d=%d medianTime=%.1fms maxTime=%.1fms"
             ).format(
-                reports.size, reports.map { it.meanCosine }.average(),
-                reports.map { ln(1.0 + it.medianReaders) }.average(),
-                reports.count { it.authorMax > 3 }, reports.count { it.seriesMax > 2 },
-                reports.sumOf { it.duplicates }, reports.sumOf { it.foreign }, TOP,
-                reports.count { it.lines.size < TOP },
-                reports.map { it.millis }.sorted().getOrElse(reports.size / 2) { 0.0 },
-                reports.maxOfOrNull { it.millis } ?: 0.0,
-            ),
+            reports.size, reports.map { it.meanCosine }.average(),
+            reports.map { ln(1.0 + it.medianReaders) }.average(),
+            reports.count { it.authorMax > 3 }, reports.count { it.seriesMax > 2 },
+            reports.sumOf { it.duplicates }, reports.sumOf { it.foreign }, TOP,
+            reports.count { it.lines.size < TOP },
+            reports.map { it.millis }.sorted().getOrElse(reports.size / 2) { 0.0 },
+            reports.maxOfOrNull { it.millis } ?: 0.0,
+        ),
     )
     return reports
 }
@@ -401,9 +419,11 @@ fun sample(folder: File, out: Appendable, languages: List<String> = LANGUAGES) {
     out.appendLine(SAMPLE_HEADER)
     val totals = languages.mapNotNull { language ->
         val catalogue = loadRelease(folder, language)
-        if (catalogue.workCount == 0) null else sampleRow(catalogue, catalogue, language, out)
+        catalogue.takeIf { it.workCount > 0 }?.let { sampleRow(it, it, language, out) }
     }
-    val mean = totals.first().indices.map { column -> totals.map { it[column] }.average() }
+    val mean = totals.first().indices.map { column ->
+        totals.map { it[column] }.average()
+    }
     out.appendLine(
         "%-5s %5.0f %5.1f %7.3f %4.1f %6.1f %9.1f %7.3f %6.3f %5.3f %5.1f %5.1f"
             .format("mean", *mean.toTypedArray()),
@@ -452,10 +472,12 @@ fun sampleRow(
         foreign += books.count { looksForeign(it.title, language) }
         dups += books.size - books.distinctBy(::titleOf).size +
             books.filter { it.alternate.isNotEmpty() }.let { alt ->
-                alt.size - alt.distinctBy { tokenize(mainTitle(it.alternate)) to it.author }.size
+                alt.size -
+                    alt.distinctBy { tokenize(mainTitle(it.alternate)) to it.author }.size
             } + books.count { book ->
                 book.alternate.isNotEmpty() && book.author == seed.author &&
-                    tokenize(mainTitle(book.alternate)) == tokenize(mainTitle(seed.alternate))
+                    tokenize(mainTitle(book.alternate)) ==
+                    tokenize(mainTitle(seed.alternate))
             }
         seedEditions += books.count { titleOf(it) == titleOf(seed) }
         if ((books.groupingBy { it.author }.eachCount().values.maxOrNull() ?: 0) > 2) {
@@ -469,12 +491,16 @@ fun sampleRow(
         if (own.size < 2) continue
         val ranking = recommender.blindRanking(seed, BLIND_DEPTH)
         recalls += ranking.count { it in own }.toDouble() / minOf(own.size, BLIND_DEPTH)
-        ranks += ranking.indexOfFirst { it in own }.let { if (it < 0) 0.0 else 1.0 / (it + 1) }
+        ranks +=
+            ranking.indexOfFirst { it in own }.let { if (it < 0) 0.0 else 1.0 / (it + 1) }
     }
     val row = listOf(
-        seeds.size.toDouble(), empty.toDouble(), foreign.toDouble() / shown.coerceAtLeast(1),
+        seeds.size.toDouble(), empty.toDouble(),
+        foreign.toDouble() / shown.coerceAtLeast(1),
         dups.toDouble(), seedEditions.toDouble(), flooded.toDouble(),
-        qualities.average().orZero(), recalls.average().orZero(), ranks.average().orZero(),
+        qualities.average().orZero(),
+        recalls.average().orZero(),
+        ranks.average().orZero(),
         percentile(times, 0.5), percentile(times, 0.95),
     )
     out.appendLine(
@@ -504,7 +530,9 @@ fun libraryRow(target: Catalogue, source: Catalogue, label: String, out: Appenda
     val libraries = pool.filterIndexed { index, _ -> index % step == 0 }
         .mapNotNull(source::book)
         .take(LIBRARIES)
-        .map { seed -> listOf(seed.work) + neighbours.blindRanking(seed, LIBRARY_SIZE - 1) }
+        .map { seed ->
+            listOf(seed.work) + neighbours.blindRanking(seed, LIBRARY_SIZE - 1)
+        }
     val adopt = { work: Int -> source.book(work)?.let { target.adopt(it, source) } }
     val held = libraries.flatten().count { target.locate(it) != null }
     for ((mode, resolve) in listOf("plain" to { _: Int -> null }, "resolve" to adopt)) {
@@ -555,7 +583,8 @@ fun mixRow(catalogue: Catalogue, out: Appendable) {
     for (a in seeds) {
         if (lists >= MIXES) break
         val b = seeds.firstOrNull { other ->
-            other.work != a.work && Diagnostics(catalogue, listOf(a)).cosine(other.tags) < MIX_APART
+            other.work != a.work &&
+                Diagnostics(catalogue, listOf(a)).cosine(other.tags) < MIX_APART
         } ?: continue
         val sideA = listOf(a.work) + recommender.blindRanking(a, MIX_SIDE - 1)
         val sideB = listOf(b.work) + recommender.blindRanking(b, MIX_SIDE - 1)
@@ -590,7 +619,10 @@ class RecommendEval {
     @Test
     fun libraryMixing() {
         val folder = RELEASE
-        assumeTrue("set SHELF_CATALOGUE to a catalogue release folder", folder?.isDirectory == true)
+        assumeTrue(
+            "set SHELF_CATALOGUE to a catalogue release folder",
+            folder?.isDirectory == true,
+        )
         val text = StringBuilder()
         for (language in LANGUAGES) mixRow(loadRelease(folder!!, language), text)
         File(OUTPUT.path.replace(".txt", "-mix.txt")).apply { parentFile?.mkdirs() }
@@ -601,7 +633,10 @@ class RecommendEval {
     @Test
     fun multiCatalogue() {
         val folder = RELEASE
-        assumeTrue("set SHELF_CATALOGUE to a catalogue release folder", folder?.isDirectory == true)
+        assumeTrue(
+            "set SHELF_CATALOGUE to a catalogue release folder",
+            folder?.isDirectory == true,
+        )
         val text = StringBuilder()
         text.appendLine("== packs: one language with fewer packs installed")
         text.appendLine(SAMPLE_HEADER)
@@ -609,21 +644,27 @@ class RecommendEval {
             val all = loadRelease(folder!!, language).segments.map { it.pack }.toSet()
             for (packs in listOf(setOf("core"), setOf("core", "general"), all)) {
                 val catalogue = loadPacks(folder, language, packs)
-                val label = "$language:" + if (packs == all) "all" else packs.joinToString("+")
+                val label =
+                    "$language:" + if (packs == all) "all" else packs.joinToString("+")
                 sampleRow(catalogue, catalogue, label, text)
             }
         }
-        val pairs = listOf("en" to "de", "de" to "en", "en" to "ko", "fr" to "es", "sv" to "fi")
+        val pairs = listOf(
+            "en" to "de", "de" to "en", "en" to "ko",
+            "fr" to "es", "sv" to "fi",
+        )
         text.appendLine("== seeds opened from another language's catalogue")
         text.appendLine(SAMPLE_HEADER)
         val catalogues = pairs.flatMap { it.toList() }.distinct()
             .associateWith { loadRelease(folder!!, it) }
         for ((from, to) in pairs) {
-            sampleRow(catalogues.getValue(to), catalogues.getValue(from), "$from>$to", text)
+            val label = "$from>$to"
+            sampleRow(catalogues.getValue(to), catalogues.getValue(from), label, text)
         }
         text.appendLine("== sparse seeds (broad tags only)")
         text.appendLine(SAMPLE_HEADER)
-        val broad = setOf("fiction", "nonfiction", "childrens", "picture-book", "young-adult")
+        val broad =
+            setOf("fiction", "nonfiction", "childrens", "picture-book", "young-adult")
         for (language in listOf("en", "fr", "et", "sv", "cs", "fi", "ko")) {
             val catalogue = catalogues[language] ?: loadRelease(folder!!, language)
             val slugs = catalogue.tags.associate { it.id to it.slug }
@@ -632,18 +673,21 @@ class RecommendEval {
         }
         text.appendLine("== libraries saved under another language")
         for ((from, to) in pairs) {
-            libraryRow(catalogues.getValue(to), catalogues.getValue(from), "$from>$to", text)
+            val label = "$from>$to"
+            libraryRow(catalogues.getValue(to), catalogues.getValue(from), label, text)
         }
         File(OUTPUT.path.replace(".txt", "-multi.txt")).apply { parentFile?.mkdirs() }
             .writeText(text.toString())
         println(text)
     }
 
-
     @Test
     fun sampleRelease() {
         val folder = RELEASE
-        assumeTrue("set SHELF_CATALOGUE to a catalogue release folder", folder?.isDirectory == true)
+        assumeTrue(
+            "set SHELF_CATALOGUE to a catalogue release folder",
+            folder?.isDirectory == true,
+        )
         val text = StringBuilder()
         sample(folder!!, text)
         File(OUTPUT.path.replace(".txt", "-sample.txt")).apply { parentFile?.mkdirs() }
@@ -651,11 +695,13 @@ class RecommendEval {
         println(text)
     }
 
-
     @Test
     fun evaluateRelease() {
         val folder = RELEASE
-        assumeTrue("set SHELF_CATALOGUE to a catalogue release folder", folder?.isDirectory == true)
+        assumeTrue(
+            "set SHELF_CATALOGUE to a catalogue release folder",
+            folder?.isDirectory == true,
+        )
         OUTPUT.parentFile?.mkdirs()
         val text = StringBuilder()
         evaluate(CURRENT, folder!!, text)

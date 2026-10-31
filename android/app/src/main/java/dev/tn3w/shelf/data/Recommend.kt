@@ -127,7 +127,10 @@ private class Profile(
 )
 
 /** Books rated one or two stars: their tags and authors count against candidates. */
-private class Dislikes(val vector: Vector = emptyMap(), val authors: Set<Int> = emptySet()) {
+private class Dislikes(
+    val vector: Vector = emptyMap(),
+    val authors: Set<Int> = emptySet(),
+) {
     val isEmpty get() = vector.isEmpty() && authors.isEmpty()
 }
 
@@ -180,6 +183,8 @@ sealed interface RecommendSeed {
 
     data class Saga(val book: Book) : RecommendSeed
 
+    data class Mix(val books: List<Book>) : RecommendSeed
+
     data class Library(val entries: List<Saved>, val hidden: Set<Int> = emptySet()) :
         RecommendSeed
 }
@@ -228,8 +233,11 @@ private val LOCAL_LETTERS = mapOf(
 )
 private val STOPWORDS = mapOf(
     "en" to setOf("the", "of", "and", "with", "from", "my", "your", "this", "that", "is"),
-    "de" to setOf("der", "die", "das", "und", "ein", "eine", "im", "mit", "von", "des", "dem"),
-    "fr" to setOf("le", "la", "les", "et", "du", "des", "une", "au", "aux", "pour", "dans"),
+    "de" to setOf(
+        "der", "die", "das", "und", "ein", "eine", "im", "mit", "von", "des", "dem",
+    ),
+    "fr" to
+        setOf("le", "la", "les", "et", "du", "des", "une", "au", "aux", "pour", "dans"),
     "es" to setOf("el", "la", "los", "las", "y", "del", "una", "con", "por", "para"),
     "sv" to setOf("och", "som", "ett", "av", "med", "till", "det", "för", "på"),
     "fi" to setOf("ja", "sekä", "tai", "kun"),
@@ -252,13 +260,16 @@ internal fun isLocalTitle(title: String, language: String): Boolean {
     return foreign.none { stopwords -> words.any(stopwords::contains) }
 }
 
+/** Star rating pulled towards a prior mean, so few ratings count for little. */
+internal fun smoothedRating(popularity: Popularity) =
+    (RATING_PRIOR * RATING_PRIOR_MEAN + popularity.rating * popularity.ratings) /
+        (RATING_PRIOR + popularity.ratings)
+
 /** Reader count on a log scale blended with a Bayesian-smoothed rating, in [0, 1]. */
 internal fun qualityOf(popularity: Popularity): Double {
     val readers = min(1.0, ln(1.0 + popularity.readers) / ln(1.0 + READERS_REFERENCE))
-    val ratings = popularity.ratings
-    val mean = (RATING_PRIOR * RATING_PRIOR_MEAN + popularity.rating * ratings) /
-        (RATING_PRIOR + ratings)
-    val rating = ((mean - RATING_FLOOR) / RATING_SPAN).coerceIn(0.0, 1.0)
+    val rating =
+        ((smoothedRating(popularity) - RATING_FLOOR) / RATING_SPAN).coerceIn(0.0, 1.0)
     return (READERS_SHARE * readers + RATING_SHARE * rating).coerceIn(0.0, 1.0)
 }
 
@@ -328,7 +339,8 @@ class Recommender(
     private fun specificShare(vector: Vector): Double {
         val total = vector.values.sumOf { it * it }
         if (total <= 0) return 0.0
-        return vector.filterKeys { slug[it] !in BROAD_TAGS }.values.sumOf { it * it } / total
+        return vector.filterKeys { slug[it] !in BROAD_TAGS }.values.sumOf { it * it } /
+            total
     }
 
     private fun audienceOf(slugs: Set<String>) = when {
@@ -502,7 +514,8 @@ class Recommender(
     private fun retrieve(taste: Taste, extra: Collection<Int>, size: Int): Set<Int> {
         val ranked = taste.vector.entries.sortedByDescending { it.value }
         val specific = ranked.filter { slug[it.key] !in FORM_TAGS }
-        val tags = (if (taste.sparse) ranked else specific.ifEmpty { ranked }).take(TASTE_TAGS)
+        val pool = if (taste.sparse) ranked else specific.ifEmpty { ranked }
+        val tags = pool.take(TASTE_TAGS)
         val limit = if (taste.sparse) SPARSE_CANDIDATES * size / CANDIDATES else size
         val heap = PriorityQueue<Pair<Double, Int>>(limit + 1, compareBy { it.first })
         synchronized(sums) {
@@ -565,7 +578,8 @@ class Recommender(
         } else {
             taste.authors[catalogue.firstAuthorNumber(work)] ?: 0.0
         }
-        val penalty = 1.0 + YOUNGER_PENALTY * max(0.0, -gap) + OLDER_PENALTY * max(0.0, gap)
+        val penalty =
+            1.0 + YOUNGER_PENALTY * max(0.0, -gap) + OLDER_PENALTY * max(0.0, gap)
         val eraWeight = if (taste.sparse) SPARSE_ERA_WEIGHT else ERA_WEIGHT
         val aversion = aversionTo(taste.dislikes, vector, work)
         val value = (
@@ -588,25 +602,30 @@ class Recommender(
         )
     }
 
-    private val texts = object : LinkedHashMap<Int, Map<String, Int>>(TEXT_CACHE, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Map<String, Int>>) =
-            size > TEXT_CACHE
+    private val texts = object :
+        LinkedHashMap<Int, Map<String, Int>>(TEXT_CACHE, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<Int, Map<String, Int>>,
+        ) = size > TEXT_CACHE
     }
 
     /** Content words of a work's description, with counts; its authors' names left out. */
-    private fun textOf(work: Int, book: Book? = null): Map<String, Int> = synchronized(texts) {
-        texts.getOrPut(work) {
-            val text = catalogue.description(work).text
-            if (text.isEmpty()) return@getOrPut emptyMap()
-            val names = (book ?: catalogue.book(work))?.authors.orEmpty()
-                .flatMap { tokenize(it.name) }
-                .toSet()
-            tokenize(text.take(TEXT_CHARS))
-                .filter { it.length >= TEXT_WORD && !it.all(Char::isDigit) && it !in names }
-                .groupingBy { it }
-                .eachCount()
+    private fun textOf(work: Int, book: Book? = null): Map<String, Int> =
+        synchronized(texts) {
+            texts.getOrPut(work) {
+                val text = catalogue.description(work).text
+                if (text.isEmpty()) return@getOrPut emptyMap()
+                val names = (book ?: catalogue.book(work))?.authors.orEmpty()
+                    .flatMap { tokenize(it.name) }
+                    .toSet()
+                tokenize(text.take(TEXT_CHARS))
+                    .filter {
+                        it.length >= TEXT_WORD && !it.all(Char::isDigit) && it !in names
+                    }
+                    .groupingBy { it }
+                    .eachCount()
+            }
         }
-    }
 
     /**
      * Refines the head of a ranking with what needs the full record: titles in another
@@ -645,7 +664,8 @@ class Recommender(
                 norm += weight * weight
                 query[term]?.let { dot += it * weight }
             }
-            val text = if (norm > 0 && queryNorm > 0) dot / (queryNorm * sqrt(norm)) else 0.0
+            val measurable = norm > 0 && queryNorm > 0
+            val text = if (measurable) dot / (queryNorm * sqrt(norm)) else 0.0
             val local = books[index]?.let(::localness) ?: 1.0
             Scored(
                 (candidate.score + TEXT_WEIGHT * text) * local,
@@ -663,10 +683,12 @@ class Recommender(
     /** How strongly a candidate resembles what the reader rated low, in [0, 1). */
     private fun aversionTo(dislikes: Dislikes, vector: Vector, work: Int): Double {
         if (dislikes.isEmpty) return 0.0
-        val tags = if (dislikes.vector.isEmpty()) 0.0 else overlap(vector, dislikes.vector)
+        val tags =
+            if (dislikes.vector.isEmpty()) 0.0 else overlap(vector, dislikes.vector)
         val author = dislikes.authors.isNotEmpty() &&
             catalogue.firstAuthorNumber(work) in dislikes.authors
-        return 1 - (1 - DISLIKE_WEIGHT * tags) * (if (author) 1 - DISLIKED_AUTHOR else 1.0)
+        return 1 -
+            (1 - DISLIKE_WEIGHT * tags) * (if (author) 1 - DISLIKED_AUTHOR else 1.0)
     }
 
     private fun rank(
@@ -729,9 +751,10 @@ class Recommender(
                 val book = bookOf(candidate.work) ?: continue
                 val author = book.authors.firstOrNull()?.number ?: -1
                 val repeats = perAuthor[author] ?: 0
+                val inGroup = if (bounds.groups) perGroup[candidate.group] ?: 0 else 0
+                val clusterDecay = CLUSTER_DECAY.pow(inGroup)
                 val value = candidate.score * localOf(candidate, book) *
-                    AUTHOR_DECAY.pow(repeats) *
-                    if (bounds.groups) CLUSTER_DECAY.pow(perGroup[candidate.group] ?: 0) else 1.0
+                    AUTHOR_DECAY.pow(repeats) * clusterDecay
                 if (value > bestScore) {
                     bestScore = value
                     bestIndex = index
@@ -746,11 +769,13 @@ class Recommender(
             val title = titleKey(book).key
             val original = originalKey(book)
             val kin = numbers.flatMap { bounds.kin[it].orEmpty() }.toSet()
-            val sameSeries = kin.isNotEmpty() && sequelWords(book, name).any(kin::contains)
+            val sameSeries =
+                kin.isNotEmpty() && sequelWords(book, name).any(kin::contains)
             val seedAuthor = taste != null && author in taste.seedAuthors
             val authorCount = perAuthor[author] ?: 0
+            val seedAuthorBook = numbers.any { it in bounds.authors }
             val blocked = book.isCompanion || book.work in bounds.works ||
-                book.work in works || numbers.any { it in bounds.authors } || sameSeries ||
+                book.work in works || seedAuthorBook || sameSeries ||
                 (name != null && (name in series || name in bounds.series)) ||
                 title in bounds.titles || title in titles ||
                 (original != null && (original in bounds.titles || original in titles)) ||
@@ -814,66 +839,86 @@ class Recommender(
         return diversify(refine(taste, rank(taste, extra)), bounds, taste, limit)
     }
 
-    private fun popularRecommendations(limit: Int, bounds: Bounds) =
-        diversify(
-            catalogue.popularWorks(limit * POOL_FACTOR).mapIndexed { index, work ->
-                Scored(1.0 / (1 + index), work)
-            },
-            bounds,
-            null,
-            limit,
-        )
+    private fun popularRecommendations(limit: Int, bounds: Bounds) = diversify(
+        catalogue.popularWorks(limit * POOL_FACTOR).mapIndexed { index, work ->
+            Scored(1.0 / (1 + index), work)
+        },
+        bounds,
+        null,
+        limit,
+    )
 
-    fun recommend(seed: RecommendSeed, limit: Int = 12): List<Recommendation> = when (seed) {
-        is RecommendSeed.Work -> {
-            val book = seed.book
-            val series = seriesNames(listOf(book.work))
-            similarToBooks(
-                listOf(book),
-                Bounds(
-                    setOf(book.work),
-                    titlesOf(listOf(book)),
-                    series,
-                    kin = kinOf(listOf(book)),
-                ),
-                limit,
-                book.authors.take(1).map { it.number }.toSet(),
-            )
-        }
-        is RecommendSeed.Saga -> {
-            val members = catalogue.series(seed.book.work)?.members.orEmpty()
-            val books = catalogue.books(members.ifEmpty { listOf(seed.book.work) })
-            similarToBooks(
-                books,
-                seriesNames(listOf(seed.book.work)).let { series ->
+    fun recommend(seed: RecommendSeed, limit: Int = 12): List<Recommendation> =
+        when (seed) {
+            is RecommendSeed.Work -> {
+                val book = seed.book
+                val series = seriesNames(listOf(book.work))
+                similarToBooks(
+                    listOf(book),
                     Bounds(
-                        books.map { it.work }.toSet(),
-                        titlesOf(books),
+                        setOf(book.work),
+                        titlesOf(listOf(book)),
                         series,
-                        kin = kinOf(books),
-                    )
-                },
-                limit,
-                books.flatMap { it.authors }.map { it.number }.toSet(),
-            )
-        }
-        is RecommendSeed.Writer -> {
-            val works = worksOf(seed.author)
-                .sortedByDescending(catalogue::score)
-                .take(SEED_AUTHOR_WORKS)
-            val top = works.firstOrNull()?.let(catalogue::score)?.takeIf { it > 0 } ?: 1.0
-            val sources = catalogue.books(works).mapNotNull { book ->
-                sourceOf(book, max(MIN_SEED_WEIGHT, catalogue.score(book.work) / top))
+                        kin = kinOf(listOf(book)),
+                    ),
+                    limit,
+                    book.authors.take(1).map { it.number }.toSet(),
+                )
             }
-            val bounds = Bounds(authors = setOf(seed.author.number), groups = true)
-            val clusters = cluster(enriched(sources))
-            if (clusters.isEmpty()) {
-                popularRecommendations(limit, bounds)
-            } else {
-                mixed(clusters, emptyMap(), bounds, limit)
+
+            is RecommendSeed.Saga -> {
+                val members = catalogue.series(seed.book.work)?.members.orEmpty()
+                val books = catalogue.books(members.ifEmpty { listOf(seed.book.work) })
+                similarToBooks(
+                    books,
+                    seriesNames(listOf(seed.book.work)).let { series ->
+                        Bounds(
+                            books.map { it.work }.toSet(),
+                            titlesOf(books),
+                            series,
+                            kin = kinOf(books),
+                        )
+                    },
+                    limit,
+                    books.flatMap { it.authors }.map { it.number }.toSet(),
+                )
             }
+
+            is RecommendSeed.Writer -> {
+                val works = worksOf(seed.author)
+                    .sortedByDescending(catalogue::score)
+                    .take(SEED_AUTHOR_WORKS)
+                val top =
+                    works.firstOrNull()?.let(catalogue::score)?.takeIf { it > 0 } ?: 1.0
+                val sources = catalogue.books(works).mapNotNull { book ->
+                    sourceOf(book, max(MIN_SEED_WEIGHT, catalogue.score(book.work) / top))
+                }
+                val bounds = Bounds(authors = setOf(seed.author.number), groups = true)
+                val clusters = cluster(enriched(sources))
+                if (clusters.isEmpty()) {
+                    popularRecommendations(limit, bounds)
+                } else {
+                    mixed(clusters, emptyMap(), bounds, limit)
+                }
+            }
+
+            is RecommendSeed.Mix -> picked(seed.books, limit)
+
+            is RecommendSeed.Library -> personal(seed.entries, seed.hidden, limit)
         }
-        is RecommendSeed.Library -> personal(seed.entries, seed.hidden, limit)
+
+    /** Several picked books: clustered and mixed like a library, none of them returned. */
+    private fun picked(books: List<Book>, limit: Int): List<Recommendation> {
+        val bounds = Bounds(
+            works = books.map { it.work }.toSet(),
+            titles = titlesOf(books),
+            series = seriesNames(books.map { it.work }),
+            kin = kinOf(books),
+            groups = true,
+        )
+        val clusters = cluster(enriched(books.mapNotNull { sourceOf(it, 1.0) }))
+        if (clusters.isEmpty()) return popularRecommendations(limit, bounds)
+        return mixed(clusters, emptyMap(), bounds, limit)
     }
 
     /**
@@ -919,8 +964,10 @@ class Recommender(
             val extra = authors.keys.flatMap { number ->
                 cluster.books.flatMap { it.authors }.filter { it.number == number }
             }.distinct().flatMap { catalogue.authorWorks(it).take(AUTHOR_DEPTH) }
-            val size = max(MIN_CANDIDATES, (CANDIDATES * cluster.weight / heaviest).toInt())
-            val depth = max(MIN_TEXT_DEPTH, (TEXT_DEPTH * cluster.weight / heaviest).toInt())
+            val size =
+                max(MIN_CANDIDATES, (CANDIDATES * cluster.weight / heaviest).toInt())
+            val depth =
+                max(MIN_TEXT_DEPTH, (TEXT_DEPTH * cluster.weight / heaviest).toInt())
             refine(taste, rank(taste, extra, index, size), depth).map {
                 Scored(it.score * share, it.work, it.signals + ("share" to share), index)
             }
@@ -956,7 +1003,9 @@ class Recommender(
             val key = titleKey(book)
             if (key.key in blockedTitles) return null
             val words = book.authors.flatMap { kin[it.number].orEmpty() }.toSet()
-            if (words.isNotEmpty() && sequelWords(book, name).any(words::contains)) return null
+            val sequel =
+                words.isNotEmpty() && sequelWords(book, name).any(words::contains)
+            if (sequel) return null
             val count = perAuthor[book.author] ?: 0
             if (count >= authorLimit || !titles.add(key)) return null
             if (name != null) series += name
@@ -1051,7 +1100,9 @@ class Recommender(
             val depth = max(MIN_TEXT_DEPTH, (size * ROW_POOL * share).toInt())
             val pool = max(MIN_CANDIDATES, (CANDIDATES * share).toInt())
             val books = refine(taste, rank(taste, emptyList(), size = pool), depth)
-                .map { Scored(it.score * random.nextDouble(1 - JITTER, 1 + JITTER), it.work) }
+                .map {
+                    Scored(it.score * random.nextDouble(1 - JITTER, 1 + JITTER), it.work)
+                }
                 .sortedByDescending { it.score }
                 .take(size * ROW_POOL)
                 .mapNotNull { picker.accept(it.work) }
@@ -1076,8 +1127,8 @@ class Recommender(
             .map { it.work }
     }
 
-    fun similar(book: Book, limit: Int = 12): List<Book> =
-        recommend(RecommendSeed.Work(book), limit).map { it.book }
+    fun recommended(seed: RecommendSeed, limit: Int = 12): List<Book> =
+        recommend(seed, limit).map { it.book }
 
     fun series(book: Book): Pair<String, List<Book>>? {
         val series = catalogue.series(book.work) ?: return null
@@ -1123,12 +1174,21 @@ class Recommender(
         }
     }
 
-    fun popular(limit: Int = 20, tag: Int? = null): List<Book> {
+    fun popular(
+        limit: Int = 20,
+        tag: Int? = null,
+        sort: TagSort = TagSort.Popular,
+    ): List<Book> {
         val picker = Picker()
-        return catalogue
-            .popularWorks(limit * 6, tag)
-            .mapNotNull(picker::accept)
-            .take(limit)
+        val works = catalogue.popularWorks(limit * 6, tag)
+        val ordered = when (sort) {
+            TagSort.Popular -> works
+
+            TagSort.Rated -> works.sortedByDescending { work ->
+                catalogue.ranks?.popularity(work)?.let(::smoothedRating) ?: 0.0
+            }
+        }
+        return ordered.mapNotNull(picker::accept).take(limit)
     }
 
     private fun distinct(

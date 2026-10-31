@@ -85,7 +85,9 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
                 downloads["$language-${info.pack}"],
                 offline,
                 onDownload = { viewModel.downloadPack(language, info.pack) },
-                onRemove = { viewModel.removePacks(language, info.pack) },
+                onRemove = {
+                    viewModel.removePacks(language, info.pack.takeIf { it != "core" })
+                },
             )
         }
         val pending = packs.filter { it.state != PackState.Installed }
@@ -196,7 +198,7 @@ private fun PackRow(
     val label = stringResource(PACKS.getValue(info.pack))
     val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
     SettingRow(label, stringResource(info.state.label) + size) {
-        PackAction(label, download, info.state, info.pack, offline, onDownload, onRemove)
+        PackAction(label, download, info, offline, onDownload, onRemove)
     }
 }
 
@@ -204,8 +206,7 @@ private fun PackRow(
 private fun PackAction(
     label: String,
     download: Download?,
-    state: PackState,
-    pack: String,
+    info: PackInfo,
     offline: Boolean,
     onDownload: () -> Unit,
     onRemove: () -> Unit,
@@ -220,21 +221,20 @@ private fun PackAction(
             )
         }
     }
-    val removable = state != PackState.Available && pack != "core"
     val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
     val action = when {
-        offline -> remove.takeIf { removable }
+        offline -> remove.takeIf { info.removable }
 
         download is Download.Failed ->
             PackButton(Icons.Outlined.ErrorOutline, R.string.retry_item, onDownload)
 
-        state == PackState.Available ->
+        info.state == PackState.Available ->
             PackButton(Icons.Outlined.Download, R.string.download_item, onDownload)
 
-        state == PackState.Update ->
+        info.state == PackState.Update ->
             PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
 
-        removable -> remove
+        info.removable -> remove
 
         else -> null
     } ?: return Box(Modifier.size(48.dp))

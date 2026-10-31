@@ -6,8 +6,9 @@ import java.nio.ByteOrder
 import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
 
-val TAGS =
-    listOf("fiction", "nonfiction", "fantasy", "magic", "dragons", "space", "crime", "childrens")
+val TAGS = listOf(
+    "fiction", "nonfiction", "fantasy", "magic", "dragons", "space", "crime", "childrens",
+)
 private const val RECORDS_PER_BLOCK = 2
 private const val TERMS_PER_BLOCK = 3
 private const val COMPLETION_LIMIT = 12
@@ -27,6 +28,7 @@ data class Fixture(
     val libraryIsbn: String = "",
     val digar: Int = 0,
     val alternate: String = "",
+    val rating: Double = 4.0,
 )
 
 class Bytes {
@@ -227,7 +229,9 @@ fun segmentBuffer(
         bytes {
             varint(1).varint(authors.indexOf(book.author))
             varint(if (book.year == 0) 0 else book.year - 1400).varint(0)
-            varint(book.tags.size).apply { book.tags.forEach { byte(tagTable.indexOf(it)) } }
+            varint(book.tags.size).apply {
+                book.tags.forEach { byte(tagTable.indexOf(it)) }
+            }
             varint(series.indexOf(book.series) + 1)
         }
     }
@@ -312,7 +316,8 @@ fun ranksBuffer(
             bytes {
                 chunk.fold(chunk.first().work) { previous, book ->
                     varint(book.work - previous).varint(book.score * 10)
-                    varint(book.score).varint(book.score).byte(80).byte(1)
+                    varint(book.score).varint(book.score)
+                    byte((book.rating * 20).toInt()).byte(1)
                     book.work
                 }
             },

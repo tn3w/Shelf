@@ -194,7 +194,8 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
                 val found = all.binarySearch(work, pointer, all.size)
                 pointer = if (found >= 0) found else -found - 1
             }
-            result[position] = if (pointer < all.size && all[pointer] == work) pointer else -1
+            result[position] =
+                if (pointer < all.size && all[pointer] == work) pointer else -1
         }
         return result
     }
@@ -324,7 +325,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     private fun authorRecords(author: Author): Sequence<Pair<Segment, AuthorRecord>> {
         val token = tokenize(author.name)
             .distinct()
-            .map { token -> token to segments.sumOf { it.term(token)?.authorSlots?.size ?: 0 } }
+            .map { token ->
+                token to segments.sumOf { it.term(token)?.authorSlots?.size ?: 0 }
+            }
             .filter { it.second > 0 }
             .minByOrNull { it.second }
             ?.first

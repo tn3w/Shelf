@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.*
 import androidx.activity.compose.setContent
+import androidx.annotation.Keep
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.*
@@ -64,6 +65,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class SeriesRoute(val work: Int)
 
+@Keep
+enum class SimilarKind { Books, Writer, Saga }
+
+@Serializable
+data class SimilarRoute(val kind: SimilarKind, val ids: List<Int>, val name: String = "")
+
 @Serializable data class ReaderRoute(val work: Int)
 
 @Serializable object ScanRoute
@@ -99,6 +106,8 @@ class Navigator(
     fun tag(id: Int) = controller.navigate(TagRoute(id))
 
     fun series(work: Int) = controller.navigate(SeriesRoute(work))
+
+    fun similar(route: SimilarRoute) = controller.navigate(route)
 
     fun reader(work: Int) = controller.navigate(ReaderRoute(work)) {
         popUpTo<ReaderRoute> { inclusive = true }
@@ -381,6 +390,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
         screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
+        screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
         screen<ScanRoute> { ScanScreen(navigator) }
         screen<SettingsRoute> {

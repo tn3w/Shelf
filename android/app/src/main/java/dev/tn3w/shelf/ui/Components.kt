@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.ui
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
@@ -15,6 +16,7 @@ import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
@@ -29,15 +31,20 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
+import dev.tn3w.shelf.SimilarKind
+import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.cover.*
 import dev.tn3w.shelf.data.*
 import kotlin.math.min
@@ -284,7 +291,77 @@ fun SectionHeader(title: String, subtitle: String? = null, onMore: (() -> Unit)?
     }
 }
 
+class Selection(private val state: MutableState<List<Int>>) {
+    val works get() = state.value
+    val active get() = works.isNotEmpty()
+
+    operator fun contains(book: Book) = book.work in works
+
+    fun toggle(book: Book) {
+        state.value = if (book in this) works - book.work else works + book.work
+    }
+
+    fun clear() {
+        state.value = emptyList()
+    }
+}
+
+@Composable
+fun rememberSelection() = Selection(rememberSaveable { mutableStateOf(emptyList<Int>()) })
+
 @OptIn(ExperimentalFoundationApi::class)
+private fun Modifier.bookClicks(
+    book: Book,
+    selection: Selection?,
+    onOpen: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+) = combinedClickable(
+    onClick = { if (selection?.active == true) selection.toggle(book) else onOpen() },
+    onLongClick = selection?.let { { it.toggle(book) } } ?: onLongClick,
+)
+
+@Composable
+private fun SelectedMark(modifier: Modifier = Modifier) = Icon(
+    Icons.Filled.CheckCircle,
+    contentDescription = null,
+    modifier = modifier.background(MaterialTheme.colorScheme.surface, CircleShape),
+    tint = MaterialTheme.colorScheme.primary,
+)
+
+@Composable
+fun SelectableTitle(
+    text: String,
+    selection: Selection,
+    navigator: Navigator,
+    action: @Composable () -> Unit = {},
+) {
+    if (selection.active) SelectionBar(selection, navigator) else LargeTitle(text, action)
+}
+
+@Composable
+private fun SelectionBar(selection: Selection, navigator: Navigator) {
+    BackHandler(onBack = selection::clear)
+    val count = selection.works.size
+    Row(
+        Modifier.fillMaxWidth()
+            .padding(start = BackBarPadding, end = 8.dp, top = 24.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconAction(Icons.Outlined.Close, stringResource(R.string.clear), selection::clear)
+        Text(
+            pluralStringResource(R.plurals.selected_count, count, count),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            onClick = {
+                navigator.similar(SimilarRoute(SimilarKind.Books, selection.works))
+                selection.clear()
+            },
+        ) { Text(stringResource(R.string.find_similar)) }
+    }
+}
+
 @Composable
 fun BookTile(
     book: Book,
@@ -293,19 +370,21 @@ fun BookTile(
     modifier: Modifier = Modifier.width(TileWidth),
     shared: Boolean = true,
     onDismiss: ((Book) -> Unit)? = null,
+    selection: Selection? = null,
 ) {
     var menu by rememberSaveable { mutableStateOf(false) }
-    Column(
-        modifier.combinedClickable(
-            onClick = { onOpen(book, origin) },
-            onLongClick = onDismiss?.let { { menu = true } },
-        ),
-    ) {
-        BookCover(
-            book,
-            modifier = Modifier.fillMaxWidth(),
-            sharedKey = "$origin-${book.work}".takeIf { shared },
-        )
+    val showMenu = onDismiss?.let { { menu = true } }
+    Column(modifier.bookClicks(book, selection, { onOpen(book, origin) }, showMenu)) {
+        Box {
+            BookCover(
+                book,
+                modifier = Modifier.fillMaxWidth(),
+                sharedKey = "$origin-${book.work}".takeIf { shared },
+            )
+            if (selection?.contains(book) == true) {
+                SelectedMark(Modifier.align(Alignment.TopEnd).padding(6.dp))
+            }
+        }
         Spacer(Modifier.size(8.dp))
         Text(
             book.title,
@@ -411,11 +490,12 @@ fun BookListItem(
     origin: String,
     shared: Boolean = true,
     detail: String? = null,
+    selection: Selection? = null,
     onOpen: (Book, String) -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth()
-            .clickable { onOpen(book, origin) }
+            .bookClicks(book, selection, { onOpen(book, origin) })
             .padding(horizontal = ScreenPadding, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -433,6 +513,7 @@ fun BookListItem(
                 maxLines = 1,
             )
         }
+        if (selection?.contains(book) == true) SelectedMark()
     }
 }
 
@@ -604,7 +685,12 @@ fun BackBar(onBack: () -> Unit, title: String = "") {
         IconAction(
             Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), onBack,
         )
-        Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1)
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -624,8 +710,10 @@ private fun LazyGridScope.bookTiles(
     books: List<Book>,
     origin: String,
     onOpen: (Book, String) -> Unit,
+    selection: Selection? = null,
 ) = items(books, key = { it.work }) {
-    BookTile(it, origin, onOpen, Modifier.fillMaxWidth().animateItem())
+    val modifier = Modifier.fillMaxWidth().animateItem()
+    BookTile(it, origin, onOpen, modifier, selection = selection)
 }
 
 @Composable
@@ -633,10 +721,13 @@ fun BookGrid(
     books: List<Book>?,
     origin: String,
     onOpen: (Book, String) -> Unit,
+    selection: Selection? = null,
     header: LazyGridScope.() -> Unit = {},
+    footer: LazyGridScope.() -> Unit = {},
 ) = TileGrid {
     header()
-    if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen)
+    if (books == null) skeletonTiles() else bookTiles(books, origin, onOpen, selection)
+    footer()
 }
 
 @Composable
@@ -645,6 +736,7 @@ fun GroupedBookGrid(
     origin: String,
     onOpen: (Book, String) -> Unit,
     header: LazyGridScope.() -> Unit = {},
+    footer: LazyGridScope.() -> Unit = {},
 ) = TileGrid {
     header()
     if (groups == null) return@TileGrid skeletonTiles()
@@ -661,7 +753,18 @@ fun GroupedBookGrid(
         }
         bookTiles(group.books, origin, onOpen)
     }
+    footer()
 }
 
 fun LazyGridScope.fullWidth(content: @Composable () -> Unit) =
     item(span = { GridItemSpan(maxLineSpan) }) { content() }
+
+private fun Modifier.bleed(padding: Dp) = layout { measurable, constraints ->
+    val extra = padding.roundToPx() * 2
+    val wider = constraints.copy(maxWidth = constraints.maxWidth + extra)
+    val placeable = measurable.measure(wider)
+    layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
+}
+
+fun LazyGridScope.fullBleed(content: @Composable () -> Unit) =
+    fullWidth { Box(Modifier.bleed(ScreenPadding)) { content() } }

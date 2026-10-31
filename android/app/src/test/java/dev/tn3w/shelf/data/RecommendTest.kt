@@ -46,8 +46,9 @@ class RecommendTest {
     fun sameSeedSameRows() {
         assertEquals(rows().works(), rows().works())
         val book = shelfCatalogue.book(20)!!
-        val similar = recommender.similar(book).map { it.work }
-        assertEquals(similar, recommender.similar(book).map { it.work })
+        val seed = RecommendSeed.Work(book)
+        val similar = recommender.recommended(seed).map { it.work }
+        assertEquals(similar, recommender.recommended(seed).map { it.work })
         assertTrue(similar.isNotEmpty() && 20 !in similar)
     }
 }

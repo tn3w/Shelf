@@ -20,6 +20,11 @@ enum class ResultSort(@StringRes val label: Int) {
     Oldest(R.string.oldest),
 }
 
+enum class TagSort(@StringRes val label: Int) {
+    Popular(R.string.popular),
+    Rated(R.string.top_rated),
+}
+
 val ERAS = listOf(1..1899, 1900..1999, 2000..2019, 2020..9999)
 
 data class SearchFilter(

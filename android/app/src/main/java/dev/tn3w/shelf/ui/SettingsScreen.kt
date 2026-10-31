@@ -65,13 +65,8 @@ enum class SettingsPage(
     @StringRes val summary: Int? = null,
 ) {
     Main(Icons.Outlined.Settings, R.string.settings),
-    Catalogue(Icons.Outlined.AutoStories, R.string.catalogue, R.string.catalogue_hint),
-    FreeBooks(
-        Icons.Outlined.CloudDownload,
-        R.string.free_books,
-        R.string.free_books_hint,
-    ),
     General(Icons.Outlined.Palette, R.string.general, R.string.general_hint),
+    Catalogue(Icons.Outlined.AutoStories, R.string.catalogue, R.string.catalogue_hint),
     Reading(
         Icons.AutoMirrored.Outlined.MenuBook,
         R.string.reading_settings,
@@ -79,6 +74,11 @@ enum class SettingsPage(
     ),
     Privacy(Icons.Outlined.Shield, R.string.privacy, R.string.privacy_hint),
     Data(Icons.Outlined.Inventory2, R.string.your_data, R.string.your_data_hint),
+    FreeBooks(
+        Icons.Outlined.CloudDownload,
+        R.string.free_books,
+        R.string.free_books_hint,
+    ),
 }
 
 fun nativeName(language: String) = Locale.forLanguageTag(language).let {
@@ -690,16 +690,18 @@ fun LanguageChips(
     ) {
         shown.forEach { option ->
             val chosen = option == selected
-            val check: @Composable () -> Unit = { ChipIcon(Icons.Outlined.Check) }
-            val done: @Composable () -> Unit = { ChipIcon(Icons.Outlined.DownloadDone) }
+            val icon = when {
+                option in installed -> Icons.Outlined.DownloadDone
+                chosen -> Icons.Outlined.Check
+                else -> null
+            }
             FilterChip(
                 selected = chosen,
                 onClick = { onSelect(option) },
                 label = {
                     Text(if (option.isEmpty()) auto else nativeName(option), maxLines = 1)
                 },
-                leadingIcon = check.takeIf { chosen },
-                trailingIcon = done.takeIf { option in installed },
+                leadingIcon = icon?.let { { ChipIcon(it) } },
             )
         }
         if (shown.size < options.size) {
