@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">O aplikacji</string>
     <string name="about_book">O tej książce</string>
@@ -57,7 +58,7 @@
     <string name="more_by">Więcej od: %s</string>
     <string name="no_results">Brak wyników.</string>
     <string name="online_covers">Wczytuj okładki</string>
-    <string name="online_covers_hint">Pobieraj okładki z Open Library, DNB, DIGAR i Bookbites.</string>
+    <string name="online_covers_hint">Pobieraj okładki z Open Library, DNB, DIGAR i Bookbites, zdjęcia autorów z Open Library.</string>
     <string name="open_failed">Nie można otworzyć tego pliku.</string>
     <string name="page_failed">Nie można wyświetlić tej strony.</string>
     <string name="open_library_license">Licencja danych Open Library</string>
