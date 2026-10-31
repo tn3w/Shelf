@@ -58,7 +58,7 @@
     <string name="more_by">Ещё от: %s</string>
     <string name="no_results">Ничего не найдено.</string>
     <string name="online_covers">Загружать обложки</string>
-    <string name="online_covers_hint">Получать обложки из Open Library, DNB, DIGAR и Bookbites.</string>
+    <string name="online_covers_hint">Получать обложки из Open Library, DNB, DIGAR и Bookbites, фото авторов — из Open Library.</string>
     <string name="open_failed">Не удалось открыть этот файл.</string>
     <string name="page_failed">Не удалось отобразить эту страницу.</string>
     <string name="open_library_license">Лицензия данных Open Library</string>
