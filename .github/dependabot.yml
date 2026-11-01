@@ -23,3 +23,11 @@ updates:
     groups:
       all:
         patterns: ["*"]
+
+  - package-ecosystem: cargo
+    directory: /tooling/images
+    schedule:
+      interval: monthly
+    groups:
+      all:
+        patterns: ["*"]
