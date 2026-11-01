@@ -336,4 +336,16 @@
         <item quantity="one">%1$d av %2$d källa importerad</item>
         <item quantity="other">%1$d av %2$d källor importerade</item>
     </plurals>
+    <string name="add_bookmark">Lägg till bokmärke</string>
+    <string name="bookmarks">Bokmärken</string>
+    <string name="no_bookmarks">Inga bokmärken ännu. Tryck på bokmärkesikonen högst upp för att spara en sida.</string>
+    <string name="no_matches">Inga träffar i den här boken</string>
+    <string name="remove_bookmark">Ta bort bokmärke</string>
+    <string name="search_book">Sök i boken</string>
+    <string name="search_book_hint">Skriv minst två bokstäver för att söka i alla kapitel.</string>
+    <string name="many_matches">Fler än %d träffar</string>
+    <plurals name="matches">
+        <item quantity="one">%d träff</item>
+        <item quantity="other">%d träffar</item>
+    </plurals>
 </resources>

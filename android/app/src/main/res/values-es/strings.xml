@@ -346,4 +346,16 @@
         <item quantity="other">%1$d de %2$d fuentes importadas</item>
         <item quantity="many">%1$d de %2$d fuentes importadas</item>
     </plurals>
+    <string name="add_bookmark">Añadir marcador</string>
+    <string name="bookmarks">Marcadores</string>
+    <string name="no_bookmarks">Aún no hay marcadores. Toca el icono de marcador arriba para guardar una página.</string>
+    <string name="no_matches">No hay coincidencias en este libro</string>
+    <string name="remove_bookmark">Quitar marcador</string>
+    <string name="search_book">Buscar en el libro</string>
+    <string name="search_book_hint">Escribe al menos dos letras para buscar en todos los capítulos.</string>
+    <string name="many_matches">Más de %d coincidencias</string>
+    <plurals name="matches">
+        <item quantity="one">%d coincidencia</item>
+        <item quantity="other">%d coincidencias</item>
+    </plurals>
 </resources>

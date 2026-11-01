@@ -336,4 +336,16 @@
         <item quantity="one">%1$d/%2$d lähde tuotu</item>
         <item quantity="other">%1$d/%2$d lähdettä tuotu</item>
     </plurals>
+    <string name="add_bookmark">Lisää kirjanmerkki</string>
+    <string name="bookmarks">Kirjanmerkit</string>
+    <string name="no_bookmarks">Ei vielä kirjanmerkkejä. Tallenna sivu napauttamalla ylhäällä kirjanmerkkikuvaketta.</string>
+    <string name="no_matches">Ei osumia tästä kirjasta</string>
+    <string name="remove_bookmark">Poista kirjanmerkki</string>
+    <string name="search_book">Hae kirjasta</string>
+    <string name="search_book_hint">Kirjoita vähintään kaksi kirjainta hakeaksesi kaikista luvuista.</string>
+    <string name="many_matches">Yli %d osumaa</string>
+    <plurals name="matches">
+        <item quantity="one">%d osuma</item>
+        <item quantity="other">%d osumaa</item>
+    </plurals>
 </resources>

@@ -326,4 +326,15 @@
     <plurals name="free_books_imported">
         <item quantity="other">소스 %2$d개 중 %1$d개 가져옴</item>
     </plurals>
+    <string name="add_bookmark">북마크 추가</string>
+    <string name="bookmarks">북마크</string>
+    <string name="no_bookmarks">아직 북마크가 없습니다. 상단의 북마크 아이콘을 눌러 페이지를 저장하세요.</string>
+    <string name="no_matches">이 책에서 일치하는 항목이 없습니다</string>
+    <string name="remove_bookmark">북마크 삭제</string>
+    <string name="search_book">책에서 검색</string>
+    <string name="search_book_hint">모든 챕터를 검색하려면 두 글자 이상 입력하세요.</string>
+    <string name="many_matches">%d개 이상 일치</string>
+    <plurals name="matches">
+        <item quantity="other">%d개 일치</item>
+    </plurals>
 </resources>

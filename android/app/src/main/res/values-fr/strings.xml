@@ -346,4 +346,16 @@
         <item quantity="other">%1$d sources sur %2$d importées</item>
         <item quantity="many">%1$d sources sur %2$d importées</item>
     </plurals>
+    <string name="add_bookmark">Ajouter un signet</string>
+    <string name="bookmarks">Signets</string>
+    <string name="no_bookmarks">Aucun signet pour l\'instant. Touchez l\'icône de signet en haut pour enregistrer une page.</string>
+    <string name="no_matches">Aucun résultat dans ce livre</string>
+    <string name="remove_bookmark">Supprimer le signet</string>
+    <string name="search_book">Rechercher dans le livre</string>
+    <string name="search_book_hint">Saisissez au moins deux lettres pour chercher dans tous les chapitres.</string>
+    <string name="many_matches">Plus de %d résultats</string>
+    <plurals name="matches">
+        <item quantity="one">%d résultat</item>
+        <item quantity="other">%d résultats</item>
+    </plurals>
 </resources>

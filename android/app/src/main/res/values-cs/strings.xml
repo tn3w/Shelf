@@ -356,4 +356,18 @@
         <item quantity="many">Importováno %1$d z %2$d zdrojů</item>
         <item quantity="other">Importováno %1$d z %2$d zdrojů</item>
     </plurals>
+    <string name="add_bookmark">Přidat záložku</string>
+    <string name="bookmarks">Záložky</string>
+    <string name="no_bookmarks">Zatím žádné záložky. Klepnutím na ikonu záložky nahoře uložíte stránku.</string>
+    <string name="no_matches">V této knize nic nenalezeno</string>
+    <string name="remove_bookmark">Odebrat záložku</string>
+    <string name="search_book">Hledat v knize</string>
+    <string name="search_book_hint">Zadejte alespoň dvě písmena pro hledání ve všech kapitolách.</string>
+    <string name="many_matches">Více než %d shod</string>
+    <plurals name="matches">
+        <item quantity="one">%d shoda</item>
+        <item quantity="few">%d shody</item>
+        <item quantity="many">%d shody</item>
+        <item quantity="other">%d shod</item>
+    </plurals>
 </resources>

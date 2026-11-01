@@ -336,4 +336,16 @@
     </plurals>
     <string name="transfers">Allalaadimised ja importimised</string>
     <string name="transfer_running">Allalaadimise või importimise lõpetamine</string>
+    <string name="add_bookmark">Lisa järjehoidja</string>
+    <string name="bookmarks">Järjehoidjad</string>
+    <string name="no_bookmarks">Järjehoidjaid pole veel. Lehe salvestamiseks puuduta üleval järjehoidja ikooni.</string>
+    <string name="no_matches">Selles raamatus vasteid pole</string>
+    <string name="remove_bookmark">Eemalda järjehoidja</string>
+    <string name="search_book">Otsi raamatust</string>
+    <string name="search_book_hint">Kõigist peatükkidest otsimiseks sisesta vähemalt kaks tähte.</string>
+    <string name="many_matches">Rohkem kui %d vastet</string>
+    <plurals name="matches">
+        <item quantity="one">%d vaste</item>
+        <item quantity="other">%d vastet</item>
+    </plurals>
 </resources>

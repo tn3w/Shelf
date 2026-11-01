@@ -109,6 +109,31 @@ class LibraryTest {
     }
 
     @Test
+    fun mergeJoinsBookmarksWithoutDuplicates() {
+        val kept = Bookmark(section = 1, offset = 40, excerpt = "kept")
+        val current = ReadingState(bookmarks = mapOf(2 to listOf(kept)))
+        val imported = mapOf(
+            2 to listOf(kept.copy(excerpt = "older"), Bookmark(page = 7)),
+            3 to listOf(Bookmark(page = 1)),
+        )
+        val merged = current.merge(Backup(bookmarks = imported)).bookmarks
+        val expected = mapOf(
+            2 to listOf(kept, Bookmark(page = 7)),
+            3 to listOf(Bookmark(page = 1)),
+        )
+        assertEquals(expected, merged)
+    }
+
+    @Test
+    fun redirectMovesBookmarks() {
+        val (first, second) = Bookmark(page = 2) to Bookmark(page = 9)
+        val stored = mapOf(5 to listOf(first), 42 to listOf(second))
+        val alias = mapOf(5 to 42)
+        val moved = ReadingState(bookmarks = stored).redirect(alias::get)
+        assertEquals(mapOf(42 to listOf(first, second)), moved.bookmarks)
+    }
+
+    @Test
     fun mergeKeepsNetworkAndPrivacySettings() {
         val current = Settings(
             offline = true,

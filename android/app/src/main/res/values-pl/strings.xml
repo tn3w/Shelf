@@ -356,4 +356,18 @@
         <item quantity="many">Zaimportowano %1$d z %2$d źródeł</item>
         <item quantity="other">Zaimportowano %1$d z %2$d źródeł</item>
     </plurals>
+    <string name="add_bookmark">Dodaj zakładkę</string>
+    <string name="bookmarks">Zakładki</string>
+    <string name="no_bookmarks">Brak zakładek. Stuknij ikonę zakładki u góry, aby zapisać stronę.</string>
+    <string name="no_matches">Brak wyników w tej książce</string>
+    <string name="remove_bookmark">Usuń zakładkę</string>
+    <string name="search_book">Szukaj w książce</string>
+    <string name="search_book_hint">Wpisz co najmniej dwie litery, aby przeszukać wszystkie rozdziały.</string>
+    <string name="many_matches">Więcej niż %d wyników</string>
+    <plurals name="matches">
+        <item quantity="one">%d wynik</item>
+        <item quantity="few">%d wyniki</item>
+        <item quantity="many">%d wyników</item>
+        <item quantity="other">%d wyników</item>
+    </plurals>
 </resources>

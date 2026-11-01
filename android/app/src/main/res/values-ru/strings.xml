@@ -356,4 +356,18 @@
         <item quantity="many">Импортировано %1$d источников из %2$d</item>
         <item quantity="other">Импортировано %1$d источника из %2$d</item>
     </plurals>
+    <string name="add_bookmark">Добавить закладку</string>
+    <string name="bookmarks">Закладки</string>
+    <string name="no_bookmarks">Закладок пока нет. Нажмите значок закладки вверху, чтобы сохранить страницу.</string>
+    <string name="no_matches">В этой книге совпадений нет</string>
+    <string name="remove_bookmark">Удалить закладку</string>
+    <string name="search_book">Поиск в книге</string>
+    <string name="search_book_hint">Введите минимум две буквы, чтобы искать по всем главам.</string>
+    <string name="many_matches">Более %d совпадений</string>
+    <plurals name="matches">
+        <item quantity="one">%d совпадение</item>
+        <item quantity="few">%d совпадения</item>
+        <item quantity="many">%d совпадений</item>
+        <item quantity="other">%d совпадения</item>
+    </plurals>
 </resources>

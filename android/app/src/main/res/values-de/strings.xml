@@ -336,4 +336,16 @@
         <item quantity="one">%1$d von %2$d Quelle importiert</item>
         <item quantity="other">%1$d von %2$d Quellen importiert</item>
     </plurals>
+    <string name="add_bookmark">Lesezeichen setzen</string>
+    <string name="bookmarks">Lesezeichen</string>
+    <string name="no_bookmarks">Noch keine Lesezeichen. Tippe oben auf das Lesezeichen-Symbol, um eine Seite zu speichern.</string>
+    <string name="no_matches">Keine Treffer in diesem Buch</string>
+    <string name="remove_bookmark">Lesezeichen entfernen</string>
+    <string name="search_book">Im Buch suchen</string>
+    <string name="search_book_hint">Gib mindestens zwei Buchstaben ein, um alle Kapitel zu durchsuchen.</string>
+    <string name="many_matches">Mehr als %d Treffer</string>
+    <plurals name="matches">
+        <item quantity="one">%d Treffer</item>
+        <item quantity="other">%d Treffer</item>
+    </plurals>
 </resources>
