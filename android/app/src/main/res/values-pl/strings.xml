@@ -58,6 +58,10 @@
     <string name="more_by">Więcej od: %s</string>
     <string name="no_results">Brak wyników.</string>
     <string name="online_covers">Wczytuj okładki</string>
+    <string name="cover_proxy">Szybkie okładki</string>
+    <string name="cover_proxy_hint">Wczytuj okładki i zdjęcia autorów jako małe obrazy AVIF z proxy okładek Shelf. Gdy proxy jest niedostępne, użyte zostanie oryginalne źródło.</string>
+    <string name="cover_proxy_url">Proxy okładek</string>
+    <string name="cover_proxy_url_hint">Adres HTTPS serwera z proxy obrazów Shelf. Zostaw puste, aby użyć domyślnego adresu.</string>
     <string name="online_covers_hint">Pobieraj okładki z Open Library, DNB, DIGAR i Bookbites, zdjęcia autorów z Open Library.</string>
     <string name="open_failed">Nie można otworzyć tego pliku.</string>
     <string name="page_failed">Nie można wyświetlić tej strony.</string>

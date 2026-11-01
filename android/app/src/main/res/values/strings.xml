@@ -62,6 +62,10 @@
     <string name="no_matches">No matches in this book</string>
     <string name="no_results">No results.</string>
     <string name="online_covers">Load covers</string>
+    <string name="cover_proxy">Fast covers</string>
+    <string name="cover_proxy_hint">Load covers and author photos as small AVIF images from the Shelf cover proxy. Falls back to the original source when the proxy is down.</string>
+    <string name="cover_proxy_url">Cover proxy</string>
+    <string name="cover_proxy_url_hint">HTTPS address of a server running the Shelf image proxy. Leave empty for the default.</string>
     <string name="online_covers_hint">Fetch covers from Open Library, DNB, DIGAR and Bookbites, author photos from Open Library.</string>
     <string name="open_failed">This file could not be opened.</string>
     <string name="page_failed">This page could not be displayed.</string>

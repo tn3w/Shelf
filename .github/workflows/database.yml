@@ -281,6 +281,17 @@ jobs:
           rm out/manifest-*.json
           du -sh out
 
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: builder
+          path: bin
+
+      - name: Merge cover indexes
+        run: |
+          chmod +x bin/builder
+          bin/builder covers out/covers.bin out/covers-*.bin
+          rm out/covers-*.bin
+
       - name: Publish release
         run: |
           for attempt in 1 2 3 4 5; do

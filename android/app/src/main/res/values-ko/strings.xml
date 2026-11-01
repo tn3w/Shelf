@@ -58,6 +58,10 @@
     <string name="more_by">%s의 다른 책</string>
     <string name="no_results">결과가 없습니다.</string>
     <string name="online_covers">표지 불러오기</string>
+    <string name="cover_proxy">빠른 표지</string>
+    <string name="cover_proxy_hint">표지와 저자 사진을 Shelf 표지 프록시에서 작은 AVIF 이미지로 가져옵니다. 프록시에 연결할 수 없으면 원본 출처를 사용합니다.</string>
+    <string name="cover_proxy_url">표지 프록시</string>
+    <string name="cover_proxy_url_hint">Shelf 이미지 프록시가 실행 중인 서버의 HTTPS 주소입니다. 기본 주소를 쓰려면 비워 두세요.</string>
     <string name="online_covers_hint">Open Library, DNB, DIGAR, Bookbites에서 표지 이미지를, Open Library에서 저자 사진을 가져옵니다.</string>
     <string name="open_failed">이 파일을 열 수 없습니다.</string>
     <string name="page_failed">이 페이지를 표시할 수 없습니다.</string>

@@ -58,6 +58,10 @@
     <string name="more_by">Lisää tekijältä %s</string>
     <string name="no_results">Ei tuloksia.</string>
     <string name="online_covers">Lataa kannet</string>
+    <string name="cover_proxy">Nopeat kannet</string>
+    <string name="cover_proxy_hint">Lataa kannet ja kirjailijakuvat pieninä AVIF-kuvina Shelfin kansikuvapalvelimelta. Jos palvelin ei vastaa, käytetään alkuperäistä lähdettä.</string>
+    <string name="cover_proxy_url">Kansikuvapalvelin</string>
+    <string name="cover_proxy_url_hint">HTTPS-osoite palvelimelle, jolla on Shelfin kuvapalvelin. Jätä tyhjäksi oletusosoitetta varten.</string>
     <string name="online_covers_hint">Hae kansikuvat Open Librarysta, DNB:stä, DIGARista ja Bookbitesista, kirjailijakuvat Open Librarysta.</string>
     <string name="open_failed">Tiedostoa ei voitu avata.</string>
     <string name="page_failed">Sivua ei voitu näyttää.</string>

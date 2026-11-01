@@ -49,6 +49,8 @@ data class Book(
     val tags: List<Int> = emptyList(),
     val popularity: Popularity? = null,
     val libraryCover: LibraryCover? = null,
+    /** Catalogue the book was read from, empty for saved and own books. */
+    val language: String = "",
 ) {
     val author
         get() = authors.firstOrNull()?.name.orEmpty()
@@ -128,6 +130,9 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     val workCount = visible.sumOf { it.cardinality() }
     val tags = segments.firstOrNull()?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
+
+    /** Newest release among the segments, as the cover proxy names it. */
+    val release = segments.map { it.month }.maxWithOrNull(releaseOrder)
     private val maxScore by lazy {
         scores.maxOrNull()?.takeIf { it > 0 }?.toDouble() ?: 1.0
     }
@@ -229,6 +234,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
             facts.tags.toList(),
             ranks?.popularity(work),
             segment.libraryCover(local),
+            language,
         )
     }
 

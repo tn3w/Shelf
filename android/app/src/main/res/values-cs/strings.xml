@@ -58,6 +58,10 @@
     <string name="more_by">Další od: %s</string>
     <string name="no_results">Žádné výsledky.</string>
     <string name="online_covers">Načítat obálky</string>
+    <string name="cover_proxy">Rychlé obálky</string>
+    <string name="cover_proxy_hint">Načítat obálky a fotografie autorů jako malé AVIF obrázky z proxy obálek Shelf. Pokud proxy není dostupná, použije se původní zdroj.</string>
+    <string name="cover_proxy_url">Proxy obálek</string>
+    <string name="cover_proxy_url_hint">HTTPS adresa serveru s obrazovým proxy Shelf. Pro výchozí adresu nechte prázdné.</string>
     <string name="online_covers_hint">Stahovat obálky z Open Library, DNB, DIGAR a Bookbites, fotografie autorů z Open Library.</string>
     <string name="open_failed">Tento soubor nelze otevřít.</string>
     <string name="page_failed">Tuto stránku nelze zobrazit.</string>

@@ -1,4 +1,5 @@
 mod catalog;
+mod covers;
 mod dumps;
 mod libraries;
 mod linked;
@@ -54,7 +55,8 @@ pub fn language_index(code: &str) -> usize {
 
 fn usage() -> ! {
     eprintln!(
-        "usage: builder <dumps-source> <out-dir> \
+        "usage: builder covers <output> <covers-xx.bin>...\n       \
+         builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
          [--base-url <url>] [--languages en,de,...] [--dump <dir>] \
@@ -516,6 +518,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
         .map(|(pack, bytes)| publish(job, PACKS[pack], bytes))
         .collect();
     published.push(publish(job, "ranks", &ranks(job, &placed)));
+    write_covers(job, &placed);
     dump_works(job, &placed);
     let state = State {
         base: job.base.to_string(),
@@ -527,6 +530,33 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
             .join(format!("state-{}.bin", LANGUAGES[language])),
     );
     Some(published)
+}
+
+fn write_covers(job: &Job, placed: &[Placed]) {
+    let found = placed.iter().filter_map(|placed| {
+        let work = &placed.work;
+        covers::cover_of(work.id, work.cover, work.library_cover)
+    });
+    let all = covers::with_aliases(found.collect(), job.aliases);
+    let language = LANGUAGES[job.language];
+    let bytes = covers::language_index(job.month, language, &all);
+    let file = format!("covers-{language}.bin");
+    std::fs::write(job.output.join(&file), &bytes)
+        .unwrap_or_else(|error| panic!("write {file}: {error}"));
+    eprintln!("{file}: {} covers, {} bytes", all.len(), bytes.len());
+}
+
+/// `builder covers <output> <covers-xx.bin>...` joins language cover indexes.
+fn merge_covers(arguments: &[String]) {
+    let [output, inputs @ ..] = arguments else {
+        usage()
+    };
+    if inputs.is_empty() {
+        usage()
+    }
+    let merged = covers::merge(inputs).unwrap_or_else(|error| panic!("merge covers: {error}"));
+    std::fs::write(output, &merged).unwrap_or_else(|error| panic!("write {output}: {error}"));
+    eprintln!("{output}: {} bytes", merged.len());
 }
 
 fn sticky_works(states: &[Option<State>]) -> Vec<bool> {
@@ -555,6 +585,10 @@ fn log_outcome(outcome: &libraries::Outcome) {
 }
 
 fn main() {
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    if arguments.first().is_some_and(|first| first == "covers") {
+        return merge_covers(&arguments[1..]);
+    }
     let options = options();
     std::fs::create_dir_all(&options.output).expect("create output directory");
     let states: Vec<Option<State>> = LANGUAGES

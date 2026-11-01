@@ -56,11 +56,11 @@ pub struct Popularity {
     pub editions: u16,
 }
 
-fn put_u32(buffer: &mut Vec<u8>, value: u32) {
+pub(crate) fn put_u32(buffer: &mut Vec<u8>, value: u32) {
     buffer.extend_from_slice(&value.to_le_bytes());
 }
 
-fn put_varint(buffer: &mut Vec<u8>, mut value: u32) {
+pub(crate) fn put_varint(buffer: &mut Vec<u8>, mut value: u32) {
     while value >= 0x80 {
         buffer.push(value as u8 | 0x80);
         value >>= 7;
@@ -102,7 +102,7 @@ fn offset_table(chunks: &[Vec<u8>]) -> Vec<u8> {
     table
 }
 
-fn deflate(raw: &[u8], dictionary: &[u8]) -> Vec<u8> {
+pub(crate) fn deflate(raw: &[u8], dictionary: &[u8]) -> Vec<u8> {
     let mut compressor = Compress::new(Compression::best(), false);
     if !dictionary.is_empty() {
         compressor
@@ -157,9 +157,17 @@ fn record_blocks(records: &[Vec<u8>], dictionary: &[u8]) -> Vec<u8> {
 }
 
 fn assemble(sections: Vec<(&str, Vec<u8>)>) -> Vec<u8> {
+    assemble_file(MAGIC, VERSION, sections)
+}
+
+pub(crate) fn assemble_file(
+    magic: &[u8; 4],
+    version: u32,
+    sections: Vec<(&str, Vec<u8>)>,
+) -> Vec<u8> {
     let mut file = Vec::new();
-    file.extend_from_slice(MAGIC);
-    put_u32(&mut file, VERSION);
+    file.extend_from_slice(magic);
+    put_u32(&mut file, version);
     put_u32(&mut file, sections.len() as u32);
     let mut offset = (12 + sections.len() * (NAME_BYTES + 8)) as u32;
     for (name, bytes) in &sections {
@@ -518,7 +526,7 @@ fn series_section(series: &[&Series]) -> Vec<u8> {
     offset_table(&records)
 }
 
-fn meta_section(lines: &[(&str, String)]) -> Vec<u8> {
+pub(crate) fn meta_section(lines: &[(&str, String)]) -> Vec<u8> {
     lines
         .iter()
         .map(|(key, value)| format!("{key}={value}\n"))

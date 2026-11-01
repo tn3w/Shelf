@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +84,21 @@ fun IconLabel(icon: ImageVector, @StringRes label: Int) {
     Text(stringResource(label), Modifier.padding(start = 8.dp))
 }
 
+/** Proxy cover address for [book], or null when the source is loaded directly. */
+@Composable
+private fun proxiedCover(book: Book, base: String?, pixels: Int): String? {
+    if (base == null) return null
+    val catalogue = shelfViewModel().loaded.collectAsStateWithLifecycle().value?.catalogue
+    val release = catalogue?.release ?: return null
+    val language = remember(book.work, book.language, catalogue) {
+        book.language.ifEmpty {
+            catalogue.language.takeIf { catalogue.locate(book.work) != null }.orEmpty()
+        }
+    }
+    if (language.isEmpty()) return null
+    return proxyCoverUrl(base, release, language, book.work, pixels)
+}
+
 @Composable
 fun BookCover(
     book: Book,
@@ -94,9 +110,10 @@ fun BookCover(
     val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(book.work, book.cover) { mutableStateOf(false) }
     var failed by remember(book.work, book.cover) { mutableStateOf(false) }
+    var direct by remember(book.work, book.cover) { mutableStateOf(false) }
     var alignment by remember(book.work, book.cover) { mutableStateOf(Alignment.Center) }
     val shape = RoundedCornerShape(6.dp)
-    Box(
+    BoxWithConstraints(
         modifier
             .sharedCover(sharedKey)
             .width(width)
@@ -104,7 +121,7 @@ fun BookCover(
             .clip(shape)
             .background(placeholderColor(book.work)),
     ) {
-        if (settings == null) return@Box
+        if (settings == null) return@BoxWithConstraints
         if (book.isLocal && book.cover != 0 && !failed) {
             AsyncImage(
                 model = shelfViewModel().library.coverFile(book),
@@ -113,16 +130,19 @@ fun BookCover(
                 onError = { failed = true },
                 modifier = Modifier.fillMaxSize(),
             )
-            return@Box
+            return@BoxWithConstraints
         }
-        val url = book.coverUrl("L")
-        if (offline || !settings.onlineCovers || url == null || failed) {
+        val source = book.coverUrl("L")
+        if (offline || !settings.onlineCovers || source == null || failed) {
             DrawnCover(book)
-            return@Box
+            return@BoxWithConstraints
         }
+        val pixels = with(LocalDensity.current) { maxWidth.roundToPx() }
+        val base = settings.coverProxyBase()?.takeUnless { direct }
+        val proxied = proxiedCover(book, base, pixels)
         if (!loaded) CoverPlaceholder(book)
         AsyncImage(
-            model = url,
+            model = proxied ?: source,
             contentDescription = stringResource(R.string.cover_of, book.title),
             contentScale = ContentScale.Crop,
             alignment = alignment,
@@ -130,7 +150,7 @@ fun BookCover(
                 loaded = true
                 alignment = frontCover(it.painter.intrinsicSize)
             },
-            onError = { failed = true },
+            onError = { if (proxied != null) direct = true else failed = true },
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -153,6 +173,7 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
     val settings = loadedSettings()
     val offline = settings?.isOffline(LocalContext.current) ?: true
     var loaded by remember(author.number) { mutableStateOf(false) }
+    var direct by remember(author.number) { mutableStateOf(false) }
     val small = size < 64.dp
     val typography = MaterialTheme.typography
     val initialsStyle = if (small) typography.titleMedium else typography.headlineMedium
@@ -171,11 +192,16 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
             }
             if (settings == null || offline || !settings.onlineCovers) return@Box
             val photo = if (small) "S" else "M"
+            val pixels = with(LocalDensity.current) { size.roundToPx() }
+            val proxied = settings.coverProxyBase()
+                ?.takeUnless { direct }
+                ?.let { proxyPhotoUrl(it, author, pixels) }
             AsyncImage(
-                model = author.photoUrl(photo),
+                model = proxied ?: author.photoUrl(photo),
                 contentDescription = author.name,
                 contentScale = ContentScale.Crop,
                 onSuccess = { loaded = true },
+                onError = { if (proxied != null) direct = true },
                 modifier = Modifier.fillMaxSize(),
             )
         }

@@ -489,6 +489,7 @@ private fun PrivacySettings() {
             settings.onlineCovers,
             enabled = !offline,
         ) { value -> update { it.copy(onlineCovers = value) } }
+        if (avifSupported) CoverProxyRows(settings, update, enabled = !offline)
         SwitchRow(
             R.string.catalogue_updates,
             R.string.catalogue_updates_hint,
@@ -504,6 +505,62 @@ private fun PrivacySettings() {
             ) { value -> update { it.copy(checkUpdates = value) } }
         }
     }
+}
+
+@Composable
+private fun CoverProxyRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) {
+    var editing by rememberSaveable { mutableStateOf(false) }
+    SwitchRow(
+        R.string.cover_proxy,
+        R.string.cover_proxy_hint,
+        settings.coverProxy,
+        enabled = enabled && settings.onlineCovers,
+    ) { value -> update { it.copy(coverProxy = value) } }
+    if (!settings.coverProxy || !settings.onlineCovers) return
+    val address = settings.coverProxyUrl.ifEmpty { COVER_PROXY }
+    LinkRow(stringResource(R.string.cover_proxy_url), address.removePrefix("https://")) {
+        editing = true
+    }
+    if (!editing) return
+    CoverProxyDialog(settings.coverProxyUrl, onDismiss = { editing = false }) { url ->
+        editing = false
+        update { it.copy(coverProxyUrl = url.trimEnd('/')) }
+    }
+}
+
+@Composable
+private fun CoverProxyDialog(
+    current: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf(current) }
+    val valid = isValidProxy(text)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.cover_proxy_url)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.cover_proxy_url_hint))
+                OutlinedTextField(
+                    text,
+                    { text = it.trim() },
+                    placeholder = { Text(COVER_PROXY) },
+                    singleLine = true,
+                    isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = valid, onClick = { onSave(text) }) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onSave("") }) { Text(stringResource(R.string.reset)) }
+        },
+    )
 }
 
 @Composable

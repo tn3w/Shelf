@@ -58,6 +58,10 @@
     <string name="more_by">Ещё от: %s</string>
     <string name="no_results">Ничего не найдено.</string>
     <string name="online_covers">Загружать обложки</string>
+    <string name="cover_proxy">Быстрые обложки</string>
+    <string name="cover_proxy_hint">Загружать обложки и фото авторов как маленькие изображения AVIF с прокси обложек Shelf. Если прокси недоступен, используется исходный источник.</string>
+    <string name="cover_proxy_url">Прокси обложек</string>
+    <string name="cover_proxy_url_hint">HTTPS-адрес сервера с прокси изображений Shelf. Оставьте пустым для адреса по умолчанию.</string>
     <string name="online_covers_hint">Получать обложки из Open Library, DNB, DIGAR и Bookbites, фото авторов — из Open Library.</string>
     <string name="open_failed">Не удалось открыть этот файл.</string>
     <string name="page_failed">Не удалось отобразить эту страницу.</string>

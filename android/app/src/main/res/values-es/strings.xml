@@ -58,6 +58,10 @@
     <string name="more_by">Más de %s</string>
     <string name="no_results">Sin resultados.</string>
     <string name="online_covers">Cargar portadas</string>
+    <string name="cover_proxy">Portadas rápidas</string>
+    <string name="cover_proxy_hint">Cargar portadas y fotos de autores como imágenes AVIF pequeñas desde el proxy de portadas de Shelf. Si el proxy no está disponible, se usa la fuente original.</string>
+    <string name="cover_proxy_url">Proxy de portadas</string>
+    <string name="cover_proxy_url_hint">Dirección HTTPS de un servidor con el proxy de imágenes de Shelf. Dejar vacío para la dirección predeterminada.</string>
     <string name="online_covers_hint">Descargar portadas de Open Library, la DNB, DIGAR y Bookbites, y fotos de autores de Open Library.</string>
     <string name="open_failed">No se pudo abrir el archivo.</string>
     <string name="page_failed">No se pudo mostrar esta página.</string>

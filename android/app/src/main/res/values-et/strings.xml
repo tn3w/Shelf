@@ -58,6 +58,10 @@
     <string name="more_by">Veel autorilt %s</string>
     <string name="no_results">Tulemusi pole.</string>
     <string name="online_covers">Laadi kaanepildid</string>
+    <string name="cover_proxy">Kiired kaanepildid</string>
+    <string name="cover_proxy_hint">Laadi kaanepildid ja autorite fotod väikeste AVIF-piltidena Shelfi kaanepildi puhverserverist. Kui puhverserver pole kättesaadav, kasutatakse algallikat.</string>
+    <string name="cover_proxy_url">Kaanepildi puhverserver</string>
+    <string name="cover_proxy_url_hint">HTTPS-aadress serverist, millel töötab Shelfi pildipuhverserver. Vaikeaadressi jaoks jäta tühjaks.</string>
     <string name="online_covers_hint">Too kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist, autorite fotod Open Libraryst.</string>
     <string name="open_failed">Seda faili ei saanud avada.</string>
     <string name="page_failed">Seda lehte ei saanud kuvada.</string>

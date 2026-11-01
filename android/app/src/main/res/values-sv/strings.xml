@@ -58,6 +58,10 @@
     <string name="more_by">Mer av %s</string>
     <string name="no_results">Inga resultat.</string>
     <string name="online_covers">Ladda omslag</string>
+    <string name="cover_proxy">Snabba omslag</string>
+    <string name="cover_proxy_hint">Ladda omslag och författarfoton som små AVIF-bilder från Shelfs omslagsproxy. Om proxyn inte svarar används originalkällan.</string>
+    <string name="cover_proxy_url">Omslagsproxy</string>
+    <string name="cover_proxy_url_hint">HTTPS-adress till en server med Shelfs bildproxy. Lämna tomt för standardadressen.</string>
     <string name="online_covers_hint">Hämta omslagsbilder från Open Library, DNB, DIGAR och Bookbites, författarfoton från Open Library.</string>
     <string name="open_failed">Filen kunde inte öppnas.</string>
     <string name="page_failed">Sidan kunde inte visas.</string>

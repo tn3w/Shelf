@@ -58,6 +58,10 @@
     <string name="more_by">Mehr von %s</string>
     <string name="no_results">Keine Treffer.</string>
     <string name="online_covers">Cover laden</string>
+    <string name="cover_proxy">Schnelle Cover</string>
+    <string name="cover_proxy_hint">Cover und Autorenfotos als kleine AVIF-Bilder vom Shelf-Coverproxy laden. Ist der Proxy nicht erreichbar, wird die Originalquelle genutzt.</string>
+    <string name="cover_proxy_url">Coverproxy</string>
+    <string name="cover_proxy_url_hint">HTTPS-Adresse eines Servers mit dem Shelf-Bildproxy. Leer lassen für die Standardadresse.</string>
     <string name="online_covers_hint">Coverbilder von Open Library, DNB, DIGAR und Bookbites laden, Autorenfotos von Open Library.</string>
     <string name="open_failed">Datei konnte nicht geöffnet werden.</string>
     <string name="page_failed">Diese Seite konnte nicht angezeigt werden.</string>
