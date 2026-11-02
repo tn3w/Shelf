@@ -29,7 +29,10 @@ NLLB_CODES = {
     "cs": "ces_Latn",
     "ko": "kor_Hang",
     "fi": "fin_Latn",
+    "ja": "jpn_Jpan",
+    "lv": "lvs_Latn",
 }
+UNSPACED = {"ja"}
 OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "et": "est"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
 PLACEHOLDER = "@{}@"
@@ -150,8 +153,9 @@ def layout(text):
     return [sentences(paragraph) for paragraph in paragraphs]
 
 
-def rejoin(paragraphs):
-    return "\n\n".join(" ".join(paragraph) for paragraph in paragraphs)
+def rejoin(paragraphs, language):
+    joiner = "" if language in UNSPACED else " "
+    return "\n\n".join(joiner.join(paragraph) for paragraph in paragraphs)
 
 
 def repeats(text):
@@ -168,7 +172,7 @@ def repeats(text):
 def rejection(source, target, replacements):
     if not target.strip():
         return "empty"
-    ratio = len(target) / max(len(source), 1)
+    ratio = len(target.encode()) / max(len(source.encode()), 1)
     if not MIN_LENGTH_RATIO <= ratio <= MAX_LENGTH_RATIO:
         return f"length {ratio:.2f}"
     if any(token not in target for token in replacements):
@@ -390,10 +394,10 @@ def report(done, total, started):
     )
 
 
-def collect(prepared, grouped):
+def collect(prepared, grouped, language):
     translations, rejected = {}, {}
     for (request, masked, replacements, _), paragraphs in zip(prepared, grouped):
-        target = rejoin(paragraphs)
+        target = rejoin(paragraphs, language)
         reason = rejection(masked, target, replacements)
         if reason:
             rejected[request["work"]] = reason
@@ -442,7 +446,7 @@ def main():
         chosen.language,
     )
     prepared, grouped = translate_requests(engine, requests, chosen)
-    translations, rejected = collect(prepared, grouped)
+    translations, rejected = collect(prepared, grouped, chosen.language)
     merged = read_segment(chosen.previous) | translations
     write_segment(chosen.output, merged)
     summarize(requests, translations, rejected, merged)

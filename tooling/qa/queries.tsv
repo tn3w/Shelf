@@ -1,0 +1,58 @@
+title	war of the worlds	=the war of the worlds|=la guerre des mondes|=la guerra de los mundos	-
+title	hamlet	=hamlet|=hamlet prince of denmark|=the tragedy of hamlet prince of denmark	shakespeare
+title	pride and prejudice	=pride and prejudice|=orgueil et prejuge|=orgullo y prejuicio	austen
+title	moby dick	=moby dick|=moby dick or the whale	melville
+title	alices adventures in wonderland	=alice s adventures in wonderland|=alice in wonderland	carroll
+title	the hound of the baskervilles	=the hound of the baskervilles	doyle
+title	jane eyre	=jane eyre	bronte
+title	great expectations	=great expectations	dickens
+title	a tale of two cities	=a tale of two cities	dickens
+title	the picture of dorian gray	=the picture of dorian gray	wilde
+partial	baskervilles	hound of the baskervilles	doyle
+partial	treasure island stevenson	=treasure island	stevenson
+partial	dickens christmas	christmas carol	dickens
+partial	wells invisible	=the invisible man	wells
+partial	jules verne eighty days	around the world in eighty days	verne
+partial	darwin origin species	origin of species	darwin
+author	agatha christie	-	christie
+author	stephen king	-	king
+author	jules verne	-	verne
+author	dostoevsky	-	dostoe|dostoy|dostoi|dostoj|достоев
+author	tolstoy	-	tolsto
+author	jane austen	-	austen
+foreign	Война и мир	war and peace|война и мир|krieg und frieden|guerre et paix	-
+foreign	Преступление и наказание	crime and punishment|преступление и наказание|schuld und suhne|crime et chatiment	-
+foreign	三体	three body problem|三体|삼체	-
+foreign	Der Zauberberg	zauberberg|magic mountain|montagne magique	mann
+foreign	Cien años de soledad	cien anos de soledad|one hundred years of solitude	-
+foreign	Pippi Långstrump	pippi langstrump|pippi longstocking|pippi	lindgren
+foreign	Die Verwandlung	=die verwandlung|=the metamorphosis|=la metamorphose	kafka
+foreign	Das Parfum	=das parfum|=perfume	-
+foreign	Мастер и Маргарита	master and margarita|мастер и маргарита|master i margarita	bulgakov|булгаков
+foreign	Les Misérables	=les miserables|=los miserables|=i miserabili	-
+foreign	Don Quijote	don quijote|don quixote	cervantes
+foreign	죄와 벌	죄와 벌|crime and punishment|преступление и наказание	-
+translit	Tolstoi	-	tolsto|толст
+translit	Dostojewski	-	dostoe|dostoy|dostoi|dostoj|достоев
+translit	Tchaikovsky	-	tchaik|chaik|чайков|tschaik
+translit	Tolstoy anna karenina	anna karenina|анна каренина	tolsto|толст
+translit	Dostoyevsky crime and punishment	crime and punishment|преступление и наказание|schuld und suhne	dostoe|dostoy|dostoi|dostoj|достоев
+translit	Bulgakov master i margarita	master and margarita|мастер и маргарита|master i margarita	bulgakov|булгаков
+typo	pride and prejudise	=pride and prejudice	austen
+typo	frankenstien	=frankenstein	shelley
+typo	gullivers travells	gulliver s travels	swift
+typo	oliver twist dikens	=oliver twist	dickens
+typo	dracual	=dracula	stoker
+typo	wuthering hights	=wuthering heights	bront
+prefix	pride and prej	=pride and prejudice	austen
+prefix	great expec	=great expectations	dickens
+prefix	the hound of the basker	the hound of the baskervilles	doyle
+prefix	harry pot	harry potter	rowling
+stopword	the lord of the rings	=the lord of the rings|lord of the rings	tolkien
+stopword	to be or not to be	-	-
+stopword	the call of the wild	=the call of the wild	london
+single	faust	=faust	goethe
+single	emma	=emma	austen
+single	dracula	=dracula	stoker
+single	persuasion	=persuasion	austen
+single	ivanhoe	=ivanhoe	scott

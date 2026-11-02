@@ -1,28 +1,21 @@
-mod catalog;
-mod covers;
-mod dumps;
-mod libraries;
-mod linked;
-mod marc;
-mod release;
-mod segment;
-mod tags;
-mod translations;
+mod qa;
 
+use builder::{Built, LANGUAGE_COUNT, LANGUAGES, catalog, covers, dumps, enrichment};
+use builder::{language_index, works::Works};
+use builder::{libraries, release, segment, sidecar, tags, translations, unify};
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
 use dumps::{Authors, Book, Context, Isbns, Titles};
-use libraries::{Library, SYNTHETIC, Source};
+use enrichment::Enrichment;
+use libraries::{Details, Library, SYNTHETIC, Source};
 use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
-use std::collections::HashSet;
+use sidecar::{EDITION_CAP, Edition, Extras, Links};
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::thread;
 use translations::{Request, Translations};
 
-pub const LANGUAGES: [&str; 10] = ["en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi"];
-pub const LANGUAGE_COUNT: usize = LANGUAGES.len();
-pub type Built = [bool; LANGUAGE_COUNT];
 const BUDGET_BYTES: usize = 75_000_000;
 const CORE_BYTES: usize = 3_000_000;
 const CORE_WORKS: usize = 20_000;
@@ -44,23 +37,23 @@ struct Options {
     libraries: Vec<(Source, String)>,
     built: Built,
     dump: Option<PathBuf>,
-}
-
-pub fn language_index(code: &str) -> usize {
-    LANGUAGES
-        .iter()
-        .position(|&known| known == code)
-        .unwrap_or_else(|| panic!("unknown language {code}"))
+    wikidata: Option<PathBuf>,
+    gutenberg: Option<String>,
 }
 
 fn usage() -> ! {
     eprintln!(
-        "usage: builder covers <output> <covers-xx.bin>...\n       \
+        "usage: builder covers|links|extras <output> <xx-lang.bin>...\n       \
+         builder show <links|extras file> <language> [work]\n       \
+         builder unify <works.bin> <release dir> [previous works.bin]\n       \
+         builder qa <release dir> [qa dir]\n       \
          builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
          [--base-url <url>] [--languages en,de,...] [--dump <dir>] \
-         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf|bnb=<file>[,<file>]]"
+         [--wikidata <dir>] [--gutenberg <rdf file>] \
+         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf|bnb|bne|cinii|lnb_lv\
+=<file>[,<file>]]"
     );
     std::process::exit(2)
 }
@@ -108,6 +101,7 @@ fn options() -> Options {
     let mut arguments = std::env::args().skip(1);
     let (mut rebase, mut previous, mut month) = (false, None, None);
     let (mut translations, mut requests, mut translator, mut dump) = (None, None, None, None);
+    let (mut wikidata, mut gutenberg) = (None, None);
     let mut base_url = release::RELEASE_URL.to_string();
     let mut libraries = Vec::new();
     let mut built = [true; LANGUAGE_COUNT];
@@ -124,6 +118,8 @@ fn options() -> Options {
             "--library" => libraries.push(library(arguments.next())),
             "--languages" => built = languages(arguments.next()),
             "--dump" => dump = Some(directory(arguments.next())),
+            "--wikidata" => wikidata = Some(directory(arguments.next())),
+            "--gutenberg" => gutenberg = Some(arguments.next().unwrap_or_else(|| usage())),
             _ => positional.push(argument),
         }
     }
@@ -143,6 +139,8 @@ fn options() -> Options {
         libraries,
         built,
         dump,
+        wikidata,
+        gutenberg,
     }
 }
 
@@ -162,6 +160,9 @@ struct Job<'a> {
     translator: Option<&'a str>,
     aliases: &'a [(u32, u32)],
     dump: Option<&'a Path>,
+    titles: &'a Titles,
+    enrichment: &'a Enrichment,
+    details: &'a HashMap<u32, Details>,
 }
 
 #[derive(Clone, Copy)]
@@ -171,12 +172,31 @@ struct Placed<'a> {
     book: &'a Book,
 }
 
+fn native_description<'a>(job: &Job<'a>, book: &'a Book) -> Option<&'a str> {
+    if !book.description.is_empty() && book.description_language == Some(job.language) {
+        return Some(&book.description);
+    }
+    let library = job.details.get(&book.work).and_then(|details| {
+        let mut found = details.descriptions.iter();
+        found.find(|(language, _)| *language == job.language)
+    });
+    if let Some((_, text)) = library {
+        return Some(text);
+    }
+    let gutenberg = job.enrichment.gutenberg.get(&book.work)?.first()?;
+    let english = job.language == language_index("en") && !gutenberg.summary.is_empty();
+    english.then_some(gutenberg.summary.as_str())
+}
+
 fn description<'a>(job: &Job<'a>, book: &'a Book) -> (&'a str, bool) {
-    if book.description.is_empty() || book.scores[job.language] < DESCRIPTION_MIN_SCORE {
+    if book.scores[job.language] < DESCRIPTION_MIN_SCORE {
         return ("", false);
     }
-    if book.description_language == Some(job.language) {
-        return (&book.description, false);
+    if let Some(text) = native_description(job, book) {
+        return (text, false);
+    }
+    if book.description.is_empty() {
+        return ("", false);
     }
     let translated = job.translations.get(book.work);
     let native = |text: &&str| {
@@ -519,6 +539,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
         .collect();
     published.push(publish(job, "ranks", &ranks(job, &placed)));
     write_covers(job, &placed);
+    write_sidecars(job, &placed);
     dump_works(job, &placed);
     let state = State {
         base: job.base.to_string(),
@@ -546,15 +567,230 @@ fn write_covers(job: &Job, placed: &[Placed]) {
     eprintln!("{file}: {} covers, {} bytes", all.len(), bytes.len());
 }
 
-/// `builder covers <output> <covers-xx.bin>...` joins language cover indexes.
-fn merge_covers(arguments: &[String]) {
+fn language_code(code: &str) -> String {
+    let known = catalog::TARGET_CODES
+        .iter()
+        .position(|&target| target == code);
+    known.map_or_else(|| code.to_string(), |index| LANGUAGES[index].to_string())
+}
+
+fn open_library_ids(job: &Job, work: u32) -> Vec<u32> {
+    let aliased = job.aliases.iter().filter(|&&(_, to)| to == work);
+    let ids = std::iter::once(work).chain(aliased.map(|&(from, _)| from));
+    ids.filter(|&id| id < SYNTHETIC).collect()
+}
+
+fn original_title(job: &Job, work: u32, details: Option<&Details>) -> String {
+    let local = details
+        .map(|details| details.original.clone())
+        .unwrap_or_default();
+    if !local.is_empty() {
+        return local;
+    }
+    let Some(linked) = job.enrichment.wikidata.works.get(&work) else {
+        return String::new();
+    };
+    let labelled = linked
+        .labels
+        .iter()
+        .find(|(language, _)| *language == linked.language);
+    labelled.map_or_else(String::new, |(_, label)| label.clone())
+}
+
+fn gutenberg_ids(job: &Job, work: u32) -> Vec<u32> {
+    let linked = job.enrichment.wikidata.works.get(&work);
+    let mut ids = linked.map_or_else(Vec::new, |linked| linked.gutenberg.clone());
+    let matched = job.enrichment.gutenberg.get(&work).into_iter().flatten();
+    ids.extend(matched.map(|book| book.id));
+    ids.sort_unstable();
+    ids.dedup();
+    ids
+}
+
+fn majority_language(job: &Job, book: &Book) -> Option<usize> {
+    let local = job
+        .titles
+        .of(book.work)
+        .iter()
+        .map(|record| record.language as usize);
+    book.main_language.or_else(|| libraries::most_common(local))
+}
+
+fn links_of(job: &Job, placed: &Placed) -> Links {
+    let (work, book) = (&placed.work, placed.book);
+    let details = job.details.get(&work.id);
+    let linked = job.enrichment.wikidata.works.get(&work.id);
+    let first = work.authors.first().copied();
+    let name = first
+        .and_then(|id| job.authors.get(id))
+        .map(|author| author.name);
+    let mut authorities = details.map_or_else(Vec::new, |details| details.authorities.clone());
+    if let Some(author) = first.filter(|&id| id < SYNTHETIC) {
+        authorities.push(format!("ol:OL{author}A"));
+        authorities.extend(job.enrichment.author_ids(author).iter().cloned());
+    }
+    authorities.sort();
+    authorities.dedup();
+    let (series, position) = match work.series {
+        Some((series, order)) => (series.name.as_str(), order),
+        None => details.map_or(("", 0), |details| (details.series.as_str(), details.volume)),
+    };
+    let original_language = details
+        .map(|details| language_code(&details.original_language))
+        .filter(|language| !language.is_empty())
+        .or_else(|| linked.map(|linked| linked.language.clone()))
+        .unwrap_or_default();
+    Links {
+        work: work.id,
+        wikidata: linked.map_or(0, |linked| linked.item),
+        open_library: open_library_ids(job, work.id),
+        gutenberg: gutenberg_ids(job, work.id),
+        original_title: libraries::match_key(&original_title(job, work.id, details)),
+        original_language,
+        authorities,
+        author: name.map(libraries::name_key).unwrap_or_default(),
+        series: catalog::series_key(series),
+        position,
+        records: details.map_or(0, |details| details.records) + u32::from(book.editions),
+        language: majority_language(job, book)
+            .and_then(|language| LANGUAGES.get(language))
+            .map_or_else(String::new, |code| code.to_string()),
+        originals: details.map_or_else(Vec::new, |details| details.originals.clone()),
+        compilation: details.is_some_and(|details| details.compilation)
+            || libraries::is_compilation_title(work.title),
+    }
+}
+
+fn descriptions(job: &Job, placed: &Placed, details: Option<&Details>) -> Vec<(String, String)> {
+    let book = placed.book;
+    let native = book
+        .description_language
+        .map(|language| (language, book.description.clone()));
+    let translated = placed
+        .work
+        .translated
+        .then_some((job.language, placed.work.description));
+    let library = details
+        .into_iter()
+        .flat_map(|details| details.descriptions.iter().cloned());
+    let gutenberg = job
+        .enrichment
+        .gutenberg
+        .get(&book.work)
+        .into_iter()
+        .flatten();
+    let english = crate::language_index("en");
+    let gutenberg = gutenberg.map(|book| (english, book.summary.clone()));
+    let candidates = native
+        .into_iter()
+        .chain(library)
+        .chain(gutenberg)
+        .chain(translated.map(|(language, text)| (language, text.to_string())));
+    let mut chosen: Vec<(String, String)> = Vec::new();
+    for (language, text) in candidates.filter(|(_, text)| !text.is_empty()) {
+        let code = catalog::SOURCE_LANGUAGES[language].to_string();
+        if !chosen.iter().any(|(known, _)| *known == code) {
+            chosen.push((code, text));
+        }
+    }
+    chosen
+}
+
+fn extras_of(job: &Job, placed: &Placed) -> Extras {
+    let work = &placed.work;
+    let details = job.details.get(&work.id);
+    let linked = job.enrichment.wikidata.works.get(&work.id);
+    let mut identifiers: Vec<String> = open_library_ids(job, work.id)
+        .iter()
+        .map(|id| format!("ol:OL{id}W"))
+        .collect();
+    identifiers.extend(linked.map(|linked| format!("wikidata:Q{}", linked.item)));
+    identifiers.extend(
+        gutenberg_ids(job, work.id)
+            .iter()
+            .map(|id| format!("pg:{id}")),
+    );
+    let mut editions = details.map_or_else(Vec::new, |details| details.editions.clone());
+    for &isbn in work.isbns {
+        let isbn = catalog::isbn13(isbn);
+        if !editions.iter().any(|edition| edition.isbn == isbn) {
+            editions.push(Edition {
+                isbn,
+                ..Edition::default()
+            });
+        }
+    }
+    editions.truncate(EDITION_CAP);
+    Extras {
+        work: work.id,
+        descriptions: descriptions(job, placed, details),
+        identifiers,
+        titles: linked.map_or_else(Vec::new, |linked| linked.labels.clone()),
+        translators: details.map_or_else(Vec::new, |details| details.translators.clone()),
+        original_title: original_title(job, work.id, details),
+        editions,
+    }
+}
+
+fn write_sidecars(job: &Job, placed: &[Placed]) {
+    let language = LANGUAGES[job.language];
+    let links: Vec<Links> = placed.iter().map(|placed| links_of(job, placed)).collect();
+    let extras: Vec<Extras> = placed.iter().map(|placed| extras_of(job, placed)).collect();
+    let files = [
+        ("links", sidecar::links_file(job.month, language, &links)),
+        ("extras", sidecar::extras_file(job.month, language, &extras)),
+    ];
+    for (kind, bytes) in files {
+        let file = format!("{kind}-{language}.bin");
+        std::fs::write(job.output.join(&file), &bytes)
+            .unwrap_or_else(|error| panic!("write {file}: {error}"));
+        eprintln!("{file}: {} works, {} bytes", placed.len(), bytes.len());
+    }
+}
+
+/// `builder show <links|extras file> <language> [work]` prints one record or a count.
+fn show(arguments: &[String]) {
+    let [file, language, rest @ ..] = arguments else {
+        usage()
+    };
+    let bytes = std::fs::read(file).unwrap_or_else(|error| panic!("read {file}: {error}"));
+    let work: Option<u32> = rest
+        .first()
+        .map(|work| work.parse().unwrap_or_else(|_| usage()));
+    if let Some(links) = sidecar::Sidecar::parse(sidecar::LINKS, &bytes) {
+        eprintln!("links, month {}", links.month);
+        return match work {
+            Some(work) => println!("{:#?}", links.links_of(language, work)),
+            None => println!("{} works", links.links(language).map_or(0, |all| all.len())),
+        };
+    }
+    let Some(extras) = sidecar::Sidecar::parse(sidecar::EXTRAS, &bytes) else {
+        return eprintln!("{file}: not a sidecar");
+    };
+    eprintln!("extras, month {}", extras.month);
+    match work {
+        Some(work) => println!("{:#?}", extras.extras_of(language, work)),
+        None => println!(
+            "{} works",
+            extras.extras(language).map_or(0, |all| all.len())
+        ),
+    }
+}
+
+/// `builder covers|links|extras <output> <xx-lang.bin>...` joins per-language files.
+fn merge_indexes(kind: &str, arguments: &[String]) {
     let [output, inputs @ ..] = arguments else {
         usage()
     };
     if inputs.is_empty() {
         usage()
     }
-    let merged = covers::merge(inputs).unwrap_or_else(|error| panic!("merge covers: {error}"));
+    let merged = match kind {
+        "links" => sidecar::merge(sidecar::LINKS, inputs),
+        "extras" => sidecar::merge(sidecar::EXTRAS, inputs),
+        _ => covers::merge(inputs),
+    };
+    let merged = merged.unwrap_or_else(|error| panic!("merge {kind}: {error}"));
     std::fs::write(output, &merged).unwrap_or_else(|error| panic!("write {output}: {error}"));
     eprintln!("{output}: {} bytes", merged.len());
 }
@@ -584,10 +820,33 @@ fn log_outcome(outcome: &libraries::Outcome) {
     }
 }
 
+/// `builder unify <out> <release dir> [previous works.bin]`
+fn unify_command(arguments: &[String]) {
+    let [output, directory, rest @ ..] = arguments else {
+        usage()
+    };
+    let previous = rest.first().and_then(|path| Works::load(Path::new(path)));
+    let release = unify::load(Path::new(directory));
+    let (works, stats) = unify::unify(&release.nodes, previous.as_ref(), &release.aliases);
+    std::fs::write(output, works.encode())
+        .unwrap_or_else(|error| panic!("write {output}: {error}"));
+    eprint!("{}", unify::summary(&works, &stats));
+}
+
 fn main() {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
-    if arguments.first().is_some_and(|first| first == "covers") {
-        return merge_covers(&arguments[1..]);
+    match arguments.first().map(String::as_str) {
+        Some("show") => return show(&arguments[1..]),
+        Some("unify") => return unify_command(&arguments[1..]),
+        Some("qa") => return qa::command(&arguments[1..]),
+        _ => {}
+    }
+    let merged = ["covers", "links", "extras"];
+    if let Some(kind) = arguments
+        .first()
+        .filter(|first| merged.contains(&first.as_str()))
+    {
+        return merge_indexes(kind, &arguments[1..]);
     }
     let options = options();
     std::fs::create_dir_all(&options.output).expect("create output directory");
@@ -608,19 +867,25 @@ fn main() {
         .filter(|&id| id >= SYNTHETIC)
         .collect();
 
-    let (signals, mut authors, (facts, mut titles, shapes, mut isbns), mut library) =
+    let (signals, mut authors, (facts, mut titles, shapes, mut isbns), mut library, loaded) =
         thread::scope(|scope| {
             let signals = scope.spawn(|| dumps::signals(&options.source));
             let authors = scope.spawn(|| dumps::authors(&options.source));
             let editions = scope.spawn(|| dumps::editions(&options.source, &options.built));
             let library = scope.spawn(|| Library::load(&options.libraries));
+            let enrichment = scope.spawn(|| {
+                Enrichment::load(options.wikidata.as_deref(), options.gutenberg.as_deref())
+            });
             (
                 signals.join().expect("signals"),
                 authors.join().expect("authors"),
                 editions.join().expect("editions"),
                 library.join().expect("libraries"),
+                enrichment.join().expect("enrichment"),
             )
         });
+    let (wikidata, gutenberg) = loaded;
+    library.link_authors(wikidata.authors.clone());
     library.match_editions(&isbns);
     let context = Context {
         signals: &signals,
@@ -644,6 +909,12 @@ fn main() {
         works.books.into_iter().partition(is_listed);
     eprintln!("month {month}, {} books", books.len());
     tags::fill_author_tags(&mut books);
+    let gutenberg = enrichment::match_gutenberg(gutenberg, &books, &authors, &wikidata);
+    let enrichment = Enrichment {
+        wikidata,
+        gutenberg,
+    };
+    let mut details = HashMap::new();
 
     if let Some(directory) = &options.requests {
         std::fs::create_dir_all(directory).expect("create requests directory");
@@ -686,6 +957,7 @@ fn main() {
             );
             library = Library::default();
             log_outcome(&outcome);
+            details.extend(outcome.details);
             renamed = outcome.aliases;
             tags::fill_author_tags(&mut books);
         }
@@ -713,6 +985,9 @@ fn main() {
             translator: options.translator.as_deref(),
             aliases: &aliases,
             dump: options.dump.as_deref(),
+            titles: &titles,
+            enrichment: &enrichment,
+            details: &details,
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;

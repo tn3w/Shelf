@@ -1,0 +1,1 @@
+{% if previous.is_some() || next.is_some() %}<nav>{% if let Some(link) = previous %}<a href="{{ link }}" rel=prev>Previous</a>{% endif %}{% if let Some(link) = next %}<a href="{{ link }}" rel=next>Next</a>{% endif %}</nav>{% endif %}

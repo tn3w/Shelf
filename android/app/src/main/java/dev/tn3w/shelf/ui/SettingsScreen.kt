@@ -712,9 +712,10 @@ fun <T> Choice(
 private fun AppLanguageChoice() {
     val chosen = AppCompatDelegate.getApplicationLocales()[0]?.language
     var current by rememberSaveable {
-        mutableStateOf(chosen?.takeIf { it in LANGUAGES }.orEmpty())
+        mutableStateOf(chosen?.takeIf { it in APP_LANGUAGES }.orEmpty())
     }
-    LanguageChips(listOf("") + LANGUAGES, current, R.string.app_language) { language ->
+    val options = listOf("") + APP_LANGUAGES
+    LanguageChips(options, current, R.string.app_language) { language ->
         current = language
         val locales = LocaleListCompat.forLanguageTags(language)
         AppCompatDelegate.setApplicationLocales(locales)

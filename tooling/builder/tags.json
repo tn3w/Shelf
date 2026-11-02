@@ -13,7 +13,9 @@
         "pl": "Beletrystyka",
         "cs": "Beletrie",
         "ko": "소설",
-        "fi": "Kaunokirjallisuus"
+        "fi": "Kaunokirjallisuus",
+        "ja": "小説",
+        "lv": "Daiļliteratūra"
       },
       "include": ["fiction", "novel", "stories", "tales"],
       "exclude": [
@@ -39,7 +41,9 @@
         "pl": "Literatura faktu",
         "cs": "Naučná literatura",
         "ko": "논픽션",
-        "fi": "Tietokirjallisuus"
+        "fi": "Tietokirjallisuus",
+        "ja": "ノンフィクション",
+        "lv": "Nozaru literatūra"
       },
       "include": ["nonfiction", "non-fiction"],
       "exclude": []
@@ -57,7 +61,9 @@
         "pl": "Romans",
         "cs": "Romance",
         "ko": "로맨스",
-        "fi": "Rakkausromaanit"
+        "fi": "Rakkausromaanit",
+        "ja": "恋愛小説",
+        "lv": "Mīlas romāni"
       },
       "include": ["romance", "love stories", "man-woman relationship", "chick lit"],
       "exclude": [
@@ -83,7 +89,9 @@
         "pl": "Romans regencyjny",
         "cs": "Regency romance",
         "ko": "리젠시 로맨스",
-        "fi": "Regency-romantiikka"
+        "fi": "Regency-romantiikka",
+        "ja": "リージェンシー・ロマンス",
+        "lv": "Regentūras laika romantika"
       },
       "include": ["regency"],
       "exclude": []
@@ -101,7 +109,9 @@
         "pl": "Romans współczesny",
         "cs": "Současná romance",
         "ko": "현대 로맨스",
-        "fi": "Nykyromantiikka"
+        "fi": "Nykyromantiikka",
+        "ja": "現代ロマンス",
+        "lv": "Mūsdienu romantika"
       },
       "include": ["romance, contemporary", "contemporary romance"],
       "exclude": []
@@ -119,7 +129,9 @@
         "pl": "Romans historyczny",
         "cs": "Historická romance",
         "ko": "역사 로맨스",
-        "fi": "Historiallinen romantiikka"
+        "fi": "Historiallinen romantiikka",
+        "ja": "歴史ロマンス",
+        "lv": "Vēsturiskā romantika"
       },
       "include": ["romance, historical", "historical romance"],
       "exclude": []
@@ -137,7 +149,9 @@
         "pl": "Fantasy",
         "cs": "Fantasy",
         "ko": "판타지",
-        "fi": "Fantasia"
+        "fi": "Fantasia",
+        "ja": "ファンタジー",
+        "lv": "Fantāzija"
       },
       "include": ["fantasy", "sword and sorcery", "magic fiction"],
       "motifs": [
@@ -175,7 +189,9 @@
         "pl": "Fantasy epicka",
         "cs": "Epická fantasy",
         "ko": "에픽 판타지",
-        "fi": "Eeppinen fantasia"
+        "fi": "Eeppinen fantasia",
+        "ja": "エピック・ファンタジー",
+        "lv": "Episkā fantāzija"
       },
       "include": ["fantasy, epic", "epic fantasy", "heroic fantasy"],
       "exclude": []
@@ -193,7 +209,9 @@
         "pl": "Urban fantasy",
         "cs": "Městská fantasy",
         "ko": "어반 판타지",
-        "fi": "Urbaani fantasia"
+        "fi": "Urbaani fantasia",
+        "ja": "アーバン・ファンタジー",
+        "lv": "Pilsētas fantāzija"
       },
       "include": ["fantasy, urban", "urban fantasy"],
       "exclude": []
@@ -211,7 +229,9 @@
         "pl": "Paranormalne",
         "cs": "Paranormální",
         "ko": "초자연",
-        "fi": "Paranormaali"
+        "fi": "Paranormaali",
+        "ja": "超常",
+        "lv": "Paranormālais"
       },
       "include": ["paranormal"],
       "motifs": ["vampires", "werewolves", "witches", "ghosts", "demonology", "angels"],
@@ -230,7 +250,9 @@
         "pl": "Science fiction",
         "cs": "Sci-fi",
         "ko": "SF",
-        "fi": "Tieteiskirjallisuus"
+        "fi": "Tieteiskirjallisuus",
+        "ja": "SF",
+        "lv": "Zinātniskā fantastika"
       },
       "include": ["science fiction", "sci-fi"],
       "motifs": [
@@ -261,7 +283,9 @@
         "pl": "Space opera",
         "cs": "Space opera",
         "ko": "스페이스 오페라",
-        "fi": "Avaruusooppera"
+        "fi": "Avaruusooppera",
+        "ja": "スペースオペラ",
+        "lv": "Kosmosa opera"
       },
       "include": ["space opera"],
       "exclude": []
@@ -279,7 +303,9 @@
         "pl": "Dystopia",
         "cs": "Dystopie",
         "ko": "디스토피아",
-        "fi": "Dystopiat"
+        "fi": "Dystopiat",
+        "ja": "ディストピア",
+        "lv": "Distopija"
       },
       "include": ["dystopia", "dystopian", "post-apocalyptic", "apocalyptic"],
       "exclude": []
@@ -297,7 +323,9 @@
         "pl": "Kryminał",
         "cs": "Detektivky",
         "ko": "추리",
-        "fi": "Dekkarit"
+        "fi": "Dekkarit",
+        "ja": "ミステリー",
+        "lv": "Detektīvi"
       },
       "include": ["mystery", "mysteries", "detective", "whodunit", "sleuth"],
       "exclude": ["film", "motion picture", "television", "video game"]
@@ -315,7 +343,9 @@
         "pl": "Kryminał komediowy",
         "cs": "Cozy detektivky",
         "ko": "코지 미스터리",
-        "fi": "Cozy-dekkarit"
+        "fi": "Cozy-dekkarit",
+        "ja": "コージーミステリー",
+        "lv": "Mājīgie detektīvi"
       },
       "include": ["cozy", "women sleuths"],
       "exclude": []
@@ -333,7 +363,9 @@
         "pl": "Thriller",
         "cs": "Thrillery",
         "ko": "스릴러",
-        "fi": "Trillerit"
+        "fi": "Trillerit",
+        "ja": "スリラー",
+        "lv": "Trilleri"
       },
       "include": ["thriller", "suspense", "spy stories"],
       "motifs": [
@@ -359,7 +391,9 @@
         "pl": "Powieść kryminalna",
         "cs": "Krimi",
         "ko": "범죄 소설",
-        "fi": "Rikosromaanit"
+        "fi": "Rikosromaanit",
+        "ja": "犯罪小説",
+        "lv": "Kriminālromāni"
       },
       "include": ["crime", "noir"],
       "motifs": ["murder", "gangsters", "criminals", "police"],
@@ -378,7 +412,9 @@
         "pl": "True crime",
         "cs": "True crime",
         "ko": "실화 범죄",
-        "fi": "True crime"
+        "fi": "True crime",
+        "ja": "犯罪ノンフィクション",
+        "lv": "Patiesi noziegumi"
       },
       "include": ["true crime", "serial killers", "criminal investigation"],
       "exclude": []
@@ -396,7 +432,9 @@
         "pl": "Horror",
         "cs": "Horory",
         "ko": "공포",
-        "fi": "Kauhu"
+        "fi": "Kauhu",
+        "ja": "ホラー",
+        "lv": "Šausmas"
       },
       "include": ["horror", "ghost stories"],
       "motifs": ["monsters", "zombies", "haunted houses"],
@@ -415,7 +453,9 @@
         "pl": "Powieść historyczna",
         "cs": "Historické romány",
         "ko": "역사 소설",
-        "fi": "Historialliset romaanit"
+        "fi": "Historialliset romaanit",
+        "ja": "歴史小説",
+        "lv": "Vēsturiskie romāni"
       },
       "include": ["fiction, historical", "historical fiction"],
       "exclude": []
@@ -433,7 +473,9 @@
         "pl": "Literatura współczesna",
         "cs": "Současná próza",
         "ko": "순문학",
-        "fi": "Nykykirjallisuus"
+        "fi": "Nykykirjallisuus",
+        "ja": "純文学",
+        "lv": "Literārā proza"
       },
       "include": ["fiction, literary", "literary fiction", "domestic fiction"],
       "exclude": []
@@ -451,7 +493,9 @@
         "pl": "Przygoda",
         "cs": "Dobrodružství",
         "ko": "모험",
-        "fi": "Seikkailu"
+        "fi": "Seikkailu",
+        "ja": "冒険",
+        "lv": "Piedzīvojumi"
       },
       "include": ["adventure", "sea stories"],
       "motifs": [
@@ -476,7 +520,9 @@
         "pl": "Western",
         "cs": "Westerny",
         "ko": "서부극",
-        "fi": "Lännenkirjallisuus"
+        "fi": "Lännenkirjallisuus",
+        "ja": "西部劇",
+        "lv": "Vesterni"
       },
       "include": ["western stories", "fiction, westerns"],
       "motifs": ["cowboys", "frontier and pioneer life", "outlaws"],
@@ -495,7 +541,9 @@
         "pl": "Powieść wojenna",
         "cs": "Válečné romány",
         "ko": "전쟁 소설",
-        "fi": "Sotaromaanit"
+        "fi": "Sotaromaanit",
+        "ja": "戦争小説",
+        "lv": "Kara stāsti"
       },
       "include": ["war stories", "fiction, war"],
       "exclude": []
@@ -513,7 +561,9 @@
         "pl": "Humor",
         "cs": "Humor",
         "ko": "유머",
-        "fi": "Huumori"
+        "fi": "Huumori",
+        "ja": "ユーモア",
+        "lv": "Humors"
       },
       "include": ["humor", "humour", "comedy", "satire", "wit and humor"],
       "exclude": ["film", "motion picture", "television", "video game"]
@@ -531,7 +581,9 @@
         "pl": "Komiksy",
         "cs": "Komiksy",
         "ko": "만화",
-        "fi": "Sarjakuvat"
+        "fi": "Sarjakuvat",
+        "ja": "マンガ・グラフィックノベル",
+        "lv": "Grafiskie romāni"
       },
       "include": ["comic books", "graphic novel", "manga", "cartoons"],
       "exclude": []
@@ -549,7 +601,9 @@
         "pl": "Poezja",
         "cs": "Poezie",
         "ko": "시",
-        "fi": "Runot"
+        "fi": "Runot",
+        "ja": "詩",
+        "lv": "Dzeja"
       },
       "include": ["poetry", "poems", "verse"],
       "exclude": [
@@ -575,7 +629,9 @@
         "pl": "Dramat",
         "cs": "Drama",
         "ko": "희곡",
-        "fi": "Näytelmät"
+        "fi": "Näytelmät",
+        "ja": "戯曲",
+        "lv": "Lugas"
       },
       "include": ["drama", "plays", "tragedies", "comedies"],
       "exclude": ["film", "motion picture", "television", "video game"]
@@ -593,7 +649,9 @@
         "pl": "Opowiadania",
         "cs": "Povídky",
         "ko": "단편 소설",
-        "fi": "Novellit"
+        "fi": "Novellit",
+        "ja": "短編集",
+        "lv": "Stāsti"
       },
       "include": ["short stories", "fiction, short stories", "anthologies"],
       "exclude": []
@@ -611,7 +669,9 @@
         "pl": "Książki obrazkowe",
         "cs": "Obrázkové knihy",
         "ko": "그림책",
-        "fi": "Kuvakirjat"
+        "fi": "Kuvakirjat",
+        "ja": "絵本",
+        "lv": "Bilžu grāmatas"
       },
       "include": ["picture books", "board books", "toy and movable books"],
       "exclude": []
@@ -629,7 +689,9 @@
         "pl": "Książki dla dzieci",
         "cs": "Knihy pro děti",
         "ko": "어린이 책",
-        "fi": "Lastenkirjat"
+        "fi": "Lastenkirjat",
+        "ja": "児童書",
+        "lv": "Bērnu grāmatas"
       },
       "include": ["juvenile", "children's", "childrens", "for children", "easy reader"],
       "exclude": ["juvenile delinquency", "juvenile justice", "juvenile courts"]
@@ -647,7 +709,9 @@
         "pl": "Dla dzieci od 10 lat",
         "cs": "Pro děti od 10 let",
         "ko": "초등 고학년",
-        "fi": "Lastenkirjat 10+"
+        "fi": "Lastenkirjat 10+",
+        "ja": "児童文学（高学年）",
+        "lv": "Grāmatas skolēniem"
       },
       "include": ["children: grades 4-6", "children: grades 3-4", "middle grade"],
       "exclude": []
@@ -665,7 +729,9 @@
         "pl": "Literatura młodzieżowa",
         "cs": "Pro mládež",
         "ko": "청소년",
-        "fi": "Nuortenkirjat"
+        "fi": "Nuortenkirjat",
+        "ja": "ヤングアダルト",
+        "lv": "Jauniešu literatūra"
       },
       "include": [
         "young adult",
@@ -693,7 +759,9 @@
         "pl": "Biografie",
         "cs": "Životopisy",
         "ko": "전기",
-        "fi": "Elämäkerrat"
+        "fi": "Elämäkerrat",
+        "ja": "伝記",
+        "lv": "Biogrāfijas"
       },
       "include": ["biography", "autobiography", "memoir", "personal narratives"],
       "exclude": []
@@ -711,7 +779,9 @@
         "pl": "Historia",
         "cs": "Historie",
         "ko": "역사",
-        "fi": "Historia"
+        "fi": "Historia",
+        "ja": "歴史",
+        "lv": "Vēsture"
       },
       "include": ["history", "historiography", "antiquities", "civilization", "histoire"],
       "exclude": [
@@ -737,7 +807,9 @@
         "pl": "Historia wojskowości",
         "cs": "Vojenská historie",
         "ko": "군사사",
-        "fi": "Sotahistoria"
+        "fi": "Sotahistoria",
+        "ja": "軍事史",
+        "lv": "Militārā vēsture"
       },
       "include": ["world war", "military history", "civil war", "battles"],
       "exclude": []
@@ -755,7 +827,9 @@
         "pl": "Nauki ścisłe",
         "cs": "Přírodní vědy",
         "ko": "과학",
-        "fi": "Luonnontieteet"
+        "fi": "Luonnontieteet",
+        "ja": "科学",
+        "lv": "Zinātne"
       },
       "include": ["science", "physics", "chemistry", "biology", "astronomy", "evolution"],
       "exclude": ["science fiction", "history and criticism", "study and teaching"]
@@ -773,7 +847,9 @@
         "pl": "Przyroda",
         "cs": "Příroda",
         "ko": "자연",
-        "fi": "Luonto"
+        "fi": "Luonto",
+        "ja": "自然",
+        "lv": "Daba"
       },
       "include": ["natural history", "ecology", "environment", "animals", "birds"],
       "exclude": []
@@ -791,7 +867,9 @@
         "pl": "Matematyka",
         "cs": "Matematika",
         "ko": "수학",
-        "fi": "Matematiikka"
+        "fi": "Matematiikka",
+        "ja": "数学",
+        "lv": "Matemātika"
       },
       "include": ["mathematics", "algebra", "geometry", "calculus", "statistics"],
       "exclude": []
@@ -809,7 +887,9 @@
         "pl": "Technika",
         "cs": "Technika",
         "ko": "기술",
-        "fi": "Tekniikka"
+        "fi": "Tekniikka",
+        "ja": "技術",
+        "lv": "Tehnoloģijas"
       },
       "include": ["computer", "programming", "engineering", "internet", "software"],
       "exclude": []
@@ -827,7 +907,9 @@
         "pl": "Psychologia",
         "cs": "Psychologie",
         "ko": "심리학",
-        "fi": "Psykologia"
+        "fi": "Psykologia",
+        "ja": "心理学",
+        "lv": "Psiholoģija"
       },
       "include": ["psychology", "psychoanalysis", "mental health", "emotions"],
       "exclude": []
@@ -845,7 +927,9 @@
         "pl": "Filozofia",
         "cs": "Filozofie",
         "ko": "철학",
-        "fi": "Filosofia"
+        "fi": "Filosofia",
+        "ja": "哲学",
+        "lv": "Filozofija"
       },
       "include": ["philosophy", "ethics", "metaphysics", "philosophers"],
       "exclude": []
@@ -863,7 +947,9 @@
         "pl": "Religia",
         "cs": "Náboženství",
         "ko": "종교",
-        "fi": "Uskonto"
+        "fi": "Uskonto",
+        "ja": "宗教",
+        "lv": "Reliģija"
       },
       "include": [
         "religion",
@@ -898,7 +984,9 @@
         "pl": "Duchowość",
         "cs": "Spiritualita",
         "ko": "영성",
-        "fi": "Henkisyys"
+        "fi": "Henkisyys",
+        "ja": "スピリチュアル",
+        "lv": "Garīgums"
       },
       "include": ["spiritual", "meditation", "mysticism", "new age"],
       "exclude": []
@@ -916,7 +1004,9 @@
         "pl": "Poradniki",
         "cs": "Osobní rozvoj",
         "ko": "자기계발",
-        "fi": "Elämäntaito"
+        "fi": "Elämäntaito",
+        "ja": "自己啓発",
+        "lv": "Pašpalīdzība"
       },
       "include": [
         "self-help",
@@ -940,7 +1030,9 @@
         "pl": "Zdrowie i fitness",
         "cs": "Zdraví a fitness",
         "ko": "건강",
-        "fi": "Terveys ja liikunta"
+        "fi": "Terveys ja liikunta",
+        "ja": "健康・フィットネス",
+        "lv": "Veselība un fitness"
       },
       "include": ["health", "fitness", "diet", "nutrition", "medicine", "exercise"],
       "exclude": []
@@ -958,7 +1050,9 @@
         "pl": "Kulinaria",
         "cs": "Vaření",
         "ko": "요리",
-        "fi": "Ruoanlaitto"
+        "fi": "Ruoanlaitto",
+        "ja": "料理",
+        "lv": "Kulinārija"
       },
       "include": ["cooking", "cookery", "cookbook", "recipes", "baking"],
       "exclude": []
@@ -976,7 +1070,9 @@
         "pl": "Podróże",
         "cs": "Cestování",
         "ko": "여행",
-        "fi": "Matkailu"
+        "fi": "Matkailu",
+        "ja": "旅行",
+        "lv": "Ceļojumi"
       },
       "include": ["travel", "description and travel", "voyages", "guidebooks"],
       "exclude": []
@@ -994,7 +1090,9 @@
         "pl": "Sztuka",
         "cs": "Umění",
         "ko": "예술",
-        "fi": "Taide"
+        "fi": "Taide",
+        "ja": "アート",
+        "lv": "Māksla"
       },
       "include": [
         "art",
@@ -1029,7 +1127,9 @@
         "pl": "Muzyka",
         "cs": "Hudba",
         "ko": "음악",
-        "fi": "Musiikki"
+        "fi": "Musiikki",
+        "ja": "音楽",
+        "lv": "Mūzika"
       },
       "include": ["music", "songs", "jazz", "rock music", "composers"],
       "exclude": []
@@ -1047,7 +1147,9 @@
         "pl": "Biznes",
         "cs": "Podnikání",
         "ko": "경영",
-        "fi": "Liiketoiminta"
+        "fi": "Liiketoiminta",
+        "ja": "ビジネス",
+        "lv": "Bizness"
       },
       "include": ["business", "management", "marketing", "entrepreneurship", "finance"],
       "exclude": []
@@ -1065,7 +1167,9 @@
         "pl": "Ekonomia",
         "cs": "Ekonomie",
         "ko": "경제",
-        "fi": "Talous"
+        "fi": "Talous",
+        "ja": "経済",
+        "lv": "Ekonomika"
       },
       "include": ["economics", "economic conditions", "capitalism", "economic policy"],
       "exclude": []
@@ -1083,7 +1187,9 @@
         "pl": "Polityka",
         "cs": "Politika",
         "ko": "정치",
-        "fi": "Politiikka"
+        "fi": "Politiikka",
+        "ja": "政治",
+        "lv": "Politika"
       },
       "include": ["politics and government", "political science", "democracy"],
       "exclude": []
@@ -1101,7 +1207,9 @@
         "pl": "Społeczeństwo",
         "cs": "Společnost",
         "ko": "사회",
-        "fi": "Yhteiskunta"
+        "fi": "Yhteiskunta",
+        "ja": "社会",
+        "lv": "Sabiedrība"
       },
       "include": [
         "social conditions",
@@ -1130,7 +1238,9 @@
         "pl": "Baśnie i mity",
         "cs": "Pohádky a mýty",
         "ko": "신화와 민담",
-        "fi": "Sadut ja myytit"
+        "fi": "Sadut ja myytit",
+        "ja": "民話・神話",
+        "lv": "Folklora un mitoloģija"
       },
       "include": ["folklore", "fairy tales", "mythology", "legends", "folk literature"],
       "exclude": []
@@ -1148,7 +1258,9 @@
         "pl": "Klasyka",
         "cs": "Klasika",
         "ko": "고전",
-        "fi": "Klassikot"
+        "fi": "Klassikot",
+        "ja": "古典",
+        "lv": "Klasika"
       },
       "include": [
         "american literature",
@@ -1176,7 +1288,9 @@
         "pl": "Prawo",
         "cs": "Právo",
         "ko": "법",
-        "fi": "Oikeus"
+        "fi": "Oikeus",
+        "ja": "法律",
+        "lv": "Tiesības"
       },
       "include": ["law and legislation", "constitutional law", "courts", "legal"],
       "exclude": []
@@ -1194,7 +1308,9 @@
         "pl": "Leksykony",
         "cs": "Příručky",
         "ko": "참고서",
-        "fi": "Hakuteokset"
+        "fi": "Hakuteokset",
+        "ja": "参考図書",
+        "lv": "Uzziņu literatūra"
       },
       "include": ["dictionaries", "handbooks, manuals", "encyclopedias", "atlases"],
       "exclude": []
@@ -1212,7 +1328,9 @@
         "pl": "Edukacja",
         "cs": "Vzdělávání",
         "ko": "교육",
-        "fi": "Kasvatus"
+        "fi": "Kasvatus",
+        "ja": "教育",
+        "lv": "Izglītība"
       },
       "include": ["education", "study and teaching", "textbooks"],
       "exclude": []
@@ -1230,7 +1348,9 @@
         "pl": "Rodzicielstwo",
         "cs": "Rodičovství",
         "ko": "육아",
-        "fi": "Vanhemmuus"
+        "fi": "Vanhemmuus",
+        "ja": "子育て",
+        "lv": "Bērnu audzināšana"
       },
       "include": ["parenting", "child rearing", "pregnancy", "motherhood"],
       "exclude": []
@@ -1248,7 +1368,9 @@
         "pl": "Sport",
         "cs": "Sport",
         "ko": "스포츠",
-        "fi": "Urheilu"
+        "fi": "Urheilu",
+        "ja": "スポーツ",
+        "lv": "Sports"
       },
       "include": ["sports", "baseball", "football", "basketball", "olympics"],
       "exclude": []
@@ -1266,7 +1388,9 @@
         "pl": "Język",
         "cs": "Jazyk",
         "ko": "언어",
-        "fi": "Kieli"
+        "fi": "Kieli",
+        "ja": "語学",
+        "lv": "Valoda"
       },
       "include": [
         "linguistics",
@@ -1290,7 +1414,9 @@
         "pl": "Literaturoznawstwo",
         "cs": "Literární věda",
         "ko": "문학 비평",
-        "fi": "Kirjallisuudentutkimus"
+        "fi": "Kirjallisuudentutkimus",
+        "ja": "文芸評論",
+        "lv": "Literatūrkritika"
       },
       "include": ["history and criticism", "criticism and interpretation"],
       "exclude": []
@@ -1308,7 +1434,9 @@
         "pl": "Bestsellery",
         "cs": "Bestsellery",
         "ko": "베스트셀러",
-        "fi": "Bestsellerit"
+        "fi": "Bestsellerit",
+        "ja": "ベストセラー",
+        "lv": "Bestselleri"
       },
       "include": ["new york times bestseller", "bestseller"],
       "exclude": []
@@ -1326,7 +1454,9 @@
         "pl": "Nagradzane",
         "cs": "Oceněné",
         "ko": "수상작",
-        "fi": "Palkitut"
+        "fi": "Palkitut",
+        "ja": "高評価",
+        "lv": "Kritiķu atzinīgi novērtētas"
       },
       "include": ["new york times reviewed", "award", "prize winner", "notable book"],
       "exclude": []

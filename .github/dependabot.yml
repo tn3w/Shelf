@@ -25,7 +25,7 @@ updates:
         patterns: ["*"]
 
   - package-ecosystem: cargo
-    directory: /tooling/images
+    directory: /tooling/server
     schedule:
       interval: monthly
     groups:

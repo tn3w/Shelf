@@ -204,6 +204,7 @@ androidComponents.onVariants { variant ->
 
 tasks.withType<Test>().configureEach {
     mustRunAfter("minifyGithubReleaseWithR8")
+    systemProperty("shelf.packs", providers.gradleProperty("shelf.packs").getOrElse(""))
 }
 
 tasks.register<JavaExec>("scanBench") {

@@ -88,6 +88,63 @@ const BNB_SUBJECTS: [(&str, &str); 11] = [
     ("adventurestories", "fiction / action & adventure"),
     ("graphicnovels", "comics & graphic novels"),
 ];
+pub const NCID_RANGES: [(&str, u32, u32); 8] = [
+    ("BA", 0, 10_000_000),
+    ("BB", 10_000_000, 4_000_000),
+    ("BD", 14_000_000, 5_000_000),
+    ("BN", 19_000_000, 2_000_000),
+    ("BC", 21_000_000, 2_000_000),
+    ("AA", 23_000_000, 2_000_000),
+    ("AN", 25_000_000, 1_500_000),
+    ("AB", 26_500_000, 500_000),
+];
+const CINII_LITERATURE: [&str; 9] = [
+    "小説",
+    "長編",
+    "短編",
+    "物語",
+    "文庫",
+    "ノベル",
+    "童話",
+    "エッセイ",
+    "随筆",
+];
+const CINII_SUBJECTS: [(&str, &str); 16] = [
+    ("推理", "fiction / mystery & detective"),
+    ("ミステリ", "fiction / mystery & detective"),
+    ("ファンタジー", "fiction / fantasy"),
+    ("SF", "fiction / science fiction"),
+    ("恋愛", "fiction / romance"),
+    ("時代小説", "fiction / historical"),
+    ("歴史小説", "fiction / historical"),
+    ("ホラー", "fiction / horror"),
+    ("短編", "fiction / short stories"),
+    ("コミック", "comics & graphic novels"),
+    ("漫画", "comics & graphic novels"),
+    ("絵本", "picture books"),
+    ("詩集", "poetry"),
+    ("歌集", "poetry"),
+    ("句集", "poetry"),
+    ("戯曲", "drama"),
+];
+const CINII_KIDS: [&str; 4] = ["絵本", "童話", "児童", "こども"];
+const CINII_ROLES: [&str; 14] = [
+    "作・絵",
+    "文・絵",
+    "監修",
+    "原作",
+    "編著",
+    "著者",
+    "共著",
+    "著",
+    "作",
+    "文",
+    "絵",
+    "訳",
+    "編",
+    "画",
+];
+
 fn items(value: &Value) -> Vec<&Value> {
     match value {
         Value::Array(values) => values.iter().collect(),
@@ -336,7 +393,6 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
         id: source.local_id(control),
         language: source.language(),
         isbns,
-        links: Vec::new(),
         title,
         original,
         series,
@@ -347,7 +403,8 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
         format,
         classes,
         subjects,
-        digar: 0,
+        identifier: format!("libris:{control}"),
+        ..Record::default()
     })
     .filter(|record| !record.title.is_empty())
 }
@@ -437,14 +494,14 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
     };
     let (subjects, classes) = finished(subjects, &traits);
     let source = Source::Nlk;
+    let control = tail(text(&value["@id"]));
     Some(Record {
         source,
-        id: source.local_id(tail(text(&value["@id"]))),
+        id: source.local_id(control),
+        identifier: format!("nlk:{control}"),
         language: source.language(),
         isbns,
-        links: Vec::new(),
         title,
-        original: String::new(),
         series: if volume > 0 { series } else { String::new() },
         volume,
         author: source.author_id(&name),
@@ -453,7 +510,7 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
         format: PAPERBACK,
         classes,
         subjects,
-        digar: 0,
+        ..Record::default()
     })
     .filter(|record| !record.title.is_empty())
 }
@@ -545,11 +602,10 @@ impl BnbDraft {
         Record {
             source,
             id: source.local_id(&self.id),
+            identifier: format!("bnb:{}", self.id),
             language: source.language(),
             isbns: self.isbns,
-            links: Vec::new(),
             title,
-            original: String::new(),
             series,
             volume: 0,
             author: source.author_id(&name),
@@ -558,7 +614,8 @@ impl BnbDraft {
             format: PAPERBACK,
             classes,
             subjects,
-            digar: 0,
+            joins_only: true,
+            ..Record::default()
         }
     }
 }
@@ -681,6 +738,87 @@ pub fn bnb_records(location: &str) -> Vec<Record> {
         .collect()
 }
 
+fn ncid_number(ncid: &str) -> Option<u32> {
+    let (prefix, digits) = (ncid.get(..2)?, ncid.get(2..9)?);
+    let number: u32 = digits.parse().ok()?;
+    let (_, offset, size) = NCID_RANGES.iter().find(|(known, ..)| *known == prefix)?;
+    (number < *size).then_some(offset + number)
+}
+
+fn cinii_clauses(statement: &str) -> (String, Vec<String>) {
+    let clauses: Vec<&str> = statement.split(" ; ").map(str::trim).collect();
+    let without_role = |clause: &str| {
+        let name = clause.split(['、', ',']).next().unwrap_or_default().trim();
+        let role = CINII_ROLES.iter().find_map(|role| name.strip_suffix(role));
+        normalized_name(role.unwrap_or(name).trim_end_matches([' ', '・']))
+    };
+    let translators = clauses
+        .iter()
+        .filter(|clause| clause.ends_with('訳'))
+        .map(|clause| without_role(clause));
+    let translators = translators.filter(|name| !name.is_empty()).collect();
+    let author = clauses
+        .first()
+        .map_or_else(String::new, |clause| without_role(clause));
+    (author, translators)
+}
+
+pub fn cinii_record(line: &str) -> Option<Record> {
+    if !line.contains("urn:isbn:") {
+        return None;
+    }
+    let value: Value = serde_json::from_str(line).ok()?;
+    let full = clean(text(&value["title"]));
+    let publisher = clean(text(&value["dc:publisher"]));
+    if !format!("{full}{publisher}").chars().any(catalog::is_kana) {
+        return None;
+    }
+    let ncid = tail(text(&value["@id"]));
+    let parts = items(&value["dcterms:hasPart"]).into_iter();
+    let isbns = isbn_keys(parts.filter_map(|part| text(&part["@id"]).strip_prefix("urn:isbn:")));
+    let (title, _) = full.split_once(" : ").unwrap_or((&full, ""));
+    let series_title = items(&value["dcterms:isPartOf"])
+        .first()
+        .map_or("", |series| text(&series["dc:title"]));
+    let (series, volume) = release::parse_series(&[series_title])
+        .filter(|(_, volume)| (1..=MAX_VOLUME).contains(volume))
+        .unwrap_or_default();
+    let terms = vec![full.clone(), series_title.to_string()];
+    let subjects = mapped(&terms, &CINII_SUBJECTS);
+    let joins_only = !mentions(&terms, &CINII_LITERATURE) && subjects.is_empty();
+    let traits = Traits {
+        kid: mentions(&terms, &CINII_KIDS),
+        teen: false,
+        fiction: !joins_only,
+    };
+    let (subjects, classes) = finished(subjects, &traits);
+    let (name, translators) = cinii_clauses(text(&value["dc:creator"]));
+    let source = Source::Cinii;
+    Some(Record {
+        source,
+        id: ncid_number(ncid)?,
+        identifier: format!("ncid:{ncid}"),
+        language: source.language(),
+        isbns,
+        title: title.trim().to_string(),
+        original_language: String::new(),
+        series,
+        volume,
+        author: source.author_id(&name),
+        name,
+        translators,
+        publisher,
+        year: dumps::year_of(text(&value["dc:date"])),
+        format: PAPERBACK,
+        classes,
+        subjects,
+        compilation: title.contains(" ; "),
+        joins_only,
+        ..Record::default()
+    })
+    .filter(|record| !record.title.is_empty() && !record.isbns.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -786,5 +924,51 @@ mod tests {
     #[test]
     fn bnb_literals_unescaped() {
         assert_eq!(literal("\"Caf\\u00E9 \\\"noir\\\"\"@en"), "Café \"noir\"");
+    }
+
+    const CINII_NOVEL: &str = concat!(
+        "{",
+        r#""title": "ノルウェイの森 : 長編小説","#,
+        r#""@id": "https://ci.nii.ac.jp/ncid/BD2121585X","#,
+        r#""dc:date": "2004","#,
+        r#""dc:creator": "村上春樹著","#,
+        r#""dc:publisher": ["講談社"],"#,
+        r#""dcterms:isPartOf": [{"@id": "https://ci.nii.ac.jp/ncid/BN00000001","#,
+        r#" "dc:title": "講談社文庫"}],"#,
+        r#""dcterms:hasPart": [{"@id": "urn:isbn:9784062748681"}],"#,
+        r#""cinii:ownerCount": "12""#,
+        "}"
+    );
+
+    #[test]
+    fn cinii_novel_parsed() {
+        let record = cinii_record(CINII_NOVEL).expect("record");
+        assert_eq!(record.id, 14_000_000 + 2_121_585);
+        assert_eq!(record.identifier, "ncid:BD2121585X");
+        assert_eq!(record.language, crate::language_index("ja"));
+        assert_eq!(record.title, "ノルウェイの森");
+        assert_eq!(record.name, "村上春樹");
+        assert_eq!(record.publisher, "講談社");
+        assert_eq!(record.year, 2004);
+        assert!(!record.joins_only);
+        assert_eq!(record.subjects, ["fiction"]);
+    }
+
+    #[test]
+    fn cinii_non_fiction_only_joins_and_foreign_books_skipped() {
+        let report = CINII_NOVEL.replace("ノルウェイの森 : 長編小説", "訪日外国人の消費動向");
+        let report = report.replace("講談社文庫", "観光白書");
+        let record = cinii_record(&report).expect("record");
+        assert!(record.joins_only);
+        let english = CINII_NOVEL.replace("ノルウェイの森 : 長編小説", "What is visible");
+        assert!(cinii_record(&english.replace("講談社", "Twelve")).is_none());
+        let translated = CINII_NOVEL.replace("村上春樹著", "J.K.ローリング作 ; 松岡佑子訳");
+        let record = cinii_record(&translated).expect("record");
+        assert_eq!(
+            (record.name.as_str(), record.translators.as_slice()),
+            ("J.K.ローリング", &["松岡佑子".to_string()][..])
+        );
+        let unknown = CINII_NOVEL.replace("ncid/BD2121585X", "ncid/ZZ2121585X");
+        assert!(cinii_record(&unknown).is_none());
     }
 }

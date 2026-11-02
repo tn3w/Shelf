@@ -700,6 +700,19 @@ fn exclusive(chosen: Vec<u8>, support: &Support) -> Vec<u8> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn every_tag_labelled_in_every_catalogue_language() {
+        for rule in rules() {
+            for language in crate::LANGUAGES {
+                assert!(
+                    rule.labels.contains_key(language),
+                    "{} {language}",
+                    rule.slug
+                );
+            }
+        }
+    }
+
     fn pack(slugs: &[&str]) -> &'static str {
         pack_slug(&slugs.iter().map(|slug| tag(slug)).collect::<Vec<_>>())
     }

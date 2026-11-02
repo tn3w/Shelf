@@ -38,6 +38,10 @@ val ARTICLES =
 private val ARTICLE = Regex("^(${ARTICLES.joinToString("|")}) ")
 private val TITLE_BREAK = Regex("[:;(/]")
 private val HANGUL = '\uac00'..'\ud7a3'
+private val KANA = listOf('\u3040'..'\u30ff', '\u31f0'..'\u31ff', '\uff66'..'\uff9f')
+private val KANJI = listOf('\u3400'..'\u4dbf', '\u4e00'..'\u9fff', '\uf900'..'\ufaff')
+private val FULLWIDTH = '\uff01'..'\uff5e'
+private const val FULLWIDTH_OFFSET = 0xfee0
 
 private val FOLD = buildMap {
     listOf(
@@ -55,14 +59,35 @@ private val FOLD = buildMap {
         "řŕŘŔ" to 'r',
         "ďĎ" to 'd',
         "ťŤ" to 't',
+        "āĀ" to 'a',
+        "ēėĒĖ" to 'e',
+        "īįĪĮ" to 'i',
+        "ūųŪŲ" to 'u',
+        "ģĢ" to 'g',
+        "ķĶ" to 'k',
+        "ļĻ" to 'l',
+        "ņŅ" to 'n',
+        "ŗŖ" to 'r',
+        "ōŌ" to 'o',
     )
         .forEach { (characters, replacement) ->
             characters.forEach { put(it, replacement) }
         }
 }
 
+private fun isCjk(character: Char) =
+    KANJI.any { character in it } || (character != '・' && KANA.any { character in it })
+
 private fun foldCharacter(character: Char): Char? {
-    val lowered = if (character.code < 128) character.lowercaseChar() else character
+    val narrow =
+        if (character in
+            FULLWIDTH
+        ) {
+            (character.code - FULLWIDTH_OFFSET).toChar()
+        } else {
+            character
+        }
+    val lowered = if (narrow.code < 128) narrow.lowercaseChar() else narrow
     if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
     if (character in HANGUL) return character
     return FOLD[character]
@@ -70,21 +95,37 @@ private fun foldCharacter(character: Char): Char? {
 
 fun tokenize(text: String): List<String> {
     val tokens = mutableListOf<String>()
-    val current = StringBuilder()
+    val word = StringBuilder()
+    val run = StringBuilder()
+    fun pushWord() {
+        if (word.isNotEmpty()) tokens += word.toString()
+        word.clear()
+    }
+    fun pushBigrams() {
+        if (run.length == 1) tokens += run.toString()
+        (0 until run.length - 1).mapTo(tokens) { run.substring(it, it + 2) }
+        run.clear()
+    }
     for (character in text) {
         if (character == '\'' || character == '’' || character in '\u0300'..'\u036f') {
             continue
         }
-        val folded = foldCharacter(character)
-        if (folded != null) current.append(folded)
-        if (
-            (folded == null || current.length >= MAX_TOKEN_LENGTH) && current.isNotEmpty()
-        ) {
-            tokens += current.toString()
-            current.clear()
+        if (isCjk(character)) {
+            pushWord()
+            run.append(character)
+            continue
         }
+        pushBigrams()
+        val folded = foldCharacter(character)
+        if (folded == null) {
+            pushWord()
+            continue
+        }
+        word.append(folded)
+        if (word.length >= MAX_TOKEN_LENGTH) pushWord()
     }
-    if (current.isNotEmpty()) tokens += current.toString()
+    pushBigrams()
+    pushWord()
     return tokens
 }
 

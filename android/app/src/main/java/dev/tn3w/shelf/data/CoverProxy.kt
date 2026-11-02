@@ -3,8 +3,8 @@ package dev.tn3w.shelf.data
 import android.os.Build
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-/** AVIF cover proxy, see `tooling/images/` in the repository. */
-const val COVER_PROXY = "https://shelf-img.tn3w.dev"
+/** AVIF cover proxy, see `tooling/server/` in the repository. */
+const val COVER_PROXY = "https://shelf-books.tn3w.dev"
 private val BOOK_WIDTHS = intArrayOf(160, 320, 640)
 private val AUTHOR_WIDTHS = intArrayOf(96, 192)
 

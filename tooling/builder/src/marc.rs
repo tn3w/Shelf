@@ -1,11 +1,13 @@
 use crate::catalog;
 use crate::dumps;
 use crate::libraries::{
-    COMIC, EBOOK, HARDCOVER, MAX_VOLUME, PAPERBACK, Record, SYNTHETIC, Source, clean, first_number,
-    is_genre, is_numbered_genre, match_key, normalized_name, without_series,
+    COMIC, EBOOK, ERB_IDS, HARDCOVER, MAX_VOLUME, PAPERBACK, Record, SYNTHETIC, Source, clean,
+    first_number, hash, is_genre, is_numbered_genre, match_key, name_key, normalized_name,
+    without_series,
 };
 use crate::release;
 use crate::tags::Classes;
+use std::collections::HashMap;
 
 const FICTION_FORMS: &str = "1fjpdmhc";
 const VOLUME_PARTS: [&str; 21] = [
@@ -29,6 +31,12 @@ const BOUND: [&str; 6] = [
     "rel.",
 ];
 const AUTHOR_ROLES: [&str; 3] = ["autor", "kirjoittaja", "aut"];
+const TRANSLATOR_ROLES: [&str; 10] = [
+    "trl", "tradu", "transl", "übers", "tõlk", "tłum", "přel", "kään", "tulk", "730",
+];
+const LNB_LV_PREFIXES: [&str; 2] = ["LNC04", "NBA02"];
+const LNB_LV_SLOT: u32 = 5_000_000;
+const BNE_SEQUENCE_START: u64 = 1_000_000_000;
 const JUVENILE_AUDIENCES: &str = "abcj";
 const BNF_JUVENILE: &str = "abcd";
 const BNF_LITERATURE: &str = "abcdefghiz";
@@ -246,6 +254,117 @@ pub const FENNICA: Profile = Profile {
     ],
     kids: &["lastenkirjallisuus", "kuvakirjat"],
     teens: &["nuortenkirjallisuus"],
+};
+
+pub const BNE: Profile = Profile {
+    language: "spa",
+    literature: &[
+        "novelas",
+        "cuentos",
+        "relatos",
+        "poesía",
+        "teatro",
+        "narrativa",
+        "cómics",
+        "novelas gráficas",
+        "microrrelatos",
+    ],
+    skipped: &[
+        "libros de texto",
+        "cuadernos de ejercicios",
+        "libros para colorear",
+        "libros de actividades",
+        "libros de cocina",
+        "calendarios",
+        "cancioneros",
+        "guías didácticas",
+        "pasatiempos",
+    ],
+    subjects: &[
+        ("novelas", "fiction"),
+        ("novelas policiacas", "fiction / mystery & detective"),
+        ("novelas negras", "fiction / mystery & detective"),
+        ("ciencia ficción", "fiction / science fiction"),
+        ("novelas fantásticas", "fiction / fantasy"),
+        ("fantasía", "fiction / fantasy"),
+        ("novelas románticas", "fiction / romance"),
+        ("novelas rosa", "fiction / romance"),
+        ("novelas históricas", "fiction / historical"),
+        ("novelas de terror", "fiction / horror"),
+        ("novelas de aventuras", "fiction / action & adventure"),
+        ("novelas de suspense", "fiction / thrillers"),
+        ("novelas de espionaje", "fiction / thrillers"),
+        ("thrillers", "fiction / thrillers"),
+        ("cuentos", "fiction / short stories"),
+        ("relatos", "fiction / short stories"),
+        ("humor", "humor"),
+        ("poesía", "poetry"),
+        ("teatro", "drama"),
+        ("cómics", "comics & graphic novels"),
+        ("novelas gráficas", "comics & graphic novels"),
+        ("historietas", "comics & graphic novels"),
+        ("cuentos de hadas", "fairy tales"),
+        ("álbumes ilustrados", "picture books"),
+        ("libros ilustrados", "picture books"),
+    ],
+    kids: &[
+        "literatura infantil",
+        "cuentos infantiles",
+        "libros infantiles",
+        "álbumes ilustrados",
+    ],
+    teens: &["literatura juvenil", "novelas juveniles"],
+};
+
+pub const LNB_LV: Profile = Profile {
+    language: "lav",
+    literature: &[
+        "romāni",
+        "stāsti",
+        "dzeja",
+        "proza",
+        "daiļliteratūra",
+        "noveles",
+        "lugas",
+        "pasakas",
+        "komiksi",
+    ],
+    skipped: &[
+        "krāsojamās grāmatas",
+        "uzlīmju grāmatas",
+        "uzdevumi",
+        "mācību līdzekļi",
+        "attēlu mīklas",
+        "promocijas darb",
+        "uzziņu līdzekļi",
+        "gadagrāmatas",
+        "kalendāri",
+        "pavārgrāmatas",
+        "dziesm",
+    ],
+    subjects: &[
+        ("romāni", "fiction"),
+        ("stāsti", "fiction"),
+        ("proza", "fiction"),
+        ("detektīv", "fiction / mystery & detective"),
+        ("kriminālromāni", "fiction / mystery & detective"),
+        ("trilleri", "fiction / thrillers"),
+        ("fantāzij", "fiction / fantasy"),
+        ("fantastika", "fiction / science fiction"),
+        ("mīlas", "fiction / romance"),
+        ("vēsturiskie romāni", "fiction / historical"),
+        ("šausmu", "fiction / horror"),
+        ("piedzīvojumu", "fiction / action & adventure"),
+        ("humor", "humor"),
+        ("noveles", "fiction / short stories"),
+        ("dzeja", "poetry"),
+        ("lugas", "drama"),
+        ("komiksi", "comics & graphic novels"),
+        ("pasakas", "fairy tales"),
+        ("bilžu grāmatas", "picture books"),
+    ],
+    kids: &["bērn", "cietlapu grāmatas"],
+    teens: &["jauniešiem", "pusaudž"],
 };
 
 const BNF_SUBJECTS: [(&str, &str); 13] = [
@@ -558,13 +677,134 @@ fn finished(mut subjects: Vec<&'static str>, reader: &Reader) -> Vec<&'static st
     subjects
 }
 
-fn marc_id(source: Source, control: &str) -> Option<u32> {
-    if source != Source::Erb {
-        return Some(source.local_id(control));
-    }
+fn erb_id(control: &str) -> Option<u32> {
     let digits = control.strip_prefix('b')?;
     let number: u32 = digits.get(..digits.len().checked_sub(1)?)?.parse().ok()?;
-    (number > 0 && number < SYNTHETIC).then_some(SYNTHETIC + number)
+    (number > 0 && number < ERB_IDS).then_some(SYNTHETIC + number)
+}
+
+fn bne_sequence(control: &str) -> Option<String> {
+    let core: u64 = control
+        .strip_prefix("99")?
+        .get(..control.len() - 7)?
+        .parse()
+        .ok()?;
+    Some((core / 10).checked_sub(BNE_SEQUENCE_START)?.to_string())
+}
+
+fn lnb_lv_sequence(control: &str) -> Option<String> {
+    let (prefix, digits) = control.split_once('-')?;
+    let slot = LNB_LV_PREFIXES.iter().position(|known| *known == prefix)? as u32;
+    let number: u32 = digits.parse().ok().filter(|&number| number < LNB_LV_SLOT)?;
+    Some((slot * LNB_LV_SLOT + number).to_string())
+}
+
+fn marc_id(source: Source, control: &str) -> Option<u32> {
+    let sequence = match source {
+        Source::Erb => return erb_id(control),
+        Source::Bne => bne_sequence(control),
+        Source::LnbLv => lnb_lv_sequence(control),
+        _ => None,
+    };
+    Some(source.local_id(sequence.as_deref().unwrap_or(control)))
+}
+
+pub fn authority_id(value: &str) -> Option<String> {
+    let value = value.trim();
+    let tail = value.trim_end_matches('/').rsplit(['/', ')']).next()?;
+    let scheme = match () {
+        _ if value.starts_with("(DE-588)") || value.contains("d-nb.info/gnd/") => "gnd",
+        _ if value.contains("viaf.org") => "viaf",
+        _ if value.contains("isni") => "isni",
+        _ if value.contains("wikidata.org") => "wikidata",
+        _ if value.contains("id.loc.gov") => "lc",
+        _ => return None,
+    };
+    let tail = tail.replace(' ', "");
+    (!tail.is_empty()).then(|| format!("{scheme}:{tail}"))
+}
+
+fn heading_authorities(marc: &Marc) -> Vec<String> {
+    let heading = marc.fields("100").next();
+    let values = heading.into_iter().flat_map(|field| field.subfields.iter());
+    let linked = values.filter(|(code, _)| matches!(code, '0' | '1'));
+    linked
+        .filter_map(|(_, value)| authority_id(value))
+        .collect()
+}
+
+fn translators(marc: &Marc) -> Vec<String> {
+    let translates = |field: &&Field| {
+        let roles = field
+            .subfields
+            .iter()
+            .filter(|(code, _)| matches!(code, 'e' | '4'));
+        let mut roles = roles.map(|(_, role)| role.to_lowercase());
+        roles.any(|role| TRANSLATOR_ROLES.iter().any(|known| role.starts_with(known)))
+    };
+    let fields = marc.fields("700").chain(marc.fields("702"));
+    let named = fields.filter(translates).filter_map(|field| field.get('a'));
+    named
+        .map(heading_name)
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+fn publisher(marc: &Marc, tags: &[&str], code: char) -> String {
+    let found = tags.iter().find_map(|tag| marc.values(tag, code).next());
+    field_text(found.unwrap_or_default())
+}
+
+fn birth_year(dates: &str) -> u16 {
+    first_number(dates).filter(|&year| year > 999).unwrap_or(0)
+}
+
+pub type Persons = HashMap<(String, u16), Vec<String>>;
+
+pub fn person_key(marc: &Marc) -> Option<(String, u16)> {
+    let heading = marc.fields("100").next()?;
+    let name = heading_name(heading.get('a')?);
+    let birth = birth_year(heading.get('d').unwrap_or_default());
+    (!name.is_empty()).then(|| (name_key(&name), birth))
+}
+
+pub fn bne_person(bytes: &[u8]) -> Option<((String, u16), Vec<String>)> {
+    let marc = Marc::binary(bytes)?;
+    if marc.values("100", 't').next().is_some() {
+        return None;
+    }
+    let ids: Vec<String> = marc.values("024", 'a').filter_map(authority_id).collect();
+    (!ids.is_empty()).then_some((person_key(&marc)?, ids))
+}
+
+pub fn bne_record(bytes: &[u8], persons: &Persons) -> Option<Record> {
+    let marc = Marc::binary(bytes)?;
+    let mut record = marc21_record(&marc, Source::Bne, &BNE)?;
+    let known = person_key(&marc).and_then(|key| persons.get(&key));
+    if let Some(ids) = known.filter(|ids| !ids.is_empty()) {
+        record.authority = hash(&[ids[0].as_bytes()]);
+        record.authorities = ids.clone();
+    }
+    Some(record)
+}
+
+pub fn bne_records(location: &str) -> Vec<Record> {
+    let (bibs, people) = location.split_once(',').unwrap_or((location, ""));
+    let mut persons = Persons::new();
+    if !people.is_empty() {
+        let reader = dumps::open_location(people, b"\x1d");
+        dumps::scan_records(reader, b"\x1d", bne_person, |(key, ids)| {
+            let entry = persons.entry(key).or_insert_with(|| ids.clone());
+            if *entry != ids {
+                entry.clear();
+            }
+        });
+    }
+    let mut records = Vec::new();
+    let reader = dumps::open_location(bibs, b"\x1d");
+    let parse = |bytes: &[u8]| bne_record(bytes, &persons);
+    dumps::scan_records(reader, b"\x1d", parse, |record| records.push(record));
+    records
 }
 
 fn digar(marc: &Marc) -> u32 {
@@ -624,6 +864,11 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
         drama: form == 'd' || form != '0' && subjects.contains(&"drama"),
         fiction: "1fj".contains(form),
     };
+    let original_language = marc.values("041", 'h').next();
+    let udc = marc.values("080", 'a').find_map(catalog::udc_language);
+    let original_language = original_language
+        .or(udc.filter(|&language| language != profile.language))
+        .unwrap_or_default();
     let translated = marc.values("041", 'h').next().is_some();
     let original = marc.values("240", 'a').next();
     let variant = marc.values("246", 'a').next().filter(|_| translated);
@@ -634,23 +879,34 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
             .unwrap_or_default(),
     );
     let year: String = fixed.get(7..11).unwrap_or_default().iter().collect();
+    let control = marc.control("001");
+    let authorities = heading_authorities(marc);
     Some(Record {
         source,
-        id: marc_id(source, marc.control("001"))?,
+        id: marc_id(source, control)?,
+        identifier: format!("{}:{control}", source.name()),
         language: source.language(),
         isbns,
-        links: Vec::new(),
         title,
         original: original.or(variant).map(field_text).unwrap_or_default(),
+        original_language: original_language.to_string(),
         series,
         volume,
         author: source.author_id(&name),
+        authority: authorities.first().map_or(0, |id| hash(&[id.as_bytes()])),
+        authorities,
         name,
+        translators: translators(marc),
+        publisher: publisher(marc, &["264", "260"], 'b'),
+        description: clean(marc.first("520", 'a')),
         year: dumps::year_of(&year),
         format: marc_format(marc, &terms, reader.comics),
         classes: classes(&reader),
         subjects: finished(subjects, &reader),
         digar: digar(marc),
+        compilation: main.trim_end().ends_with(';') || main.contains(" ; "),
+        joins_only: false,
+        links: Vec::new(),
     })
 }
 
@@ -735,19 +991,24 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
     Some(Record {
         source: Source::Bnf,
         id: Source::Bnf.local_id(&digits),
+        identifier: format!("bnf:{control}"),
         language: Source::Bnf.language(),
         isbns,
-        links: Vec::new(),
         title,
         original: field_text(marc.first("454", 't')),
+        original_language: marc.first("101", 'c').to_string(),
         series,
         volume,
         author: Source::Bnf.author_id(&name),
         name,
+        translators: translators(marc),
+        publisher: publisher(marc, &["214", "210"], 'c'),
+        description: clean(marc.first("330", 'a')),
         year: dumps::year_of(&year),
         format,
         classes: classes(&reader),
         subjects: finished(subjects, &reader),
-        digar: 0,
+        compilation: marc.values("200", 'a').nth(1).is_some(),
+        ..Record::default()
     })
 }

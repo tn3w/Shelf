@@ -71,10 +71,15 @@ fn encode(covers: &[Cover]) -> Vec<u8> {
     deflate(&raw, &[])
 }
 
-/// One file with a section per language; `languages` must hold sorted covers.
-fn index(month: &str, languages: Vec<(String, Vec<u8>)>) -> Vec<u8> {
+/// One file with a section per language; `languages` must hold sorted records.
+pub fn index_file(
+    magic: &[u8; 4],
+    version: u32,
+    month: &str,
+    languages: Vec<(String, Vec<u8>)>,
+) -> Vec<u8> {
     let meta = meta_section(&[
-        ("format", VERSION.to_string()),
+        ("format", version.to_string()),
         ("month", month.to_string()),
     ]);
     let mut sections = vec![("meta", meta)];
@@ -83,11 +88,16 @@ fn index(month: &str, languages: Vec<(String, Vec<u8>)>) -> Vec<u8> {
             .iter()
             .map(|(code, bytes)| (code.as_str(), bytes.clone())),
     );
-    assemble_file(MAGIC, VERSION, sections)
+    assemble_file(magic, version, sections)
 }
 
 pub fn language_index(month: &str, language: &str, covers: &[Cover]) -> Vec<u8> {
-    index(month, vec![(language.to_string(), encode(covers))])
+    index_file(
+        MAGIC,
+        VERSION,
+        month,
+        vec![(language.to_string(), encode(covers))],
+    )
 }
 
 fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
@@ -95,9 +105,14 @@ fn u32_at(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(slice.try_into().ok()?))
 }
 
-/// Sections of an index file, `meta` first.
+#[cfg(test)]
 pub fn sections(file: &[u8]) -> Option<Vec<(String, Vec<u8>)>> {
-    if file.get(..4)? != MAGIC || u32_at(file, 4)? != VERSION {
+    sections_of(MAGIC, VERSION, file)
+}
+
+/// Sections of an index file, `meta` first.
+pub fn sections_of(magic: &[u8; 4], version: u32, file: &[u8]) -> Option<Vec<(String, Vec<u8>)>> {
+    if file.get(..4)? != magic || u32_at(file, 4)? != version {
         return None;
     }
     (0..u32_at(file, 8)? as usize)
@@ -120,7 +135,6 @@ pub fn month_of(meta: &[u8]) -> Option<String> {
         .map(str::to_string)
 }
 
-#[cfg(test)]
 fn varint(bytes: &[u8], cursor: &mut usize) -> Option<u32> {
     let mut value = 0u32;
     for shift in (0..35).step_by(7) {
@@ -134,8 +148,8 @@ fn varint(bytes: &[u8], cursor: &mut usize) -> Option<u32> {
     None
 }
 
-#[cfg(test)]
-fn decode(section: &[u8]) -> Option<Vec<Cover>> {
+/// Covers of one language section, sorted by work.
+pub fn decode(section: &[u8]) -> Option<Vec<Cover>> {
     use std::io::Read;
     let mut raw = Vec::new();
     flate2::read::DeflateDecoder::new(section)
@@ -157,13 +171,21 @@ fn decode(section: &[u8]) -> Option<Vec<Cover>> {
 
 /// Merges per-language index files into one; every file must name the same month.
 pub fn merge(inputs: &[impl AsRef<Path>]) -> Result<Vec<u8>, String> {
+    merge_files(MAGIC, VERSION, inputs)
+}
+
+pub fn merge_files(
+    magic: &[u8; 4],
+    version: u32,
+    inputs: &[impl AsRef<Path>],
+) -> Result<Vec<u8>, String> {
     let mut month: Option<String> = None;
     let mut languages: Vec<(String, Vec<u8>)> = Vec::new();
     for input in inputs {
         let path = input.as_ref();
         let file = std::fs::read(path).map_err(|error| format!("{}: {error}", path.display()))?;
-        let found =
-            sections(&file).ok_or_else(|| format!("{}: not a cover index", path.display()))?;
+        let found = sections_of(magic, version, &file)
+            .ok_or_else(|| format!("{}: not an index file", path.display()))?;
         for (name, bytes) in found {
             if name == "meta" {
                 let current = month_of(&bytes).ok_or("missing month")?;
@@ -179,9 +201,9 @@ pub fn merge(inputs: &[impl AsRef<Path>]) -> Result<Vec<u8>, String> {
             }
         }
     }
-    let month = month.ok_or("no cover index given")?;
+    let month = month.ok_or("no index file given")?;
     languages.sort_by(|left, right| left.0.cmp(&right.0));
-    Ok(index(&month, languages))
+    Ok(index_file(magic, version, &month, languages))
 }
 
 #[cfg(test)]

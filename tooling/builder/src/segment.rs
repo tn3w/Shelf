@@ -68,7 +68,7 @@ pub(crate) fn put_varint(buffer: &mut Vec<u8>, mut value: u32) {
     buffer.push(value as u8);
 }
 
-fn put_text(buffer: &mut Vec<u8>, text: &str) {
+pub(crate) fn put_text(buffer: &mut Vec<u8>, text: &str) {
     put_varint(buffer, text.len() as u32);
     buffer.extend_from_slice(text.as_bytes());
 }
@@ -131,7 +131,7 @@ fn dictionary(samples: &[Vec<u8>]) -> Vec<u8> {
     dictionary
 }
 
-fn indexed_blocks(firsts: &[u32], blocks: &[Vec<u8>]) -> Vec<u8> {
+pub(crate) fn indexed_blocks(firsts: &[u32], blocks: &[Vec<u8>]) -> Vec<u8> {
     let mut section = Vec::new();
     put_u32(&mut section, blocks.len() as u32);
     firsts
@@ -792,5 +792,372 @@ mod tests {
             section(&aliased, "aliases"),
             Some(&[7, 0, 0, 0, 3, 0, 0, 0][..])
         );
+    }
+
+    struct Fixture {
+        work: u32,
+        title: &'static str,
+        author: &'static str,
+        subtitle: &'static str,
+        series: Option<&'static str>,
+        score: u32,
+    }
+
+    fn fixture(work: u32, title: &'static str, author: &'static str, score: u32) -> Fixture {
+        Fixture {
+            work,
+            title,
+            author,
+            subtitle: "",
+            series: None,
+            score,
+        }
+    }
+
+    fn reader_catalogue(fixtures: &[Fixture]) -> crate::reader::Catalogue {
+        let mut authors = Authors::default();
+        let mut names: Vec<&str> = fixtures.iter().map(|fixture| fixture.author).collect();
+        names.dedup();
+        let ids: Vec<[u32; 1]> = fixtures
+            .iter()
+            .map(|fixture| {
+                [names
+                    .iter()
+                    .position(|&name| name == fixture.author)
+                    .unwrap() as u32
+                    + 1]
+            })
+            .collect();
+        for (index, name) in names.iter().enumerate() {
+            authors.add(index as u32 + 1, name);
+        }
+        let mut named: Vec<&str> = fixtures
+            .iter()
+            .filter_map(|fixture| fixture.series)
+            .collect();
+        named.dedup();
+        let series: Vec<Series> = named
+            .iter()
+            .map(|&name| Series {
+                name: name.to_string(),
+                members: fixtures
+                    .iter()
+                    .filter(|fixture| fixture.series == Some(name))
+                    .map(|fixture| fixture.work)
+                    .collect(),
+            })
+            .collect();
+        let works: Vec<Work> = fixtures
+            .iter()
+            .zip(&ids)
+            .map(|(fixture, id)| Work {
+                subtitle: fixture.subtitle,
+                authors: id,
+                series: fixture.series.map(|name| {
+                    let found = series.iter().find(|series| series.name == name).unwrap();
+                    (found, 1)
+                }),
+                title: fixture.title,
+                ..work(fixture.work, None)
+            })
+            .collect();
+        let rows: Vec<Popularity> = fixtures
+            .iter()
+            .map(|fixture| Popularity {
+                id: fixture.work,
+                score: fixture.score as f32,
+                readers: fixture.score,
+                ratings: fixture.score as u16,
+                mean_rating: 4.0,
+                editions: 1,
+            })
+            .collect();
+        let meta = Meta {
+            language: 0,
+            pack: "core",
+            month: "2000-01",
+            base: "2000-01",
+        };
+        let segment = crate::reader::Segment::parse(segment(&meta, &works, &[], &authors));
+        let ranked = ranks(0, "2000-01", &works, &rows, &authors, &[]);
+        let ranks = crate::reader::Ranks::parse(ranked);
+        crate::reader::Catalogue::new("en", vec![segment.unwrap()], ranks)
+    }
+
+    fn found(catalogue: &crate::reader::Catalogue, query: &str) -> Vec<u32> {
+        let searcher = crate::search::Searcher::new(catalogue);
+        searcher
+            .search(query, 30)
+            .iter()
+            .map(|book| book.work)
+            .collect()
+    }
+
+    #[test]
+    fn reader_reads_what_segment_writes() {
+        let mut authors = Authors::default();
+        authors.add(7, "Jane Austen");
+        let series = Series {
+            name: "Austen Novels".to_string(),
+            members: vec![4, 12],
+        };
+        let works = [
+            Work {
+                title: "Emma",
+                subtitle: "A Novel",
+                alternate: "Emma Woodhouse",
+                authors: &[7],
+                year: 1815,
+                cover: 99,
+                tags: &[2, 5],
+                series: Some((&series, 1)),
+                description: "Matchmaking in Highbury.",
+                translated: true,
+                isbns: &[141_439_587],
+                ..work(4, Some((1, 375_120_527)))
+            },
+            work(9, None),
+            Work {
+                authors: &[7],
+                series: Some((&series, 2)),
+                ..work(12, Some((2, 4242)))
+            },
+        ];
+        let meta = Meta {
+            language: 1,
+            pack: "kids",
+            month: "2000-02",
+            base: "2000-01",
+        };
+        let bytes = segment(&meta, &works, &[3, 8], &authors);
+        let read = crate::reader::Segment::parse(bytes).expect("segment");
+        assert_eq!((read.pack.as_str(), read.language.as_str()), ("kids", "de"));
+        assert!(!read.is_base());
+        assert_eq!(
+            (read.work_count(), read.work(2), read.local_of(9)),
+            (3, 12, Some(1))
+        );
+        assert_eq!(read.local_of(5), None);
+        assert_eq!(read.tombstones, [3, 8]);
+        let heads = read.heads(0);
+        assert_eq!(
+            (heads.title, heads.subtitle),
+            ("Emma".to_string(), "A Novel".to_string())
+        );
+        assert_eq!(read.all_heads()[1].title, "Jetzt reicht's!");
+        let facts = read.facts(0);
+        assert_eq!(
+            (facts.year, facts.cover, facts.tags),
+            (1815, 99, vec![2, 5])
+        );
+        let author = read.author(facts.authors[0]);
+        assert_eq!(
+            (author.number, author.name.as_str(), author.works),
+            (7, "Jane Austen", vec![0, 2])
+        );
+        let named = read.series(facts.series.expect("series"));
+        assert_eq!(
+            (named.name.as_str(), named.members),
+            ("Austen Novels", vec![4, 12])
+        );
+        let description = read.description(0).expect("description");
+        assert_eq!(
+            (description.text.as_str(), description.translated),
+            ("Matchmaking in Highbury.", true)
+        );
+        assert_eq!(read.description(1), None);
+        assert_eq!(
+            (read.local_of_isbn(141_439_587), read.isbns_of(0)),
+            (Some(0), vec![141_439_587])
+        );
+        let cover = read.library_cover(0).expect("cover");
+        assert_eq!(
+            (cover.source, cover.key),
+            (1, crate::reader::isbn_of(375_120_527))
+        );
+        assert_eq!(read.library_cover(2).expect("digar").key, "4242");
+        assert_eq!(read.term("woodhouse").expect("term").title_works(), [0]);
+        assert_eq!(read.term("austen").expect("term").author_slots(), [0]);
+        let completed: Vec<String> = read
+            .completions("wo", 5)
+            .into_iter()
+            .map(|term| term.text)
+            .collect();
+        assert_eq!(completed, ["woodhouse"]);
+        assert_eq!(read.tag_works(5), [0]);
+        assert_eq!(read.tag_count(2), 1);
+        let rows = [Popularity {
+            id: 4,
+            score: 12.5,
+            readers: 30,
+            ratings: 6,
+            mean_rating: 4.25,
+            editions: 9,
+        }];
+        let ranked = ranks(1, "2000-02", &works, &rows, &authors, &[(1_000_000_001, 4)]);
+        let ranks = crate::reader::Ranks::parse(ranked).expect("ranks");
+        let popularity = ranks.popularity(4).expect("popularity");
+        assert_eq!(
+            (popularity.score, popularity.readers, popularity.rating),
+            (12.5, 30, 4.25)
+        );
+        assert_eq!(
+            (ranks.frequency("emma"), ranks.alias(1_000_000_001)),
+            (1, Some(4))
+        );
+    }
+
+    #[test]
+    fn reader_resolves_chains_and_tombstones() {
+        let pack = |month: &str, base: &str, works: &[Work], tombstones: &[u32]| {
+            let meta = Meta {
+                language: 0,
+                pack: "core",
+                month,
+                base,
+            };
+            let bytes = segment(&meta, works, tombstones, &Authors::default());
+            crate::reader::Segment::parse(bytes).expect("segment")
+        };
+        let segments = vec![
+            pack("2000-02", "2000-01", &[work(5, None)], &[4]),
+            pack("1999-12", "1999-12", &[work(1, None)], &[]),
+            pack("2000-01", "2000-01", &[work(4, None), work(6, None)], &[]),
+        ];
+        let current = crate::reader::current_segments(segments);
+        let months: Vec<&str> = current
+            .iter()
+            .map(|segment| segment.month.as_str())
+            .collect();
+        assert_eq!(months, ["2000-01", "2000-02"]);
+        let catalogue = crate::reader::Catalogue::new("en", current, None);
+        assert_eq!(catalogue.works(), [5, 6]);
+        assert!(catalogue.book(4).is_none() && catalogue.book(1).is_none());
+        let name = crate::reader::parse_name("en-young-adult-2026-11-05-2.bin");
+        assert_eq!(name, Some(("en", "young-adult", "2026-11-05-2")));
+        assert_eq!(crate::reader::parse_name("covers-en.bin"), None);
+    }
+
+    #[test]
+    fn search_ranks_like_the_app() {
+        let searcher = reader_catalogue(&[
+            fixture(1, "Dune", "Frank Herbert", 2),
+            fixture(2, "Dune Messiah", "Frank Herbert", 9),
+            fixture(3, "Dunk Tank", "Bea Baker", 9),
+            Fixture {
+                subtitle: "A Guide",
+                ..fixture(4, "Dune", "Sam Fan", 1)
+            },
+            fixture(5, "The Silmarillion", "John Tolkien", 5),
+            fixture(6, "The Hobbit", "John Tolkien", 8),
+            fixture(7, "Sand Castles", "Bea Baker", 4),
+            fixture(8, "Slam Dunk", "Bea Baker", 0),
+            fixture(9, "Silmarillion Notes", "Ann Author", 0),
+            fixture(10, "Hobbit Lore", "Ann Author", 0),
+        ]);
+        let dune: Vec<u32> = found(&searcher, "dune")
+            .into_iter()
+            .filter(|&work| work < 4)
+            .collect();
+        assert_eq!(dune, [1, 2, 3]);
+        assert_eq!(found(&searcher, "silmarilion")[0], 5);
+        assert_eq!(found(&searcher, "hobit")[0], 6);
+        assert_eq!(found(&searcher, "dune fan")[0], 4);
+        let herbert = crate::search::Searcher::new(&searcher).search("dune herbert", 1);
+        assert_eq!(herbert[0].authors[0].name, "Frank Herbert");
+        for query in ["", "  !!! ", "zzzzzz", "q"] {
+            assert!(found(&searcher, query).is_empty(), "{query}");
+        }
+        let japanese = reader_catalogue(&[
+            fixture(1, "ノルウェイの森", "村上春樹", 9),
+            fixture(2, "海辺のカフカ", "村上春樹", 5),
+            fixture(3, "森の生活", "ソロー", 2),
+        ]);
+        assert_eq!(found(&japanese, "ノルウェイ")[0], 1);
+        assert_eq!(found(&japanese, "カフカ")[0], 2);
+        let mut murakami = found(&japanese, "村上");
+        murakami.sort_unstable();
+        assert_eq!(murakami, [1, 2]);
+    }
+
+    #[test]
+    fn search_puts_known_items_before_companions() {
+        let trusted = reader_catalogue(&[
+            fixture(1, "Novum Organum", "Francis Bacon", 9),
+            fixture(2, "The Lightning Thief", "Rick Riordan", 5),
+            Fixture {
+                subtitle: "Study Guide",
+                ..fixture(3, "Percy Jackson and the Lightning Thief", "Guide Press", 9)
+            },
+            fixture(4, "The Hobbit", "John Tolkien", 6),
+            fixture(5, "The Hobbit and The Lord of the Rings", "John Tolkien", 9),
+            fixture(6, "Gardens of the Moon", "Steven Erikson", 2),
+            fixture(7, "Gardens of Montgomery", "Ann Montgomery", 9),
+            fixture(8, "Harry Potter", "Jo Rowling", 5),
+            Fixture {
+                subtitle: "Complete Box Set",
+                ..fixture(9, "Harry Potter", "Jo Rowling", 0)
+            },
+            fixture(10, "Unfinished Tales", "Christopher Tolkien", 0),
+        ]);
+        assert!(found(&trusted, "katja brandis seawalkers").is_empty());
+        for (query, work) in [
+            ("percy jackson the lightning thief", 2),
+            ("lightning thief", 2),
+            ("the hobbit", 4),
+            ("hobit", 4),
+            ("hobit tolkein", 4),
+            ("gardens of the moon", 6),
+        ] {
+            let results = found(&trusted, query);
+            assert_eq!(results.first(), Some(&work), "{query}");
+            assert!(!results.contains(&3) && !results.contains(&5), "{query}");
+        }
+        assert_eq!(
+            found(&trusted, "the hobbit and the lord of the rings")[0],
+            5
+        );
+        assert!(!found(&trusted, "harry potter").contains(&9));
+        let volumes = reader_catalogue(&[
+            Fixture {
+                series: Some("Gregs Tagebuch"),
+                ..fixture(1, "Von Idioten umzingelt!", "Jeff Kinney", 2)
+            },
+            fixture(2, "Gregs Tagebuch 2. Gibt's Probleme?", "Jeff Kinney", 2),
+            Fixture {
+                series: Some("Gregs Tagebuch"),
+                ..fixture(3, "Jetzt reicht's!", "Jeff Kinney", 2)
+            },
+            fixture(4, "Tagebuch einer Reise", "Ann Author", 2),
+        ]);
+        let mut gregs = found(&volumes, "gregs tagebuch");
+        gregs.sort_unstable();
+        assert_eq!(gregs, [1, 2, 3]);
+        for (title, companion) in [
+            ("The Hobbit and The Lord of the Rings", true),
+            ("The Hobbit / The Lord of the Rings", true),
+            ("Die Firma / Die Akte", true),
+            ("Der Zauberlehrling ; Die Doppelganger", true),
+            ("The Lion, the Witch and the Wardrobe", false),
+            ("The Old Man and the Sea", false),
+            ("Pride & Prejudice", false),
+            ("The City & The City", false),
+            ("El poder / The Power", false),
+            ("La Bella y La Bestia", false),
+        ] {
+            let book = crate::reader::Book {
+                work: 1,
+                title: title.to_string(),
+                subtitle: String::new(),
+                alternate: String::new(),
+                authors: Vec::new(),
+                year: 0,
+                cover: 0,
+                tags: Vec::new(),
+                library_cover: None,
+                language: String::new(),
+            };
+            assert_eq!(book.is_companion(), companion, "{title}");
+        }
     }
 }

@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block search %}{% endblock %}
+{% block body %}<main class=home><img src={{ crate::assets::FAVICON }} alt><h1>Shelf</h1><p class=muted>{{ works }} books · {{ authors }} authors</p><form action=/s role=search><input name=q type=search placeholder="Search by title, author or ISBN" aria-label=Search autocomplete=off autofocus></form><p class=languages>{% for language in languages %}<a href=/l/{{ language.code }}>{{ language.name }}</a>{% endfor %}</p></main>{% if !rows.is_empty() %}<h2>Popular books</h2>{% include "shelf.html" %}{% endif %}{% endblock %}

@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} – Shelf{% endblock %}
+{% block body %}<main><h1>{{ name }}</h1><p class=muted>{{ note }}</p>{% include "rows.html" %}{% include "pager.html" %}</main>{% endblock %}

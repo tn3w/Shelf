@@ -4,6 +4,7 @@ use crate::dumps::{Facts, Isbns, Signal, Titles};
 use crate::linked;
 use crate::marc::{self, Marc};
 use crate::release;
+use crate::sidecar::{EDITION_CAP, Edition};
 use crate::tags::{self, Classes};
 use crate::{LANGUAGE_COUNT, LANGUAGES};
 use std::cmp::Reverse;
@@ -60,7 +61,18 @@ pub const COMIC: u8 = 16;
 const ERB_AUTHOR_IDS: u64 = 140_000_000;
 const LOCAL_IDS: u32 = 100_000_000;
 const MAX_DNB_ID: u32 = 200_000_000;
+pub const ERB_IDS: u32 = 20_000_000;
+pub const CINII_IDS: u32 = 27_000_000;
 const PUBLISHER_SERIES_WRITERS: usize = 3;
+const RARE_SUBTITLE_RECORDS: u32 = 2;
+const RARE_TITLE_RECORDS: u32 = 3;
+const ORIGINAL_PAIR_RECORDS: u32 = 2;
+const COMPILATION_HALF_RECORDS: u32 = 3;
+const COMPILATION_JOINS: [&str; 9] = [
+    " and ", " & ", " und ", " y ", " et ", " i ", " ja ", " un ", " ir ",
+];
+const SUBTITLE_SEPARATORS: [&str; 3] = [": ", " - ", " – "];
+const MAX_TRANSLATORS: usize = 12;
 
 const THEMA: [(&str, &str, &str); 24] = [
     ("FBC", "fiction / classics", "fiction / classics"),
@@ -121,7 +133,7 @@ const THEMA: [(&str, &str, &str); 24] = [
     ("DD", "drama", "drama"),
 ];
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Source {
     #[default]
     Dnb,
@@ -133,6 +145,9 @@ pub enum Source {
     Fennica,
     Bnf,
     Bnb,
+    Bne,
+    Cinii,
+    LnbLv,
 }
 
 pub const DNB_COVER: u8 = 1;
@@ -140,21 +155,45 @@ const DIGAR_COVER: u8 = 2;
 const ISBN_COVER: u8 = 3;
 const BOOKBITES_COVER: u8 = 4;
 
+const NAMES: [(&str, Source); 12] = [
+    ("dnb", Source::Dnb),
+    ("erb", Source::Erb),
+    ("libris", Source::Libris),
+    ("bnp", Source::Bnp),
+    ("nkp", Source::Nkp),
+    ("nlk", Source::Nlk),
+    ("fennica", Source::Fennica),
+    ("bnf", Source::Bnf),
+    ("bnb", Source::Bnb),
+    ("bne", Source::Bne),
+    ("cinii", Source::Cinii),
+    ("lnb_lv", Source::LnbLv),
+];
+
+pub const ID_RANGES: [(Source, u32, u32); 12] = [
+    (Source::Dnb, 0, MAX_DNB_ID),
+    (Source::Libris, 200_000_000, LOCAL_IDS),
+    (Source::Bnp, 300_000_000, LOCAL_IDS),
+    (Source::Nkp, 400_000_000, LOCAL_IDS),
+    (Source::Nlk, 500_000_000, LOCAL_IDS),
+    (Source::Fennica, 600_000_000, LOCAL_IDS),
+    (Source::Bnf, 700_000_000, LOCAL_IDS),
+    (Source::Bnb, 800_000_000, LOCAL_IDS),
+    (Source::Bne, 900_000_000, LOCAL_IDS),
+    (Source::Erb, 1_000_000_000, ERB_IDS),
+    (Source::Cinii, 1_020_000_000, CINII_IDS),
+    (Source::LnbLv, 1_047_000_000, 10_000_000),
+];
+
 impl Source {
     pub fn named(name: &str) -> Option<Source> {
-        let all = [
-            ("dnb", Source::Dnb),
-            ("erb", Source::Erb),
-            ("libris", Source::Libris),
-            ("bnp", Source::Bnp),
-            ("nkp", Source::Nkp),
-            ("nlk", Source::Nlk),
-            ("fennica", Source::Fennica),
-            ("bnf", Source::Bnf),
-            ("bnb", Source::Bnb),
-        ];
-        let found = all.iter().find(|(known, _)| *known == name);
+        let found = NAMES.iter().find(|(known, _)| *known == name);
         found.map(|&(_, source)| source)
+    }
+
+    pub fn name(self) -> &'static str {
+        let found = NAMES.iter().find(|(_, source)| *source == self);
+        found.map_or("", |&(name, _)| name)
     }
 
     pub fn cover(self) -> u8 {
@@ -177,6 +216,9 @@ impl Source {
             Source::Fennica => "fi",
             Source::Bnf => "fr",
             Source::Bnb => "en",
+            Source::Bne => "es",
+            Source::Cinii => "ja",
+            Source::LnbLv => "lv",
         };
         crate::language_index(code)
     }
@@ -185,10 +227,10 @@ impl Source {
         match self {
             Source::Dnb => b"\n</rdf:Description>\n",
             Source::Erb | Source::Fennica => b"</marc:record>",
-            Source::Nkp => b"</record>",
-            Source::Bnp | Source::Bnf => b"\x1d",
+            Source::Nkp | Source::LnbLv => b"</record>",
+            Source::Bnp | Source::Bnf | Source::Bne => b"\x1d",
             Source::Nlk => linked::NLK_SEPARATOR,
-            Source::Libris | Source::Bnb => b"\n",
+            Source::Libris | Source::Bnb | Source::Cinii => b"\n",
         }
     }
 
@@ -199,25 +241,31 @@ impl Source {
             Source::Erb => marc::marc21_record(&Marc::xml(text()?), self, &marc::ERB),
             Source::Nkp => marc::marc21_record(&Marc::xml(text()?), self, &marc::NKP),
             Source::Fennica => marc::marc21_record(&Marc::xml(text()?), self, &marc::FENNICA),
+            Source::LnbLv => marc::marc21_record(&Marc::xml(text()?), self, &marc::LNB_LV),
             Source::Bnp => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNP),
+            Source::Bne => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNE),
             Source::Bnf => marc::bnf_record(&Marc::binary(bytes)?),
             Source::Nlk => linked::nlk_record(text()?),
+            Source::Cinii => linked::cinii_record(text()?),
             Source::Libris | Source::Bnb => None,
         }
     }
 
-    fn id_base(self) -> u32 {
-        let slot = self as u32 - Source::Libris as u32;
-        MAX_DNB_ID + slot * LOCAL_IDS
+    fn id_range(self) -> (u32, u32) {
+        let found = ID_RANGES.iter().find(|(source, ..)| *source == self);
+        found
+            .map(|&(_, base, size)| (base, size))
+            .expect("id range")
     }
 
     pub fn local_id(self, raw: &str) -> u32 {
+        let (base, size) = self.id_range();
         let number = raw
             .parse()
             .ok()
-            .filter(|&number| number > 0 && number < LOCAL_IDS);
-        let hashed = || (hash(&[raw.as_bytes()]) % u64::from(LOCAL_IDS)) as u32;
-        self.id_base() + number.unwrap_or_else(hashed)
+            .filter(|&number| number > 0 && number < size);
+        let hashed = || (hash(&[raw.as_bytes()]) % u64::from(size)) as u32;
+        base + number.unwrap_or_else(hashed)
     }
 
     pub fn author_id(self, name: &str) -> u32 {
@@ -229,7 +277,8 @@ impl Source {
             let hashed = hash(&[b"erb", key.as_bytes()]) % ERB_AUTHOR_IDS;
             return SYNTHETIC + hashed as u32;
         }
-        self.id_base() + (hash(&[key.as_bytes()]) % u64::from(LOCAL_IDS)) as u32
+        let (base, size) = self.id_range();
+        base + (hash(&[key.as_bytes()]) % u64::from(size)) as u32
     }
 }
 
@@ -237,20 +286,29 @@ impl Source {
 pub struct Record {
     pub source: Source,
     pub id: u32,
+    pub identifier: String,
     pub language: usize,
     pub isbns: Vec<u32>,
     pub links: Vec<u32>,
     pub title: String,
     pub original: String,
+    pub original_language: String,
     pub series: String,
     pub volume: u16,
     pub author: u32,
+    pub authority: u64,
+    pub authorities: Vec<String>,
     pub name: String,
+    pub translators: Vec<String>,
+    pub publisher: String,
+    pub description: String,
     pub year: u16,
     pub format: u8,
     pub classes: Classes,
     pub subjects: Vec<&'static str>,
     pub digar: u32,
+    pub compilation: bool,
+    pub joins_only: bool,
 }
 
 impl Record {
@@ -269,29 +327,43 @@ impl Record {
         variants(&self.title).chain(variants(&self.original))
     }
 
+    fn joinable_titles<'a>(&'a self, rarity: &Rarity) -> impl Iterator<Item = &'a str> {
+        let writer = writer_key(&self.name);
+        let usable = !writer.is_empty() && !self.compilation;
+        let head = rarity.rare_subtitle_head(self, &writer);
+        let originals = rarity
+            .allows_original(self, &writer)
+            .then(|| variants(&self.original));
+        let titles = variants(&self.title)
+            .chain(head)
+            .chain(originals.into_iter().flatten());
+        titles.filter(move |_| usable)
+    }
+
     fn volume_key(&self, writer: &str) -> u64 {
         let series = catalog::series_key(&self.series);
         let volume = self.volume.to_le_bytes();
         hash(&[b"volume", writer.as_bytes(), series.as_bytes(), &volume])
     }
 
-    fn keys(&self, generic: &Generic) -> Vec<u64> {
-        let isbns = self
-            .isbns
-            .iter()
-            .map(|isbn| hash(&[b"isbn", &isbn.to_le_bytes()]));
-        let mut keys: Vec<u64> = isbns.collect();
-        let writer = writer_key(&self.name);
-        let specific = |key: &u64| !generic.contains(&(*key, self.language));
-        if !writer.is_empty() {
-            let titles = self.titles().map(|title| title_hash(&writer, title));
-            keys.extend(titles.filter(specific));
-            let volume = self.volume_key(&writer);
-            keys.extend((self.volume > 0).then_some(volume).filter(specific));
-        }
+    fn keys(&self, generic: &Generic, rarity: &Rarity) -> (Vec<u64>, Vec<u64>) {
         let language = self.language.to_le_bytes();
         let local = |key: u64| hash(&[&key.to_le_bytes(), &language]);
-        keys.into_iter().map(local).collect()
+        let isbns = self.isbns.iter();
+        let isbns = isbns.map(|isbn| local(hash(&[b"isbn", &isbn.to_le_bytes()])));
+        let writer = writer_key(&self.name);
+        let specific = |key: &u64| !generic.contains(&(*key, self.language));
+        let titles = self.joinable_titles(rarity);
+        let mut keys: Vec<u64> = titles.map(|title| title_hash(&writer, title)).collect();
+        if self.volume > 0 && !writer.is_empty() && !self.compilation {
+            keys.push(self.volume_key(&writer));
+        }
+        let keys = keys.into_iter().filter(specific).map(local);
+        (isbns.collect(), keys.collect())
+    }
+
+    fn conflicts(&self, other: &Record) -> bool {
+        self.authority != 0 && other.authority != 0 && self.authority != other.authority
     }
 
     fn facts(&self) -> Facts {
@@ -1021,6 +1093,11 @@ impl<'a> Fields<'a> {
             return None;
         }
         let (title, series, volume) = self.titled()?;
+        let title_text = clean(self.title);
+        let gnd = self
+            .authors
+            .first()
+            .map(|author| format!("gnd:{}", last_segment(author)));
         let reader = self.reader();
         let format = self.format();
         let classes = Classes {
@@ -1053,12 +1130,16 @@ impl<'a> Fields<'a> {
                 .iter()
                 .find_map(|author| record_id(last_segment(author)))
                 .unwrap_or(0),
+            identifier: format!("dnb:{}", last_segment(self.about)),
+            authority: gnd.as_ref().map_or(0, |id| hash(&[id.as_bytes()])),
+            authorities: gnd.into_iter().collect(),
             name: author_name(self.statement),
             year: dumps::year_of(self.issued),
             format,
             classes,
             subjects: self.subjects(&reader),
-            digar: 0,
+            compilation: title_text.contains(" ; "),
+            ..Record::default()
         })
     }
 }
@@ -1090,6 +1171,86 @@ fn union(parents: &mut [u32], left: u32, right: u32) {
 }
 
 type Generic = HashSet<(u64, usize)>;
+
+fn subtitled(title: &str) -> Option<&str> {
+    let split = SUBTITLE_SEPARATORS
+        .iter()
+        .find_map(|separator| title.split_once(separator));
+    split
+        .map(|(head, _)| head)
+        .filter(|head| !head.trim().is_empty())
+}
+
+pub fn is_compilation_title(title: &str) -> bool {
+    title.contains(" ; ") || title.contains(" / ")
+}
+
+#[derive(Default)]
+struct Rarity {
+    titles: HashMap<(u64, usize), u32>,
+    pairs: HashMap<(u64, usize), u32>,
+}
+
+impl Rarity {
+    fn of(records: &[Record]) -> Rarity {
+        let mut rarity = Rarity::default();
+        for record in records.iter().filter(|record| !record.name.is_empty()) {
+            let writer = writer_key(&record.name);
+            let title = title_hash(&writer, &record.title);
+            *rarity.titles.entry((title, record.language)).or_default() += 1;
+            if !record.original.is_empty() {
+                let pair = hash(&[
+                    &title.to_le_bytes(),
+                    &original_key(&record.original).to_le_bytes(),
+                ]);
+                *rarity.pairs.entry((pair, record.language)).or_default() += 1;
+            }
+        }
+        rarity
+    }
+
+    fn records(&self, writer: &str, title: &str, language: usize) -> u32 {
+        let key = (title_hash(writer, title), language);
+        self.titles.get(&key).copied().unwrap_or(0)
+    }
+
+    fn rare_subtitle_head<'a>(&self, record: &'a Record, writer: &str) -> Option<&'a str> {
+        let head = subtitled(&record.title)?;
+        let rare = self.records(writer, &record.title, record.language) < RARE_SUBTITLE_RECORDS;
+        rare.then_some(head)
+    }
+
+    fn allows_original(&self, record: &Record, writer: &str) -> bool {
+        if record.original.is_empty() {
+            return false;
+        }
+        let title = title_hash(writer, &record.title);
+        let pair = hash(&[
+            &title.to_le_bytes(),
+            &original_key(&record.original).to_le_bytes(),
+        ]);
+        let paired = self
+            .pairs
+            .get(&(pair, record.language))
+            .copied()
+            .unwrap_or(0);
+        let rare = self.records(writer, &record.title, record.language) < RARE_TITLE_RECORDS;
+        rare || paired >= ORIGINAL_PAIR_RECORDS
+    }
+
+    fn is_compilation(&self, record: &Record) -> bool {
+        let writer = writer_key(&record.name);
+        let halves = COMPILATION_JOINS
+            .iter()
+            .find_map(|join| record.title.split_once(join));
+        halves.is_some_and(|(left, right)| {
+            let known = |half: &str| {
+                self.records(&writer, half, record.language) >= COMPILATION_HALF_RECORDS
+            };
+            known(left) && known(right)
+        })
+    }
+}
 
 fn generic_titles(records: &[Record]) -> Generic {
     let mut sources: HashMap<(u64, usize), HashSet<u64>> = HashMap::new();
@@ -1123,7 +1284,7 @@ fn generic_titles(records: &[Record]) -> Generic {
     generic.map(|(key, _)| key).collect()
 }
 
-fn grouped(records: &[Record], generic: &Generic) -> Vec<Vec<u32>> {
+fn grouped(records: &[Record], generic: &Generic, rarity: &Rarity) -> Vec<Vec<u32>> {
     let mut parents: Vec<u32> = (0..records.len() as u32).collect();
     let mut owners: HashMap<u64, u32> = HashMap::new();
     let positions: HashMap<u32, u32> = (0..records.len() as u32)
@@ -1135,8 +1296,15 @@ fn grouped(records: &[Record], generic: &Generic) -> Vec<Vec<u32>> {
             .iter()
             .filter_map(|link| positions.get(link).copied());
         let mut others: Vec<u32> = linked.collect();
-        for key in record.keys(generic) {
+        let (isbns, titles) = record.keys(generic, rarity);
+        for key in isbns {
             others.push(*owners.entry(key).or_insert(index));
+        }
+        for key in titles {
+            let owner = *owners.entry(key).or_insert(index);
+            if !record.conflicts(&records[owner as usize]) {
+                others.push(owner);
+            }
         }
         others
             .into_iter()
@@ -1221,6 +1389,7 @@ fn load_source(source: Source, location: &str) -> Vec<Record> {
     let records = match source {
         Source::Libris => linked::libris_records(location),
         Source::Bnb => linked::bnb_records(location),
+        Source::Bne => marc::bne_records(location),
         _ => {
             let mut records = Vec::new();
             let reader = dumps::open_location(location, source.separator());
@@ -1245,13 +1414,147 @@ pub struct Library {
     by_title: HashMap<u64, Vec<u32>>,
     originals: HashMap<u64, u32>,
     generic: Generic,
+    rarity: Rarity,
+    authorities: HashMap<u32, Vec<String>>,
     newest: u16,
+}
+
+pub struct Writer<'a> {
+    pub id: u32,
+    pub name: &'a str,
+    pub birth: u16,
+}
+
+fn disagrees(known: &[String], found: &[String]) -> bool {
+    let scheme = |id: &String| id.split(':').next().unwrap_or_default().to_string();
+    let shared = found.iter().any(|id| known.contains(id));
+    let clash = found
+        .iter()
+        .any(|id| known.iter().any(|own| scheme(own) == scheme(id)));
+    clash && !shared
+}
+
+fn separate_collisions(records: &mut [Record]) {
+    let mut taken = HashSet::new();
+    for record in records.iter_mut() {
+        let (base, size) = record.source.id_range();
+        while !taken.insert((record.source, record.id)) {
+            record.id = base + record.id.wrapping_sub(base).wrapping_add(1) % size;
+        }
+    }
 }
 
 pub struct Outcome {
     pub aliases: Vec<Vec<(u32, u32)>>,
     pub enriched: [usize; LANGUAGE_COUNT],
     pub added: [usize; LANGUAGE_COUNT],
+    pub details: HashMap<u32, Details>,
+}
+
+#[derive(Default)]
+pub struct Details {
+    pub original: String,
+    pub original_language: String,
+    pub series: String,
+    pub volume: u16,
+    pub authorities: Vec<String>,
+    pub translators: Vec<String>,
+    pub editions: Vec<Edition>,
+    pub descriptions: Vec<(usize, String)>,
+    pub records: u32,
+    pub originals: Vec<(String, u32)>,
+    pub compilation: bool,
+}
+
+fn original_votes(records: &[&Record]) -> Vec<(String, u32)> {
+    let mut keys: Vec<String> = records
+        .iter()
+        .map(|record| match_key(&record.original))
+        .filter(|key| !key.is_empty())
+        .collect();
+    keys.sort_unstable();
+    let mut votes: Vec<(String, u32)> = keys
+        .chunk_by(|left, right| left == right)
+        .map(|same| (same[0].clone(), same.len() as u32))
+        .collect();
+    votes.sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    votes
+}
+
+fn common(values: impl Iterator<Item = String>) -> String {
+    most_common(values.filter(|value| !value.is_empty())).unwrap_or_default()
+}
+
+fn unique(values: impl Iterator<Item = String>, cap: usize) -> Vec<String> {
+    let mut kept: Vec<String> = Vec::new();
+    for value in values {
+        if kept.len() < cap && !kept.contains(&value) {
+            kept.push(value);
+        }
+    }
+    kept
+}
+
+impl Details {
+    fn of(records: &[&Record]) -> Details {
+        let numbered = records.iter().filter(|record| record.volume > 0);
+        let (series, volume) = most_common(numbered.map(|record| (&record.series, record.volume)))
+            .map_or((String::new(), 0), |(series, volume)| {
+                (series.clone(), volume)
+            });
+        let writer = records.iter().find(|record| !record.authorities.is_empty());
+        let translators = records
+            .iter()
+            .flat_map(|record| record.translators.iter().cloned());
+        let editions = records.iter().flat_map(|record| {
+            record.isbns.iter().map(|&isbn| Edition {
+                year: record.year,
+                publisher: record.publisher.clone(),
+                isbn: catalog::isbn13(isbn),
+                format: record.format,
+                identifier: record.identifier.clone(),
+            })
+        });
+        let translated = records.iter().filter(|record| {
+            let original = match_key(&record.original);
+            !original.is_empty() && original != match_key(&record.title)
+        });
+        let compilations = records.iter().filter(|record| record.compilation).count();
+        Details {
+            original: common(translated.map(|record| record.original.clone())),
+            original_language: common(records.iter().map(|r| r.original_language.clone())),
+            series,
+            volume,
+            authorities: writer.map_or_else(Vec::new, |record| record.authorities.clone()),
+            translators: unique(translators, MAX_TRANSLATORS),
+            editions: editions.take(EDITION_CAP).collect(),
+            descriptions: best_descriptions(records),
+            records: records.len() as u32,
+            originals: original_votes(records),
+            compilation: compilations * 2 > records.len(),
+        }
+    }
+}
+
+fn best_descriptions(records: &[&Record]) -> Vec<(usize, String)> {
+    let mut scored: Vec<(i64, usize, String)> = records
+        .iter()
+        .filter(|record| !record.description.is_empty())
+        .filter_map(|record| {
+            let text = catalog::clean_description(&record.description);
+            let score = catalog::description_score(&text, &record.title)?;
+            let language = catalog::detect_language(&text).unwrap_or(record.language);
+            Some((score, language, text))
+        })
+        .collect();
+    scored.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.2.cmp(&b.2)));
+    let mut chosen: Vec<(usize, String)> = Vec::new();
+    for (_, language, text) in scored {
+        if !chosen.iter().any(|(known, _)| *known == language) {
+            chosen.push((language, text));
+        }
+    }
+    chosen
 }
 
 struct Placed {
@@ -1304,16 +1607,27 @@ impl Library {
     }
 
     fn from_records(mut records: Vec<Record>) -> Library {
-        records.sort_unstable_by_key(|record| (record.source, record.id));
-        records.dedup_by_key(|record| (record.source, record.id));
+        records.sort_unstable_by(|left, right| {
+            let key = |record: &Record| (record.source, record.id);
+            (key(left), &left.identifier).cmp(&(key(right), &right.identifier))
+        });
+        records.dedup_by(|later, earlier| {
+            let key = |record: &Record| (record.source, record.id);
+            key(later) == key(earlier) && later.identifier == earlier.identifier
+        });
+        separate_collisions(&mut records);
         let shared = shared_isbns(&records);
         for record in &mut records {
             record.isbns.retain(|isbn| !shared.contains(isbn));
         }
         records.retain(|record| !record.isbns.is_empty());
         drop_publisher_series(&mut records);
+        let rarity = Rarity::of(&records);
+        for record in &mut records {
+            record.compilation |= rarity.is_compilation(record);
+        }
         let generic = generic_titles(&records);
-        let groups = grouped(&records, &generic);
+        let groups = grouped(&records, &generic, &rarity);
         let languages = groups
             .iter()
             .map(|group| most_common(each(&records, group).map(|record| record.language)))
@@ -1338,9 +1652,14 @@ impl Library {
             languages,
             originals,
             generic,
+            rarity,
             newest,
             ..Library::default()
         }
+    }
+
+    pub fn link_authors(&mut self, authorities: HashMap<u32, Vec<String>>) {
+        self.authorities = authorities;
     }
 
     fn members(&self, group: usize) -> impl Iterator<Item = &Record> {
@@ -1373,7 +1692,7 @@ impl Library {
         for group in 0..self.groups.len() {
             for record in self.members(group) {
                 let writer = writer_key(&record.name);
-                let titles = record.titles().filter(|_| !writer.is_empty());
+                let titles = record.joinable_titles(&self.rarity);
                 let hashed = titles.map(|title| title_hash(&writer, title));
                 let language = record.language;
                 let specific = hashed.filter(|&key| !self.generic.contains(&(key, language)));
@@ -1397,18 +1716,42 @@ impl Library {
         self.groups.is_empty()
     }
 
-    pub fn claim(&self, work: u32, titles: &[&str], author: Option<&str>) -> Vec<u32> {
+    pub fn claim(&self, work: u32, titles: &[&str], writer: Option<Writer>) -> Vec<u32> {
         let mut groups = self.by_work.get(&work).cloned().unwrap_or_default();
-        if let Some(author) = author.filter(|_| !self.by_title.is_empty()) {
-            let writer = writer_key(author);
-            for title in titles.iter().flat_map(|title| heads(title)) {
-                let found = self.by_title.get(&title_hash(&writer, title));
-                groups.extend(found.into_iter().flatten());
-            }
+        if let Some(writer) = writer.filter(|_| !self.by_title.is_empty()) {
+            groups.extend(self.title_claims(titles, &writer));
         }
         groups.sort_unstable();
         groups.dedup();
         groups
+    }
+
+    fn title_claims(&self, titles: &[&str], writer: &Writer) -> Vec<u32> {
+        let known = self
+            .authorities
+            .get(&writer.id)
+            .map_or(&[][..], Vec::as_slice);
+        let weak = known.is_empty() && writer.birth == 0;
+        let key = writer_key(writer.name);
+        let usable = titles.iter().filter(|title| !is_compilation_title(title));
+        let keys = usable
+            .flat_map(|title| heads(title))
+            .map(|title| title_hash(&key, title));
+        let found = keys
+            .filter_map(|key| self.by_title.get(&key))
+            .flatten()
+            .copied();
+        let fits = |&group: &u32| self.fits(group as usize, writer, known, weak);
+        found.filter(fits).collect()
+    }
+
+    fn fits(&self, group: usize, writer: &Writer, known: &[String], weak: bool) -> bool {
+        let mut named = self.members(group).filter(|record| !record.name.is_empty());
+        let Some(record) = named.next() else {
+            return false;
+        };
+        let same_name = name_key(&record.name) == name_key(writer.name);
+        !disagrees(known, &record.authorities) && (!weak || same_name)
     }
 
     pub fn facts(&self, groups: &[u32]) -> Facts {
@@ -1622,10 +1965,7 @@ impl Library {
     }
 
     fn orphan(&self, group: usize, work: u32, author: u32) -> Option<Book> {
-        if self
-            .members(group)
-            .all(|record| record.source == Source::Bnb)
-        {
+        if self.members(group).all(|record| record.joins_only) {
             return None;
         }
         let title = self.title(group);
@@ -1656,6 +1996,7 @@ impl Library {
             eligible,
             claim: None,
             library_cover: self.cover(group),
+            main_language: Some(language),
         })
     }
 
@@ -1679,6 +2020,7 @@ impl Library {
             aliases: vec![Vec::new(); LANGUAGES.len()],
             enriched: [0; LANGUAGE_COUNT],
             added: [0; LANGUAGE_COUNT],
+            details: HashMap::new(),
         };
         if self.groups.is_empty() {
             return outcome;
@@ -1726,7 +2068,19 @@ impl Library {
             outcome.aliases[self.languages[group]].extend(renamed.map(|old| (old, work)));
         }
         self.index(&placed, titles, isbns);
+        outcome.details = self.details(&placed);
         outcome
+    }
+
+    fn details(&self, placed: &[Placed]) -> HashMap<u32, Details> {
+        let mut members: HashMap<u32, Vec<&Record>> = HashMap::new();
+        for &Placed { work, group } in placed {
+            members.entry(work).or_default().extend(self.members(group));
+        }
+        let details = members.into_iter();
+        details
+            .map(|(work, records)| (work, Details::of(&records)))
+            .collect()
     }
 
     fn index(&self, placed: &[Placed], titles: &mut Titles, isbns: &mut Isbns) {
@@ -1769,6 +2123,31 @@ impl Library {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::marc::Persons;
+
+    #[test]
+    fn best_native_description_kept_per_language() {
+        let record = |description: &str| Record {
+            title: "Le Petit Prince".to_string(),
+            language: crate::language_index("fr"),
+            description: description.to_string(),
+            ..Record::default()
+        };
+        let contents = record("Chapitre 1 ; Chapitre 2 ; Chapitre 3 ; Chapitre 4 ; Chapitre 5");
+        let blurb = record(
+            "Le Petit Prince raconte la rencontre d'un aviateur perdu dans le désert avec un \
+             enfant venu d'une autre planète, et ce que cet enfant lui apprend de l'amitié.",
+        );
+        let english = record(
+            "The little prince leaves his tiny planet and visits the stars, where he meets \
+             a king, a businessman and a fox who teaches him what it means to be friends.",
+        );
+        let descriptions = best_descriptions(&[&contents, &english, &blurb]);
+        let languages: Vec<usize> = descriptions.iter().map(|(language, _)| *language).collect();
+        let (french, english_index) = (crate::language_index("fr"), crate::language_index("en"));
+        assert_eq!(languages, [french, english_index]);
+        assert!(descriptions[0].1.starts_with("Le Petit Prince raconte"));
+    }
 
     const HEADER: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rdf:RDF\n\
                           \txmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n";
@@ -2422,12 +2801,22 @@ mod tests {
             eligible: per_language(&[(0, true)]),
             claim: None,
             library_cover: None,
+            main_language: None,
+        }
+    }
+
+    fn writer(id: u32, name: &str) -> Writer<'_> {
+        Writer {
+            id,
+            name,
+            birth: 1971,
         }
     }
 
     fn claimed(library: &Library, mut book: Book, authors: &Authors) -> Book {
-        let name = authors.get(book.authors[0]).map(|author| author.name);
-        let groups = library.claim(book.work, &[&book.title], name);
+        let id = book.authors[0];
+        let named = authors.get(id).map(|author| writer(id, author.name));
+        let groups = library.claim(book.work, &[&book.title], named);
         if !groups.is_empty() {
             book.claim = Some(Box::new(dumps::Claim {
                 groups,
@@ -2815,7 +3204,8 @@ mod tests {
     fn empty_library_changes_nothing() {
         let library = Library::default();
         let book = open_library_book(42, "Emma", 7);
-        assert!(library.claim(42, &["Emma"], Some("Jane Austen")).is_empty());
+        let austen = Some(writer(7, "Jane Austen"));
+        assert!(library.claim(42, &["Emma"], austen).is_empty());
         let run = run(&library, vec![book], &[]);
         assert_eq!(run.books[0].scores, per_language(&[(0, 200.0)]));
         assert!(run.books[0].library_cover.is_none());
@@ -2899,5 +3289,289 @@ mod tests {
         better("Eugène Sue", "Eugène. Sue");
         better("Andrea Kane", "Andrea KANe");
         assert_eq!(normalized_name("© Mattel"), "Mattel");
+    }
+
+    #[test]
+    fn id_ranges_fit_below_the_app_limit_and_never_overlap() {
+        let mut ranges = ID_RANGES.to_vec();
+        ranges.sort_by_key(|&(_, base, _)| base);
+        for pair in ranges.windows(2) {
+            let ((left, base, size), (right, next, _)) = (pair[0], pair[1]);
+            assert!(base + size <= next, "{left:?} overlaps {right:?}");
+        }
+        let (_, base, size) = ranges[ranges.len() - 1];
+        assert!(u64::from(SYNTHETIC) + u64::from(base + size) <= 1 << 31);
+        assert!(NAMES.iter().all(|(_, source)| source.id_range().1 > 0));
+        let mut ncids = linked::NCID_RANGES.to_vec();
+        ncids.sort_by_key(|&(_, base, _)| base);
+        let mut next = 0;
+        for (prefix, base, size) in ncids {
+            assert_eq!(base, next, "{prefix}");
+            next = base + size;
+        }
+        assert_eq!(next, CINII_IDS);
+    }
+
+    fn shelf_record(id: u32, title: &str, name: &str) -> Record {
+        let source = Source::Bne;
+        Record {
+            source,
+            id: source.local_id(&id.to_string()),
+            identifier: format!("bne:{id}"),
+            language: source.language(),
+            isbns: vec![840_000_000 + id],
+            title: title.to_string(),
+            name: name.to_string(),
+            ..Record::default()
+        }
+    }
+
+    fn group_count(records: Vec<Record>) -> usize {
+        Library::from_records(records).groups.len()
+    }
+
+    #[test]
+    fn colliding_hashed_ids_are_probed_apart() {
+        let first = shelf_record(1, "Niebla", "Miguel de Unamuno");
+        let second = Record {
+            identifier: "bne:other".to_string(),
+            isbns: vec![840_000_002],
+            ..shelf_record(1, "Paz en la guerra", "Miguel de Unamuno")
+        };
+        let library = Library::from_records(vec![first, second]);
+        assert_eq!(library.records.len(), 2);
+        assert_ne!(library.records[0].id, library.records[1].id);
+    }
+
+    #[test]
+    fn compilations_never_join_by_title() {
+        let single = shelf_record(1, "Niebla", "Miguel de Unamuno");
+        let bundle = Record {
+            compilation: true,
+            ..shelf_record(2, "Niebla", "Miguel de Unamuno")
+        };
+        assert_eq!(group_count(vec![single, bundle]), 2);
+        let mut records: Vec<Record> = (10..13)
+            .flat_map(|id| {
+                [
+                    shelf_record(id, "Niebla", "Miguel de Unamuno"),
+                    shelf_record(id + 10, "Abel Sánchez", "Miguel de Unamuno"),
+                ]
+            })
+            .collect();
+        records.push(shelf_record(
+            30,
+            "Niebla y Abel Sánchez",
+            "Miguel de Unamuno",
+        ));
+        let library = Library::from_records(records);
+        let joined = library
+            .records
+            .iter()
+            .find(|record| record.title.contains(" y "));
+        assert!(joined.is_some_and(|record| record.compilation));
+    }
+
+    #[test]
+    fn rare_subtitles_join_their_main_title() {
+        let plain = shelf_record(1, "Dune", "Frank Herbert");
+        let subtitled = shelf_record(2, "Dune: edición especial", "Frank Herbert");
+        assert_eq!(group_count(vec![plain, subtitled]), 1);
+        let plain = shelf_record(1, "Dune", "Frank Herbert");
+        let distinct = [2, 3].map(|id| shelf_record(id, "Dune: el mesías", "Frank Herbert"));
+        let mut records = vec![plain];
+        records.extend(distinct);
+        assert_eq!(group_count(records), 2);
+    }
+
+    #[test]
+    fn original_titles_join_only_rare_titles() {
+        let emma = |id: u32, original: &str| Record {
+            original: original.to_string(),
+            ..shelf_record(id, "Emma", "Jane Austen")
+        };
+        let persuasion = Record {
+            original: "Persuasion".to_string(),
+            ..shelf_record(9, "Persuasión", "Jane Austen")
+        };
+        let records = vec![emma(1, ""), emma(2, ""), emma(3, "Persuasion"), persuasion];
+        assert_eq!(group_count(records), 2);
+        let rare = vec![
+            emma(3, "Persuasion"),
+            Record {
+                original: "Persuasion".to_string(),
+                ..shelf_record(9, "Persuasión", "Jane Austen")
+            },
+        ];
+        assert_eq!(group_count(rare), 1);
+    }
+
+    #[test]
+    fn authority_ids_beat_names() {
+        let poems = |id: u32, authority: &str| Record {
+            authority: hash(&[authority.as_bytes()]),
+            authorities: vec![authority.to_string()],
+            ..shelf_record(id, "Poemas", "Juan Ruiz")
+        };
+        let namesakes = vec![poems(1, "viaf:1"), poems(2, "viaf:2")];
+        assert_eq!(group_count(namesakes), 2);
+        let same = vec![poems(1, "viaf:1"), poems(2, "viaf:1")];
+        assert_eq!(group_count(same), 1);
+    }
+
+    #[test]
+    fn weak_open_library_authors_need_the_full_name() {
+        let record = shelf_record(1, "El proceso", "Franz Kafka");
+        let mut library = Library::from_records(vec![record]);
+        library.match_editions(&Isbns::default());
+        let weak = |name| Writer {
+            id: 7,
+            name,
+            birth: 0,
+        };
+        let titles = ["The Trial", "El proceso"];
+        assert_eq!(library.claim(42, &titles, Some(weak("Franz Kafka"))), [0]);
+        assert!(
+            library
+                .claim(42, &titles, Some(weak("F. Kafka")))
+                .is_empty()
+        );
+        assert!(
+            library
+                .claim(42, &titles, Some(weak("Fritz Kafka")))
+                .is_empty()
+        );
+        let strong = Writer {
+            birth: 1883,
+            ..weak("Franz Kafka")
+        };
+        assert_eq!(library.claim(42, &["El proceso"], Some(strong)), [0]);
+        library.link_authors(HashMap::from([(7, vec!["viaf:9".to_string()])]));
+        let mut known = Library::from_records(vec![Record {
+            authorities: vec!["viaf:8".to_string()],
+            authority: 8,
+            ..shelf_record(1, "El proceso", "Franz Kafka")
+        }]);
+        known.link_authors(HashMap::from([(7, vec!["viaf:9".to_string()])]));
+        known.match_editions(&Isbns::default());
+        assert!(
+            known
+                .claim(42, &["El proceso"], Some(weak("Franz Kafka")))
+                .is_empty()
+        );
+    }
+
+    fn binary_marc(fields: &[(&str, String)]) -> Vec<u8> {
+        let (mut directory, mut data) = (Vec::new(), Vec::new());
+        for (tag, content) in fields {
+            let start = data.len();
+            data.extend_from_slice(content.as_bytes());
+            data.push(0x1e);
+            let entry = format!("{tag}{:04}{start:05}", data.len() - start);
+            directory.extend_from_slice(entry.as_bytes());
+        }
+        directory.push(0x1e);
+        let base = 24 + directory.len();
+        let length = base + data.len() + 1;
+        let leader = format!("{length:05}nam a22{base:05} u 4500");
+        let mut record = leader.into_bytes();
+        record.extend(directory);
+        record.extend(data);
+        record.push(0x1d);
+        record
+    }
+
+    fn subfields(pairs: &[(char, &str)]) -> String {
+        let joined: String = pairs
+            .iter()
+            .map(|(code, text)| format!("\u{1f}{code}{text}"))
+            .collect();
+        format!("1 {joined}")
+    }
+
+    #[test]
+    fn bne_novel_joins_its_persona_authority() {
+        let bib = binary_marc(&[
+            ("001", "991061093353708606".to_string()),
+            (
+                "008",
+                "250220s2024    sp     |||||| 000 f spa| ".to_string(),
+            ),
+            ("020", subfields(&[('a', "978-84-1058-105-0")])),
+            ("041", subfields(&[('a', "spa"), ('h', "eng")])),
+            (
+                "100",
+                subfields(&[('a', "James, Henry"), ('d', "1843-1916"), ('4', "aut")]),
+            ),
+            (
+                "240",
+                subfields(&[('a', "The turn of the screw"), ('l', "Español")]),
+            ),
+            (
+                "245",
+                subfields(&[('a', "Otra vuelta de tuerca"), ('c', "Henry James")]),
+            ),
+            (
+                "264",
+                subfields(&[('a', "Barcelona"), ('b', "Planeta DeAgostini,")]),
+            ),
+            (
+                "520",
+                subfields(&[('a', "Una institutriz cuida de dos niños.")]),
+            ),
+            ("655", subfields(&[('a', "Novelas de terror")])),
+            ("700", subfields(&[('a', "Pérez, Ana"), ('e', "traductor")])),
+        ]);
+        let persona = binary_marc(&[
+            ("001", "981061092852208606".to_string()),
+            (
+                "024",
+                subfields(&[('a', "https://viaf.org/viaf/34463780"), ('2', "viaf")]),
+            ),
+            (
+                "100",
+                subfields(&[('a', "James, Henry"), ('d', "1843-1916")]),
+            ),
+        ]);
+        let ((key, ids), persons) = {
+            let found = marc::bne_person(&persona).expect("persona");
+            (found.clone(), Persons::from([found]))
+        };
+        assert_eq!((key.1, ids), (1843, vec!["viaf:34463780".to_string()]));
+        let record = marc::bne_record(&bib, &persons).expect("record");
+        assert_eq!(record.id, 900_000_000 + 61_093_353);
+        assert_eq!(record.identifier, "bne:991061093353708606");
+        assert_eq!(record.title, "Otra vuelta de tuerca");
+        assert_eq!(record.name, "Henry James");
+        assert_eq!(record.original, "The turn of the screw");
+        assert_eq!(record.original_language, "eng");
+        assert_eq!(record.translators, ["Ana Pérez"]);
+        assert_eq!(record.publisher, "Planeta DeAgostini");
+        assert_eq!(record.authorities, ["viaf:34463780"]);
+        assert_ne!(record.authority, 0);
+        assert_eq!(record.subjects, ["fiction", "fiction / horror"]);
+        assert_eq!(record.description, "Una institutriz cuida de dos niños.");
+    }
+
+    #[test]
+    fn lnb_latvia_novel_parsed() {
+        let fixed = "141210s2014    lv            000 1 lav d";
+        let record = marc(
+            "NBA02-000020771",
+            fixed,
+            &[
+                ("020", &[('a', "9789934151002")]),
+                ("080", &[('a', "821.111-31")]),
+                ("100", &[('a', "Rowling, J. K.,"), ('4', "aut")]),
+                ("245", &[('a', "Harijs Poters un Filozofu akmens /")]),
+                ("655", &[('a', "Angļu romāni.")]),
+            ],
+        );
+        let record = Source::LnbLv.parse(record.as_bytes()).expect("record");
+        assert_eq!(record.id, 1_047_000_000 + 5_000_000 + 20771);
+        assert_eq!(record.language, crate::language_index("lv"));
+        assert_eq!(record.title, "Harijs Poters un Filozofu akmens");
+        assert_eq!(record.original_language, "eng");
+        assert_eq!(record.subjects, ["fiction"]);
     }
 }

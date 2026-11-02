@@ -1,0 +1,1 @@
+<div class=shelf>{% for row in rows %}<a href={{ row.link }} title="{{ row.detail }}">{% if !row.cover.is_empty() %}<img src={{ row.cover }} loading=lazy alt>{% else %}<i></i>{% endif %}{{ row.title }}</a>{% endfor %}</div>

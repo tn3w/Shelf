@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block head %}<noscript><meta http-equiv=refresh content="0;url=/pow?r={{ back }}"></noscript>{% endblock %}
+{% block body %}<p class=center>Checking your browser…<br><progress max={{ crate::SOLUTIONS }} value=0></progress></p>
+<script src={{ pages.script }}></script>{% endblock %}

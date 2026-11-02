@@ -1,5 +1,7 @@
 //! Downloads covers the way the app does, re-encodes them as AVIF and keeps them on disk.
 
+use builder::covers::Cover;
+use builder::reader::isbn_of;
 use image::imageops::FilterType;
 use image::{DynamicImage, GrayImage};
 use sha2::{Digest, Sha256};
@@ -29,6 +31,37 @@ const PLACEHOLDER_HASHES: [&str; 7] = [
     "b5ef1d4bff2d0f057b6b8239c03c08bfe44206c7f5ae92fe05864f22ad3eb7b9",
     "f84e75694fef8121d7fed94ab7f1a92751e48188e512d66207498f6825fc9408",
 ];
+
+const OPEN_LIBRARY: u8 = 0;
+const DNB: u8 = 1;
+const DIGAR: u8 = 2;
+const ISBN_COVER: u8 = 3;
+const BOOKBITES: u8 = 4;
+
+/// The address the app itself would load, see `Book.coverUrl("L")`.
+pub fn cover_url(cover: Cover) -> Option<String> {
+    let isbn = || isbn_of(cover.key);
+    Some(match cover.source {
+        OPEN_LIBRARY => {
+            format!("https://covers.openlibrary.org/b/id/{}-L.jpg", cover.key)
+        }
+        DNB => format!("https://portal.dnb.de/opac/mvb/cover?isbn={}", isbn()),
+        DIGAR => format!("https://www.digar.ee/arhiiv/nlib-digar:{}?thumb=1", cover.key),
+        ISBN_COVER => {
+            format!(
+                "https://covers.openlibrary.org/b/isbn/{}-L.jpg?default=false",
+                isbn()
+            )
+        }
+        BOOKBITES => format!("https://bookbites-prod-se.covers.bookbites.com/{}", isbn()),
+        _ => return None,
+    })
+}
+
+/// Author photo address as in the app's `Author.photoUrl("M")`.
+pub fn author_url(number: u32) -> String {
+    format!("https://covers.openlibrary.org/a/olid/OL{number}A-M.jpg?default=false")
+}
 
 /// Box an image is scaled to cover, like `ContentScale.Crop` in the app.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -68,17 +101,12 @@ pub struct Images {
 
 pub fn key(url: &str) -> String {
     let hash = Sha256::digest(format!("{ENCODER}\n{url}"));
-    hash[..12]
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    hash[..12].iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn is_placeholder(bytes: &[u8]) -> bool {
-    let hash: String = Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
+    let hash: String =
+        Sha256::digest(bytes).iter().map(|byte| format!("{byte:02x}")).collect();
     PLACEHOLDER_HASHES.contains(&hash.as_str())
 }
 
@@ -113,10 +141,8 @@ fn trim_borders(image: DynamicImage) -> DynamicImage {
 fn contrast(gray: &GrayImage) -> f32 {
     let count = gray.pixels().len() as f32;
     let mean = gray.pixels().map(|pixel| f32::from(pixel[0])).sum::<f32>() / count;
-    let variance = gray
-        .pixels()
-        .map(|pixel| (f32::from(pixel[0]) - mean).powi(2))
-        .sum::<f32>();
+    let variance =
+        gray.pixels().map(|pixel| (f32::from(pixel[0]) - mean).powi(2)).sum::<f32>();
     (variance / count).sqrt()
 }
 
@@ -157,9 +183,7 @@ fn avif(image: &DynamicImage) -> Option<Vec<u8>> {
         .with_bit_depth(ravif::BitDepth::Eight)
         .with_num_threads(Some(1));
     let pixels = rgb.as_raw().as_rgb();
-    let encoded = encoder
-        .encode_rgb(ravif::Img::new(pixels, width, height))
-        .ok()?;
+    let encoded = encoder.encode_rgb(ravif::Img::new(pixels, width, height)).ok()?;
     Some(encoded.avif_file)
 }
 
@@ -197,9 +221,7 @@ impl Images {
 
     fn file(&self, url: &str, width: u32) -> PathBuf {
         let key = key(url);
-        self.directory
-            .join(&key[..2])
-            .join(format!("{key}.{width}.avif"))
+        self.directory.join(&key[..2]).join(format!("{key}.{width}.avif"))
     }
 
     /// `Ok(None)` when the source answered without a usable image.
@@ -214,9 +236,7 @@ impl Images {
             return Ok(None);
         }
         let bytes = response.bytes().await.map_err(drop)?;
-        Ok((MIN_DOWNLOAD..=MAX_DOWNLOAD)
-            .contains(&bytes.len())
-            .then(|| bytes.to_vec()))
+        Ok((MIN_DOWNLOAD..=MAX_DOWNLOAD).contains(&bytes.len()).then(|| bytes.to_vec()))
     }
 
     async fn store(&self, path: PathBuf, bytes: &[u8]) {
@@ -243,7 +263,8 @@ impl Images {
         let Ok(_permit) = self.encodes.acquire().await else {
             return Outcome::Unavailable;
         };
-        let encoded = tokio::task::spawn_blocking(move || encode(&bytes, shape, width)).await;
+        let encoded =
+            tokio::task::spawn_blocking(move || encode(&bytes, shape, width)).await;
         let Some(avif) = encoded.ok().flatten() else {
             return Outcome::Missing;
         };
@@ -299,30 +320,39 @@ pub mod tests {
 
     #[test]
     fn images_cover_their_box_without_upscaling() {
-        let spread = cover(
-            &DynamicImage::ImageRgb8(gradient(1200, 600)),
-            Shape::Book,
-            320,
-        );
+        let spread =
+            cover(&DynamicImage::ImageRgb8(gradient(1200, 600)), Shape::Book, 320);
         assert_eq!((spread.width(), spread.height()), (960, 480));
-        let tall = cover(
-            &DynamicImage::ImageRgb8(gradient(400, 1200)),
-            Shape::Book,
-            160,
-        );
+        let tall = cover(&DynamicImage::ImageRgb8(gradient(400, 1200)), Shape::Book, 160);
         assert_eq!((tall.width(), tall.height()), (160, 480));
-        let small = cover(
-            &DynamicImage::ImageRgb8(gradient(80, 120)),
-            Shape::Book,
-            320,
-        );
+        let small = cover(&DynamicImage::ImageRgb8(gradient(80, 120)), Shape::Book, 320);
         assert_eq!((small.width(), small.height()), (80, 120));
-        let face = cover(
-            &DynamicImage::ImageRgb8(gradient(300, 400)),
-            Shape::Author,
-            96,
-        );
+        let face = cover(&DynamicImage::ImageRgb8(gradient(300, 400)), Shape::Author, 96);
         assert_eq!((face.width(), face.height()), (96, 128));
+    }
+
+    #[test]
+    fn urls_match_the_app() {
+        let cover = |source, key| cover_url(Cover { work: 1, source, key }).unwrap();
+        assert_eq!(
+            cover(OPEN_LIBRARY, 42),
+            "https://covers.openlibrary.org/b/id/42-L.jpg"
+        );
+        assert_eq!(isbn_of(917_629_168), "9789176291689");
+        assert!(cover(DNB, 357_050_132).ends_with("isbn=9783570501320"));
+        assert_eq!(
+            cover(BOOKBITES, 917_629_168),
+            "https://bookbites-prod-se.covers.bookbites.com/9789176291689"
+        );
+        assert_eq!(
+            cover(DIGAR, 123),
+            "https://www.digar.ee/arhiiv/nlib-digar:123?thumb=1"
+        );
+        assert!(cover_url(Cover { work: 1, source: 9, key: 1 }).is_none());
+        assert_eq!(
+            author_url(7),
+            "https://covers.openlibrary.org/a/olid/OL7A-M.jpg?default=false"
+        );
     }
 
     #[test]

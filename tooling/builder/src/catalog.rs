@@ -2,6 +2,8 @@ use crate::dumps::{Authors, Book, FLAG_COVER, FLAG_ISBN, FLAG_PUBLISHER, FLAG_RE
 use crate::dumps::{Facts, Signal, TitleRecord, Titles};
 use crate::libraries::{self, SYNTHETIC};
 use crate::release::State;
+use crate::search::HANGUL;
+pub use crate::search::{is_cjk, is_kana, tokenize};
 use crate::{LANGUAGE_COUNT, LANGUAGES};
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -18,6 +20,12 @@ const DESCRIPTION_TARGET: usize = 480;
 const DESCRIPTION_LIMIT: usize = 1000;
 const MAX_TAG_BYTES: usize = 400;
 const MIN_DESCRIPTION_BYTES: usize = 20;
+const MIN_DESCRIPTION_WORDS: usize = 4;
+const TITLE_MENTION_POINTS: i64 = 200;
+const CONTENTS_SEPARATORS: usize = 3;
+const CONTENTS_PENALTY: i64 = 600;
+const UNFINISHED_BYTES: i64 = 100;
+const UNFINISHED_PENALTY: i64 = 700;
 const REPEATED_PHRASE_WORDS: usize = 6;
 const MAX_PHRASE_REPEATS: usize = 3;
 const MIN_SENTENCE_KEPT_BYTES: usize = 80;
@@ -192,11 +200,11 @@ const READER_VERDICTS: &[&str] = &[
 
 const JUDGED_WORDS: usize = 25;
 const MIN_STOP_WORD_SHARE: f32 = 0.05;
-const MAX_TOKEN_CHARACTERS: usize = 24;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-pub const SOURCE_LANGUAGES: [&str; 14] = [
-    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "pt", "it", "nl", "da",
+pub const SOURCE_LANGUAGES: [&str; 17] = [
+    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv", "lt", "pt", "it", "nl",
+    "da",
 ];
 
 const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
@@ -221,6 +229,9 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "",
     "että hän mutta kun niin jos tai myös kuin ovat olla mitä joka jotka sen hänen \
      ole",
+    "",
+    "arī viņš viņa viņi līdz pēc bija būs tika tiek savu",
+    "yra kaip jis jie buvo bus apie prie nuo iki savo labai kuris kuri",
     "não uma os com dos são foi ele ela seu sua seus suas ao pelo pela pelos pelas \
      também muito já está têm quando sem nas num numa isso esse essa mesmo ainda depois \
      onde",
@@ -361,15 +372,39 @@ const PRINT_ON_DEMAND: &[&str] = &[
 ];
 
 pub const TARGET_CODES: [&str; LANGUAGE_COUNT] = [
-    "eng", "ger", "fre", "spa", "est", "swe", "pol", "cze", "kor", "fin",
+    "eng", "ger", "fre", "spa", "est", "swe", "pol", "cze", "kor", "fin", "jpn", "lav",
 ];
 
-const LANGUAGE_CODES: [&str; 25] = [
+const LANGUAGE_CODES: [&str; 27] = [
     "eng", "ger", "fre", "spa", "ita", "rus", "por", "dut", "jpn", "chi", "pol", "swe", "ara",
-    "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind", "est",
+    "heb", "cze", "dan", "nor", "fin", "tur", "kor", "gre", "hun", "lat", "ind", "est", "lav",
+    "lit",
 ];
 
-const ISBN_GROUPS: [(&str, usize); 30] = [
+const UDC_LANGUAGES: [(&str, &str); 20] = [
+    ("821.111", "eng"),
+    ("821.112.2", "ger"),
+    ("821.113.6", "swe"),
+    ("821.131.1", "ita"),
+    ("821.133.1", "fre"),
+    ("821.134.2", "spa"),
+    ("821.134.3", "por"),
+    ("821.161.1", "rus"),
+    ("821.162.1", "pol"),
+    ("821.162.3", "cze"),
+    ("821.172", "lit"),
+    ("821.174", "lav"),
+    ("821.511.111", "fin"),
+    ("821.511.113", "est"),
+    ("821.521", "jpn"),
+    ("821.531", "kor"),
+    ("821.581", "chi"),
+    ("821.112.5", "dut"),
+    ("821.113.4", "dan"),
+    ("821.113.5", "nor"),
+];
+
+const ISBN_GROUPS: [(&str, usize); 33] = [
     ("9780", 0),
     ("9781", 0),
     ("9798", 0),
@@ -400,6 +435,9 @@ const ISBN_GROUPS: [(&str, usize); 30] = [
     ("978951", 9),
     ("978952", 9),
     ("9789935", 9),
+    ("9784", 10),
+    ("9789934", 11),
+    ("9789984", 11),
 ];
 
 const ISBN_BASE: u64 = 978_000_000_000;
@@ -409,24 +447,6 @@ const FOREIGN_ISBN_GROUPS: [&str; 17] = [
     "9784", "9785", "9786", "9787", "97880", "97881", "97882", "97883", "97885", "97886", "97887",
     "97888", "97889", "9789", "97911", "97912", "97913",
 ];
-
-const FOLDED: [(&str, char); 14] = [
-    ("áàâäãåąÁÀÂÄÃÅĄ", 'a'),
-    ("éèêëęěÉÈÊËĘĚ", 'e'),
-    ("íìîïÍÌÎÏ", 'i'),
-    ("óòôöõøÓÒÔÖÕØ", 'o'),
-    ("úùûüůÚÙÛÜŮ", 'u'),
-    ("ñńňÑŃŇ", 'n'),
-    ("çćčÇĆČ", 'c'),
-    ("ýÿÝ", 'y'),
-    ("ßšśŠŚ", 's'),
-    ("žźżŽŹŻ", 'z'),
-    ("łľĺŁĽĹ", 'l'),
-    ("řŕŘŔ", 'r'),
-    ("ďĎ", 'd'),
-    ("ťŤ", 't'),
-];
-const HANGUL: std::ops::RangeInclusive<char> = '\u{ac00}'..='\u{d7a3}';
 
 static STOP_WORD_LANGUAGE: LazyLock<HashMap<&'static str, usize>> = LazyLock::new(|| {
     let lists = STOP_WORDS.iter().enumerate();
@@ -544,6 +564,17 @@ fn has_valid_check_digit(isbn13: &str) -> bool {
         .map(|(digit, weight)| digit * weight)
         .sum();
     isbn13.bytes().all(|byte| byte.is_ascii_digit()) && sum.is_multiple_of(10)
+}
+
+pub fn isbn13(key: u32) -> String {
+    let twelve = (ISBN_BASE + u64::from(key)).to_string();
+    let weights = [1, 3].into_iter().cycle();
+    let digits = twelve.bytes().map(|byte| u32::from(byte - b'0'));
+    let sum: u32 = digits
+        .zip(weights)
+        .map(|(digit, weight)| digit * weight)
+        .sum();
+    format!("{twelve}{}", (10 - sum % 10) % 10)
 }
 
 pub fn isbn_key(isbn: &str) -> Option<u32> {
@@ -878,6 +909,26 @@ fn is_placeholder(text: &str) -> bool {
             .any(|marker| lowered.starts_with(marker))
 }
 
+pub fn description_score(text: &str, title: &str) -> Option<i64> {
+    if text.split_whitespace().count() < MIN_DESCRIPTION_WORDS {
+        return None;
+    }
+    let length = text.chars().count().min(DESCRIPTION_LIMIT) as i64;
+    let separators = text.matches(" -- ").count() + text.matches(" ; ").count();
+    let title_key = libraries::match_key(title);
+    let mut score = length / 3;
+    if !title_key.is_empty() && libraries::match_key(text).contains(&title_key) {
+        score += TITLE_MENTION_POINTS;
+    }
+    if separators >= CONTENTS_SEPARATORS {
+        score -= CONTENTS_PENALTY;
+    }
+    if length >= UNFINISHED_BYTES && !text.ends_with(['.', '!', '?', '…', '"', '»', '。']) {
+        score -= UNFINISHED_PENALTY;
+    }
+    Some(score)
+}
+
 pub fn clean_description(text: &str) -> String {
     let text = libraries::unmojibaked(text);
     let garbage = |c: char| c == '\u{fffd}' || ('\u{80}'..='\u{9f}').contains(&c);
@@ -892,7 +943,7 @@ pub fn clean_description(text: &str) -> String {
     }
     let stripped = without_citations(&without_links(&without_tags(&text)));
     let text = tidy(&without_urls(&stripped));
-    let readable = is_mostly_latin(&text) || is_mostly_hangul(&text);
+    let readable = is_mostly_latin(&text) || is_mostly_hangul(&text) || is_mostly_japanese(&text);
     if is_subject_list(&text) || !readable {
         return String::new();
     }
@@ -1024,6 +1075,9 @@ pub fn detect_language(text: &str) -> Option<usize> {
     if is_mostly_hangul(text) {
         return Some(crate::language_index("ko"));
     }
+    if text.chars().any(is_kana) {
+        return Some(crate::language_index("ja"));
+    }
     let (hits, words) = stop_word_hits(text);
     let best = (0..hits.len()).max_by_key(|&language| hits[language])?;
     let others = hits
@@ -1052,6 +1106,18 @@ pub fn is_mostly_hangul(text: &str) -> bool {
         && is_mostly(text, |character| HANGUL.contains(&character))
 }
 
+pub fn is_mostly_japanese(text: &str) -> bool {
+    text.chars().any(char::is_alphabetic) && is_mostly(text, is_cjk)
+}
+
+pub fn udc_language(udc: &str) -> Option<&'static str> {
+    let longest = UDC_LANGUAGES
+        .iter()
+        .filter(|(prefix, _)| udc.starts_with(prefix))
+        .max_by_key(|(prefix, _)| prefix.len());
+    longest.map(|&(_, language)| language)
+}
+
 pub fn is_romanised_korean(text: &str) -> bool {
     text.contains(['ŭ', 'ŏ', 'Ŭ', 'Ŏ', 'ʻ'])
 }
@@ -1059,43 +1125,9 @@ pub fn is_romanised_korean(text: &str) -> bool {
 pub fn is_native_script(text: &str, language: usize) -> bool {
     match LANGUAGES[language] {
         "ko" => is_mostly_hangul(text) || is_mostly_latin(text),
+        "ja" => is_mostly_japanese(text) || is_mostly_latin(text),
         _ => is_mostly_latin(text),
     }
-}
-
-fn fold(character: char) -> Option<char> {
-    let lowered = character.to_ascii_lowercase();
-    if lowered.is_ascii_alphanumeric() || HANGUL.contains(&character) {
-        return Some(lowered);
-    }
-    let found = FOLDED.iter().find(|(set, _)| set.contains(character));
-    found.map(|&(_, folded)| folded)
-}
-
-pub fn tokenize(text: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
-    let mut current = String::new();
-    let mut length = 0;
-    for character in text
-        .chars()
-        .filter(|character| !matches!(character, '\'' | '’' | '\u{300}'..='\u{36f}'))
-    {
-        match fold(character) {
-            Some(folded) => {
-                current.push(folded);
-                length += 1;
-            }
-            None => length = MAX_TOKEN_CHARACTERS,
-        }
-        if length >= MAX_TOKEN_CHARACTERS {
-            tokens.extend((!current.is_empty()).then(|| std::mem::take(&mut current)));
-            length = 0;
-        }
-    }
-    if !current.is_empty() {
-        tokens.push(current);
-    }
-    tokens
 }
 
 fn without_article(tokens: &[String]) -> String {
@@ -1473,9 +1505,13 @@ impl<'a> Resolver<'a> {
             .map(|title| (title_key(title, &[]), title, 0))
             .filter(|ballot| !ballot.0.is_empty())
             .collect();
-        let hangul = |ballot: &(String, &str, u16)| is_mostly_hangul(ballot.1);
-        if LANGUAGES[self.language] == "ko" && ballots.iter().any(hangul) {
-            ballots.retain(hangul);
+        let native = |ballot: &(String, &str, u16)| match LANGUAGES[self.language] {
+            "ko" => is_mostly_hangul(ballot.1),
+            "ja" => is_mostly_japanese(ballot.1),
+            _ => false,
+        };
+        if ballots.iter().any(native) {
+            ballots.retain(native);
         }
         let own_key = title_key(work_title, &[]);
         let own = ballots.iter().filter(|ballot| ballot.0 == own_key).count();
@@ -1784,6 +1820,78 @@ mod tests {
             isbn_language("9789510396358"),
             Some(crate::language_index("fi"))
         );
+    }
+
+    #[test]
+    fn japanese_and_baltic_tokenized_like_the_app() {
+        assert_eq!(
+            tokenize("ノルウェイの森"),
+            ["ノル", "ルウ", "ウェ", "ェイ", "イの", "の森"]
+        );
+        assert_eq!(
+            tokenize("ハリー・ポッターと賢者の石"),
+            [
+                "ハリ", "リー", "ポッ", "ッタ", "ター", "ーと", "と賢", "賢者", "者の", "の石"
+            ]
+        );
+        assert_eq!(tokenize("1Q84 村上春樹"), ["1q84", "村上", "上春", "春樹"]);
+        assert_eq!(tokenize("Ｈａｒｒｙ 猫"), ["harry", "猫"]);
+        assert_eq!(tokenize("Dvēseļu putenis"), ["dveselu", "putenis"]);
+        assert_eq!(tokenize("Žalgirio mūšis"), ["zalgirio", "musis"]);
+        assert_eq!(tokenize("채식주의자"), ["채식주의자"]);
+        assert_eq!(
+            detect_language("海辺のカフカ"),
+            Some(crate::language_index("ja"))
+        );
+        assert_eq!(
+            isbn_language("9784101001616"),
+            Some(crate::language_index("ja"))
+        );
+        assert_eq!(
+            isbn_language("9789934151005"),
+            Some(crate::language_index("lv"))
+        );
+        assert_eq!(isbn_language("9786094661234"), None);
+    }
+
+    #[test]
+    fn baltic_stop_words_belong_to_one_language() {
+        let latvian = crate::language_index("lv");
+        let lithuanian = SOURCE_LANGUAGES.iter().position(|&code| code == "lt");
+        let lithuanian = lithuanian.expect("lt");
+        for (language, list) in STOP_WORDS.iter().enumerate() {
+            for word in list.split_whitespace() {
+                let owner = stop_word_language(word);
+                let baltic = [language, owner.unwrap_or(language)];
+                if baltic.contains(&latvian) || baltic.contains(&lithuanian) {
+                    assert_eq!(owner, Some(language), "{word}");
+                }
+            }
+        }
+        assert!(!is_foreign_title(
+            "Un nouvel ami",
+            crate::language_index("fr")
+        ));
+    }
+
+    #[test]
+    fn source_languages_start_with_catalogue_languages() {
+        assert_eq!(
+            &SOURCE_LANGUAGES[..crate::LANGUAGE_COUNT],
+            &crate::LANGUAGES[..]
+        );
+        let portuguese = detect_language("não uma os com dos são foi ele ela").expect("pt");
+        assert_eq!(SOURCE_LANGUAGES[portuguese], "pt");
+    }
+
+    #[test]
+    fn isbn_keys_round_trip_and_udc_names_languages() {
+        let key = isbn_key("978-3-8339-1131-6").expect("key");
+        assert_eq!(isbn13(key), "9783833911316");
+        assert_eq!(udc_language("821.111-31"), Some("eng"));
+        assert_eq!(udc_language("821.112.2-3"), Some("ger"));
+        assert_eq!(udc_language("821.172-93"), Some("lit"));
+        assert_eq!(udc_language("94(474.5)"), None);
     }
 
     #[test]

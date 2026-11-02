@@ -20,6 +20,20 @@ class TextTest {
     }
 
     @Test
+    fun tokenizeMatchesBuilderForJapaneseAndBaltic() {
+        assertEquals(listOf("ノル", "ルウ", "ウェ", "ェイ", "イの", "の森"), tokenize("ノルウェイの森"))
+        assertEquals(
+            listOf("ハリ", "リー", "ポッ", "ッタ", "ター", "ーと", "と賢", "賢者", "者の", "の石"),
+            tokenize("ハリー・ポッターと賢者の石"),
+        )
+        assertEquals(listOf("1q84", "村上", "上春", "春樹"), tokenize("1Q84 村上春樹"))
+        assertEquals(listOf("harry", "猫"), tokenize("Ｈａｒｒｙ 猫"))
+        assertEquals(listOf("dveselu", "putenis"), tokenize("Dvēseļu putenis"))
+        assertEquals(listOf("zalgirio", "musis"), tokenize("Žalgirio mūšis"))
+        assertEquals(listOf("채식주의자"), tokenize("채식주의자"))
+    }
+
+    @Test
     fun tokenizeSplitsLongTokens() {
         assertEquals(listOf("a".repeat(24), "a".repeat(6)), tokenize("a".repeat(30)))
     }

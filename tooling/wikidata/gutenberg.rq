@@ -1,0 +1,5 @@
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?item ?value WHERE {
+  { ?item wdt:P2034 ?value } UNION { ?edition wdt:P629 ?item ; wdt:P2034 ?value }
+}

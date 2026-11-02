@@ -111,10 +111,11 @@ catalogue as your own, with your own cover.
 ## Books in your language
 
 **Catalogue:** English · Deutsch · Français · Español · Eesti · Svenska · Polski ·
-Čeština · 한국어 · Suomi, with optional packs for fantasy, sci-fi, mystery, romance,
-kids, young adult and non-fiction.
+Čeština · 한국어 · Suomi · 日本語 · Latviešu, with optional packs for
+fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
 
-**App:** all of the above plus Русский.
+**App:** English · Deutsch · Français · Español · Eesti · Svenska · Polski · Čeština ·
+한국어 · Suomi · Русский.
 [Help translate](https://hosted.weblate.org/engage/shelf/) — no coding needed.
 
 <a href="https://hosted.weblate.org/engage/shelf/"><img src="https://hosted.weblate.org/widget/shelf/multi-auto.svg" alt="Translation status"></a>
@@ -184,7 +185,11 @@ Developers: building, architecture and the catalogue pipeline are in
 <sub>
 <a href="LICENSE">MIT License</a> · <a href=".github/SECURITY.md">Security</a> ·
 <a href=".github/CODE_OF_CONDUCT.md">Code of conduct</a> · Book data from
-<a href="https://openlibrary.org">Open Library</a> and the national libraries of Germany
+<a href="https://openlibrary.org">Open Library</a>, <a href="https://www.wikidata.org">Wikidata</a>,
+<a href="https://www.gutenberg.org">Project Gutenberg</a> and the national libraries of Germany
 (DNB), Estonia (ERB), France (BnF), Sweden (LIBRIS), Poland (BN), the Czech Republic
-(NKP), Korea (NLK), Finland (Fennica) and the UK (BNB, English series).
+(NKP), Korea (NLK), Finland (Fennica), the UK (BNB, English series), Spain (BNE) and Latvia
+(LNB). Japanese records: NACSIS-CAT via <a href="https://ci.nii.ac.jp/books/">CiNii
+Books</a>, National Institute of Informatics,
+<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
 </sub>

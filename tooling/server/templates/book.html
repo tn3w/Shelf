@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block icon %}{% if icon.is_empty() %}{{ crate::assets::FAVICON }}{% else %}{{ icon }}{% endif %}{% endblock %}
+{% block title %}{{ title }} – Shelf{% endblock %}
+{% block body %}<main><div class=head>{% if !cover.is_empty() %}<img src={{ cover }} width=160 height=240 alt=Cover>{% endif %}<div><h1>{{ title }}</h1>{% if !subtitle.is_empty() %}<p class=sub>{{ subtitle }}</p>{% endif %}
+{% if !authors.is_empty() %}<p>by {% for (id, name) in authors %}{% if !loop.first %}, {% endif %}<a href=/a/{{ id }}>{{ name }}</a>{% endfor %}</p>{% endif %}<p class=muted>{{ overview }}</p>{% include "links.html" %}</div></div>
+{% if !description.is_empty() %}<p>{{ description }}</p>{% if translated %}<p class=muted>Translated description.</p>{% endif %}{% endif %}{% if !tags.is_empty() %}<p class=tags>{% for tag in tags %}<span>{{ tag }}</span>{% endfor %}</p>{% endif %}
+{% if !facts.is_empty() || !others.is_empty() %}<details><summary>Other languages and details</summary>{% if !facts.is_empty() %}<dl>{% for (label, value) in facts %}<dt>{{ label }}<dd>{{ value }}{% endfor %}</dl>{% endif %}{% for other in others %}<p><b>{% if other.link.is_empty() %}{{ other.language }}{% else %}<a href={{ other.link }}>{{ other.language }}</a>{% endif %}</b>{% if !other.title.is_empty() %} {{ other.title }}{% endif %}{% if !other.text.is_empty() %}<br>{{ other.text }}{% endif %}</p>{% endfor %}</details>{% endif %}
+{% if let Some(shelf) = series %}<h2><a href={{ shelf.link }}>{{ shelf.name }}</a> <small>{{ shelf.total }} books</small></h2>{% let rows = &shelf.rows %}{% include "shelf.html" %}{% endif %}
+{% if let Some((author_id, author_name)) = author %}{% if !author_rows.is_empty() %}<h2>More by <a href=/a/{{ author_id }}>{{ author_name }}</a></h2>{% let rows = &author_rows %}{% include "shelf.html" %}{% endif %}{% endif %}
+{% if !rows.is_empty() %}<h2>Similar books</h2>{% include "shelf.html" %}{% endif %}
+{% if !editions.is_empty() %}<h2>Editions ({{ editions.len() }})</h2><div class=scroll><table><tr><th>Year<th>Publisher<th>Format<th>ISBN</tr>
+{% for edition in editions %}<tr><td>{% if edition.year > 0 %}{{ edition.year }}{% endif %}<td>{{ edition.publisher }}<td>{{ edition.format }}<td class=muted>{{ edition.isbn }}</tr>{% endfor %}
+</table></div>{% endif %}</main>{% endblock %}

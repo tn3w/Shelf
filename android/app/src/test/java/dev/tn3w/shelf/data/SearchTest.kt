@@ -58,6 +58,22 @@ class SearchTest {
     }
 
     @Test
+    fun japaneseTitlesMatchByBigrams() {
+        val japanese = Searcher(
+            catalogue(
+                listOf(
+                    Fixture(1, "ノルウェイの森", "村上春樹", score = 9),
+                    Fixture(2, "海辺のカフカ", "村上春樹", score = 5),
+                    Fixture(3, "森の生活", "ソロー", score = 2),
+                ),
+            ),
+        )
+        assertEquals(1, japanese.search("ノルウェイ").first().work)
+        assertEquals(2, japanese.search("カフカ").first().work)
+        assertEquals(setOf(1, 2), japanese.search("村上").map { it.work }.toSet())
+    }
+
+    @Test
     fun typoStillFindsTitle() {
         assertEquals(5, works("silmarilion").first())
         assertEquals(6, works("hobit").first())

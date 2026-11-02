@@ -1,0 +1,315 @@
+:root {
+  color-scheme: light dark;
+  --text: light-dark(#2b2420, #efe6dc);
+  --page: light-dark(#fbf7f2, #1c1714);
+  --muted: light-dark(#6b6159, #a89c90);
+  --line: light-dark(#e2d8cc, #3a312b);
+  --link: light-dark(#b8431f, #f26b3a);
+  --tint: light-dark(#f6efe6, #2a221d);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 50rem;
+  padding: 1rem;
+  font: 1rem/1.55 system-ui, sans-serif;
+  color: var(--text);
+  background: var(--page);
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--muted);
+  outline-offset: 2px;
+}
+
+header,
+form,
+.row,
+.head,
+nav {
+  display: flex;
+  gap: 1rem;
+}
+
+header,
+form {
+  align-items: center;
+}
+
+header > a {
+  color: inherit;
+  font-weight: 600;
+}
+
+form {
+  position: relative;
+  flex: 1;
+  gap: 0.5rem;
+}
+
+input,
+button {
+  padding: 0.55rem 1.1rem;
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--muted);
+}
+
+button {
+  background: var(--tint);
+  cursor: pointer;
+}
+
+h1,
+h2 {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.8rem;
+}
+
+h2 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+}
+
+.home {
+  display: grid;
+  grid-template-columns: minmax(0, 36rem);
+  min-height: 60vh;
+  place-content: center;
+  text-align: center;
+}
+
+.home img {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  background: none;
+}
+
+.home h1 {
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 400;
+}
+
+.home form {
+  margin: 1.5rem 0;
+}
+
+.muted,
+small,
+dt,
+th {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sub {
+  margin: 0 0 0.8rem;
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+img,
+i {
+  flex: none;
+  object-fit: cover;
+  background: var(--tint);
+  border-radius: 3px;
+}
+
+.row {
+  gap: 0.9rem;
+  margin: 1.1rem 0;
+}
+
+.row img,
+.row i {
+  width: 3rem;
+  height: 4.5rem;
+}
+
+.person img,
+.person i {
+  height: 3rem;
+  border-radius: 50%;
+}
+
+.head {
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.head img {
+  align-self: flex-start;
+  width: min(11rem, 36vw);
+  height: auto;
+}
+
+.head p {
+  margin: 0.3rem 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 1rem;
+  margin: 0.8rem 0 0;
+}
+
+dd {
+  margin: 0;
+}
+
+details {
+  margin: 1rem 0;
+}
+
+summary {
+  color: var(--link);
+  cursor: pointer;
+}
+
+.tags span,
+.tag {
+  display: inline-block;
+  margin: 0 0.3rem 0.3rem 0;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+  background: var(--tint);
+  border-radius: 1rem;
+}
+
+.shelf {
+  display: grid;
+  grid: auto 0 / repeat(auto-fill, 6rem);
+  grid-auto-rows: 0;
+  justify-content: space-between;
+  gap: 0 0.9rem;
+  overflow: hidden;
+}
+
+.shelf a {
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.shelf img,
+.shelf i {
+  display: block;
+  width: 6rem;
+  height: 9rem;
+  margin-bottom: 0.3rem;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th {
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+td,
+th {
+  padding: 0.4rem 0.8rem 0.4rem 0;
+  vertical-align: top;
+}
+
+nav {
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.center {
+  margin-top: 25vh;
+  text-align: center;
+}
+
+.center svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.center form {
+  max-width: 20rem;
+  margin: 1rem auto;
+}
+
+.suggest {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0;
+  text-align: left;
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  box-shadow: 0 0.4rem 1.2rem rgb(0 0 0 / 0.15);
+}
+
+.suggest:empty {
+  display: none;
+}
+
+.suggest a {
+  display: block;
+  padding: 0.35rem 1.1rem;
+  color: inherit;
+}
+
+.suggest a:hover {
+  text-decoration: none;
+  background: var(--tint);
+}
+
+.suggest small {
+  display: block;
+  font-size: 0.8rem;
+}
+
+.languages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.8rem;
+}

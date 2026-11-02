@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ query }} – Shelf{% endblock %}
+{% block query %}{{ query }}{% endblock %}
+{% block body %}<main>{% for author in authors %}<div class="row person">{% if !author.photo.is_empty() %}<img src={{ author.photo }} loading=lazy alt>{% else %}<i></i>{% endif %}<div><a href=/a/{{ author.id }}>{{ author.name }}</a><br><small>{{ author.detail }}</small></div></div>{% endfor %}
+{% include "rows.html" %}{% if rows.is_empty() %}<p>No results.</p>{% endif %}
+{% include "pager.html" %}</main>{% endblock %}

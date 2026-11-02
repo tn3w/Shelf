@@ -950,6 +950,9 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
     if catalog::is_mostly_hangul(&title) {
         return Some(crate::language_index("ko"));
     }
+    if title.chars().any(catalog::is_kana) {
+        return Some(crate::language_index("ja"));
+    }
     if !catalog::is_mostly_latin(&title) {
         return None;
     }
@@ -1085,6 +1088,7 @@ pub struct Book {
     pub eligible: [bool; LANGUAGE_COUNT],
     pub claim: Option<Box<Claim>>,
     pub library_cover: Option<LibraryCover>,
+    pub main_language: Option<usize>,
 }
 
 #[derive(Clone, Copy)]
@@ -1168,8 +1172,12 @@ fn claim(id: u32, book: &Draft, context: &Context) -> Option<Box<Claim>> {
         .filter(|record| record.language > 0);
     let local = local.map(|record| context.titles.title(record));
     let titles: Vec<&str> = std::iter::once(book.title).chain(local).collect();
-    let name = author.map(|author| author.name);
-    let groups = context.library.claim(id, &titles, name);
+    let writer = author.map(|author| libraries::Writer {
+        id: book.authors[0],
+        name: author.name,
+        birth: author.birth,
+    });
+    let groups = context.library.claim(id, &titles, writer);
     if groups.is_empty() {
         return None;
     }
@@ -1264,7 +1272,13 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         eligible,
         claim,
         library_cover: None,
+        main_language: main_language(&facts),
     })
+}
+
+fn main_language(facts: &Facts) -> Option<usize> {
+    let counted = (0..LANGUAGE_COUNT).filter(|&language| facts.language_editions[language] > 0);
+    counted.max_by_key(|&language| (facts.language_editions[language], Reverse(language)))
 }
 
 fn work_line(line: &[u8], context: &Context) -> Option<(String, Option<Book>)> {

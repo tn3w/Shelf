@@ -1,0 +1,7 @@
+<!doctype html><html lang=en><meta name=viewport content="width=device-width,initial-scale=1">
+<title>{% block title %}Shelf{% endblock %}</title>
+<link rel=icon href={% block icon %}{{ crate::assets::FAVICON }}{% endblock %}>
+<link rel=stylesheet href={{ crate::assets::STYLE }}>
+<script src={{ crate::assets::SCRIPT }} defer></script>
+{% block search %}<header><a href=/>Shelf</a><form action=/s role=search><input name=q type=search value="{% block query %}{% endblock %}" placeholder="Title, author or ISBN" aria-label=Search autocomplete=off></form></header>{% endblock %}
+{% block body %}{% endblock %}

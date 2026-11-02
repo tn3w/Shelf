@@ -1,0 +1,1 @@
+{% for row in rows %}<div class=row>{% if !row.cover.is_empty() %}<img src={{ row.cover }} loading=lazy alt>{% else %}<i></i>{% endif %}<div><a href={{ row.link }}>{{ row.title }}</a>{% if !row.subtitle.is_empty() %} <small>{{ row.subtitle }}</small>{% endif %}<br><small>{{ row.detail }}</small></div></div>{% endfor %}
