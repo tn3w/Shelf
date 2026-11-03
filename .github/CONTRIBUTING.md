@@ -279,7 +279,7 @@ tokenize alike (`catalog.rs` / `Search.kt`, same test strings).
 
 Sidecars (server only, not in `manifest.segments`, `sidecar.rs`): `links.bin` (`SHLK`),
 `extras.bin` (`SHEX`) and `people.bin` (`SHPE`, keyed by author number), merged from
-per-language files like `covers.bin`. Layout: magic,
+per-language files. Layout: magic,
 version 1, section table, `meta`, one section per language = block index (count, first work
 per block, offsets) over raw deflate blocks of 64 records sorted by work (varint delta,
 varint length, record; texts length + UTF-8, lists count + items).
@@ -345,8 +345,7 @@ reads SHLF v2 like `Segment.kt`/`Catalogue.kt` (records, terms, ranks, ISBNs, co
 descriptions, completions, tombstones, chains like `Packs.kt`), `search.rs` holds the
 shared tokenizer, ranks like `Search.kt` and `search_all` (every catalogue in parallel,
 merged by unified id, best score, best scoring book first; used by `qa` and the server),
-`works.rs` reads/writes `works.bin`, `sidecar.rs` and `covers.rs` read and write the
-sidecars and cover index.
+`works.rs` reads/writes `works.bin`, `sidecar.rs` reads and writes the sidecars.
 
 Local check (2026-10-31 Open Library and library dumps; works = placed in packs):
 
@@ -386,7 +385,7 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
   [--library bne=<monomodernas-MARC.mrc>[,<persona-MARC.mrc>]]... \
   [--library cinii=<cinii.jsonl[.gz]>] [--library lnb_lv=<natl_bibliography-*-marc.zip>] \
   [--wikidata <dir of tooling/wikidata.sh TSVs>] [--gutenberg <rdf-files as .rdf.gz>]
-target/release/builder covers|links|extras <out.bin> <kind-xx.bin>...
+target/release/builder links|extras|people <out.bin> <kind-xx.bin>...
 target/release/builder unify <works.bin> <release dir> [previous works.bin]
 target/release/builder qa <release dir> [qa dir]
 ```
@@ -414,7 +413,7 @@ score, pack, title, alternate, authors, series, year, ISBNs) for review.
 | `enrichment` | Wikidata TSVs (`tooling/wikidata.sh`) + Gutenberg RDF → artifact `enrichment` (1 day) |
 | `tools` | builder binary → artifact `builder`; NLLB 3.3B → int8 model cache (converted only on cache miss) |
 | `build` × 12 | one per language, in parallel: artifacts + cached model + its library dump (BnF via `tooling/bnf.py`, `BNF_LINK`/`BNF_FOLDERS` change yearly; NLK and Fennica names discovered; BNE, CiNii from `sources-*`) → `--languages <lang>` build and translation |
-| `publish` | merge per-language manifests, covers, links, extras; download the chain's older segments, `unify` (with previous `works.bin`) + `qa` → job summary; create release (+ `works.bin`), prune `catalogue-*` |
+| `publish` | merge per-language manifests, links, extras, people; download the chain's older segments, `unify` (with previous `works.bin`) + `qa` → job summary; create release (+ `works.bin`), prune `catalogue-*` |
 
 Flavors, set in `distributions` (`app/build.gradle.kts`):
 

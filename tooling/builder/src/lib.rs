@@ -1,5 +1,4 @@
 pub mod catalog;
-pub mod covers;
 pub mod dumps;
 pub mod enrichment;
 pub mod libraries;

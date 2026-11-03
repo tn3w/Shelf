@@ -1,6 +1,6 @@
 mod qa;
 
-use builder::{Built, LANGUAGE_COUNT, LANGUAGES, catalog, covers, dumps, enrichment};
+use builder::{Built, LANGUAGE_COUNT, LANGUAGES, catalog, dumps, enrichment};
 use builder::{language_index, works::Works};
 use builder::{libraries, people, release, segment, sidecar, tags, translations, unify};
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
@@ -43,7 +43,7 @@ struct Options {
 
 fn usage() -> ! {
     eprintln!(
-        "usage: builder covers|links|extras <output> <xx-lang.bin>...\n       \
+        "usage: builder links|extras|people <output> <xx-lang.bin>...\n       \
          builder show <links|extras file> <language> [work]\n       \
          builder unify <works.bin> <release dir> [previous works.bin]\n       \
          builder qa <release dir> [qa dir]\n       \
@@ -539,7 +539,6 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
         .map(|(pack, bytes)| publish(job, PACKS[pack], bytes))
         .collect();
     published.push(publish(job, "ranks", &ranks(job, &placed)));
-    write_covers(job, &placed);
     write_sidecars(job, &placed);
     dump_works(job, &placed);
     let state = State {
@@ -552,20 +551,6 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
             .join(format!("state-{}.bin", LANGUAGES[language])),
     );
     Some(published)
-}
-
-fn write_covers(job: &Job, placed: &[Placed]) {
-    let found = placed.iter().filter_map(|placed| {
-        let work = &placed.work;
-        covers::cover_of(work.id, work.cover, work.library_cover)
-    });
-    let all = covers::with_aliases(found.collect(), job.aliases);
-    let language = LANGUAGES[job.language];
-    let bytes = covers::language_index(job.month, language, &all);
-    let file = format!("covers-{language}.bin");
-    std::fs::write(job.output.join(&file), &bytes)
-        .unwrap_or_else(|error| panic!("write {file}: {error}"));
-    eprintln!("{file}: {} covers, {} bytes", all.len(), bytes.len());
 }
 
 fn language_code(code: &str) -> String {
@@ -859,7 +844,7 @@ fn show(arguments: &[String]) {
     }
 }
 
-/// `builder covers|links|extras <output> <xx-lang.bin>...` joins per-language files.
+/// `builder links|extras|people <output> <xx-lang.bin>...` joins per-language files.
 fn merge_indexes(kind: &str, arguments: &[String]) {
     let [output, inputs @ ..] = arguments else {
         usage()
@@ -867,13 +852,13 @@ fn merge_indexes(kind: &str, arguments: &[String]) {
     if inputs.is_empty() {
         usage()
     }
-    let merged = match kind {
-        "links" => sidecar::merge(sidecar::LINKS, inputs),
-        "extras" => sidecar::merge(sidecar::EXTRAS, inputs),
-        "people" => sidecar::merge(sidecar::PEOPLE, inputs),
-        _ => covers::merge(inputs),
+    let magic = match kind {
+        "links" => sidecar::LINKS,
+        "extras" => sidecar::EXTRAS,
+        _ => sidecar::PEOPLE,
     };
-    let merged = merged.unwrap_or_else(|error| panic!("merge {kind}: {error}"));
+    let merged =
+        sidecar::merge(magic, inputs).unwrap_or_else(|error| panic!("merge {kind}: {error}"));
     std::fs::write(output, &merged).unwrap_or_else(|error| panic!("write {output}: {error}"));
     eprintln!("{output}: {} bytes", merged.len());
 }
@@ -924,7 +909,7 @@ fn main() {
         Some("qa") => return qa::command(&arguments[1..]),
         _ => {}
     }
-    let merged = ["covers", "links", "extras", "people"];
+    let merged = ["links", "extras", "people"];
     if let Some(kind) = arguments
         .first()
         .filter(|first| merged.contains(&first.as_str()))

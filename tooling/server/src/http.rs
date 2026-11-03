@@ -62,7 +62,8 @@ impl IntoResponse for ApiError {
 }
 
 pub fn is_image(path: &str) -> bool {
-    path.ends_with(".avif") && (path.starts_with("/b/") || path.starts_with("/a/"))
+    let routed = ["/a/", "/b/"].iter().any(|prefix| path.starts_with(prefix));
+    routed && path.ends_with(".avif")
 }
 
 fn canonical_path(path: &str) -> String {

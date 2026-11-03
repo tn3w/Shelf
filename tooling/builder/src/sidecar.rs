@@ -3,13 +3,12 @@
 //! `links-<lang>.bin` (`SHLK`) holds the ids that tie a work to other catalogues,
 //! `extras-<lang>.bin` (`SHEX`) what a book page shows beyond the app pack and
 //! `people-<lang>.bin` (`SHPE`) what an author page shows, keyed by author number. All
-//! follow the cover index: magic, version, section table, `meta` section, one section per language.
+//! share one layout: magic, version, section table, `meta` section, one section per language.
 //! A language section is a block index (block count, first work per block, offset table)
 //! over raw deflate blocks; a block holds records sorted by work: varint work delta,
 //! varint length, record bytes. Texts are varint length + UTF-8, lists varint count + items.
 
-use crate::covers::{merge_files, month_of, sections_of};
-use crate::segment::{deflate, indexed_blocks, put_text, put_varint};
+use crate::segment::{assemble_file, deflate, indexed_blocks, meta_section, put_text, put_varint};
 use std::io::Read;
 use std::path::Path;
 
@@ -18,6 +17,7 @@ pub const EXTRAS: &[u8; 4] = b"SHEX";
 pub const PEOPLE: &[u8; 4] = b"SHPE";
 pub const VERSION: u32 = 1;
 pub const EDITION_CAP: usize = 300;
+const NAME_BYTES: usize = 16;
 const RECORDS_PER_BLOCK: usize = 64;
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -287,7 +287,7 @@ fn section(mut records: Vec<(u32, Vec<u8>)>) -> Vec<u8> {
 
 fn file(magic: &[u8; 4], month: &str, language: &str, records: Vec<(u32, Vec<u8>)>) -> Vec<u8> {
     let languages = vec![(language.to_string(), section(records))];
-    crate::covers::index_file(magic, VERSION, month, languages)
+    index_file(magic, VERSION, month, languages)
 }
 
 pub fn links_file(month: &str, language: &str, links: &[Links]) -> Vec<u8> {
@@ -433,6 +433,83 @@ impl Sidecar {
     pub fn person_of(&self, language: &str, number: u32) -> Option<Person> {
         self.decoded(language, Some(number), Person::decode)?.pop()
     }
+}
+
+/// One file with a section per language; `languages` must hold sorted records.
+pub fn index_file(
+    magic: &[u8; 4],
+    version: u32,
+    month: &str,
+    languages: Vec<(String, Vec<u8>)>,
+) -> Vec<u8> {
+    let meta = meta_section(&[
+        ("format", version.to_string()),
+        ("month", month.to_string()),
+    ]);
+    let mut sections = vec![("meta", meta)];
+    sections.extend(
+        languages
+            .iter()
+            .map(|(code, bytes)| (code.as_str(), bytes.clone())),
+    );
+    assemble_file(magic, version, sections)
+}
+
+/// Sections of an index file, `meta` first.
+pub fn sections_of(magic: &[u8; 4], version: u32, file: &[u8]) -> Option<Vec<(String, Vec<u8>)>> {
+    if file.get(..4)? != magic || u32_at(file, 4)? != version {
+        return None;
+    }
+    (0..u32_at(file, 8)? as usize)
+        .map(|index| {
+            let entry = 12 + index * (NAME_BYTES + 8);
+            let name = file.get(entry..entry + NAME_BYTES)?;
+            let name = String::from_utf8(name.to_vec()).ok()?;
+            let offset = u32_at(file, entry + NAME_BYTES)? as usize;
+            let length = u32_at(file, entry + NAME_BYTES + 4)? as usize;
+            let bytes = file.get(offset..offset + length)?.to_vec();
+            Some((name.trim_end_matches('\0').to_string(), bytes))
+        })
+        .collect()
+}
+
+pub fn month_of(meta: &[u8]) -> Option<String> {
+    String::from_utf8_lossy(meta)
+        .lines()
+        .find_map(|line| line.strip_prefix("month="))
+        .map(str::to_string)
+}
+
+pub fn merge_files(
+    magic: &[u8; 4],
+    version: u32,
+    inputs: &[impl AsRef<Path>],
+) -> Result<Vec<u8>, String> {
+    let mut month: Option<String> = None;
+    let mut languages: Vec<(String, Vec<u8>)> = Vec::new();
+    for input in inputs {
+        let path = input.as_ref();
+        let file = std::fs::read(path).map_err(|error| format!("{}: {error}", path.display()))?;
+        let found = sections_of(magic, version, &file)
+            .ok_or_else(|| format!("{}: not an index file", path.display()))?;
+        for (name, bytes) in found {
+            if name == "meta" {
+                let current = month_of(&bytes).ok_or("missing month")?;
+                if month.get_or_insert_with(|| current.clone()) != &current {
+                    return Err(format!("{}: month {current} differs", path.display()));
+                }
+            } else if !crate::LANGUAGES.contains(&name.as_str()) {
+                return Err(format!("{}: unknown language {name}", path.display()));
+            } else if languages.iter().any(|(known, _)| *known == name) {
+                return Err(format!("{}: language {name} repeated", path.display()));
+            } else {
+                languages.push((name, bytes));
+            }
+        }
+    }
+    let month = month.ok_or("no index file given")?;
+    languages.sort_by(|left, right| left.0.cmp(&right.0));
+    Ok(index_file(magic, version, &month, languages))
 }
 
 #[cfg(test)]

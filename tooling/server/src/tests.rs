@@ -4,8 +4,8 @@ use crate::{App, assets, gate, router};
 use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, Response, StatusCode, header};
-use builder::covers::{self, Cover};
 use builder::dumps::Authors;
+use builder::reader::isbn_of;
 use builder::release::{Published, Series, write_manifest};
 use builder::segment::{self, Meta, Popularity, Work};
 use builder::sidecar::{self, EXTRAS, Edition, Extras, Person};
@@ -26,6 +26,7 @@ const GERMAN_PRISONER: u32 = 2_000_011;
 const SWEDISH_LATER: u32 = 2_000_020;
 const ROWLING_TWIN: u32 = 103;
 const COVER_URL: &str = "https://covers.openlibrary.org/b/id/300-L.jpg";
+const GERMAN_COVER_KEY: u32 = 355_155_167;
 
 static SCRATCH: AtomicU32 = AtomicU32::new(0);
 
@@ -87,7 +88,6 @@ struct Language<'a> {
     works: Vec<Work<'a>>,
     ranks: Vec<Popularity>,
     aliases: Vec<(u32, u32)>,
-    covers: Vec<Cover>,
     extras: Vec<Extras>,
 }
 
@@ -108,12 +108,10 @@ fn write_language(
         &language.aliases,
     );
     let code = language.code;
-    let covers = covers::language_index(RELEASE, code, &language.covers);
     let extras = sidecar::extras_file(RELEASE, code, &language.extras);
     let files = [
         (format!("{code}-core-{RELEASE}.bin"), core),
         (format!("{code}-ranks-{RELEASE}.bin"), ranks),
-        (format!("covers-{code}.bin"), covers),
         (format!("extras-{code}.bin"), extras),
     ];
     for (name, bytes) in &files {
@@ -161,6 +159,7 @@ fn write_release(directory: &Path) {
     let mut german =
         work(GERMAN_STONE, "Harry Potter und der Stein der Weisen", &[100], &fantasy);
     german.description = "Ein Junge erfährt, dass er ein Zauberer ist.";
+    german.library_cover = Some((1, GERMAN_COVER_KEY));
     german.series = Some((&german_potter, 1));
     let prisoner_title = "Harry Potter und der Gefangene von Askaban";
     let mut prisoner = work(GERMAN_PRISONER, prisoner_title, &[ROWLING_TWIN], &fantasy);
@@ -182,10 +181,6 @@ fn write_release(directory: &Path) {
         ],
         works: vec![stone, chamber, dune, foundation],
         aliases: vec![(9, 12)],
-        covers: vec![
-            Cover { work: 10, source: 0, key: 300 },
-            Cover { work: 12, source: 0, key: 301 },
-        ],
         extras: vec![extras(10, "Bloomsbury")],
     };
     let german = Language {
@@ -193,7 +188,6 @@ fn write_release(directory: &Path) {
         ranks: vec![popularity(GERMAN_STONE, 400.0), popularity(GERMAN_PRISONER, 200.0)],
         works: vec![german_chamber, german, prisoner],
         aliases: Vec::new(),
-        covers: vec![Cover { work: GERMAN_STONE, source: 1, key: 355_155_167 }],
         extras: vec![extras(GERMAN_STONE, "Carlsen")],
     };
     let swedish = Language {
@@ -201,7 +195,6 @@ fn write_release(directory: &Path) {
         ranks: vec![popularity(10, 100.0), popularity(SWEDISH_LATER, 50.0)],
         works: vec![swedish_stone, swedish_later],
         aliases: Vec::new(),
-        covers: Vec::new(),
         extras: Vec::new(),
     };
     let mut published = write_language(directory, &english, &authors);
@@ -217,11 +210,6 @@ fn write_release(directory: &Path) {
             .map(|code| directory.join(format!("{kind}-{code}.bin")))
             .collect()
     };
-    std::fs::write(
-        directory.join("covers.bin"),
-        covers::merge(&merged("covers")).unwrap(),
-    )
-    .unwrap();
     let extras = sidecar::merge(EXTRAS, &merged("extras")).unwrap();
     std::fs::write(directory.join("extras.bin"), extras).unwrap();
     let rowling = Person {
@@ -327,7 +315,7 @@ async fn redirect(app: &Router, uri: &str, token: Option<&str>) -> (StatusCode, 
 #[test]
 fn isbns_become_segment_keys() {
     assert_eq!(isbn_key("978-0-7475-3269-9"), isbn_key("0747532699"));
-    assert_eq!(builder::reader::isbn_of(isbn_key(STONE_ISBN).unwrap()), STONE_ISBN);
+    assert_eq!(isbn_of(isbn_key(STONE_ISBN).unwrap()), STONE_ISBN);
     assert!(isbn_key("9780747532698").is_none() && isbn_key("074753269X").is_none());
     assert!(isbn_key("1984").is_none() && isbn_key("dune").is_none());
     assert!(isbn_key("9791032305690").is_some());
@@ -345,7 +333,7 @@ async fn everything_but_open_routes_needs_proof_of_work() {
     let body: serde_json::Value = serde_json::from_str(&text_of(api).await).unwrap();
     assert_eq!(body["error"]["code"], "pow_required");
     assert_eq!(body["pow"]["solutions"], SOLUTIONS);
-    let image = send(&app, get(&format!("/b/{RELEASE}/en/10/160.avif"), None)).await;
+    let image = send(&app, get("/b/10/en/160.avif", None)).await;
     assert_eq!(image.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(header_of(&image, header::CACHE_CONTROL), "no-store");
     let forged = send(&app, get("/", Some(&"ab".repeat(32)))).await;
@@ -445,10 +433,7 @@ async fn variants_redirect_to_one_url() {
         ("/b/10?utm=x", "/b/10"),
         ("/s?q=dune&x=1&p=1", "/s?q=dune&p=1"),
         ("/b/10?", "/b/10"),
-        (
-            &format!("/b/{RELEASE}/en/010/160.avif?w=1"),
-            &format!("/b/{RELEASE}/en/10/160.avif"),
-        ),
+        ("/b/010/en/160.avif?w=1", "/b/10/en/160.avif"),
     ] {
         let response = send(&app, get(from, None)).await;
         assert_eq!(response.status(), StatusCode::MOVED_PERMANENTLY, "{from}");
@@ -496,10 +481,7 @@ async fn pages_render_the_catalogue() {
         home.contains("<a href=/l/en>English</a>")
             && home.contains("<a href=/l/de>German")
     );
-    assert!(
-        home.contains("6 books")
-            && home.contains(&format!("/b/{RELEASE}/en/10/160.avif"))
-    );
+    assert!(home.contains("6 books") && home.contains("/b/10/en/160.avif"));
     let results = page(&app, "/s?q=dune", &token).await;
     assert!(
         results.contains("<a href=/b/12/en>Dune</a>")
@@ -510,8 +492,8 @@ async fn pages_render_the_catalogue() {
     assert!(page(&app, "/s?q=zzzzqx", &token).await.contains("No results."));
     let stone = page(&app, "/b/10", &token).await;
     assert!(stone.contains("<h1>Harry Potter and the Philosopher&#39;s Stone</h1>"));
-    assert!(stone.contains(&format!("<img src=/b/{RELEASE}/en/10/320.avif")));
-    assert!(stone.contains(&format!("rel=icon href=/b/{RELEASE}/en/10/160.avif")));
+    assert!(stone.contains("<img src=/b/10/en/320.avif"));
+    assert!(stone.contains("rel=icon href=/b/10/en/160.avif"));
     assert!(stone.contains("A boy learns he is a wizard.") && stone.contains("Fantasy"));
     assert!(stone.contains("<a href=/a/100/en>J. K. Rowling</a>"));
     let german_link =
@@ -532,7 +514,8 @@ async fn pages_render_the_catalogue() {
     let german = page(&app, "/b/10/de", &token).await;
     assert!(german.contains("<h1>Harry Potter und der Stein der Weisen</h1>"));
     assert!(german.contains("Carlsen") && german.contains("Ein Junge erfährt"));
-    assert!(german.contains(&format!("/b/{RELEASE}/de/{GERMAN_STONE}/320.avif")));
+    let german_cover = format!("/b/{GERMAN_STONE}/de/320.avif");
+    assert!(german.contains(&german_cover));
     assert!(german.contains("<a href=/a/100/de>J. K. Rowling</a>"));
     assert!(german.contains("Kammer des Schreckens") && !german.contains("Bloomsbury"));
     assert!(german.contains("Romane") && !german.contains(">Fiction<"));
@@ -597,7 +580,7 @@ async fn json_api_answers_every_route() {
     assert_eq!(stone["languages"][1]["language"], "de");
     assert_eq!(stone["editions"][0]["publisher"], "Bloomsbury");
     assert_eq!(stone["description"]["text"], "A boy learns he is a wizard.");
-    assert_eq!(stone["cover"], format!("/b/{RELEASE}/en/10/320.avif"));
+    assert_eq!(stone["cover"], "/b/10/en/320.avif");
     assert!(stone["tags"].as_array().unwrap().iter().any(|tag| tag["slug"] == "fantasy"));
     let german = json(&app, "/api/v1/works/10?language=de", &token).await;
     assert_eq!(german["title"], "Harry Potter und der Stein der Weisen");
@@ -661,16 +644,20 @@ async fn json_api_answers_every_route() {
     assert_eq!(json(&app, "/api/v1/nowhere", &token).await["error"]["code"], "not_found");
 }
 
+fn cache(images: &Path, url: &str, width: u32) {
+    let directory = images.join(&key(url)[..2]);
+    std::fs::create_dir_all(&directory).unwrap();
+    std::fs::write(directory.join(format!("{}.{width}.avif", key(url))), b"avif")
+        .unwrap();
+}
+
 #[tokio::test]
 async fn images_keep_their_own_cache_rules() {
     let images = scratch("images");
-    let cached = images.join(&key(COVER_URL)[..2]);
-    std::fs::create_dir_all(&cached).unwrap();
-    std::fs::write(cached.join(format!("{}.160.avif", key(COVER_URL))), b"avif").unwrap();
+    cache(&images, COVER_URL, 160);
     let app = app_with(Some(Library::open(release()).unwrap()), &images);
     let token = token(&app).await;
-    let found =
-        send(&app, get(&format!("/b/{RELEASE}/en/10/160.avif"), Some(&token))).await;
+    let found = send(&app, get("/b/10/en/160.avif", Some(&token))).await;
     assert_eq!(found.status(), StatusCode::OK);
     assert_eq!(header_of(&found, header::CONTENT_TYPE), "image/avif");
     assert_eq!(
@@ -678,22 +665,22 @@ async fn images_keep_their_own_cache_rules() {
         "public, max-age=31536000, immutable"
     );
     assert!(found.headers().get(header::ETAG).is_none());
-    let missing =
-        send(&app, get(&format!("/b/{RELEASE}/en/13/160.avif"), Some(&token))).await;
-    assert_eq!(missing.status(), StatusCode::NOT_FOUND);
-    assert_eq!(
-        header_of(&missing, header::CACHE_CONTROL),
-        "public, max-age=86400, s-maxage=604800"
-    );
+    for path in ["/b/13/en/160.avif", "/b/10/xx/160.avif", "/b/404/en/160.avif"] {
+        let missing = send(&app, get(path, Some(&token))).await;
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND, "{path}");
+        assert_eq!(
+            header_of(&missing, header::CACHE_CONTROL),
+            "public, max-age=86400, s-maxage=604800"
+        );
+    }
     for path in [
-        format!("/b/{RELEASE}/en/10/321.avif"),
-        format!("/b/{RELEASE}/en/10/160.webp"),
-        "/b/latest/en/10/160.avif".to_string(),
-        "/a/0/96.avif".to_string(),
-        "/a/1000000000/96.avif".to_string(),
-        "/a/7/320.avif".to_string(),
+        "/b/10/en/321.avif",
+        "/b/10/en/160.webp",
+        "/a/0/96.avif",
+        "/a/1000000000/96.avif",
+        "/a/7/320.avif",
     ] {
-        let response = send(&app, get(&path, Some(&token))).await;
+        let response = send(&app, get(path, Some(&token))).await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND, "{path}");
         assert_eq!(
             header_of(&response, header::CACHE_CONTROL),
@@ -703,12 +690,42 @@ async fn images_keep_their_own_cache_rules() {
 }
 
 #[tokio::test]
+async fn covers_follow_aliases_and_library_sources() {
+    let images = scratch("images");
+    cache(&images, "https://covers.openlibrary.org/b/id/301-L.jpg", 320);
+    let german = format!(
+        "https://portal.dnb.de/opac/mvb/cover?isbn={}",
+        isbn_of(GERMAN_COVER_KEY)
+    );
+    cache(&images, &german, 640);
+    let app = app_with(Some(Library::open(release()).unwrap()), &images);
+    let token = token(&app).await;
+    for path in ["/b/9/en/320.avif".to_string(), format!("/b/{GERMAN_STONE}/de/640.avif")]
+    {
+        let response = send(&app, get(&path, Some(&token))).await;
+        assert_eq!(response.status(), StatusCode::OK, "{path}");
+    }
+}
+
+#[tokio::test]
+async fn release_addresses_redirect_whatever_release_they_name() {
+    let app = app_with(None, &scratch("images"));
+    let token = token(&app).await;
+    for release in [RELEASE, "2020-01-01", "latest"] {
+        let path = format!("/b/{release}/en/10/160.avif");
+        let (status, location) = redirect(&app, &path, Some(&token)).await;
+        assert_eq!(status, StatusCode::MOVED_PERMANENTLY, "{path}");
+        assert_eq!(location, "/b/10/en/160.avif");
+    }
+    let (status, _) = redirect(&app, "/b/latest/en/10/161.avif", Some(&token)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn nothing_is_cached_before_a_catalogue_loads() {
     let app = app_with(None, &scratch("images"));
     let token = token(&app).await;
-    for path in
-        ["/", "/b/10", "/api/v1/works/10", &format!("/b/{RELEASE}/en/10/160.avif")]
-    {
+    for path in ["/", "/b/10", "/api/v1/works/10", "/b/10/en/160.avif"] {
         let response = send(&app, get(path, Some(&token))).await;
         assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE, "{path}");
         assert_eq!(header_of(&response, header::CACHE_CONTROL), "no-store", "{path}");

@@ -1,8 +1,8 @@
 //! One loaded catalogue release: every language's current chains, ranks, the unified
-//! works of `works.bin`, the `extras.bin` sidecar and the `covers.bin` index.
+//! works of `works.bin` and the `extras.bin` and `people.bin` sidecars.
 
+use crate::images::cover_url;
 use builder::LANGUAGES;
-use builder::covers::{self, Cover};
 use builder::reader::Series as ListedSeries;
 use builder::reader::{Book, Catalogue, Description, Ranks, Segment, current_segments};
 use builder::search::{Hit, search_all};
@@ -67,7 +67,6 @@ pub struct Library {
     unified: HashMap<u32, u32>,
     extras: Option<Sidecar>,
     people: Option<Sidecar>,
-    covers: HashMap<String, Vec<Cover>>,
     authors: Vec<AuthorEntry>,
     author_aliases: HashMap<u32, u32>,
     author_groups: HashMap<u32, Vec<u32>>,
@@ -244,17 +243,6 @@ fn tag_weights(catalogue: &Catalogue) -> Vec<f64> {
     tags.iter().map(weight).collect()
 }
 
-fn covers_of(directory: &Path) -> HashMap<String, Vec<Cover>> {
-    let Ok(bytes) = std::fs::read(directory.join("covers.bin")) else {
-        return HashMap::new();
-    };
-    let sections = covers::sections_of(covers::MAGIC, covers::VERSION, &bytes);
-    let languages = sections.into_iter().flatten().filter(|(name, _)| name != "meta");
-    languages
-        .filter_map(|(name, section)| Some((name, covers::decode(&section)?)))
-        .collect()
-}
-
 struct Loaded {
     catalogue: Catalogue,
     authors: Vec<AuthorEntry>,
@@ -310,7 +298,6 @@ impl Library {
             unified: works.unified_ids(),
             extras: sidecar("extras.bin", EXTRAS),
             people: sidecar("people.bin", PEOPLE),
-            covers: covers_of(directory),
             authors: Vec::new(),
             author_aliases: works.authors.iter().copied().collect(),
             author_groups,
@@ -464,12 +451,6 @@ impl Library {
         let (segment, _) = catalogue.locate(member.work)?;
         let tags = &catalogue.segments[segment].tags;
         tags.iter().find(|tag| tag.slug == slug).map(|tag| tag.label.clone())
-    }
-
-    pub fn cover(&self, code: &str, work: u32) -> Option<Cover> {
-        let covers = self.covers.get(code)?;
-        let found = covers.binary_search_by_key(&work, |cover| cover.work).ok()?;
-        Some(covers[found])
     }
 
     /// Catalogue series holding the unified work of `member`: its own first, then those its
@@ -667,7 +648,8 @@ impl Library {
                 let Some(&(work, _)) = works.get(rank) else { continue };
                 let unified = self.unified_of(work);
                 let Some(member) = self.display(unified, None) else { continue };
-                let covered = self.cover(self.code(member), member.work).is_some();
+                let covered =
+                    self.book(member).is_some_and(|book| cover_url(&book).is_some());
                 if member.language == 0 && covered && seen.insert(unified) {
                     candidates.push(member);
                 }

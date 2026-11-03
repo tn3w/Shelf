@@ -1,7 +1,6 @@
 //! Downloads covers the way the app does, re-encodes them as AVIF and keeps them on disk.
 
-use builder::covers::Cover;
-use builder::reader::isbn_of;
+use builder::reader::Book;
 use image::imageops::FilterType;
 use image::{DynamicImage, GrayImage};
 use sha2::{Digest, Sha256};
@@ -32,28 +31,26 @@ const PLACEHOLDER_HASHES: [&str; 7] = [
     "f84e75694fef8121d7fed94ab7f1a92751e48188e512d66207498f6825fc9408",
 ];
 
-const OPEN_LIBRARY: u8 = 0;
 const DNB: u8 = 1;
 const DIGAR: u8 = 2;
 const ISBN_COVER: u8 = 3;
 const BOOKBITES: u8 = 4;
 
-/// The address the app itself would load, see `Book.coverUrl("L")`.
-pub fn cover_url(cover: Cover) -> Option<String> {
-    let isbn = || isbn_of(cover.key);
+/// The address the app itself would load, see `Book.coverUrl("L")`: an Open Library
+/// cover id wins over a library cover.
+pub fn cover_url(book: &Book) -> Option<String> {
+    if book.cover != 0 {
+        return Some(format!("https://covers.openlibrary.org/b/id/{}-L.jpg", book.cover));
+    }
+    let cover = book.library_cover.as_ref()?;
+    let key = &cover.key;
     Some(match cover.source {
-        OPEN_LIBRARY => {
-            format!("https://covers.openlibrary.org/b/id/{}-L.jpg", cover.key)
-        }
-        DNB => format!("https://portal.dnb.de/opac/mvb/cover?isbn={}", isbn()),
-        DIGAR => format!("https://www.digar.ee/arhiiv/nlib-digar:{}?thumb=1", cover.key),
+        DNB => format!("https://portal.dnb.de/opac/mvb/cover?isbn={key}"),
+        DIGAR => format!("https://www.digar.ee/arhiiv/nlib-digar:{key}?thumb=1"),
         ISBN_COVER => {
-            format!(
-                "https://covers.openlibrary.org/b/isbn/{}-L.jpg?default=false",
-                isbn()
-            )
+            format!("https://covers.openlibrary.org/b/isbn/{key}-L.jpg?default=false")
         }
-        BOOKBITES => format!("https://bookbites-prod-se.covers.bookbites.com/{}", isbn()),
+        BOOKBITES => format!("https://bookbites-prod-se.covers.bookbites.com/{key}"),
         _ => return None,
     })
 }
@@ -276,6 +273,7 @@ impl Images {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use builder::reader::LibraryCover;
     use image::{ImageFormat, Rgb, RgbImage};
     use std::io::Cursor;
 
@@ -333,22 +331,37 @@ pub mod tests {
 
     #[test]
     fn urls_match_the_app() {
-        let cover = |source, key| cover_url(Cover { work: 1, source, key }).unwrap();
+        let book = |cover, library_cover| Book {
+            work: 1,
+            title: String::new(),
+            subtitle: String::new(),
+            alternate: String::new(),
+            authors: Vec::new(),
+            year: 0,
+            cover,
+            tags: Vec::new(),
+            library_cover,
+            language: String::new(),
+        };
+        let library = |source, key: &str| {
+            cover_url(&book(0, Some(LibraryCover { source, key: key.to_string() })))
+        };
+        let opened = book(42, Some(LibraryCover { source: DNB, key: "1".to_string() }));
         assert_eq!(
-            cover(OPEN_LIBRARY, 42),
+            cover_url(&opened).unwrap(),
             "https://covers.openlibrary.org/b/id/42-L.jpg"
         );
-        assert_eq!(isbn_of(917_629_168), "9789176291689");
-        assert!(cover(DNB, 357_050_132).ends_with("isbn=9783570501320"));
+        assert!(library(DNB, "9783570501320").unwrap().ends_with("isbn=9783570501320"));
         assert_eq!(
-            cover(BOOKBITES, 917_629_168),
+            library(BOOKBITES, "9789176291689").unwrap(),
             "https://bookbites-prod-se.covers.bookbites.com/9789176291689"
         );
         assert_eq!(
-            cover(DIGAR, 123),
+            library(DIGAR, "123").unwrap(),
             "https://www.digar.ee/arhiiv/nlib-digar:123?thumb=1"
         );
-        assert!(cover_url(Cover { work: 1, source: 9, key: 1 }).is_none());
+        assert!(library(ISBN_COVER, "9780747532699").unwrap().contains("/b/isbn/"));
+        assert!(library(9, "1").is_none() && cover_url(&book(0, None)).is_none());
         assert_eq!(
             author_url(7),
             "https://covers.openlibrary.org/a/olid/OL7A-M.jpg?default=false"

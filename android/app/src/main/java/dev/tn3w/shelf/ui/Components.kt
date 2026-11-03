@@ -89,14 +89,13 @@ fun IconLabel(icon: ImageVector, @StringRes label: Int) {
 private fun proxiedCover(book: Book, base: String?, pixels: Int): String? {
     if (base == null) return null
     val catalogue = shelfViewModel().loaded.collectAsStateWithLifecycle().value?.catalogue
-    val release = catalogue?.release ?: return null
     val language = remember(book.work, book.language, catalogue) {
         book.language.ifEmpty {
-            catalogue.language.takeIf { catalogue.locate(book.work) != null }.orEmpty()
+            catalogue?.language?.takeIf { catalogue.locate(book.work) != null }.orEmpty()
         }
     }
     if (language.isEmpty()) return null
-    return proxyCoverUrl(base, release, language, book.work, pixels)
+    return proxyCoverUrl(base, language, book.work, pixels)
 }
 
 @Composable

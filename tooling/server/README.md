@@ -13,15 +13,15 @@ loads covers from it when "Fast covers" is on (Android 12+).
 | `src/http.rs` | Canonical URLs, cache and security headers, ETag, assets |
 | `src/images.rs` | Cover fetch, trim, AVIF encode, disk cache |
 | `pow/` | Proof-of-work gate: challenges, tokens, rate limits, no-script puzzle |
-| `../builder` | Readers (segments, ranks, `works.bin`, sidecars, covers), unified search |
+| `../builder` | Readers (segments, ranks, `works.bin`, sidecars), unified search |
 
 ## Data
 
 Every 30 min: newest release with `manifest.json` → `SHELF_DATA/next` (segments of every
-chain, ranks, `works.bin`, `extras.bin`, `people.bin`, `covers.bin`; unchanged files hard-linked, new
-ones SHA-256 checked) → atomic swap → `SHELF_DATA/catalogue`. Broken download keeps the old
+chain, ranks, `works.bin`, `extras.bin`, `people.bin`; unchanged files hard-linked, new ones
+SHA-256 checked) → atomic swap → `SHELF_DATA/catalogue`. Broken download keeps the old
 release. Before the first load everything but `/health` answers 503. The sidecars are
-optional: without them works stand alone and pages drop extras and covers.
+optional: without them works stand alone and pages drop extras.
 
 Ids: works are unified ids (`works.bin`); `/b/{work}` shows one member,
 `/b/{work}/{language}` a chosen one. Old ids and aliases answer 301. Authors are segment
@@ -57,7 +57,8 @@ page language where present. Rows show
 | `/a/{author}[/{language}]?p=` | Author: dates, other names, bio, authority links (Open Library, VIAF, GND, ISNI, LoC, BNE, Wikidata), books |
 | `/series/{id}[/{language}]?p=`, `/l/{language}?p=` | Series in reading order, language catalogue |
 | `/isbn/{isbn}`, `/random` | 303 to a book |
-| `/b/{release}/{language}/{work}/{160,320,640}.avif` | Book cover, 2:3 |
+| `/b/{work}/{language}/{160,320,640}.avif` | Book cover, 2:3: catalogue work id, cover from the loaded release's segments (aliases followed) |
+| `/b/{release}/{language}/{work}/{file}` | 301 to the address above (older apps) |
 | `/a/{author}/{96,192}.avif` | Open Library author photo, square |
 | `/api/v1/…` | `search`, `works/{id}`, `authors/{id}`, `series/{id}`, `isbn/{isbn}`, `suggest`, `similar/{id}`, `languages`, `catalogue/{language}` |
 

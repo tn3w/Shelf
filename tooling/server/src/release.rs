@@ -1,6 +1,6 @@
 //! Finds the newest catalogue release on GitHub and mirrors it into a directory, the
 //! layout `publish` uploads: manifest.json, the segments it lists (older chain parts live
-//! in earlier releases), works.bin, extras.bin, people.bin and covers.bin.
+//! in earlier releases), works.bin, extras.bin and people.bin.
 
 use crate::images::USER_AGENT;
 use crate::library::manifest_entries;
@@ -11,7 +11,7 @@ use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
 const RELEASES: &str = "https://api.github.com/repos/tn3w/Shelf/releases?per_page=100";
-const SIDECARS: [&str; 4] = ["works.bin", "extras.bin", "people.bin", "covers.bin"];
+const SIDECARS: [&str; 3] = ["works.bin", "extras.bin", "people.bin"];
 const MAX_RELEASE: usize = 16;
 
 pub struct Published {

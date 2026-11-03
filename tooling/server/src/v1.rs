@@ -1,6 +1,6 @@
 use crate::http::ApiError;
 use crate::library::{Choice, Library, Member, isbn_key, language_name};
-use crate::pages::{cover_path, hit_member, moved, photo_path};
+use crate::pages::{cover_path, hit_member, is_named, moved, photo_path};
 use crate::{App, blocking, number};
 use axum::Json;
 use axum::extract::{Path, Query, State};
@@ -147,15 +147,22 @@ fn id_of(name: &str, raw: &str) -> Result<u32, ApiError> {
     number(raw).ok_or_else(|| ApiError::invalid(format!("{name} must be a number")))
 }
 
-fn paging(page: Option<&str>, limit: Option<&str>) -> Result<(usize, usize), ApiError> {
-    let page: usize = page.map_or(Ok(1), |raw| parsed("page", raw))?;
-    let limit: usize = limit.map_or(Ok(DEFAULT_LIMIT), |raw| parsed("limit", raw))?;
-    if !(1..=MAX_PAGE).contains(&page) || !(1..=MAX_LIMIT).contains(&limit) {
-        return Err(ApiError::invalid(format!(
-            "page must be 1-{MAX_PAGE}, limit 1-{MAX_LIMIT}"
-        )));
+fn bounded(
+    name: &str,
+    raw: Option<&str>,
+    default: usize,
+    max: usize,
+) -> Result<usize, ApiError> {
+    let value = raw.map_or(Ok(default), |raw| parsed(name, raw))?;
+    if !(1..=max).contains(&value) {
+        return Err(ApiError::invalid(format!("{name} must be 1-{max}")));
     }
-    Ok((page, limit))
+    Ok(value)
+}
+
+fn paging(page: Option<&str>, limit: Option<&str>) -> Result<(usize, usize), ApiError> {
+    let page = bounded("page", page, 1, MAX_PAGE)?;
+    Ok((page, bounded("limit", limit, DEFAULT_LIMIT, MAX_LIMIT)?))
 }
 
 fn language_of(raw: Option<String>) -> Result<Option<String>, ApiError> {
@@ -187,7 +194,7 @@ fn summary(library: &Library, member: Member, book: &Book) -> WorkSummary {
             .map(|author| AuthorRef { id: author.number, name: author.name.clone() })
             .collect(),
         year: book.year,
-        cover: cover_path(library, member, COVER),
+        cover: cover_path(book, COVER),
     }
 }
 
@@ -310,14 +317,8 @@ pub async fn similar(
     Path(raw): Path<String>,
     Query(params): Query<SearchParams>,
 ) -> Response {
-    let limit =
-        params.limit.as_deref().map_or(Ok(SIMILAR_LIMIT), |raw| parsed("limit", raw));
-    let checked = id_of("work id", &raw).and_then(|id| Ok((id, limit?)));
-    let (id, limit) = match checked {
-        Ok((_, limit)) if !(1..=MAX_LIMIT).contains(&limit) => {
-            return ApiError::invalid(format!("limit must be 1-{MAX_LIMIT}"))
-                .into_response();
-        }
+    let limit = bounded("limit", params.limit.as_deref(), SIMILAR_LIMIT, MAX_LIMIT);
+    let (id, limit) = match id_of("work id", &raw).and_then(|id| Ok((id, limit?))) {
         Ok(checked) => checked,
         Err(error) => return error.into_response(),
     };
@@ -402,11 +403,8 @@ fn suggestions(library: &Library, query: &str) -> Vec<Suggestion> {
     let words = tokenize(query);
     let mut authors: Vec<Suggestion> = Vec::new();
     for author in hits.iter().flat_map(|hit| &hit.books).flat_map(|book| &book.authors) {
-        let name = tokenize(&author.name);
-        let named =
-            words.iter().all(|word| name.iter().any(|part| part.starts_with(word)));
         let known = authors.iter().any(|known| known.id == author.number);
-        if named && !known && authors.len() < SUGGEST_AUTHORS {
+        if is_named(&words, &author.name) && !known && authors.len() < SUGGEST_AUTHORS {
             authors.push(Suggestion {
                 kind: "author",
                 id: author.number,

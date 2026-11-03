@@ -187,10 +187,10 @@ pub fn moved(target: String) -> Response {
     (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, target)]).into_response()
 }
 
-pub fn cover_path(library: &Library, member: Member, width: u32) -> Option<String> {
-    let code = library.code(member);
-    cover_url(library.cover(code, member.work)?)?;
-    Some(format!("/b/{}/{code}/{}/{width}.avif", library.release, member.work))
+/// `/b/{work}/{language}/{width}.avif` when the book has a cover.
+pub fn cover_path(book: &Book, width: u32) -> Option<String> {
+    cover_url(book)?;
+    Some(format!("/b/{}/{}/{width}.avif", book.work, book.language))
 }
 
 pub fn photo_path(number: u32, width: u32) -> Option<String> {
@@ -214,7 +214,7 @@ pub fn book_row(library: &Library, member: Member, book: &Book) -> Row {
         title: book.title.clone(),
         subtitle: book.subtitle.clone(),
         detail: detail.join(" · "),
-        cover: cover_path(library, member, THUMBNAIL).unwrap_or_default(),
+        cover: cover_path(book, THUMBNAIL).unwrap_or_default(),
     }
 }
 
@@ -311,16 +311,20 @@ pub async fn home(State(app): Shared) -> Response {
     respond(page.await)
 }
 
+/// Every query word starts a word of `name`: "j rowl" names J. K. Rowling.
+pub fn is_named(words: &[String], name: &str) -> bool {
+    let name = tokenize(name);
+    words.iter().all(|word| name.iter().any(|part| part.starts_with(word)))
+}
+
 fn matching_authors(library: &Library, query: &str, hits: &[Hit]) -> Vec<AuthorHit> {
     let words = tokenize(query);
     let mut found: Vec<AuthorHit> = Vec::new();
     let books = hits.iter().take(AUTHOR_HITS).flat_map(|hit| &hit.books);
     for author in books.flat_map(|book| &book.authors) {
-        let name = tokenize(&author.name);
-        let named =
-            words.iter().all(|word| name.iter().any(|part| part.starts_with(word)));
         let number = library.author_of(author.number);
-        if !named || found.iter().any(|known| known.id == number) {
+        if !is_named(&words, &author.name) || found.iter().any(|known| known.id == number)
+        {
             continue;
         }
         let Some(record) = library.author(number, None) else { continue };
@@ -560,8 +564,8 @@ fn book_view(library: &Library, id: u32, member: Member) -> Option<BookPage> {
     });
     Some(BookPage {
         code: code.to_string(),
-        cover: cover_path(library, member, COVER).unwrap_or_default(),
-        icon: cover_path(library, member, THUMBNAIL).unwrap_or_default(),
+        cover: cover_path(&book, COVER).unwrap_or_default(),
+        icon: cover_path(&book, THUMBNAIL).unwrap_or_default(),
         authors: book
             .authors
             .iter()

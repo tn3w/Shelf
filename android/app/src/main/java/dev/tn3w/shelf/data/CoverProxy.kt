@@ -27,14 +27,9 @@ fun Settings.coverProxyBase(): String? {
 private fun width(widths: IntArray, pixels: Int) =
     widths.firstOrNull { it >= pixels } ?: widths.last()
 
-/** Cover of [work] in the [language] catalogue of [release], at least [pixels] wide. */
-fun proxyCoverUrl(
-    base: String,
-    release: String,
-    language: String,
-    work: Int,
-    pixels: Int,
-) = "$base/b/$release/$language/$work/${width(BOOK_WIDTHS, pixels)}.avif"
+/** Cover of [work] in the [language] catalogue, at least [pixels] wide, any release. */
+fun proxyCoverUrl(base: String, language: String, work: Int, pixels: Int) =
+    "$base/b/$work/$language/${width(BOOK_WIDTHS, pixels)}.avif"
 
 fun proxyPhotoUrl(base: String, author: Author, pixels: Int) =
     "$base/a/${author.number}/${width(AUTHOR_WIDTHS, pixels)}.avif".takeIf {

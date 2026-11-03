@@ -9,12 +9,10 @@ import org.junit.Test
 class CoverProxyTest {
     @Test
     fun coverAddressesRoundUpToAServedWidth() {
-        val url = { pixels: Int ->
-            proxyCoverUrl(COVER_PROXY, "2026-10-31", "de", 42, pixels)
-        }
-        assertEquals("$COVER_PROXY/b/2026-10-31/de/42/160.avif", url(100))
-        assertEquals("$COVER_PROXY/b/2026-10-31/de/42/320.avif", url(161))
-        assertEquals("$COVER_PROXY/b/2026-10-31/de/42/640.avif", url(2000))
+        val url = { pixels: Int -> proxyCoverUrl(COVER_PROXY, "de", 42, pixels) }
+        assertEquals("$COVER_PROXY/b/42/de/160.avif", url(100))
+        assertEquals("$COVER_PROXY/b/42/de/320.avif", url(161))
+        assertEquals("$COVER_PROXY/b/42/de/640.avif", url(2000))
     }
 
     @Test
