@@ -79,10 +79,10 @@ leaves out `null` and empty-text fields.
 4. Send `Authorization: Bearer <t>` (app, JSON) or the cookie (pages). Guarded 401s carry
    `WWW-Authenticate: Bearer realm="shelf"` → solve again.
 
-Cost: `k · 2^d` = 768 scrypt hashes of 4 MiB. Measured: Chromium 8 workers ≈ 1.3 s (4
-workers ≈ 2.8 s), JVM ≈ 1 s; native ≈ 3 CPU-s per token; server checks 12 hashes
-(≈ 50 ms). `pow.js` runs an unrolled Salsa20/8 and WebCrypto PBKDF2, ≈ 2.4× native per
-core.
+Cost: `k · 2^d` = 384 scrypt hashes of 4 MiB. Measured with 8 workers: Chromium ≈ 0.7 s,
+LibreWolf ≈ 1.5 s, JVM ≈ 0.5 s; native ≈ 1.6 CPU-s per token; server checks 12 hashes
+(≈ 50 ms). `pow.js` runs an unrolled Salsa20/8 and WebCrypto HMAC (Firefox rejects long
+PBKDF2 outputs), ≈ 2.4× native per core.
 
 Tokens: 6 h, `SHELF_RATE` requests/min, bound to `CF-Connecting-IP` (IPv6 /64) and
 `User-Agent`. Difficulty `SHELF_DIFFICULTY`, +1 bit per 8 solves in 10 s, up to +3
@@ -105,7 +105,7 @@ no token. Junk URLs (leading zeros, unknown query keys) 301 to one spelling. CSP
 | `$CREDENTIALS_DIRECTORY/secrets` | required | HMAC key, ≥ 16 bytes |
 | `SHELF_DATA` | `data` | Release mirror and AVIF cache |
 | `SHELF_LISTEN` | unset | TCP `host:port`; unset → systemd socket fd 3 |
-| `SHELF_DIFFICULTY` | 6 | PoW bits |
+| `SHELF_DIFFICULTY` | 5 | PoW bits |
 | `SHELF_RATE` | 300 | Requests per minute per token |
 
 ```bash

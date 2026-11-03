@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const CHALLENGE_SECONDS: u32 = 60;
-pub const DEFAULT_DIFFICULTY: u32 = 6;
+pub const DEFAULT_DIFFICULTY: u32 = 5;
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 300;
 pub const SOLUTIONS: usize = 12;
 pub const SCRYPT_LOG_COST: u8 = 12;

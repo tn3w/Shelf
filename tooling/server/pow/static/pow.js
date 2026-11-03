@@ -45,10 +45,20 @@ function mixer(blockSize) {
 
 async function solve({ c: challenge, d: difficulty, n: cost, r: blockSize, ...range }) {
   const secret = Uint8Array.from(challenge.match(/../g), (pair) => parseInt(pair, 16));
-  const usage = ['deriveBits'];
-  const key = await crypto.subtle.importKey('raw', secret, 'PBKDF2', false, usage);
-  const derive = (salt, bytes) => crypto.subtle.deriveBits(
-    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 1 }, key, bytes * 8);
+  const hmac = { name: 'HMAC', hash: 'SHA-256' };
+  const key = await crypto.subtle.importKey('raw', secret, hmac, false, ['sign']);
+  const derive = async (salt, bytes) => {
+    const input = new Uint8Array(salt.byteLength + 4);
+    input.set(new Uint8Array(salt.buffer));
+    const blocks = Array.from({ length: bytes / 32 }, (_, index) => {
+      input.set([0, 0, 0, index + 1], salt.byteLength);
+      return crypto.subtle.sign('HMAC', key, input);
+    });
+    const output = new Uint8Array(bytes);
+    const parts = await Promise.all(blocks);
+    parts.forEach((part, index) => output.set(new Uint8Array(part), index * 32));
+    return output.buffer;
+  };
   const words = 32 * blockSize;
   const memory = new Int32Array(cost * words);
   const mix = mixer(blockSize);
