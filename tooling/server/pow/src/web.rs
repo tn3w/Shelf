@@ -13,6 +13,8 @@ use std::net::IpAddr;
 use std::sync::Arc;
 
 const NO_STORE: &str = "no-store";
+const COOKIE: &str = "__Host-t";
+const CHALLENGE: &str = r#"Bearer realm="shelf""#;
 const BODY_LIMIT_BYTES: usize = 1024;
 const MAX_RETURN_BYTES: usize = 512;
 const REQUIRED: &str =
@@ -55,6 +57,16 @@ impl Gate {
         page(StatusCode::UNAUTHORIZED, ChallengePage { pages: &self.pages, back })
     }
 
+    fn unauthorized(&self, uri: &Uri) -> Response {
+        let mut response = match uri.path().starts_with("/api/") {
+            true => error(StatusCode::UNAUTHORIZED, "pow_required", REQUIRED),
+            false => self.challenge_page(uri),
+        };
+        let challenge = HeaderValue::from_static(CHALLENGE);
+        response.headers_mut().insert(header::WWW_AUTHENTICATE, challenge);
+        response
+    }
+
     fn puzzle_page(&self, status: StatusCode, back: &str, note: &str) -> Response {
         let puzzle = self.pow.puzzle();
         page(status, PuzzlePage { pages: &self.pages, note, back: local(back), puzzle })
@@ -82,8 +94,7 @@ pub async fn guard(
     match token(request.headers()).map(|token| gate.pow.check(&token, &client)) {
         Some(Check::Valid) => next.run(request).await,
         Some(Check::Limited) => limited(),
-        _ if request.uri().path().starts_with("/api/") => required(&gate),
-        _ => gate.challenge_page(request.uri()),
+        _ => gate.unauthorized(request.uri()),
     }
 }
 
@@ -97,7 +108,7 @@ fn token(headers: &HeaderMap) -> Option<String> {
         .iter()
         .filter_map(|value| value.to_str().ok())
         .flat_map(|value| value.split(';'))
-        .find_map(|part| part.trim().strip_prefix("t="));
+        .find_map(|part| part.trim().strip_prefix(COOKIE)?.strip_prefix('='));
     bearer.or(cookie).map(str::to_string)
 }
 
@@ -130,26 +141,11 @@ fn limited() -> Response {
     response
 }
 
-fn required(gate: &Gate) -> Response {
-    let body = json!({
-        "error": {
-            "code": "pow_required",
-            "message": REQUIRED,
-        },
-        "pow": {
-            "url": "/api/pow",
-            "difficulty": gate.pow.difficulty(),
-            "solutions": SOLUTIONS,
-            "scrypt": { "n": 1 << SCRYPT_LOG_COST, "r": SCRYPT_BLOCK_SIZE, "p": 1 },
-        },
-    });
-    uncached(StatusCode::UNAUTHORIZED, Json(body))
-}
-
 fn with_cookie(mut response: Response, token: &str, kind: Kind) -> Response {
     let seconds = kind.seconds();
-    let cookie =
-        format!("t={token}; Path=/; Max-Age={seconds}; Secure; HttpOnly; SameSite=Lax");
+    let cookie = format!(
+        "{COOKIE}={token}; Path=/; Max-Age={seconds}; Secure; HttpOnly; SameSite=Lax"
+    );
     if let Ok(value) = HeaderValue::from_str(&cookie) {
         response.headers_mut().insert(header::SET_COOKIE, value);
     }

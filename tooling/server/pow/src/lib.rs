@@ -13,14 +13,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const CHALLENGE_SECONDS: u32 = 60;
-pub const DEFAULT_DIFFICULTY: u32 = 4;
+pub const DEFAULT_DIFFICULTY: u32 = 6;
 pub const DEFAULT_REQUESTS_PER_MINUTE: u32 = 300;
-pub const SOLUTIONS: usize = 8;
-pub const SCRYPT_LOG_COST: u8 = 10;
+pub const SOLUTIONS: usize = 12;
+pub const SCRYPT_LOG_COST: u8 = 12;
 pub const SCRYPT_BLOCK_SIZE: u32 = 8;
 const ATTEMPTS_PER_MINUTE: u32 = 30;
 const LOAD_WINDOW_SECONDS: u32 = 10;
-const CHALLENGES_PER_EXTRA_BIT: u32 = 32;
+const SOLVES_PER_EXTRA_BIT: u32 = 8;
 const MAX_EXTRA_BITS: u32 = 3;
 const MAX_DIFFICULTY: u32 = 16;
 const SLOTS: usize = 1 << 16;
@@ -123,14 +123,18 @@ fn distinct(counters: &[u32]) -> bool {
     sorted.len() == counters.len()
 }
 
-fn within(slot: &AtomicU64, minute: u32, limit: u32) -> bool {
-    let update = |packed: u64| {
-        let count = if (packed >> 32) as u32 == minute { packed as u32 + 1 } else { 1 };
-        Some(u64::from(minute) << 32 | u64::from(count))
+fn count(slot: &AtomicU64, window: u32, increment: u32) -> u32 {
+    let in_window = |packed: u64| match (packed >> 32) as u32 == window {
+        true => packed as u32,
+        false => 0,
     };
-    let packed = slot.try_update(Ordering::Relaxed, Ordering::Relaxed, update);
-    let packed = packed.unwrap_or_default();
-    (packed >> 32) as u32 != minute || (packed as u32) < limit
+    let update =
+        |packed| Some(u64::from(window) << 32 | u64::from(in_window(packed) + increment));
+    in_window(slot.try_update(Ordering::Relaxed, Ordering::Relaxed, update).unwrap_or(0))
+}
+
+fn within(slot: &AtomicU64, minute: u32, limit: u32) -> bool {
+    count(slot, minute, 1) < limit
 }
 
 pub fn solve(challenge: &str, difficulty: u32) -> Option<Vec<u32>> {
@@ -169,26 +173,17 @@ impl Pow {
         within(self.slot(&self.attempts, network), now() / 60, ATTEMPTS_PER_MINUTE)
     }
 
-    fn count_in_window(&self, window: u32, increment: u32) -> u32 {
-        let update = |packed: u64| {
-            let (stored, count) = ((packed >> 32) as u32, packed as u32);
-            let count = if stored == window { count + increment } else { increment };
-            Some(u64::from(window) << 32 | u64::from(count))
-        };
-        let previous = self.load.try_update(Ordering::Relaxed, Ordering::Relaxed, update);
-        let packed = previous.unwrap_or_default();
-        if (packed >> 32) as u32 == window { packed as u32 } else { 0 }
+    fn solved(&self, increment: u32) -> u32 {
+        count(&self.load, now() / LOAD_WINDOW_SECONDS, increment)
     }
 
     pub fn difficulty(&self) -> u32 {
-        let count = self.count_in_window(now() / LOAD_WINDOW_SECONDS, 0);
-        let steps = count / CHALLENGES_PER_EXTRA_BIT;
+        let steps = self.solved(0) / SOLVES_PER_EXTRA_BIT;
         let extra = (u32::BITS - steps.leading_zeros()).min(MAX_EXTRA_BITS);
         (self.base_difficulty + extra).min(MAX_DIFFICULTY)
     }
 
     pub fn challenge(&self) -> (String, u32) {
-        self.count_in_window(now() / LOAD_WINDOW_SECONDS, 1);
         let difficulty = self.difficulty();
         (self.challenge_at(now(), difficulty), difficulty)
     }
@@ -230,6 +225,7 @@ impl Pow {
         if counters.iter().any(|&counter| work(&bytes, counter) < difficulty) {
             return None;
         }
+        self.solved(1);
         Some(self.token(moment, Kind::Work, client))
     }
 
@@ -284,20 +280,24 @@ globalThis.self = globalThis;
 const found = [];
 globalThis.postMessage = (counter) => {
   found.push(counter);
-  if (found.length === Number(process.argv[3])) {
+  if (found.length === Number(process.argv[6])) {
     console.log(found.join(','));
     process.exit();
   }
 };
 (0, eval)(source);
-const data = { c: process.argv[2], d: 3, n: 1024, r: 8 };
+const [c, d, n, r] = process.argv.slice(2, 6);
+const data = { c, d: Number(d), n: Number(n), r: Number(r) };
 onmessage({ data: { ...data, start: 0, step: 1 } });";
 
     #[test]
     fn javascript_solver_matches_scrypt() {
         let script = concat!(env!("CARGO_MANIFEST_DIR"), "/static/pow.js");
         let (challenge, _) = pow(4).challenge();
-        let arguments = ["-e", HARNESS, script, &challenge, &SOLUTIONS.to_string()];
+        let numbers = [3, 1 << SCRYPT_LOG_COST, SCRYPT_BLOCK_SIZE, SOLUTIONS as u32];
+        let numbers = numbers.map(|number| number.to_string());
+        let mut arguments = vec!["-e", HARNESS, script, &challenge];
+        arguments.extend(numbers.iter().map(String::as_str));
         let Ok(output) = std::process::Command::new("node").args(arguments).output()
         else {
             eprintln!("node missing, skipped");
@@ -382,9 +382,11 @@ onmessage({ data: { ...data, start: 0, step: 1 } });";
     fn difficulty_rises_with_load_up_to_a_cap() {
         let pow = pow(5);
         assert_eq!(pow.difficulty(), 5);
-        for _ in 0..CHALLENGES_PER_EXTRA_BIT * 64 {
-            pow.challenge();
-        }
+        pow.challenge();
+        assert_eq!(pow.difficulty(), 5);
+        pow.solved(SOLVES_PER_EXTRA_BIT);
+        assert_eq!(pow.difficulty(), 6);
+        pow.solved(SOLVES_PER_EXTRA_BIT * 64);
         assert_eq!(pow.difficulty(), 5 + MAX_EXTRA_BITS);
     }
 }

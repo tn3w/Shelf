@@ -1,7 +1,8 @@
 # Shelf server
 
 Book pages, JSON API and AVIF covers at `shelf-books.tn3w.dev`, behind Cloudflare. The app
-loads covers from it when "Fast covers" is on (Android 12+).
+loads covers from it when "Fast covers" is on (Android 12+), solving the proof of work
+itself (`ProofOfWork` in `Pow.kt`).
 
 | Part | Holds |
 | --- | --- |
@@ -58,27 +59,36 @@ page language where present. Rows show
 | `/series/{id}[/{language}]?p=`, `/l/{language}?p=` | Series in reading order, language catalogue |
 | `/isbn/{isbn}`, `/random` | 303 to a book |
 | `/b/{work}/{language}/{160,320,640}.avif` | Book cover, 2:3: catalogue work id, cover from the loaded release's segments (aliases followed) |
-| `/b/{release}/{language}/{work}/{file}` | 301 to the address above (older apps) |
 | `/a/{author}/{96,192}.avif` | Open Library author photo, square |
 | `/api/v1/…` | `search`, `works/{id}`, `authors/{id}`, `series/{id}`, `isbn/{isbn}`, `suggest`, `similar/{id}`, `languages`, `catalogue/{language}` |
 
 Open without token: `/health`, `/robots.txt`, `/s/{asset}`, `/api/pow`, `/pow`. Errors:
 `{"error":{"code","message"}}` with `invalid_parameter` 400, `pow_required` 401,
-`invalid_solution` 403, `not_found` 404, `rate_limited` 429, `unavailable` 503.
+`invalid_solution` 403, `not_found` 404, `rate_limited` 429, `unavailable` 503. JSON
+leaves out `null` and empty-text fields.
 
 ## Proof of work
 
-1. `GET /api/pow` → `{"c": <48 hex>, "d": bits, "k": 8, "n": 1024, "r": 8}`. `c` = 8 B
+1. `GET /api/pow` → `{"c": <48 hex>, "d": bits, "k": 12, "n": 4096, "r": 8}`. `c` = 8 B
    nonce, 4 B expiry (60 s), 1 B difficulty, 11 B HMAC: signed, stateless.
 2. Find `k` distinct `u32` counters `x` with
    `scrypt(hex-decoded c, salt = x big-endian, N = n, r = r, p = 1, 32 B)` starting with
    ≥ `d` zero bits.
-3. `POST /api/pow` `{"c", "n": [x, …]}` → `{"t"}` + cookie `t`; one attempt per challenge.
-4. Send `Authorization: Bearer <t>` (app, JSON) or cookie `t` (pages). 401 → solve again.
+3. `POST /api/pow` `{"c", "n": [x, …]}` → `{"t"}` + cookie `__Host-t` (Secure, HttpOnly,
+   SameSite=Lax); one attempt per challenge.
+4. Send `Authorization: Bearer <t>` (app, JSON) or the cookie (pages). Guarded 401s carry
+   `WWW-Authenticate: Bearer realm="shelf"` → solve again.
+
+Cost: `k · 2^d` = 768 scrypt hashes of 4 MiB. Measured: Chromium 8 workers ≈ 1.3 s (4
+workers ≈ 2.8 s), JVM ≈ 1 s; native ≈ 3 CPU-s per token; server checks 12 hashes
+(≈ 50 ms). `pow.js` runs an unrolled Salsa20/8 and WebCrypto PBKDF2, ≈ 2.4× native per
+core.
 
 Tokens: 6 h, `SHELF_RATE` requests/min, bound to `CF-Connecting-IP` (IPv6 /64) and
-`User-Agent`. Difficulty `SHELF_DIFFICULTY`, up to +3 under load. ≤ 30 solves per IP and
-minute. No-script fallback: SVG digit puzzle at `/pow?r=<path>` (1 h token, ¼ rate).
+`User-Agent`. Difficulty `SHELF_DIFFICULTY`, +1 bit per 8 solves in 10 s, up to +3
+(serving challenges costs nothing, so fetching them never raises it). ≤ 30 solves per
+IP and minute. No-script fallback: SVG digit puzzle at `/pow?r=<path>` (1 h token, ¼
+rate).
 
 ## Caching
 
@@ -95,7 +105,7 @@ no token. Junk URLs (leading zeros, unknown query keys) 301 to one spelling. CSP
 | `$CREDENTIALS_DIRECTORY/secrets` | required | HMAC key, ≥ 16 bytes |
 | `SHELF_DATA` | `data` | Release mirror and AVIF cache |
 | `SHELF_LISTEN` | unset | TCP `host:port`; unset → systemd socket fd 3 |
-| `SHELF_DIFFICULTY` | 4 | PoW bits |
+| `SHELF_DIFFICULTY` | 6 | PoW bits |
 | `SHELF_RATE` | 300 | Requests per minute per token |
 
 ```bash

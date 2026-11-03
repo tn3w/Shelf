@@ -80,6 +80,8 @@ private fun epochMillis(time: String) =
 
 class HttpException(val code: Int, url: String) : IOException("HTTP $code from $url")
 
+private val proofOfWork = ProofOfWork { http }
+
 val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
@@ -88,6 +90,8 @@ val http: OkHttpClient = OkHttpClient.Builder()
         val request = chain.request().newBuilder().header("User-Agent", USER_AGENT)
         chain.proceed(request.build())
     }
+    .addInterceptor(proofOfWork)
+    .authenticator(proofOfWork)
     .build()
 
 suspend fun OkHttpClient.fetch(

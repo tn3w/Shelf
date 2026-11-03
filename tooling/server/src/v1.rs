@@ -8,6 +8,7 @@ use axum::response::{IntoResponse, Response};
 use builder::reader::{Book, isbn_of};
 use builder::search::tokenize;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Arc;
 
 const DEFAULT_LIMIT: usize = 20;
@@ -36,12 +37,10 @@ struct WorkSummary {
     id: u32,
     language: String,
     title: String,
-    #[serde(skip_serializing_if = "String::is_empty")]
     subtitle: String,
     authors: Vec<AuthorRef>,
     #[serde(skip_serializing_if = "is_zero")]
     year: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
     cover: Option<String>,
 }
 
@@ -107,7 +106,6 @@ struct Contributor {
 struct Suggestion {
     kind: &'static str,
     id: u32,
-    #[serde(skip_serializing_if = "String::is_empty")]
     language: String,
     label: String,
     detail: String,
@@ -174,9 +172,26 @@ fn language_of(raw: Option<String>) -> Result<Option<String>, ApiError> {
     }
 }
 
+fn strip(value: Value) -> Value {
+    let filled = |value: &Value| !value.is_null() && value.as_str() != Some("");
+    match value {
+        Value::Object(map) => map
+            .into_iter()
+            .filter(|(_, value)| filled(value))
+            .map(|(key, value)| (key, strip(value)))
+            .collect(),
+        Value::Array(items) => items.into_iter().map(strip).collect(),
+        other => other,
+    }
+}
+
+fn compact(body: impl Serialize) -> Response {
+    Json(serde_json::to_value(body).map(strip).unwrap_or_default()).into_response()
+}
+
 fn reply<T: Serialize>(result: Option<Result<T, ApiError>>) -> Response {
     match result {
-        Some(Ok(body)) => Json(body).into_response(),
+        Some(Ok(body)) => compact(body),
         Some(Err(error)) => error.into_response(),
         None => ApiError::unavailable().into_response(),
     }
@@ -305,7 +320,7 @@ pub async fn work(
             other => return elsewhere(other, "works", code.as_deref()),
         };
         match work_detail(library, id, member) {
-            Some(detail) => Json(detail).into_response(),
+            Some(detail) => compact(detail),
             None => ApiError::not_found("Work").into_response(),
         }
     });
@@ -328,7 +343,7 @@ pub async fn similar(
             other => return elsewhere(other, "similar", None),
         };
         let results = summaries(library, &library.similar(member, &[id], limit));
-        Json(serde_json::json!({ "work": id, "results": results })).into_response()
+        compact(serde_json::json!({ "work": id, "results": results }))
     });
     loaded(found.await)
 }

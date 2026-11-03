@@ -271,7 +271,7 @@ async fn text_of(response: Response<Body>) -> String {
 fn get(uri: &str, token: Option<&str>) -> Request<Body> {
     let mut request = Request::get(uri);
     if let Some(token) = token {
-        request = request.header(header::COOKIE, format!("t={token}"));
+        request = request.header(header::COOKIE, format!("__Host-t={token}"));
     }
     request.body(Body::empty()).expect("request")
 }
@@ -326,13 +326,13 @@ async fn everything_but_open_routes_needs_proof_of_work() {
     let app = app();
     let page = send(&app, get("/", None)).await;
     assert_eq!(page.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(header_of(&page, header::WWW_AUTHENTICATE), r#"Bearer realm="shelf""#);
     assert_eq!(header_of(&page, header::CACHE_CONTROL), "no-store");
     assert!(text_of(page).await.contains(assets::SCRIPT));
     let api = send(&app, get("/api/v1/search?q=dune", None)).await;
     assert_eq!(api.status(), StatusCode::UNAUTHORIZED);
     let body: serde_json::Value = serde_json::from_str(&text_of(api).await).unwrap();
     assert_eq!(body["error"]["code"], "pow_required");
-    assert_eq!(body["pow"]["solutions"], SOLUTIONS);
     let image = send(&app, get("/b/10/en/160.avif", None)).await;
     assert_eq!(image.status(), StatusCode::UNAUTHORIZED);
     assert_eq!(header_of(&image, header::CACHE_CONTROL), "no-store");
@@ -382,7 +382,7 @@ async fn responses_carry_the_cache_table() {
     let etag = header_of(&book, header::ETAG).to_string();
     assert!(etag.starts_with('"'));
     let conditional = Request::get("/b/10")
-        .header(header::COOKIE, format!("t={token}"))
+        .header(header::COOKIE, format!("__Host-t={token}"))
         .header(header::IF_NONE_MATCH, format!("W/{etag}"))
         .body(Body::empty())
         .unwrap();
@@ -596,6 +596,8 @@ async fn json_api_answers_every_route() {
     );
     let dune = json(&app, "/api/v1/works/12", &token).await;
     assert!(dune["series"].is_null() && dune["editions"].as_array().unwrap().is_empty());
+    let dune = dune.as_object().unwrap();
+    assert!(!dune.contains_key("series") && !dune.contains_key("original_title"));
     let rowling = json(&app, "/api/v1/authors/100", &token).await;
     assert_eq!(rowling["name"], "J. K. Rowling");
     assert_eq!(
@@ -705,20 +707,6 @@ async fn covers_follow_aliases_and_library_sources() {
         let response = send(&app, get(&path, Some(&token))).await;
         assert_eq!(response.status(), StatusCode::OK, "{path}");
     }
-}
-
-#[tokio::test]
-async fn release_addresses_redirect_whatever_release_they_name() {
-    let app = app_with(None, &scratch("images"));
-    let token = token(&app).await;
-    for release in [RELEASE, "2020-01-01", "latest"] {
-        let path = format!("/b/{release}/en/10/160.avif");
-        let (status, location) = redirect(&app, &path, Some(&token)).await;
-        assert_eq!(status, StatusCode::MOVED_PERMANENTLY, "{path}");
-        assert_eq!(location, "/b/10/en/160.avif");
-    }
-    let (status, _) = redirect(&app, "/b/latest/en/10/161.avif", Some(&token)).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]

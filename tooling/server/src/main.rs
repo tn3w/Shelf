@@ -14,7 +14,7 @@ use axum::middleware::{from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use builder::libraries::SYNTHETIC;
-use http::{CACHE_LONG, NO_STORE, with_cache};
+use http::{NO_STORE, with_cache};
 use images::{Images, Outcome, Shape, author_url, cover_url};
 use library::{Library, Member};
 use pow::{DEFAULT_DIFFICULTY, DEFAULT_REQUESTS_PER_MINUTE, Gate, Pages, Pow};
@@ -136,16 +136,6 @@ async fn book_image(
     }
 }
 
-/// Addresses of app versions that named their release: the release is dropped.
-async fn release_image(
-    Path((_, code, work, file)): Path<(String, String, String, String)>,
-) -> Response {
-    let (Some(work), Some(_)) = (number(&work), width(&file, Shape::Book)) else {
-        return invalid();
-    };
-    with_cache(pages::moved(format!("/b/{work}/{code}/{file}")), CACHE_LONG)
-}
-
 /// `/a/{author}/{96,192}.avif` is the photo, `/a/{author}/{language}` the author page.
 async fn author_file(
     State(app): State<Arc<App>>,
@@ -192,7 +182,6 @@ pub fn router(app: Arc<App>, gate: Arc<Gate>) -> Router {
         .route("/b/{work}", get(pages::book))
         .route("/b/{work}/{language}", get(pages::book_in))
         .route("/b/{work}/{language}/{file}", get(book_image))
-        .route("/b/{release}/{language}/{work}/{file}", get(release_image))
         .route("/a/{author}", get(pages::author))
         .route("/a/{author}/{file}", get(author_file))
         .route("/series/{id}", get(pages::series))
