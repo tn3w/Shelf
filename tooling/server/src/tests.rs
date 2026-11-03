@@ -8,7 +8,7 @@ use builder::covers::{self, Cover};
 use builder::dumps::Authors;
 use builder::release::{Published, Series, write_manifest};
 use builder::segment::{self, Meta, Popularity, Work};
-use builder::sidecar::{self, EXTRAS, Edition, Extras};
+use builder::sidecar::{self, EXTRAS, Edition, Extras, Person};
 use builder::works::Works;
 use builder::{LANGUAGE_COUNT, LANGUAGES};
 use http_body_util::BodyExt;
@@ -22,6 +22,9 @@ const RELEASE: &str = "2026-11-05";
 const DIFFICULTY: u32 = 1;
 const STONE_ISBN: &str = "9780747532699";
 const GERMAN_STONE: u32 = 2_000_010;
+const GERMAN_PRISONER: u32 = 2_000_011;
+const SWEDISH_LATER: u32 = 2_000_020;
+const ROWLING_TWIN: u32 = 103;
 const COVER_URL: &str = "https://covers.openlibrary.org/b/id/300-L.jpg";
 
 static SCRATCH: AtomicU32 = AtomicU32::new(0);
@@ -75,6 +78,7 @@ fn extras(work: u32, publisher: &str) -> Extras {
             format: 1,
             identifier: String::new(),
         }],
+        contributors: vec![("illustrator".to_string(), "Mary GrandPré".to_string())],
     }
 }
 
@@ -129,9 +133,14 @@ fn write_release(directory: &Path) {
     authors.add(100, "J. K. Rowling");
     authors.add(101, "Frank Herbert");
     authors.add(102, "Isaac Asimov");
+    authors.add(ROWLING_TWIN, "J. K. Rowling");
     let potter = Series { name: "Harry Potter".to_string(), members: vec![10, 11] };
-    let german_potter =
-        Series { name: "Harry Potter".to_string(), members: vec![GERMAN_STONE] };
+    let german_potter = Series {
+        name: "Harry Potter".to_string(),
+        members: vec![11, GERMAN_STONE, GERMAN_PRISONER],
+    };
+    let swedish_potter =
+        Series { name: "Harry Potter".to_string(), members: vec![10, SWEDISH_LATER] };
     let fantasy = [tag("fiction"), tag("fantasy"), tag("childrens")];
     let space = [tag("fiction"), tag("science-fiction")];
     let mut stone =
@@ -153,6 +162,16 @@ fn write_release(directory: &Path) {
         work(GERMAN_STONE, "Harry Potter und der Stein der Weisen", &[100], &fantasy);
     german.description = "Ein Junge erfährt, dass er ein Zauberer ist.";
     german.series = Some((&german_potter, 1));
+    let prisoner_title = "Harry Potter und der Gefangene von Askaban";
+    let mut prisoner = work(GERMAN_PRISONER, prisoner_title, &[ROWLING_TWIN], &fantasy);
+    prisoner.series = Some((&german_potter, 3));
+    let mut german_chamber =
+        work(11, "Harry Potter und die Kammer des Schreckens", &[100], &fantasy);
+    german_chamber.series = Some((&german_potter, 2));
+    let mut swedish_stone = work(10, "Harry Potter och de vises sten", &[100], &fantasy);
+    swedish_stone.series = Some((&swedish_potter, 1));
+    let mut swedish_later = work(SWEDISH_LATER, "Nästa serie, del ett", &[100], &fantasy);
+    swedish_later.series = Some((&swedish_potter, 5));
     let english = Language {
         code: "en",
         ranks: vec![
@@ -171,20 +190,29 @@ fn write_release(directory: &Path) {
     };
     let german = Language {
         code: "de",
-        ranks: vec![popularity(GERMAN_STONE, 400.0)],
-        works: vec![german],
+        ranks: vec![popularity(GERMAN_STONE, 400.0), popularity(GERMAN_PRISONER, 200.0)],
+        works: vec![german_chamber, german, prisoner],
         aliases: Vec::new(),
         covers: vec![Cover { work: GERMAN_STONE, source: 1, key: 355_155_167 }],
         extras: vec![extras(GERMAN_STONE, "Carlsen")],
     };
+    let swedish = Language {
+        code: "sv",
+        ranks: vec![popularity(10, 100.0), popularity(SWEDISH_LATER, 50.0)],
+        works: vec![swedish_stone, swedish_later],
+        aliases: Vec::new(),
+        covers: Vec::new(),
+        extras: Vec::new(),
+    };
     let mut published = write_language(directory, &english, &authors);
     published.extend(write_language(directory, &german, &authors));
+    published.extend(write_language(directory, &swedish, &authors));
     let built = [true; LANGUAGE_COUNT];
     let rebased = [false; LANGUAGE_COUNT];
     let base = "https://example.invalid";
     write_manifest(None, directory, RELEASE, &rebased, &published, base, &built);
     let merged = |kind: &str| -> Vec<PathBuf> {
-        ["en", "de"]
+        ["en", "de", "sv"]
             .iter()
             .map(|code| directory.join(format!("{kind}-{code}.bin")))
             .collect()
@@ -196,10 +224,23 @@ fn write_release(directory: &Path) {
     .unwrap();
     let extras = sidecar::merge(EXTRAS, &merged("extras")).unwrap();
     std::fs::write(directory.join("extras.bin"), extras).unwrap();
+    let rowling = Person {
+        number: 100,
+        bio: "British author of the Harry Potter books.".to_string(),
+        names: vec!["Joanne Rowling".to_string()],
+        identifiers: vec!["viaf:116796842".to_string()],
+        ..Person::default()
+    };
+    let people = sidecar::people_file(RELEASE, "en", &[rowling]);
+    std::fs::write(directory.join("people.bin"), people).unwrap();
     let works = Works {
-        languages: vec!["en".to_string(), "de".to_string()],
-        works: vec![(10, vec![(0, 10), (1, GERMAN_STONE)])],
+        languages: ["en", "de", "sv"].map(str::to_string).to_vec(),
+        works: vec![
+            (10, vec![(0, 10), (1, GERMAN_STONE), (2, 10)]),
+            (11, vec![(0, 11), (1, 11)]),
+        ],
         aliases: vec![(5, 10)],
+        authors: vec![(ROWLING_TWIN, 100)],
     };
     std::fs::write(directory.join("works.bin"), works.encode()).unwrap();
 }
@@ -456,7 +497,7 @@ async fn pages_render_the_catalogue() {
             && home.contains("<a href=/l/de>German")
     );
     assert!(
-        home.contains("4 books")
+        home.contains("6 books")
             && home.contains(&format!("/b/{RELEASE}/en/10/160.avif"))
     );
     let results = page(&app, "/s?q=dune", &token).await;
@@ -472,7 +513,7 @@ async fn pages_render_the_catalogue() {
     assert!(stone.contains(&format!("<img src=/b/{RELEASE}/en/10/320.avif")));
     assert!(stone.contains(&format!("rel=icon href=/b/{RELEASE}/en/10/160.avif")));
     assert!(stone.contains("A boy learns he is a wizard.") && stone.contains("Fantasy"));
-    assert!(stone.contains("<a href=/a/100>J. K. Rowling</a>"));
+    assert!(stone.contains("<a href=/a/100/en>J. K. Rowling</a>"));
     let german_link =
         "<b><a href=/b/10/de>German</a></b> Harry Potter und der Stein der Weisen";
     assert!(stone.contains(german_link) && stone.contains("<b>French</b><br>Un garçon"));
@@ -481,13 +522,30 @@ async fn pages_render_the_catalogue() {
     );
     assert!(stone.contains("https://openlibrary.org/works/OL82563W"));
     assert!(stone.contains("https://www.wikidata.org/wiki/Q43361"));
-    assert!(stone.contains("<a href=/series/10>Harry Potter</a> <small>2 books"));
-    assert!(stone.contains("Chamber of Secrets") && !stone.contains("More by"));
+    assert!(stone.contains("<a href=/series/10/en>Harry Potter</a> <small>3 books"));
+    assert!(stone.contains("Gefangene von Askaban") && stone.contains("Harry Potter #1"));
+    let series_shelf = stone.split("More by").next().unwrap();
+    assert!(!series_shelf.contains("Nästa serie"));
+    assert!(stone.contains("<dt>Illustrated by<dd>Mary GrandPré"));
+    assert!(stone.contains("Chamber of Secrets") && stone.contains("More by"));
     assert!(stone.contains("Bloomsbury") && stone.contains(STONE_ISBN));
     let german = page(&app, "/b/10/de", &token).await;
     assert!(german.contains("<h1>Harry Potter und der Stein der Weisen</h1>"));
     assert!(german.contains("Carlsen") && german.contains("Ein Junge erfährt"));
     assert!(german.contains(&format!("/b/{RELEASE}/de/{GERMAN_STONE}/320.avif")));
+    assert!(german.contains("<a href=/a/100/de>J. K. Rowling</a>"));
+    assert!(german.contains("Kammer des Schreckens") && !german.contains("Bloomsbury"));
+    assert!(german.contains("Romane") && !german.contains(">Fiction<"));
+    let german_rowling = page(&app, "/a/100/de", &token).await;
+    assert!(german_rowling.contains("Harry Potter und der Stein der Weisen"));
+    assert!(!german_rowling.contains("Philosopher"));
+    let swedish = page(&app, "/a/100/sv", &token).await;
+    assert!(swedish.find("Nästa serie").unwrap() < swedish.find("Chamber").unwrap());
+    let (status, location) =
+        redirect(&app, &format!("/a/{ROWLING_TWIN}/de"), Some(&token)).await;
+    assert_eq!((status, location.as_str()), (StatusCode::MOVED_PERMANENTLY, "/a/100/de"));
+    let missing = send(&app, get("/a/100/xx", Some(&token))).await;
+    assert_eq!(missing.status(), StatusCode::NOT_FOUND);
     let dune = page(&app, "/b/12", &token).await;
     assert!(dune.contains("Similar books") && dune.contains("<a href=/b/13/en"));
     for missing in
@@ -498,8 +556,18 @@ async fn pages_render_the_catalogue() {
         assert!(text_of(response).await.contains("Not found."));
     }
     let rowling = page(&app, "/a/100", &token).await;
-    assert!(rowling.contains("<h1>J. K. Rowling</h1>") && rowling.contains("2 books"));
+    assert!(rowling.contains("<h1>J. K. Rowling</h1>") && rowling.contains("4 books"));
     assert!(rowling.contains("<img src=/a/100/192.avif") && rowling.contains("OL100A"));
+    assert!(
+        rowling.contains("British author") && rowling.contains("Also: Joanne Rowling")
+    );
+    assert!(rowling.contains("https://viaf.org/viaf/116796842"));
+    assert!(rowling.contains(
+        "Chamber of Secrets</a><br><small>J. K. Rowling · English · Harry Potter #2"
+    ));
+    let twin = send(&app, get(&format!("/a/{ROWLING_TWIN}"), Some(&token))).await;
+    assert_eq!(twin.status(), StatusCode::MOVED_PERMANENTLY);
+    assert_eq!(header_of(&twin, header::LOCATION), "/a/100");
     let series = page(&app, "/series/10", &token).await;
     assert!(
         series.contains("<h1>Harry Potter</h1>") && series.contains("Chamber of Secrets")
@@ -547,9 +615,14 @@ async fn json_api_answers_every_route() {
     assert!(dune["series"].is_null() && dune["editions"].as_array().unwrap().is_empty());
     let rowling = json(&app, "/api/v1/authors/100", &token).await;
     assert_eq!(rowling["name"], "J. K. Rowling");
-    assert_eq!(rowling["works"], serde_json::json!([10, 11]));
+    assert_eq!(
+        rowling["works"],
+        serde_json::json!([10, 11, GERMAN_PRISONER, SWEDISH_LATER])
+    );
+    assert_eq!(rowling["bio"], "British author of the Harry Potter books.");
     let series = json(&app, "/api/v1/series/10", &token).await;
     assert_eq!(series["works"][1]["work"], 11);
+    assert_eq!(series["works"][2]["position"], 3);
     assert_eq!(
         json(&app, "/api/v1/series/12", &token).await["error"]["code"],
         "not_found"

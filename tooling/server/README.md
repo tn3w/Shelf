@@ -18,14 +18,34 @@ loads covers from it when "Fast covers" is on (Android 12+).
 ## Data
 
 Every 30 min: newest release with `manifest.json` → `SHELF_DATA/next` (segments of every
-chain, ranks, `works.bin`, `extras.bin`, `covers.bin`; unchanged files hard-linked, new
+chain, ranks, `works.bin`, `extras.bin`, `people.bin`, `covers.bin`; unchanged files hard-linked, new
 ones SHA-256 checked) → atomic swap → `SHELF_DATA/catalogue`. Broken download keeps the old
 release. Before the first load everything but `/health` answers 503. The sidecars are
 optional: without them works stand alone and pages drop extras and covers.
 
-Ids: works are unified ids (`works.bin`); `/b/{work}` shows the most read member,
-`/b/{work}/{language}` one member. Old ids and aliases answer 301. Authors are segment
-author numbers, series the unified id of their first volume, languages two-letter codes.
+Ids: works are unified ids (`works.bin`); `/b/{work}` shows one member,
+`/b/{work}/{language}` a chosen one. Old ids and aliases answer 301. Authors are segment
+author numbers; alias numbers (`works.bin` v2: twin Open Library records, library ids) 301
+to one, whose page joins all their books. Series are the unified id of their first
+volume, languages two-letter codes.
+
+Language order: a work shows its member in the first catalogue of `LANGUAGES` (English,
+German, French, …): search rows (among matching books), author and home lists. Home
+picks only books shown in the first language.
+
+Language pages (`/b/{work}/{language}`, `/a/{author}/{language}`,
+`/series/{id}/{language}`): titles, author and series names, descriptions, tag labels,
+translators and editions come from that catalogue; series, "More by" and similar rows show
+their books in it where present and link on in it. Other members fill only gaps
+(descriptions of other languages, ids, original title, illustrators); the UI stays
+English.
+
+Series: the member's catalogue series (else one its title names, else `LANGUAGES` order),
+gaps filled from the other catalogues' series of the work when every shared volume sits
+at the same position; a series with gaps only fills holes up to the end of the longest
+gap-free one (a catalogue numbering Heroes of Olympus on from Percy Jackson). Volumes shown in the
+page language where present. Rows show
+`Series #n`, tags add those only other members carry.
 
 ## Routes
 
@@ -33,8 +53,9 @@ author numbers, series the unified id of their first volume, languages two-lette
 | --- | --- |
 | `/` | Counts, languages, 12 popular books (daily) |
 | `/s?q=&p=` | Unified search; ISBN → 303 |
-| `/b/{work}[/{language}]` | Book: cover, description, tags, links, other languages, series, more by author, similar, editions |
-| `/a/{author}?p=`, `/series/{id}?p=`, `/l/{language}?p=` | Author, series, language catalogue |
+| `/b/{work}[/{language}]` | Book: cover, description, tags, links, translators, illustrators, editors, narrators, other languages, series, more by author, similar, editions |
+| `/a/{author}[/{language}]?p=` | Author: dates, other names, bio, authority links (Open Library, VIAF, GND, ISNI, LoC, BNE, Wikidata), books |
+| `/series/{id}[/{language}]?p=`, `/l/{language}?p=` | Series in reading order, language catalogue |
 | `/isbn/{isbn}`, `/random` | 303 to a book |
 | `/b/{release}/{language}/{work}/{160,320,640}.avif` | Book cover, 2:3 |
 | `/a/{author}/{96,192}.avif` | Open Library author photo, square |

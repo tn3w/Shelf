@@ -5,8 +5,8 @@
 //! stays in the per-language builds.
 
 use crate::LANGUAGES;
-use crate::libraries::{SYNTHETIC, match_key};
-use crate::reader::Catalogue;
+use crate::libraries::{SYNTHETIC, match_key, name_key};
+use crate::reader::{Catalogue, Segment};
 use crate::sidecar::{LINKS, Links, Sidecar};
 use crate::works::Works;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -15,12 +15,20 @@ use std::path::Path;
 const VOTE_RECORDS: u32 = 2;
 const VOTE_SHARE: f64 = 0.6;
 const ALIAS_STEPS: usize = 8;
+const SERIES_ROUNDS: usize = 3;
+const MAX_AUTHOR_GROUP: usize = 8;
 
+/// One work of one catalogue. `authors` are (number, name key) and `series` the series
+/// key with `position`, both as the catalogue shows them.
+#[derive(Default)]
 pub struct Node {
     pub language: usize,
     pub work: u32,
     pub titles: Vec<String>,
     pub links: Links,
+    pub authors: Vec<(u32, String)>,
+    pub series: String,
+    pub position: u16,
 }
 
 impl Node {
@@ -85,6 +93,7 @@ pub struct Stats {
     pub wikidata: usize,
     pub votes: usize,
     pub library: usize,
+    pub series: usize,
     pub ambiguous: usize,
     pub occupied: usize,
     pub wikidata_conflicts: usize,
@@ -150,14 +159,17 @@ impl Clusters {
         })
     }
 
-    /// Applies `(source, target)` proposals; sources fighting over one language refuse.
+    /// Applies `(source, target)` proposals, one per source cluster; sources fighting over
+    /// one language refuse.
     fn apply(&mut self, proposals: Vec<(usize, usize)>, refused: &mut usize) -> usize {
         let mut by_target: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
         for (source, target) in proposals {
             by_target.entry(self.of[target]).or_default().push(source);
         }
         let mut merged = 0;
-        for (target, sources) in by_target {
+        for (target, mut sources) in by_target {
+            sources.sort_unstable_by_key(|&source| self.of[source]);
+            sources.dedup_by_key(|source| self.of[*source]);
             let (mut once, mut twice) = (0u32, 0u32);
             for &source in &sources {
                 let languages = self.languages_of(source);
@@ -381,6 +393,161 @@ fn library_merges(nodes: &[Node], clusters: &mut Clusters, stats: &mut Stats) {
     }
 }
 
+struct Volumes<'a> {
+    language: usize,
+    author: &'a str,
+    by_position: BTreeMap<u16, usize>,
+}
+
+/// Numbered volumes per (language, series key, first author key); positions held by two
+/// works are dropped.
+fn series_volumes(nodes: &[Node]) -> Vec<Volumes<'_>> {
+    let mut grouped: BTreeMap<(usize, &str, &str), BTreeMap<u16, Vec<usize>>> = BTreeMap::new();
+    for (position, node) in nodes.iter().enumerate() {
+        let Some((_, author)) = node.authors.first() else {
+            continue;
+        };
+        if node.series.is_empty() || node.position == 0 || node.links.compilation {
+            continue;
+        }
+        let key = (node.language, node.series.as_str(), author.as_str());
+        let volumes = grouped.entry(key).or_default();
+        volumes.entry(node.position).or_default().push(position);
+    }
+    grouped
+        .into_iter()
+        .map(|((language, _, author), volumes)| Volumes {
+            language,
+            author,
+            by_position: volumes
+                .into_iter()
+                .filter(|(_, works)| works.len() == 1)
+                .map(|(volume, works)| (volume, works[0]))
+                .collect(),
+        })
+        .collect()
+}
+
+/// Series pairs of one author in two languages with a volume at the same position in one
+/// unified work and none at different positions.
+fn aligned_series(clusters: &Clusters, series: &[Volumes]) -> Vec<(usize, usize)> {
+    let mut by_cluster: HashMap<usize, Vec<(usize, u16)>> = HashMap::new();
+    for (index, volumes) in series.iter().enumerate() {
+        for (&volume, &node) in &volumes.by_position {
+            by_cluster
+                .entry(clusters.of[node])
+                .or_default()
+                .push((index, volume));
+        }
+    }
+    let mut counts: BTreeMap<(usize, usize), (u32, u32)> = BTreeMap::new();
+    for found in by_cluster.values() {
+        for &(left, left_volume) in found {
+            for &(right, right_volume) in found {
+                let (one, other) = (&series[left], &series[right]);
+                if one.language >= other.language || one.author != other.author {
+                    continue;
+                }
+                let count = counts.entry((left, right)).or_default();
+                match left_volume == right_volume {
+                    true => count.0 += 1,
+                    false => count.1 += 1,
+                }
+            }
+        }
+    }
+    let aligned: Vec<(usize, usize)> = counts
+        .into_iter()
+        .filter(|(_, (agree, disagree))| *agree > 0 && *disagree == 0)
+        .map(|(pair, _)| pair)
+        .collect();
+    let mut partners: HashMap<(usize, usize), u32> = HashMap::new();
+    for &(left, right) in &aligned {
+        *partners.entry((left, series[right].language)).or_default() += 1;
+        *partners.entry((right, series[left].language)).or_default() += 1;
+    }
+    let unique = |index: usize, other: usize| partners[&(index, series[other].language)] == 1;
+    aligned
+        .into_iter()
+        .filter(|&(left, right)| unique(left, right) && unique(right, left))
+        .collect()
+}
+
+/// Aligned series join their other volumes position by position (translated series names:
+/// Scheibenwelt = Discworld); repeated while new anchors appear, each pair proposed once.
+fn series_merges(nodes: &[Node], clusters: &mut Clusters, stats: &mut Stats) {
+    let series = series_volumes(nodes);
+    let mut proposed = HashSet::new();
+    for _ in 0..SERIES_ROUNDS {
+        let mut proposals = Vec::new();
+        for (left, right) in aligned_series(clusters, &series) {
+            let theirs = &series[right].by_position;
+            for (volume, &node) in &series[left].by_position {
+                let Some(&other) = theirs.get(volume) else {
+                    continue;
+                };
+                let apart = clusters.of[node] != clusters.of[other];
+                let fresh = apart && proposed.insert((node, other));
+                if fresh && !wikidata_clash(nodes, clusters, node, other) {
+                    proposals.push((node, other));
+                }
+            }
+        }
+        let merged = clusters.apply(proposals, &mut stats.occupied);
+        stats.series += merged;
+        if merged == 0 {
+            break;
+        }
+    }
+}
+
+/// Author numbers with one name key credited in one unified work are one person (twin Open
+/// Library records, library ids); groups over `MAX_AUTHOR_GROUP` are kept apart.
+fn author_aliases(nodes: &[Node], clusters: &Clusters) -> Vec<(u32, u32)> {
+    let mut parent: HashMap<u32, u32> = HashMap::new();
+    fn root(parent: &mut HashMap<u32, u32>, mut number: u32) -> u32 {
+        while let Some(&up) = parent.get(&number).filter(|&&up| up != number) {
+            number = up;
+        }
+        number
+    }
+    for members in clusters
+        .members
+        .iter()
+        .filter(|members| !members.is_empty())
+    {
+        let mut named: HashMap<&str, u32> = HashMap::new();
+        let credits = members.iter().flat_map(|&node| &nodes[node].authors);
+        for (number, key) in credits.filter(|(_, key)| !key.is_empty()) {
+            let first = *named.entry(key.as_str()).or_insert(*number);
+            let (left, right) = (root(&mut parent, first), root(&mut parent, *number));
+            if left != right {
+                parent.insert(left.max(right), left.min(right));
+            }
+        }
+    }
+    let numbers: Vec<u32> = parent.keys().copied().collect();
+    let mut groups: BTreeMap<u32, Vec<u32>> = BTreeMap::new();
+    for number in numbers {
+        let top = root(&mut parent, number);
+        groups.entry(top).or_insert_with(|| vec![top]).push(number);
+    }
+    let mut aliases: Vec<(u32, u32)> = groups
+        .into_values()
+        .filter(|group| group.len() <= MAX_AUTHOR_GROUP)
+        .flat_map(|group| {
+            let open_library = group.iter().copied().filter(|&n| n < SYNTHETIC).min();
+            let canonical = open_library.or(group.iter().copied().min()).expect("group");
+            group
+                .into_iter()
+                .filter(move |&number| number != canonical)
+                .map(move |number| (number, canonical))
+        })
+        .collect();
+    aliases.sort_unstable();
+    aliases
+}
+
 fn assert_invariant(nodes: &[Node], clusters: &Clusters) {
     let mut placed = 0;
     for members in &clusters.members {
@@ -472,6 +639,7 @@ pub fn unify(
     wikidata_merges(nodes, &mut clusters, &mut stats);
     vote_merges(nodes, &mut clusters, &mut stats);
     library_merges(nodes, &mut clusters, &mut stats);
+    series_merges(nodes, &mut clusters, &mut stats);
     assert_invariant(nodes, &clusters);
 
     let listed = previous.into_iter().flat_map(|works| &works.works);
@@ -511,6 +679,7 @@ pub fn unify(
         languages,
         works,
         aliases,
+        authors: author_aliases(nodes, &clusters),
     };
     (works, stats)
 }
@@ -579,6 +748,35 @@ fn title_keys(title: &str, alternate: &str) -> Vec<String> {
     keys
 }
 
+/// Credits and series of every work of a segment, author and series records read once.
+struct Shown<'a> {
+    segment: &'a Segment,
+    authors: HashMap<u32, (u32, String)>,
+    series: HashMap<usize, String>,
+}
+
+impl Shown<'_> {
+    fn fill(&mut self, local: usize, node: &mut Node) {
+        let facts = self.segment.facts(local);
+        for slot in facts.authors {
+            let segment = self.segment;
+            let credit = self.authors.entry(slot).or_insert_with(|| {
+                let record = segment.author(slot);
+                (record.number, name_key(&record.name))
+            });
+            node.authors.push(credit.clone());
+        }
+        let Some(slot) = facts.series else { return };
+        let segment = self.segment;
+        let name = self
+            .series
+            .entry(slot)
+            .or_insert_with(|| match_key(&segment.series(slot).name));
+        node.series = name.clone();
+        node.position = u16::try_from(facts.position).unwrap_or(0);
+    }
+}
+
 pub fn load(directory: &Path) -> Release {
     let mut links = sidecar_links(directory);
     let mut catalogues = Vec::new();
@@ -588,17 +786,25 @@ pub fn load(directory: &Path) -> Release {
         let code = LANGUAGES[language];
         let catalogue = Catalogue::open(directory, code).expect("open catalogue");
         for (index, segment) in catalogue.segments.iter().enumerate() {
+            let mut shown = Shown {
+                segment,
+                authors: HashMap::new(),
+                series: HashMap::new(),
+            };
             for (local, heads) in segment.all_heads().into_iter().enumerate() {
                 if !catalogue.is_visible(index, local) {
                     continue;
                 }
                 let work = segment.work(local);
-                nodes.push(Node {
+                let mut node = Node {
                     language,
                     work,
                     titles: title_keys(&heads.title, &heads.alternate),
                     links: links.remove(&(language, work)).unwrap_or_default(),
-                });
+                    ..Node::default()
+                };
+                shown.fill(local, &mut node);
+                nodes.push(node);
             }
         }
         aliases.extend(
@@ -635,9 +841,9 @@ pub fn summary(works: &Works, stats: &Stats) -> String {
         "| Unify | Count |\n|---|---|\n\
          | works (all catalogues) | {} |\n| unified works | {unified} |\n\
          | multi-language works | {} |\n| languages per work | {} |\n\
-         | links: same id / Wikidata / votes / library | {} / {} / {} / {} |\n\
+         | links: same id / Wikidata / votes / library / series | {} / {} / {} / {} / {} |\n\
          | refused: ambiguous / language taken / Wikidata conflict | {} / {} / {} |\n\
-         | aliases | {} |\n",
+         | aliases / author aliases | {} / {} |\n",
         stats.nodes,
         works.works.len(),
         histogram.join(", "),
@@ -645,10 +851,12 @@ pub fn summary(works: &Works, stats: &Stats) -> String {
         stats.wikidata,
         stats.votes,
         stats.library,
+        stats.series,
         stats.ambiguous,
         stats.occupied,
         stats.wikidata_conflicts,
         works.aliases.len(),
+        works.authors.len(),
     )
 }
 
@@ -672,6 +880,8 @@ mod tests {
                 records: 1,
                 ..Links::default()
             },
+            authors: vec![(1, "austen jane".to_string())],
+            ..Node::default()
         }
     }
 
@@ -814,5 +1024,68 @@ mod tests {
         let (again, _) = unify(&second, Some(&after), &renamed);
         assert_eq!(again.works, after.works);
         assert_eq!(again.aliases, after.aliases);
+    }
+
+    fn volume(mut node: Node, series: &str, position: u16) -> Node {
+        node.series = series.to_string();
+        node.position = position;
+        node
+    }
+
+    #[test]
+    fn translated_series_align_by_shared_volume() {
+        let nodes = [
+            volume(node("en", 40, "The Night Garden"), "night garden", 1),
+            volume(node("en", 41, "The Moon Gate"), "night garden", 2),
+            volume(node("en", 42, "The Glass Tower"), "night garden", 3),
+            volume(
+                node("de", LIBRARY + 40, "Der Nachtgarten"),
+                "nachtgarten",
+                1,
+            ),
+            volume(node("de", 41, "Das Mondtor"), "nachtgarten", 2),
+            volume(node("de", LIBRARY + 42, "Der Glasturm"), "nachtgarten", 3),
+            volume(node("fr", 41, "La porte de lune"), "jardin de nuit", 1),
+            volume(
+                node("fr", LIBRARY + 62, "La tour de verre"),
+                "jardin de nuit",
+                2,
+            ),
+        ];
+        let (works, stats) = unify(&nodes, None, &HashMap::new());
+        assert_eq!(group_of(&works, LIBRARY + 40), Some(40));
+        assert_eq!(group_of(&works, LIBRARY + 42), Some(42));
+        assert_eq!(group_of(&works, LIBRARY + 62), None);
+        assert_eq!(stats.series, 2);
+    }
+
+    #[test]
+    fn same_name_on_one_work_is_one_author() {
+        let mut english = node("en", 70, "The Night Garden");
+        english.authors = vec![(5, "ada lane".to_string())];
+        let mut german = node("de", 70, "Der Nachtgarten");
+        german.authors = vec![(LIBRARY + 9, "ada lane".to_string())];
+        let mut other = node("de", 71, "Der Glasturm");
+        other.authors = vec![(6, "ada lane".to_string())];
+        let works = unified(&[english, german, other]);
+        assert_eq!(works.authors, [(LIBRARY + 9, 5)]);
+    }
+
+    #[test]
+    fn one_work_proposing_from_several_languages_joins() {
+        let mut nodes = vec![];
+        for (language, title) in [("en", "Stone Keeper"), ("fr", "Gardien"), ("de", "Hüterin")] {
+            nodes.push(volume(node(language, 80, title), "amulet", 1));
+            nodes.push(volume(node(language, 81, title), "amulet", 2));
+        }
+        nodes.push(volume(node("sv", 81, "Molnsökarna"), "amulet", 2));
+        nodes.push(volume(
+            node("sv", LIBRARY + 80, "Stenväktaren"),
+            "amulet",
+            1,
+        ));
+        let (works, stats) = unify(&nodes, None, &HashMap::new());
+        assert_eq!(group_of(&works, LIBRARY + 80), Some(80));
+        assert_eq!(stats.occupied, 0);
     }
 }

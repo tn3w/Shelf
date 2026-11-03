@@ -9,7 +9,7 @@ publish = false
 build = "build.rs"
 
 [dependencies]
-askama = "0.14"
+askama = "0.16"
 axum = "0.8.9"
 builder = { path = "../builder" }
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp", "gif"] }
@@ -25,9 +25,9 @@ sha2 = "0.11.1"
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal", "fs", "net", "sync", "time"] }
 
 [build-dependencies]
-brotli = "8"
+brotli = "9"
 lightningcss = "1.0.0-alpha.72"
-oxc = { version = "0.154", features = ["minifier", "codegen"] }
+oxc = { version = "0.156", features = ["minifier", "codegen"] }
 sha2 = "0.11.1"
 
 [workspace]

@@ -5,6 +5,7 @@ use crate::libraries::{
     first_number, hash, is_genre, is_numbered_genre, match_key, name_key, normalized_name,
     without_series,
 };
+use crate::people;
 use crate::release;
 use crate::tags::Classes;
 use std::collections::HashMap;
@@ -31,9 +32,6 @@ const BOUND: [&str; 6] = [
     "rel.",
 ];
 const AUTHOR_ROLES: [&str; 3] = ["autor", "kirjoittaja", "aut"];
-const TRANSLATOR_ROLES: [&str; 10] = [
-    "trl", "tradu", "transl", "übers", "tõlk", "tłum", "přel", "kään", "tulk", "730",
-];
 const LNB_LV_PREFIXES: [&str; 2] = ["LNC04", "NBA02"];
 const LNB_LV_SLOT: u32 = 5_000_000;
 const BNE_SEQUENCE_START: u64 = 1_000_000_000;
@@ -733,21 +731,34 @@ fn heading_authorities(marc: &Marc) -> Vec<String> {
         .collect()
 }
 
-fn translators(marc: &Marc) -> Vec<String> {
-    let translates = |field: &&Field| {
-        let roles = field
+fn contributors(marc: &Marc) -> Vec<(&'static str, String)> {
+    let mut found: Vec<(&'static str, String)> = Vec::new();
+    for field in marc.fields("700").chain(marc.fields("702")) {
+        let mut roles = field
             .subfields
             .iter()
             .filter(|(code, _)| matches!(code, 'e' | '4'));
-        let mut roles = roles.map(|(_, role)| role.to_lowercase());
-        roles.any(|role| TRANSLATOR_ROLES.iter().any(|known| role.starts_with(known)))
-    };
-    let fields = marc.fields("700").chain(marc.fields("702"));
-    let named = fields.filter(translates).filter_map(|field| field.get('a'));
-    named
-        .map(heading_name)
-        .filter(|name| !name.is_empty())
-        .collect()
+        let Some(role) = roles.find_map(|(_, role)| people::role_of(role)) else {
+            continue;
+        };
+        let surname = field.get('a').unwrap_or_default();
+        let name = match field.get('b').map(clean) {
+            Some(given) if !given.is_empty() => normalized_name(&format!("{given} {surname}")),
+            _ => heading_name(surname),
+        };
+        let known = found.iter().any(|(_, seen)| people::same_name(seen, &name));
+        if !name.is_empty() && !known && found.len() < people::MAX_CONTRIBUTORS {
+            found.push((role, name));
+        }
+    }
+    found
+}
+
+fn translators(contributors: &[(&'static str, String)]) -> Vec<String> {
+    let translating = contributors
+        .iter()
+        .filter(|(role, _)| *role == "translator");
+    translating.map(|(_, name)| name.clone()).collect()
 }
 
 fn publisher(marc: &Marc, tags: &[&str], code: char) -> String {
@@ -881,6 +892,7 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
     let year: String = fixed.get(7..11).unwrap_or_default().iter().collect();
     let control = marc.control("001");
     let authorities = heading_authorities(marc);
+    let contributors = contributors(marc);
     Some(Record {
         source,
         id: marc_id(source, control)?,
@@ -896,7 +908,8 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
         authority: authorities.first().map_or(0, |id| hash(&[id.as_bytes()])),
         authorities,
         name,
-        translators: translators(marc),
+        translators: translators(&contributors),
+        contributors,
         publisher: publisher(marc, &["264", "260"], 'b'),
         description: clean(marc.first("520", 'a')),
         year: dumps::year_of(&year),
@@ -987,6 +1000,7 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
         .take(8)
         .collect();
     let name = bnf_name(marc);
+    let contributors = contributors(marc);
     let year: String = coded.get(9..13).unwrap_or_default().iter().collect();
     Some(Record {
         source: Source::Bnf,
@@ -1001,7 +1015,8 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
         volume,
         author: Source::Bnf.author_id(&name),
         name,
-        translators: translators(marc),
+        translators: translators(&contributors),
+        contributors,
         publisher: publisher(marc, &["214", "210"], 'c'),
         description: clean(marc.first("330", 'a')),
         year: dumps::year_of(&year),

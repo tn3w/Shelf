@@ -92,8 +92,15 @@ struct WorkDetail {
     titles: Vec<Text>,
     original_title: String,
     translators: Vec<String>,
+    contributors: Vec<Contributor>,
     identifiers: Vec<String>,
     editions: Vec<EditionDetail>,
+}
+
+#[derive(Serialize)]
+struct Contributor {
+    role: String,
+    name: String,
 }
 
 #[derive(Serialize)]
@@ -204,8 +211,7 @@ fn work_detail(library: &Library, id: u32, member: Member) -> Option<WorkDetail>
     let description = library.description(member);
     let series = library.series(member).map(|series| SeriesRef {
         id: series.first,
-        position: series.members.iter().position(|&known| known == member).unwrap_or(0)
-            + 1,
+        position: series.position as usize,
         name: series.name,
     });
     let languages = library.members(id).into_iter().filter_map(|other| {
@@ -234,6 +240,11 @@ fn work_detail(library: &Library, id: u32, member: Member) -> Option<WorkDetail>
         editions: editions.collect(),
         original_title: extras.original_title,
         translators: extras.translators,
+        contributors: extras
+            .contributors
+            .into_iter()
+            .map(|(role, name)| Contributor { role, name })
+            .collect(),
         identifiers: extras.identifiers,
     })
 }
@@ -327,14 +338,20 @@ pub async fn author(State(app): Shared, Path(raw): Path<String>) -> Response {
         Err(error) => return error.into_response(),
     };
     let found = blocking(&app, move |library| {
-        let author = library.author(id).ok_or_else(|| ApiError::not_found("Author"))?;
+        let author =
+            library.author(id, None).ok_or_else(|| ApiError::not_found("Author"))?;
         let works: Vec<u32> =
             author.works.iter().map(|member| library.unified_of(member.work)).collect();
+        let person = author.person;
         Ok(serde_json::json!({
-            "id": id,
+            "id": author.number,
             "name": author.name,
             "born": (author.born > 0).then_some(author.born),
-            "photo": photo_path(id, PHOTO),
+            "died": (person.died > 0).then_some(person.died),
+            "names": person.names,
+            "bio": person.bio,
+            "identifiers": person.identifiers,
+            "photo": photo_path(author.number, PHOTO),
             "works": works,
         }))
     });
@@ -352,8 +369,8 @@ pub async fn series(State(app): Shared, Path(raw): Path<String>) -> Response {
         let series = series.ok_or_else(|| ApiError::not_found("Series"))?;
         let language =
             series.members.first().map(|&member| library.code(member).to_string());
-        let works = series.members.iter().enumerate().map(|(index, member)| {
-            SeriesEntry { work: library.unified_of(member.work), position: index + 1 }
+        let works = series.members.iter().zip(&series.positions).map(|(member, &at)| {
+            SeriesEntry { work: library.unified_of(member.work), position: at as usize }
         });
         Ok(serde_json::json!({
             "id": series.first,

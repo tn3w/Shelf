@@ -185,6 +185,7 @@ pub struct Facts {
     pub cover: u32,
     pub tags: Vec<u8>,
     pub series: Option<usize>,
+    pub position: u32,
 }
 
 pub struct Heads {
@@ -527,12 +528,18 @@ impl Segment {
         let cover = reader.varint();
         let tags = (0..reader.varint()).map(|_| reader.byte()).collect();
         let series = (reader.varint() as usize).checked_sub(1);
+        let position = if reader.has_more() {
+            reader.varint()
+        } else {
+            0
+        };
         Facts {
             authors,
             year,
             cover,
             tags,
             series,
+            position,
         }
     }
 

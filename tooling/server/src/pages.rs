@@ -1,6 +1,6 @@
 use crate::http::{CACHE_DAILY, NO_STORE, with_cache};
 use crate::images::cover_url;
-use crate::library::{Choice, Found, Library, Member, isbn_key, language_name};
+use crate::library::{Choice, Library, Member, isbn_key, language_name};
 use crate::{App, blocking, number};
 use askama::Template;
 use axum::extract::{Path, Query, State};
@@ -108,6 +108,7 @@ struct Results {
 #[derive(Template)]
 #[template(path = "book.html")]
 struct BookPage {
+    code: String,
     title: String,
     subtitle: String,
     cover: String,
@@ -131,7 +132,9 @@ struct BookPage {
 #[template(path = "author.html")]
 struct AuthorPage {
     name: String,
-    born: u32,
+    dates: String,
+    names: String,
+    bio: String,
     photo: String,
     total: usize,
     links: Vec<Link>,
@@ -202,7 +205,8 @@ pub fn book_row(library: &Library, member: Member, book: &Book) -> Row {
     let names: Vec<&str> = book.authors.iter().take(2).map(|a| a.name.as_str()).collect();
     let names = names.join(", ");
     let year = (book.year > 0).then(|| book.year.to_string());
-    let parts = [Some(names), year, Some(language_name(&book.language).to_string())];
+    let language = Some(language_name(&book.language).to_string());
+    let parts = [Some(names), year, language, library.series_label(member)];
     let detail: Vec<String> =
         parts.into_iter().flatten().filter(|p| !p.is_empty()).collect();
     Row {
@@ -244,14 +248,26 @@ fn external_links(identifiers: &[String]) -> Vec<Link> {
     let mut links: Vec<Link> = Vec::new();
     for (scheme, value) in identifiers.iter().filter_map(|id| id.split_once(':')) {
         let (label, url) = match scheme {
+            "ol" if value.ends_with('A') => {
+                ("Open Library", format!("https://openlibrary.org/authors/{value}"))
+            }
             "ol" => ("Open Library", format!("https://openlibrary.org/works/{value}")),
             "wikidata" => ("Wikidata", format!("https://www.wikidata.org/wiki/{value}")),
             "pg" => {
                 ("Project Gutenberg", format!("https://www.gutenberg.org/ebooks/{value}"))
             }
+            "viaf" => ("VIAF", format!("https://viaf.org/viaf/{value}")),
+            "gnd" => ("GND", format!("https://d-nb.info/gnd/{value}")),
+            "isni" => ("ISNI", format!("https://isni.org/isni/{value}")),
+            "lc" => (
+                "Library of Congress",
+                format!("https://id.loc.gov/authorities/names/{value}"),
+            ),
+            "bne" => ("BNE", format!("https://datos.bne.es/persona/{value}")),
             _ => continue,
         };
-        let safe = !value.is_empty() && value.bytes().all(|b| b.is_ascii_alphanumeric());
+        let safe = !value.is_empty()
+            && value.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
         if safe && !links.iter().any(|known| known.label == label) {
             links.push(Link { label, url });
         }
@@ -303,17 +319,18 @@ fn matching_authors(library: &Library, query: &str, hits: &[Hit]) -> Vec<AuthorH
         let name = tokenize(&author.name);
         let named =
             words.iter().all(|word| name.iter().any(|part| part.starts_with(word)));
-        if !named || found.iter().any(|known| known.id == author.number) {
+        let number = library.author_of(author.number);
+        if !named || found.iter().any(|known| known.id == number) {
             continue;
         }
-        let Some(record) = library.author(author.number) else { continue };
+        let Some(record) = library.author(number, None) else { continue };
         let born = (record.born > 0).then(|| format!("born {}", record.born));
         let books = Some(format!("{} books", record.works.len()));
         found.push(AuthorHit {
-            id: author.number,
+            id: number,
             name: author.name.clone(),
             detail: [born, books].into_iter().flatten().collect::<Vec<_>>().join(" · "),
-            photo: photo_path(author.number, SMALL_PHOTO).unwrap_or_default(),
+            photo: photo_path(number, SMALL_PHOTO).unwrap_or_default(),
         });
         if found.len() >= SEARCH_AUTHORS {
             break;
@@ -322,9 +339,16 @@ fn matching_authors(library: &Library, query: &str, hits: &[Hit]) -> Vec<AuthorH
     found
 }
 
+/// The matching book of the first catalogue language, so one result list reads in one
+/// language wherever the books allow it.
 pub fn hit_member<'a>(library: &Library, hit: &'a Hit) -> Option<(Member, &'a Book)> {
-    let book = hit.books.first()?;
-    Some((Member { language: library.language(&book.language)?, work: book.work }, book))
+    let members = hit.books.iter().filter_map(|book| {
+        Some((
+            Member { language: library.language(&book.language)?, work: book.work },
+            book,
+        ))
+    });
+    members.min_by_key(|(member, _)| member.language)
 }
 
 pub async fn search(State(app): Shared, Query(params): Query<SearchParams>) -> Response {
@@ -450,12 +474,40 @@ fn facts(book: &Book, extras: &Extras) -> Vec<(&'static str, String)> {
         .map(|(code, title)| format!("{title} ({})", language_name(code)))
         .collect();
     let original = Some(&extras.original_title).filter(|title| **title != book.title);
+    let mut translators = extras.translators.clone();
+    let credited = |wanted: &str| {
+        let named = extras.contributors.iter().filter(|(role, _)| role == wanted);
+        named.map(|(_, name)| name.clone()).collect::<Vec<_>>()
+    };
+    for name in credited("translator") {
+        if !translators.iter().any(|known| known.starts_with(&name)) {
+            translators.push(name);
+        }
+    }
     let facts = [
         ("Original title", original.cloned().unwrap_or_default()),
-        ("Translated by", extras.translators.join(", ")),
+        ("Translated by", translators.join(", ")),
+        ("Illustrated by", credited("illustrator").join(", ")),
+        ("Edited by", credited("editor").join(", ")),
+        ("Narrated by", credited("narrator").join(", ")),
         ("Also titled", titles.join(" · ")),
     ];
     facts.into_iter().filter(|(_, value)| !value.is_empty()).collect()
+}
+
+/// The member's tags, then those only other catalogues of the unified work give, all
+/// labelled in the member's language.
+fn tags(library: &Library, id: u32, member: Member, book: &Book) -> Vec<String> {
+    let mut found = library.tags(member, book);
+    for other in library.members(id).into_iter().filter(|&other| other != member) {
+        let Some(theirs) = library.book(other) else { continue };
+        for (slug, _) in library.tags(other, &theirs) {
+            let known = found.iter().any(|(seen, _)| *seen == slug);
+            let label = library.tag_label(member, &slug).filter(|_| !known);
+            found.extend(label.map(|label| (slug, label)));
+        }
+    }
+    found.into_iter().map(|(_, label)| label).collect()
 }
 
 fn book_view(library: &Library, id: u32, member: Member) -> Option<BookPage> {
@@ -469,23 +521,28 @@ fn book_view(library: &Library, id: u32, member: Member) -> Option<BookPage> {
     };
     let series = library.series(member);
     let mut shown: Vec<u32> = vec![id];
+    let series_name = series.as_ref().map(|series| match series.position {
+        0 => series.name.clone(),
+        position => format!("{} #{position}", series.name),
+    });
     let series = series.map(|series| {
         shown.extend(series.members.iter().map(|member| library.unified_of(member.work)));
         Shelf {
-            link: format!("/series/{}", series.first),
+            link: format!("/series/{}/{code}", series.first),
             total: series.members.len(),
             rows: rows(library, &series.members[..series.members.len().min(SHELF_BOOKS)]),
             name: series.name,
         }
     });
     let first = book.authors.first().and_then(|author| {
-        let found = library.author(author.number)?;
+        let found = library.author(author.number, Some(member.language))?;
         let works = found
             .works
             .into_iter()
-            .filter(|m| !shown.contains(&library.unified_of(m.work)));
-        let works: Vec<Member> = works.take(SHELF_BOOKS).collect();
-        Some(((author.number, author.name.clone()), works))
+            .filter(|m| !shown.contains(&library.unified_of(m.work)))
+            .map(|m| library.display(library.unified_of(m.work), Some(member.language)));
+        let works: Vec<Member> = works.flatten().take(SHELF_BOOKS).collect();
+        Some(((found.number, author.name.clone()), works))
     });
     let (author, author_works) = first.map_or((None, Vec::new()), |(a, w)| (Some(a), w));
     shown.extend(author_works.iter().map(|member| library.unified_of(member.work)));
@@ -493,7 +550,7 @@ fn book_view(library: &Library, id: u32, member: Member) -> Option<BookPage> {
     let overview = [
         (book.year > 0).then(|| book.year.to_string()),
         Some(language_name(code).to_string()),
-        series.as_ref().map(|shelf| shelf.name.clone()),
+        series_name,
     ];
     let editions = extras.editions.iter().map(|edition| EditionRow {
         year: edition.year,
@@ -502,12 +559,17 @@ fn book_view(library: &Library, id: u32, member: Member) -> Option<BookPage> {
         isbn: edition.isbn.clone(),
     });
     Some(BookPage {
+        code: code.to_string(),
         cover: cover_path(library, member, COVER).unwrap_or_default(),
         icon: cover_path(library, member, THUMBNAIL).unwrap_or_default(),
-        authors: book.authors.iter().map(|a| (a.number, a.name.clone())).collect(),
+        authors: book
+            .authors
+            .iter()
+            .map(|a| (library.author_of(a.number), a.name.clone()))
+            .collect(),
         overview: overview.into_iter().flatten().collect::<Vec<_>>().join(" · "),
         links: external_links(&extras.identifiers),
-        tags: library.tags(member, &book).into_iter().map(|(_, label)| label).collect(),
+        tags: tags(library, id, member, &book),
         facts: facts(&book, &extras),
         others: others(library, id, member, &extras),
         author_rows: rows(library, &author_works),
@@ -527,24 +589,59 @@ pub async fn author(
     Path(raw): Path<String>,
     Query(params): Query<ListParams>,
 ) -> Response {
+    author_page(app, raw, None, params).await
+}
+
+/// `/a/{author}/{language}`: books, author and series names in that catalogue's language.
+pub async fn author_in(
+    app: Arc<App>,
+    raw: String,
+    code: String,
+    params: ListParams,
+) -> Response {
+    author_page(app, raw, Some(code), params).await
+}
+
+async fn author_page(
+    app: Arc<App>,
+    raw: String,
+    code: Option<String>,
+    params: ListParams,
+) -> Response {
     let Some(number) = number(&raw) else { return not_found() };
     let page = params.p.min(MAX_PAGE);
     let found = blocking(&app, move |library| {
-        let Some(author) = library.author(number) else { return not_found() };
+        let wanted = match code.as_deref().map(|code| library.language(code)) {
+            Some(None) => return not_found(),
+            found => found.flatten(),
+        };
+        let suffix = code.map(|code| format!("/{code}")).unwrap_or_default();
+        let Some(author) = library.author(number, wanted) else { return not_found() };
+        if author.number != number {
+            return moved(format!("/a/{}{suffix}", author.number));
+        }
         let total = author.works.len();
         let shown = author.works.iter().skip(page * LIST_PER_PAGE).take(LIST_PER_PAGE);
         let shown: Vec<Member> = shown.copied().collect();
         let more = (page + 1) * LIST_PER_PAGE < total;
-        let (previous, next) = page_links(&format!("/a/{number}"), page, more);
-        let links = photo_path(number, PHOTO).map(|_| Link {
-            label: "Open Library",
-            url: format!("https://openlibrary.org/authors/OL{number}A"),
-        });
+        let (previous, next) = page_links(&format!("/a/{number}{suffix}"), page, more);
+        let mut identifiers = author.person.identifiers;
+        if photo_path(number, PHOTO).is_some() {
+            identifiers.insert(0, format!("ol:OL{number}A"));
+        }
+        let dates = match (author.born, author.person.died) {
+            (0, 0) => String::new(),
+            (born, 0) => format!("Born {born}"),
+            (0, died) => format!("Died {died}"),
+            (born, died) => format!("{born}–{died}"),
+        };
         render(AuthorPage {
             name: author.name,
-            born: author.born,
+            dates,
+            names: author.person.names.join(" · "),
+            bio: author.person.bio,
             photo: photo_path(number, PHOTO).unwrap_or_default(),
-            links: links.into_iter().collect(),
+            links: external_links(&identifiers),
             rows: rows(library, &shown),
             total,
             previous,
@@ -559,26 +656,40 @@ pub async fn series(
     Path(raw): Path<String>,
     Query(params): Query<ListParams>,
 ) -> Response {
+    series_page(app, raw, None, params).await
+}
+
+pub async fn series_in(
+    State(app): Shared,
+    Path((raw, code)): Path<(String, String)>,
+    Query(params): Query<ListParams>,
+) -> Response {
+    series_page(app, raw, Some(code), params).await
+}
+
+async fn series_page(
+    app: Arc<App>,
+    raw: String,
+    code: Option<String>,
+    params: ListParams,
+) -> Response {
     let Some(id) = number(&raw) else { return not_found() };
     let page = params.p.min(MAX_PAGE);
     let found = blocking(&app, move |library| {
-        if let Some(Found::Moved(to)) = library.find(id) {
-            return moved(format!("/series/{to}"));
-        }
-        let members = library.members(id);
-        let Some(series) = members.iter().find_map(|&member| library.series(member))
-        else {
-            return not_found();
+        let suffix = code.as_ref().map(|code| format!("/{code}")).unwrap_or_default();
+        let member = match library.choose(id, code.as_deref()) {
+            Choice::Member(member) => member,
+            Choice::Moved(to) => return moved(format!("/series/{to}{suffix}")),
+            Choice::Missing => return not_found(),
         };
+        let Some(series) = library.series(member) else { return not_found() };
         let total = series.members.len();
         let shown = series.members.iter().skip(page * LIST_PER_PAGE).take(LIST_PER_PAGE);
         let shown: Vec<Member> = shown.copied().collect();
         let more = (page + 1) * LIST_PER_PAGE < total;
-        let (previous, next) = page_links(&format!("/series/{id}"), page, more);
-        let language =
-            shown.first().map_or("", |&member| language_name(library.code(member)));
+        let (previous, next) = page_links(&format!("/series/{id}{suffix}"), page, more);
         render(ListPage {
-            note: format!("{total} books · {language} series in reading order"),
+            note: format!("{total} books in reading order"),
             name: series.name,
             rows: rows(library, &shown),
             previous,

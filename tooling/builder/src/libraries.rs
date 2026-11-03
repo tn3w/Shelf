@@ -3,6 +3,7 @@ use crate::dumps::{self, Authors, Book, FLAG_ISBN, FLAG_PUBLISHER, FLAG_READABLE
 use crate::dumps::{Facts, Isbns, Signal, Titles};
 use crate::linked;
 use crate::marc::{self, Marc};
+use crate::people;
 use crate::release;
 use crate::sidecar::{EDITION_CAP, Edition};
 use crate::tags::{self, Classes};
@@ -300,6 +301,7 @@ pub struct Record {
     pub authorities: Vec<String>,
     pub name: String,
     pub translators: Vec<String>,
+    pub contributors: Vec<(&'static str, String)>,
     pub publisher: String,
     pub description: String,
     pub year: u16,
@@ -1458,8 +1460,9 @@ pub struct Details {
     pub series: String,
     pub volume: u16,
     pub authorities: Vec<String>,
-    pub translators: Vec<String>,
-    pub editions: Vec<Edition>,
+    pub translators: Vec<(usize, String)>,
+    pub contributors: Vec<(usize, people::Credit)>,
+    pub editions: Vec<(usize, Edition)>,
     pub descriptions: Vec<(usize, String)>,
     pub records: u32,
     pub originals: Vec<(String, u32)>,
@@ -1485,10 +1488,19 @@ fn common(values: impl Iterator<Item = String>) -> String {
     most_common(values.filter(|value| !value.is_empty())).unwrap_or_default()
 }
 
-fn unique(values: impl Iterator<Item = String>, cap: usize) -> Vec<String> {
-    let mut kept: Vec<String> = Vec::new();
+/// Distinct values of each record language, at most `cap` per language: a work's library
+/// records span catalogues, its translators and editions belong to one.
+fn per_language<T: PartialEq>(
+    values: impl Iterator<Item = (usize, T)>,
+    cap: usize,
+) -> Vec<(usize, T)> {
+    let mut kept: Vec<(usize, T)> = Vec::new();
     for value in values {
-        if kept.len() < cap && !kept.contains(&value) {
+        let used = kept
+            .iter()
+            .filter(|(language, _)| *language == value.0)
+            .count();
+        if used < cap && !kept.contains(&value) {
             kept.push(value);
         }
     }
@@ -1503,16 +1515,24 @@ impl Details {
                 (series.clone(), volume)
             });
         let writer = records.iter().find(|record| !record.authorities.is_empty());
-        let translators = records
-            .iter()
-            .flat_map(|record| record.translators.iter().cloned());
+        let translators = records.iter().flat_map(|record| {
+            let names = record.translators.iter();
+            names.map(|name| (record.language, name.clone()))
+        });
+        let contributors = records.iter().flat_map(|record| {
+            let credits = record.contributors.iter();
+            credits.map(|credit| (record.language, credit.clone()))
+        });
         let editions = records.iter().flat_map(|record| {
-            record.isbns.iter().map(|&isbn| Edition {
-                year: record.year,
-                publisher: record.publisher.clone(),
-                isbn: catalog::isbn13(isbn),
-                format: record.format,
-                identifier: record.identifier.clone(),
+            record.isbns.iter().map(|&isbn| {
+                let edition = Edition {
+                    year: record.year,
+                    publisher: record.publisher.clone(),
+                    isbn: catalog::isbn13(isbn),
+                    format: record.format,
+                    identifier: record.identifier.clone(),
+                };
+                (record.language, edition)
             })
         });
         let translated = records.iter().filter(|record| {
@@ -1526,8 +1546,9 @@ impl Details {
             series,
             volume,
             authorities: writer.map_or_else(Vec::new, |record| record.authorities.clone()),
-            translators: unique(translators, MAX_TRANSLATORS),
-            editions: editions.take(EDITION_CAP).collect(),
+            translators: per_language(translators, MAX_TRANSLATORS),
+            contributors: per_language(contributors, people::MAX_CONTRIBUTORS),
+            editions: per_language(editions, EDITION_CAP),
             descriptions: best_descriptions(records),
             records: records.len() as u32,
             originals: original_votes(records),
@@ -3573,5 +3594,23 @@ mod tests {
         assert_eq!(record.title, "Harijs Poters un Filozofu akmens");
         assert_eq!(record.original_language, "eng");
         assert_eq!(record.subjects, ["fiction"]);
+    }
+
+    #[test]
+    fn details_keep_each_language_apart() {
+        let record = |language: &str, translator: &str, isbn: &str| Record {
+            language: crate::language_index(language),
+            translators: vec![translator.to_string()],
+            isbns: vec![catalog::isbn_key(isbn).unwrap()],
+            ..Record::default()
+        };
+        let spanish = record("es", "Alicia Dellepiane", "9788498382662");
+        let japanese = record("ja", "Yuko Matsuoka", "9784915512377");
+        let details = Details::of(&[&spanish, &japanese, &spanish]);
+        let ja = crate::language_index("ja");
+        assert_eq!(details.translators.len(), 2);
+        assert_eq!(details.translators[1], (ja, "Yuko Matsuoka".to_string()));
+        assert_eq!(details.editions.len(), 2);
+        assert_eq!(details.editions[1].0, ja);
     }
 }

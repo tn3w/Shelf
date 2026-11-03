@@ -3,11 +3,12 @@
 
 use builder::LANGUAGES;
 use builder::covers::{self, Cover};
+use builder::reader::Series as ListedSeries;
 use builder::reader::{Book, Catalogue, Description, Ranks, Segment, current_segments};
 use builder::search::{Hit, search_all};
-use builder::sidecar::{EDITION_CAP, EXTRAS, Extras, Sidecar};
+use builder::sidecar::{EXTRAS, Extras, PEOPLE, Person, Sidecar};
 use builder::works::Works;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 
 const POPULAR: usize = 2500;
@@ -42,15 +43,21 @@ struct AuthorEntry {
 }
 
 pub struct Author {
+    pub number: u32,
     pub name: String,
     pub born: u32,
+    pub person: Person,
     pub works: Vec<Member>,
 }
 
+/// A series across catalogues: volumes by position, each in the wanted language when it
+/// has one; `position` is the asked member's.
 pub struct Series {
     pub name: String,
     pub first: u32,
+    pub position: u32,
     pub members: Vec<Member>,
+    pub positions: Vec<u32>,
 }
 
 pub struct Library {
@@ -59,15 +66,20 @@ pub struct Library {
     members: HashMap<u32, Vec<Member>>,
     unified: HashMap<u32, u32>,
     extras: Option<Sidecar>,
+    people: Option<Sidecar>,
     covers: HashMap<String, Vec<Cover>>,
     authors: Vec<AuthorEntry>,
+    author_aliases: HashMap<u32, u32>,
+    author_groups: HashMap<u32, Vec<u32>>,
     popular: Vec<Vec<(u32, Vec<u8>)>>,
     weights: Vec<Vec<f64>>,
     pub work_count: usize,
     pub author_count: usize,
 }
 
-fn fill(mut merged: Extras, code: &str, extras: Extras) -> Extras {
+/// Gaps of one member's extras filled from another member: descriptions, titles, ids,
+/// original title, illustrators and the like. Translators and editions stay the member's own.
+fn fill(mut merged: Extras, extras: Extras) -> Extras {
     let add_pairs = |target: &mut Vec<(String, String)>, found: Vec<(String, String)>| {
         for (language, text) in found {
             if !target.iter().any(|(known, _)| *known == language) {
@@ -82,17 +94,15 @@ fn fill(mut merged: Extras, code: &str, extras: Extras) -> Extras {
             merged.identifiers.push(identifier);
         }
     }
-    let language = language_name(code);
-    for name in extras.translators {
-        if !merged.translators.iter().any(|known| known.starts_with(&name)) {
-            merged.translators.push(format!("{name} ({language})"));
+    for (role, name) in extras.contributors {
+        let known = merged.contributors.iter().any(|(_, seen)| seen.starts_with(&name));
+        if role != "translator" && !known {
+            merged.contributors.push((role, name));
         }
     }
     if merged.original_title.is_empty() {
         merged.original_title = extras.original_title;
     }
-    let room = EDITION_CAP.saturating_sub(merged.editions.len());
-    merged.editions.extend(extras.editions.into_iter().take(room));
     merged
 }
 
@@ -285,17 +295,25 @@ impl Library {
                 .collect()
         });
         let works = Works::load(&directory.join("works.bin")).unwrap_or_default();
-        let extras = std::fs::read(directory.join("extras.bin"))
-            .ok()
-            .and_then(|bytes| Sidecar::parse(EXTRAS, &bytes));
+        let sidecar = |name: &str, magic| {
+            let bytes = std::fs::read(directory.join(name)).ok()?;
+            Sidecar::parse(magic, &bytes)
+        };
+        let mut author_groups: HashMap<u32, Vec<u32>> = HashMap::new();
+        for &(alias, author) in &works.authors {
+            author_groups.entry(author).or_default().push(alias);
+        }
         let mut library = Library {
             release,
             catalogues: Vec::new(),
             members: HashMap::new(),
             unified: works.unified_ids(),
-            extras,
+            extras: sidecar("extras.bin", EXTRAS),
+            people: sidecar("people.bin", PEOPLE),
             covers: covers_of(directory),
             authors: Vec::new(),
+            author_aliases: works.authors.iter().copied().collect(),
+            author_groups,
             popular: Vec::new(),
             weights: Vec::new(),
             work_count: 0,
@@ -309,7 +327,8 @@ impl Library {
         }
         library.authors.sort_unstable_by_key(|entry| (entry.number, entry.language));
         let mut numbers: Vec<u32> =
-            library.authors.iter().map(|entry| entry.number).collect();
+            library.authors.iter().map(|entry| library.author_of(entry.number)).collect();
+        numbers.sort_unstable();
         numbers.dedup();
         library.author_count = numbers.len();
         for (unified, members) in works.works {
@@ -358,7 +377,15 @@ impl Library {
         });
     }
 
-    /// The members of a unified work, most popular first, or where an old id moved to.
+    /// The member shown for a unified work: `wanted` language, else the first catalogue
+    /// in `LANGUAGES` order (English, German, French, …).
+    pub fn display(&self, id: u32, wanted: Option<usize>) -> Option<Member> {
+        let members = self.members(id);
+        let preferred = members.iter().find(|member| Some(member.language) == wanted);
+        preferred.or(members.first()).copied()
+    }
+
+    /// The members of a unified work in `LANGUAGES` order, or where an old id moved to.
     pub fn find(&self, id: u32) -> Option<Found> {
         let unified = self.unified_of(id);
         if unified != id {
@@ -372,7 +399,7 @@ impl Library {
         };
         members.retain(|&member| self.holds(member));
         if !members.is_empty() {
-            self.by_popularity(&mut members);
+            members.sort_by_key(|member| member.language);
             return Some(Found::Members(members));
         }
         let moved = self.catalogues.iter().find_map(|catalogue| catalogue.alias(id));
@@ -418,9 +445,7 @@ impl Library {
     pub fn work_extras(&self, id: u32, member: Member) -> Extras {
         let own = self.extras(member).unwrap_or_default();
         let others = self.members(id).into_iter().filter(|&other| other != member);
-        others
-            .filter_map(|other| Some((self.code(other), self.extras(other)?)))
-            .fold(own, |merged, (code, extras)| fill(merged, code, extras))
+        others.filter_map(|other| self.extras(other)).fold(own, fill)
     }
 
     pub fn tags(&self, member: Member, book: &Book) -> Vec<(String, String)> {
@@ -433,36 +458,173 @@ impl Library {
         found.map(|tag| (tag.slug.clone(), tag.label.clone())).collect()
     }
 
+    /// The label `member`'s catalogue gives the tag `slug`.
+    pub fn tag_label(&self, member: Member, slug: &str) -> Option<String> {
+        let catalogue = &self.catalogues[member.language];
+        let (segment, _) = catalogue.locate(member.work)?;
+        let tags = &catalogue.segments[segment].tags;
+        tags.iter().find(|tag| tag.slug == slug).map(|tag| tag.label.clone())
+    }
+
     pub fn cover(&self, code: &str, work: u32) -> Option<Cover> {
         let covers = self.covers.get(code)?;
         let found = covers.binary_search_by_key(&work, |cover| cover.work).ok()?;
         Some(covers[found])
     }
 
-    pub fn series(&self, member: Member) -> Option<Series> {
-        let found = self.catalogues[member.language].series(member.work)?;
-        let members =
-            found.members.iter().map(|&work| Member { language: member.language, work });
-        let members: Vec<Member> = members.filter(|&member| self.holds(member)).collect();
-        let first = self.unified_of(members.first()?.work);
-        Some(Series { name: found.name, first, members })
+    /// Catalogue series holding the unified work of `member`: its own first, then those its
+    /// title names ("Percy Jackson" in "Percy Jackson and the Lightning Thief"), then `LANGUAGES`
+    /// order.
+    fn series_sources(&self, member: Member) -> Vec<(Member, ListedSeries)> {
+        let title = self.book(member).map(|book| book.title.to_lowercase());
+        let members = self.members(self.unified_of(member.work)).into_iter();
+        let mut found: Vec<(Member, ListedSeries)> = members
+            .filter_map(|source| {
+                Some((source, self.catalogues[source.language].series(source.work)?))
+            })
+            .collect();
+        found.sort_by_key(|(source, series)| {
+            let named =
+                title.as_ref().is_some_and(|t| t.contains(&series.name.to_lowercase()));
+            (*source != member, !named)
+        });
+        found
     }
 
-    pub fn author(&self, number: u32) -> Option<Author> {
-        let start = self.authors.partition_point(|entry| entry.number < number);
-        let entries =
-            self.authors[start..].iter().take_while(|entry| entry.number == number);
-        let mut author = Author { name: String::new(), born: 0, works: Vec::new() };
-        for entry in entries {
-            let catalogue = &self.catalogues[entry.language as usize];
-            let record = catalogue.segments[entry.segment as usize].author(entry.slot);
-            if author.name.is_empty() {
-                author.name = record.name;
+    /// Volumes (position → unified id) of one catalogue series.
+    fn volumes(&self, source: Member, series: &ListedSeries) -> BTreeMap<u32, u32> {
+        let catalogue = &self.catalogues[source.language];
+        let mut volumes = BTreeMap::new();
+        for (index, &work) in series.members.iter().enumerate() {
+            let at = catalogue.facts(work).map_or(0, |facts| facts.position);
+            let position = if at > 0 { at } else { index as u32 + 1 };
+            volumes.entry(position).or_insert(self.unified_of(work));
+        }
+        volumes
+    }
+
+    /// The series of `member`, gaps filled from the other catalogues' series of its unified
+    /// work when they agree on every shared volume (Harry Potter 1–3 + 4–7). A series
+    /// with gaps only fills holes up to the end of the longest gap-free one: a catalogue
+    /// numbering Heroes of Olympus on from Percy Jackson (2, 4, 6) adds no volume 6.
+    pub fn series(&self, member: Member) -> Option<Series> {
+        let id = self.unified_of(member.work);
+        let sources = self.series_sources(member);
+        let (first, listed) = sources.first()?;
+        let mut volumes = self.volumes(*first, listed);
+        let agreeing: Vec<BTreeMap<u32, u32>> = sources[1..]
+            .iter()
+            .map(|(source, listed)| self.volumes(*source, listed))
+            .filter(|theirs| {
+                let at = |work: &u32| volumes.iter().find(|(_, known)| *known == work);
+                let shared = theirs.iter().any(|(p, work)| volumes.get(p) == Some(work));
+                let fits = theirs.iter().all(|(position, work)| {
+                    volumes.get(position).is_none_or(|known| known == work)
+                        && at(work).is_none_or(|(known, _)| known == position)
+                });
+                shared && fits
+            })
+            .collect();
+        let gapless =
+            |found: &BTreeMap<u32, u32>| found.keys().copied().eq(1..=found.len() as u32);
+        let last =
+            |found: &BTreeMap<u32, u32>| found.keys().next_back().copied().unwrap_or(0);
+        let complete = agreeing.iter().filter(|theirs| gapless(theirs));
+        let end = complete.map(last).fold(last(&volumes), u32::max);
+        for theirs in agreeing {
+            let open = gapless(&theirs);
+            let filling =
+                theirs.into_iter().filter(|(position, _)| open || *position <= end);
+            for (position, work) in filling {
+                volumes.entry(position).or_insert(work);
             }
-            author.born = author.born.max(record.born);
-            let works = catalogue.visible_works(entry.segment as usize, &record.works);
-            let language = entry.language as usize;
-            author.works.extend(works.into_iter().map(|work| Member { language, work }));
+        }
+        let shown = volumes.iter().filter_map(|(&position, &work)| {
+            Some((position, self.display(work, Some(member.language))?))
+        });
+        let (positions, members): (Vec<u32>, Vec<Member>) = shown.unzip();
+        let position =
+            volumes.iter().find(|(_, work)| **work == id).map_or(0, |(at, _)| *at);
+        Some(Series {
+            name: listed.name.clone(),
+            first: *volumes.values().next()?,
+            position,
+            members,
+            positions,
+        })
+    }
+
+    /// `Series #n` for result rows, from any catalogue of the unified work.
+    pub fn series_label(&self, member: Member) -> Option<String> {
+        let (source, listed) = self.series_sources(member).into_iter().next()?;
+        let position = self.catalogues[source.language].facts(source.work)?.position;
+        Some(match position {
+            0 => listed.name,
+            position => format!("{} #{position}", listed.name),
+        })
+    }
+
+    /// The number an author's pages use: aliases (twin records, library ids) lead to it.
+    pub fn author_of(&self, number: u32) -> u32 {
+        self.author_aliases.get(&number).copied().unwrap_or(number)
+    }
+
+    fn person(&self, numbers: &[u32]) -> Person {
+        let mut person = Person::default();
+        let Some(people) = &self.people else { return person };
+        for (code, _) in &people.languages {
+            for found in numbers.iter().filter_map(|&n| people.person_of(code, n)) {
+                person.died = person.died.max(found.died);
+                if person.bio.is_empty() {
+                    person.bio = found.bio;
+                }
+                for name in found.names {
+                    if !person.names.contains(&name) {
+                        person.names.push(name);
+                    }
+                }
+                person.identifiers.extend(found.identifiers);
+            }
+        }
+        person.identifiers.sort();
+        person.identifiers.dedup();
+        person
+    }
+
+    /// An author over all catalogues and alias numbers; works most read first, each shown
+    /// in `wanted` language, else the first catalogue language that has it; with `wanted`,
+    /// books in that language lead.
+    pub fn author(&self, number: u32, wanted: Option<usize>) -> Option<Author> {
+        let number = self.author_of(number);
+        let mut numbers = vec![number];
+        numbers.extend(self.author_groups.get(&number).into_iter().flatten());
+        let mut author = Author {
+            number,
+            name: String::new(),
+            born: 0,
+            person: Person::default(),
+            works: Vec::new(),
+        };
+        for &credited in &numbers {
+            let start = self.authors.partition_point(|entry| entry.number < credited);
+            let entries =
+                self.authors[start..].iter().take_while(|entry| entry.number == credited);
+            for entry in entries {
+                let catalogue = &self.catalogues[entry.language as usize];
+                let record =
+                    catalogue.segments[entry.segment as usize].author(entry.slot);
+                let preferred = wanted.unwrap_or(0);
+                if author.name.is_empty() || entry.language as usize == preferred {
+                    author.name = record.name;
+                }
+                author.born = author.born.max(record.born);
+                let works =
+                    catalogue.visible_works(entry.segment as usize, &record.works);
+                let language = entry.language as usize;
+                author
+                    .works
+                    .extend(works.into_iter().map(|work| Member { language, work }));
+            }
         }
         if author.works.is_empty() {
             return None;
@@ -470,6 +632,14 @@ impl Library {
         self.by_popularity(&mut author.works);
         let mut seen = HashSet::new();
         author.works.retain(|member| seen.insert(self.unified_of(member.work)));
+        for member in &mut author.works {
+            *member =
+                self.display(self.unified_of(member.work), wanted).unwrap_or(*member);
+        }
+        if let Some(language) = wanted {
+            author.works.sort_by_key(|member| member.language != language);
+        }
+        author.person = self.person(&numbers);
         Some(author)
     }
 
@@ -493,11 +663,12 @@ impl Library {
         let mut seen = HashSet::new();
         let mut candidates = Vec::new();
         for rank in 0..DAILY_CANDIDATES * 12 {
-            for (language, works) in self.popular.iter().enumerate() {
+            for works in &self.popular {
                 let Some(&(work, _)) = works.get(rank) else { continue };
-                let member = Member { language, work };
-                let covered = self.cover(self.code(member), work).is_some();
-                if covered && seen.insert(self.unified_of(work)) {
+                let unified = self.unified_of(work);
+                let Some(member) = self.display(unified, None) else { continue };
+                let covered = self.cover(self.code(member), member.work).is_some();
+                if member.language == 0 && covered && seen.insert(unified) {
                     candidates.push(member);
                 }
             }
@@ -576,6 +747,7 @@ mod tests {
             translators: vec![translator.to_string()],
             original_title: "Harry Potter and the Philosopher's Stone".to_string(),
             editions: vec![Default::default(); 2],
+            contributors: vec![("illustrator".to_string(), "Mary GrandPré".to_string())],
             ..Extras::default()
         }
     }
@@ -583,23 +755,20 @@ mod tests {
     #[test]
     fn member_without_extras_takes_the_other_members() {
         let merged =
-            fill(Extras::default(), "fr", extras("fr", "Jean-François Ménard", "pg:1"));
-        let merged = fill(merged, "es", extras("es", "Alicia Dellepiane", "pg:1"));
+            fill(Extras::default(), extras("fr", "Jean-François Ménard", "pg:1"));
+        let merged = fill(merged, extras("es", "Alicia Dellepiane", "pg:1"));
         assert_eq!(merged.original_title, "Harry Potter and the Philosopher's Stone");
         assert_eq!(merged.descriptions.len(), 2);
         assert_eq!(merged.identifiers, ["pg:1"]);
-        assert_eq!(
-            merged.translators,
-            ["Jean-François Ménard (French)", "Alicia Dellepiane (Spanish)"]
-        );
-        assert_eq!(merged.editions.len(), 4);
+        assert_eq!(merged.contributors.len(), 1);
     }
 
     #[test]
-    fn own_extras_come_first() {
+    fn translators_and_editions_stay_the_members_own() {
         let own = extras("de", "Klaus Fritz", "ol:OL1W");
-        let merged = fill(own, "fr", extras("de", "Klaus Fritz", "ol:OL1W"));
-        assert_eq!(merged.descriptions, [("de".to_string(), "de text".to_string())]);
+        let merged = fill(own, extras("fr", "Jean-François Ménard", "ol:OL1W"));
+        assert_eq!(merged.descriptions[0], ("de".to_string(), "de text".to_string()));
         assert_eq!(merged.translators, ["Klaus Fritz"]);
+        assert_eq!(merged.editions.len(), 2);
     }
 }

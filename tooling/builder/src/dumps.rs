@@ -1,12 +1,14 @@
 use crate::catalog::{self, Traits};
 use crate::libraries::{self, Library};
+use crate::people;
 use crate::release;
+use crate::sidecar::Person;
 use crate::tags::{self, Classes};
 use crate::{Built, LANGUAGE_COUNT};
 use flate2::read::{DeflateDecoder, MultiGzDecoder};
 use serde_json::Value;
 use std::cmp::Reverse;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
 use std::path::Path;
@@ -574,6 +576,21 @@ fn latin_name(author: &Value) -> Option<&str> {
     Some(latin.unwrap_or(first))
 }
 
+/// Author page data of the `wanted` Open Library authors.
+pub fn people(source: &str, wanted: &HashSet<u32>) -> HashMap<u32, Person> {
+    let parse = |line: &[u8]| {
+        let number = ol_id(field(line, 1)).filter(|number| wanted.contains(number))?;
+        let author = json(line)?;
+        let name = libraries::normalized_name(latin_name(&author)?);
+        people::person_from(number, &author, &name)
+    };
+    let mut found = HashMap::new();
+    scan(source, "authors", parse, |person| {
+        found.insert(person.number, person);
+    });
+    found
+}
+
 pub fn authors(source: &str) -> Authors {
     let mut authors = Authors::default();
     let parse = |line: &[u8]| {
@@ -679,6 +696,7 @@ pub struct Titles {
     text: String,
     publisher_editions: HashMap<u32, u32>,
     claimed_covers: Vec<bool>,
+    pub contributors: HashMap<u32, Vec<(usize, people::Credit)>>,
 }
 
 impl Titles {
@@ -836,6 +854,7 @@ struct Edition {
     publisher: u32,
     covers: Vec<u32>,
     isbns: Vec<u32>,
+    contributors: Vec<(&'static str, String)>,
 }
 
 fn edition_readers(source: &str) -> HashMap<u32, u16> {
@@ -1023,6 +1042,7 @@ fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -
             false => Vec::new(),
         },
         isbns: isbns(edition).filter_map(catalog::isbn_key).collect(),
+        contributors: people::edition_contributors(edition),
     })
 }
 
@@ -1059,6 +1079,20 @@ pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isb
                 );
                 if !edition.title.is_empty() {
                     titles.push(&edition, language);
+                }
+            }
+            let languages = edition.facts.language_editions.iter().enumerate();
+            for (language, _) in languages.filter(wanted) {
+                let known = titles.contributors.entry(edition.work).or_default();
+                for (role, name) in &edition.contributors {
+                    let same = |(at, (_, seen)): &&(usize, people::Credit)| {
+                        *at == language && people::same_name(seen, name)
+                    };
+                    let used = known.iter().filter(|(at, _)| *at == language).count();
+                    if !known.iter().any(|credit| same(&credit)) && used < people::MAX_CONTRIBUTORS
+                    {
+                        known.push((language, (role, name.clone())));
+                    }
                 }
             }
         },

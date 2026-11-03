@@ -1,4 +1,4 @@
 {% extends "base.html" %}
 {% block title %}{{ name }} – Shelf{% endblock %}
-{% block body %}<main><div class=head>{% if !photo.is_empty() %}<img src={{ photo }} width=160 height=160 alt>{% endif %}<div><h1>{{ name }}</h1>{% if born > 0 %}<p class=sub>Born {{ born }}</p>{% endif %}<p class=muted>{{ total }} books</p>{% include "links.html" %}</div></div>
-{% include "rows.html" %}{% include "pager.html" %}</main>{% endblock %}
+{% block body %}<main><div class=head>{% if !photo.is_empty() %}<img src={{ photo }} width=160 height=160 alt>{% endif %}<div><h1>{{ name }}</h1>{% if !dates.is_empty() %}<p class=sub>{{ dates }}</p>{% endif %}{% if !names.is_empty() %}<p class=muted>Also: {{ names }}</p>{% endif %}<p class=muted>{{ total }} books</p>{% include "links.html" %}</div></div>
+{% if !bio.is_empty() %}<p>{{ bio }}</p>{% endif %}{% include "rows.html" %}{% include "pager.html" %}</main>{% endblock %}

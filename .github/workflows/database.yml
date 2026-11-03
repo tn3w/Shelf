@@ -339,7 +339,7 @@ jobs:
       - name: Merge cover indexes and sidecars
         run: |
           chmod +x bin/builder
-          for kind in covers links extras; do
+          for kind in covers links extras people; do
             bin/builder "$kind" "out/$kind.bin" out/"$kind"-*.bin
             rm out/"$kind"-*.bin
           done

@@ -4,7 +4,7 @@ mod web;
 pub use puzzle::{DIGITS, Puzzle};
 pub use web::{Gate, Pages, guard, routes};
 
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use scrypt::Params;
 use sha2::Sha256;
 use std::collections::HashMap;
@@ -105,7 +105,7 @@ fn leading_zero_bits(hash: &[u8]) -> u32 {
 }
 
 fn work(challenge: &[u8], counter: u32) -> u32 {
-    let params = Params::new(SCRYPT_LOG_COST, SCRYPT_BLOCK_SIZE, 1, 32).expect("params");
+    let params = Params::new(SCRYPT_LOG_COST, SCRYPT_BLOCK_SIZE, 1).expect("params");
     let mut output = [0u8; 32];
     scrypt::scrypt(challenge, &counter.to_be_bytes(), &params, &mut output)
         .expect("scrypt");

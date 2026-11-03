@@ -3,20 +3,22 @@
 //! Little endian: magic, u32 version, u8 language count + (u8 length, code) each,
 //! u32 work count + per work (ascending unified id) u32 unified id, u8 member count,
 //! members (u8 language index, u32 local id), then u32 alias count + (u32 old, u32 new)
-//! pairs ascending by old id. Works found in one catalogue only are left out: their
+//! pairs ascending by old id, then (version 2) u32 author alias count + (u32 alias, u32
+//! author) pairs ascending by alias. Works found in one catalogue only are left out: their
 //! unified id is their local id.
 
 use crate::reader::u32_at;
 use std::collections::HashMap;
 
 pub const MAGIC: &[u8; 4] = b"SHWK";
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Works {
     pub languages: Vec<String>,
     pub works: Vec<(u32, Vec<(u8, u32)>)>,
     pub aliases: Vec<(u32, u32)>,
+    pub authors: Vec<(u32, u32)>,
 }
 
 struct Cursor<'a> {
@@ -58,17 +60,23 @@ impl Works {
                 bytes.extend(local.to_le_bytes());
             }
         }
-        bytes.extend((self.aliases.len() as u32).to_le_bytes());
-        for &(from, to) in &self.aliases {
-            bytes.extend(from.to_le_bytes());
-            bytes.extend(to.to_le_bytes());
+        for pairs in [&self.aliases, &self.authors] {
+            bytes.extend((pairs.len() as u32).to_le_bytes());
+            for &(from, to) in pairs {
+                bytes.extend(from.to_le_bytes());
+                bytes.extend(to.to_le_bytes());
+            }
         }
         bytes
     }
 
     pub fn parse(bytes: &[u8]) -> Option<Works> {
         let mut cursor = Cursor { bytes, at: 0 };
-        if cursor.take(4)? != MAGIC || cursor.u32()? != VERSION {
+        if cursor.take(4)? != MAGIC {
+            return None;
+        }
+        let version = cursor.u32()?;
+        if !(1..=VERSION).contains(&version) {
             return None;
         }
         let languages = (0..cursor.byte()?)
@@ -86,13 +94,18 @@ impl Works {
                 Some((unified, members))
             })
             .collect::<Option<_>>()?;
-        let aliases = (0..cursor.u32()?)
-            .map(|_| Some((cursor.u32()?, cursor.u32()?)))
-            .collect::<Option<_>>()?;
+        let mut pairs = || -> Option<Vec<(u32, u32)>> {
+            (0..cursor.u32()?)
+                .map(|_| Some((cursor.u32()?, cursor.u32()?)))
+                .collect()
+        };
+        let aliases = pairs()?;
+        let authors = if version > 1 { pairs()? } else { Vec::new() };
         Some(Works {
             languages,
             works,
             aliases,
+            authors,
         })
     }
 
@@ -119,10 +132,24 @@ mod tests {
             languages: vec!["en".to_string(), "de".to_string()],
             works: vec![(5, vec![(0, 5), (1, 1_000_000_007)])],
             aliases: vec![(9, 5)],
+            authors: vec![(7_098_281, 7_617_742)],
         };
         let bytes = works.encode();
         assert_eq!(Works::parse(&bytes), Some(works.clone()));
         assert_eq!(works.unified_ids()[&1_000_000_007], 5);
         assert!(Works::parse(&bytes[..bytes.len() - 1]).is_none());
+    }
+
+    #[test]
+    fn version_one_has_no_author_aliases() {
+        let works = Works {
+            languages: vec!["en".to_string()],
+            aliases: vec![(9, 5)],
+            ..Works::default()
+        };
+        let mut bytes = works.encode();
+        bytes[4..8].copy_from_slice(&1u32.to_le_bytes());
+        bytes.truncate(bytes.len() - 4);
+        assert_eq!(Works::parse(&bytes), Some(works));
     }
 }

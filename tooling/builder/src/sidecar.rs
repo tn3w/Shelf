@@ -1,8 +1,9 @@
 //! Server-only sidecars beside the app packs, never listed in `manifest.segments`.
 //!
-//! `links-<lang>.bin` (`SHLK`) holds the ids that tie a work to other catalogues and
-//! `extras-<lang>.bin` (`SHEX`) what a book page shows beyond the app pack. Both follow the
-//! cover index: magic, version, section table, `meta` section, one section per language.
+//! `links-<lang>.bin` (`SHLK`) holds the ids that tie a work to other catalogues,
+//! `extras-<lang>.bin` (`SHEX`) what a book page shows beyond the app pack and
+//! `people-<lang>.bin` (`SHPE`) what an author page shows, keyed by author number. All
+//! follow the cover index: magic, version, section table, `meta` section, one section per language.
 //! A language section is a block index (block count, first work per block, offset table)
 //! over raw deflate blocks; a block holds records sorted by work: varint work delta,
 //! varint length, record bytes. Texts are varint length + UTF-8, lists varint count + items.
@@ -14,6 +15,7 @@ use std::path::Path;
 
 pub const LINKS: &[u8; 4] = b"SHLK";
 pub const EXTRAS: &[u8; 4] = b"SHEX";
+pub const PEOPLE: &[u8; 4] = b"SHPE";
 pub const VERSION: u32 = 1;
 pub const EDITION_CAP: usize = 300;
 const RECORDS_PER_BLOCK: usize = 64;
@@ -54,6 +56,16 @@ pub struct Extras {
     pub translators: Vec<String>,
     pub original_title: String,
     pub editions: Vec<Edition>,
+    pub contributors: Vec<(String, String)>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Person {
+    pub number: u32,
+    pub died: u16,
+    pub bio: String,
+    pub names: Vec<String>,
+    pub identifiers: Vec<String>,
 }
 
 fn put_texts(buffer: &mut Vec<u8>, texts: &[String]) {
@@ -139,6 +151,7 @@ impl Extras {
             buffer.push(edition.format);
             put_text(&mut buffer, &edition.identifier);
         }
+        put_pairs(&mut buffer, &self.contributors);
         buffer
     }
 
@@ -151,6 +164,7 @@ impl Extras {
             translators: reader.texts()?,
             original_title: reader.text()?,
             editions: Vec::new(),
+            contributors: Vec::new(),
         };
         for _ in 0..reader.varint()? {
             extras.editions.push(Edition {
@@ -161,7 +175,31 @@ impl Extras {
                 identifier: reader.text()?,
             });
         }
+        if reader.has_more() {
+            extras.contributors = reader.pairs()?;
+        }
         Some(extras)
+    }
+}
+
+impl Person {
+    fn encode(&self) -> Vec<u8> {
+        let mut buffer = Vec::new();
+        put_varint(&mut buffer, u32::from(self.died));
+        put_text(&mut buffer, &self.bio);
+        put_texts(&mut buffer, &self.names);
+        put_texts(&mut buffer, &self.identifiers);
+        buffer
+    }
+
+    fn decode(number: u32, reader: &mut Cursor) -> Option<Person> {
+        Some(Person {
+            number,
+            died: u16::try_from(reader.varint()?).ok()?,
+            bio: reader.text()?,
+            names: reader.texts()?,
+            identifiers: reader.texts()?,
+        })
     }
 }
 
@@ -266,6 +304,14 @@ pub fn extras_file(month: &str, language: &str, extras: &[Extras]) -> Vec<u8> {
         .map(|extras| (extras.work, extras.encode()))
         .collect();
     file(EXTRAS, month, language, records)
+}
+
+pub fn people_file(month: &str, language: &str, people: &[Person]) -> Vec<u8> {
+    let records = people
+        .iter()
+        .map(|person| (person.number, person.encode()))
+        .collect();
+    file(PEOPLE, month, language, records)
 }
 
 pub fn merge(magic: &[u8; 4], inputs: &[impl AsRef<Path>]) -> Result<Vec<u8>, String> {
@@ -379,6 +425,14 @@ impl Sidecar {
     pub fn extras_of(&self, language: &str, work: u32) -> Option<Extras> {
         self.decoded(language, Some(work), Extras::decode)?.pop()
     }
+
+    pub fn people(&self, language: &str) -> Option<Vec<Person>> {
+        self.decoded(language, None, Person::decode)
+    }
+
+    pub fn person_of(&self, language: &str, number: u32) -> Option<Person> {
+        self.decoded(language, Some(number), Person::decode)?.pop()
+    }
 }
 
 #[cfg(test)]
@@ -419,6 +473,7 @@ mod tests {
                 format: 2,
                 identifier: "dnb:1051183219".to_string(),
             }],
+            contributors: vec![("illustrator".to_string(), "Mary GrandPré".to_string())],
         }
     }
 
@@ -449,5 +504,36 @@ mod tests {
         assert_eq!(sidecar.extras("de").unwrap(), german);
         assert_eq!(sidecar.extras_of("ja", 4), Some(japanese[0].clone()));
         std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn extras_without_contributors_still_read() {
+        let mut old = extras(4);
+        old.contributors.clear();
+        let mut record = old.encode();
+        record.pop();
+        let decoded = Extras::decode(
+            4,
+            &mut Cursor {
+                bytes: &record,
+                at: 0,
+            },
+        );
+        assert_eq!(decoded, Some(old));
+    }
+
+    #[test]
+    fn people_round_trip_by_number() {
+        let person = Person {
+            number: 23_919,
+            died: 0,
+            bio: "British author.".to_string(),
+            names: vec!["Joanne Rowling".to_string()],
+            identifiers: vec!["viaf:116796842".to_string(), "wikidata:Q34660".to_string()],
+        };
+        let bytes = people_file("2026-11-05", "en", std::slice::from_ref(&person));
+        let sidecar = Sidecar::parse(PEOPLE, &bytes).unwrap();
+        assert_eq!(sidecar.person_of("en", 23_919), Some(person));
+        assert_eq!(sidecar.person_of("en", 1), None);
     }
 }

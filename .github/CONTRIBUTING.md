@@ -277,8 +277,9 @@ ASCII, keeps Hangul syllables and splits kana/kanji runs into overlapping bigram
 (`ノルウェイの森` → `ノル ルウ ウェ ェイ イの の森`, `・` breaks runs); builder and app
 tokenize alike (`catalog.rs` / `Search.kt`, same test strings).
 
-Sidecars (server only, not in `manifest.segments`, `sidecar.rs`): `links.bin` (`SHLK`) and
-`extras.bin` (`SHEX`), merged from per-language files like `covers.bin`. Layout: magic,
+Sidecars (server only, not in `manifest.segments`, `sidecar.rs`): `links.bin` (`SHLK`),
+`extras.bin` (`SHEX`) and `people.bin` (`SHPE`, keyed by author number), merged from
+per-language files like `covers.bin`. Layout: magic,
 version 1, section table, `meta`, one section per language = block index (count, first work
 per block, offsets) over raw deflate blocks of 64 records sorted by work (varint delta,
 varint length, record; texts length + UTF-8, lists count + items).
@@ -286,9 +287,16 @@ varint length, record; texts length + UTF-8, lists count + items).
 | File | Per work |
 |---|---|
 | `links` | Wikidata Q, OL work ids (with aliases), `pg` ids, original title key, original language, first-author authorities (`gnd:` `viaf:` `wikidata:` `ol:` `isni:` `lc:` `bne:`) + name key, series key + position, record count, majority language (empty = unknown), original-title votes (key + records, most first), compilation (most records or ` ; `/` / ` title) |
-| `extras` | best description per language (OL, library 520/330, Gutenberg summary, NLLB), identifiers, Wikidata labels, translators, original title, editions (year, publisher, ISBN, format, record id; ≤ 300) |
+| `extras` | best description per language (OL, library 520/330, Gutenberg summary, NLLB), identifiers, Wikidata labels, translators, original title, editions (year, publisher, ISBN, format, record id; ≤ 300), contributors (role + name, ≤ 8; trailing, older files lack it) |
+| `people` | per credited author: death year, bio (Markdown and source lines cut, ≤ 1,200 chars), other names (≤ 6), authority ids (OL `remote_ids`, Wikidata, first-author library authorities) |
 
-`builder show <file> <language> [work]` prints a record (or the count).
+Contributor roles (`people.rs`): translator, illustrator, editor, narrator from MARC
+700/702 `$e`/`$4` (codes and terms in every catalogue language, UNIMARC `730`/`440`/`340`)
+and Open Library edition `contributors` / `contributions` (`Name (Role)`); names
+deduplicated ignoring case. Translators, contributors and library editions are kept per
+record (or edition) language: each catalogue's extras hold only its own.
+
+`builder show <file> <language> [work|author]` prints a record (or the count).
 
 Works layer (`works.bin`, `SHWK`, server only, release asset outside the manifest): one
 book across all catalogues, built in `publish` by `builder unify` from the release's
@@ -306,8 +314,20 @@ Within-language dedupe stays in the per-language builds.
    strong evidence: same Wikidata Q; original title key (≥ 60 % of its votes, else the
    links key) + shared author authority id + different language; author + series key +
    position + different language. Library-only works with the same Q join each other.
-4. Refused, works stay apart: a work with evidence for two unified works, two works of one
+4. Series alignment: numbered volumes per (language, series key, first-author name key),
+   from the segments, so catalogues without `links` take part. Two series of one author
+   in different languages align when a unified work holds a volume of each at the same
+   position and none at different positions, and each has only that partner in the other
+   language; their other volumes join position by position (translated series names).
+   Up to 3 rounds, new joins give new anchors; each pair proposed once. Every phase counts
+   proposals from one cluster once (its members in several languages proposing the same
+   target are not a language conflict).
+5. Refused, works stay apart: a work with evidence for two unified works, two works of one
    language claiming one unified work (or its language is taken), Wikidata disagreeing.
+
+Author aliases: author numbers credited under one name key in one unified work are one
+person (twin Open Library records, library ids); canonical number = smallest OL id, else
+smallest; groups over 8 numbers stay apart.
 
 Named constants (`VOTE_RECORDS`, `VOTE_SHARE`), data shape only, never titles or authors.
 Unified id: smallest OL id of the members, else the oldest synthetic id (previous unified
@@ -315,7 +335,8 @@ id, then previous member, then smallest). Changed ids → alias old → new (pre
 carried), so old URLs redirect. Layout (little endian): magic, u32 version 1, u8 language
 count + (u8 length, code), u32 count + per multi-language work (ascending) u32 unified id,
 u8 members + (u8 language index, u32 local id), u32 alias count + (u32 old, u32 new).
-Works in one catalogue only are left out (unified id = local id).
+Version 2 appends u32 count + (u32 alias, u32 author) pairs; version 1 still reads. Works
+in one catalogue only are left out (unified id = local id).
 
 The builder crate is a library (`src/lib.rs`: every module, `LANGUAGES`) plus a thin CLI
 (`src/main.rs`: options, build orchestration, `show`, `unify`, `qa.rs`). The server takes it

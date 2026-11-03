@@ -2,15 +2,15 @@ mod qa;
 
 use builder::{Built, LANGUAGE_COUNT, LANGUAGES, catalog, covers, dumps, enrichment};
 use builder::{language_index, works::Works};
-use builder::{libraries, release, segment, sidecar, tags, translations, unify};
+use builder::{libraries, people, release, segment, sidecar, tags, translations, unify};
 use catalog::{DESCRIPTION_MIN_SCORE, Entry};
 use dumps::{Authors, Book, Context, Isbns, Titles};
 use enrichment::Enrichment;
 use libraries::{Details, Library, SYNTHETIC, Source};
 use release::{CORE, Merged, PACKS, Published, Selection, State, Tracked};
 use segment::{Meta, Popularity, Work};
-use sidecar::{EDITION_CAP, Edition, Extras, Links};
-use std::collections::{HashMap, HashSet};
+use sidecar::{EDITION_CAP, Edition, Extras, Links, Person};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::thread;
@@ -163,6 +163,7 @@ struct Job<'a> {
     titles: &'a Titles,
     enrichment: &'a Enrichment,
     details: &'a HashMap<u32, Details>,
+    people: &'a HashMap<u32, Person>,
 }
 
 #[derive(Clone, Copy)]
@@ -710,7 +711,13 @@ fn extras_of(job: &Job, placed: &Placed) -> Extras {
             .iter()
             .map(|id| format!("pg:{id}")),
     );
-    let mut editions = details.map_or_else(Vec::new, |details| details.editions.clone());
+    let own = |(language, edition): &(usize, Edition)| {
+        (*language == job.language).then(|| edition.clone())
+    };
+    let mut editions: Vec<Edition> = details
+        .into_iter()
+        .flat_map(|details| details.editions.iter().filter_map(own))
+        .collect();
     for &isbn in work.isbns {
         let isbn = catalog::isbn13(isbn);
         if !editions.iter().any(|edition| edition.isbn == isbn) {
@@ -726,10 +733,70 @@ fn extras_of(job: &Job, placed: &Placed) -> Extras {
         descriptions: descriptions(job, placed, details),
         identifiers,
         titles: linked.map_or_else(Vec::new, |linked| linked.labels.clone()),
-        translators: details.map_or_else(Vec::new, |details| details.translators.clone()),
+        translators: details
+            .into_iter()
+            .flat_map(|details| &details.translators)
+            .filter(|(language, _)| *language == job.language)
+            .map(|(_, name)| name.clone())
+            .collect(),
         original_title: original_title(job, work.id, details),
         editions,
+        contributors: contributors(job, work.id, details),
     }
+}
+
+fn contributors(job: &Job, work: u32, details: Option<&Details>) -> Vec<(String, String)> {
+    let library = details
+        .into_iter()
+        .flat_map(|details| details.contributors.iter());
+    let open_library = job.titles.contributors.get(&work).into_iter().flatten();
+    let own = library
+        .chain(open_library)
+        .filter(|(language, _)| *language == job.language);
+    let mut found: Vec<(String, String)> = Vec::new();
+    for (_, (role, name)) in own {
+        let known = found.iter().any(|(_, seen)| people::same_name(seen, name));
+        if !known && found.len() < people::MAX_CONTRIBUTORS {
+            found.push((role.to_string(), name.clone()));
+        }
+    }
+    found
+}
+
+/// Author page data of every credited author: Open Library record, Wikidata ids and the
+/// authority ids libraries give the first author.
+fn people_of(job: &Job, placed: &[Placed]) -> Vec<Person> {
+    let mut found: BTreeMap<u32, Person> = BTreeMap::new();
+    for placed in placed {
+        let authorities = job.details.get(&placed.work.id).map(|d| &d.authorities);
+        for (index, &number) in placed.work.authors.iter().enumerate() {
+            let person = found.entry(number).or_insert_with(|| {
+                let mut person = job.people.get(&number).cloned().unwrap_or_default();
+                person.number = number;
+                person
+                    .identifiers
+                    .extend(job.enrichment.author_ids(number).iter().cloned());
+                person
+            });
+            if index == 0 {
+                person
+                    .identifiers
+                    .extend(authorities.into_iter().flatten().cloned());
+            }
+        }
+    }
+    let mut people: Vec<Person> = found.into_values().collect();
+    for person in &mut people {
+        person.identifiers.sort();
+        person.identifiers.dedup();
+    }
+    people.retain(|person| {
+        person.died > 0
+            || !person.bio.is_empty()
+            || !person.names.is_empty()
+            || !person.identifiers.is_empty()
+    });
+    people
 }
 
 fn write_sidecars(job: &Job, placed: &[Placed]) {
@@ -739,6 +806,10 @@ fn write_sidecars(job: &Job, placed: &[Placed]) {
     let files = [
         ("links", sidecar::links_file(job.month, language, &links)),
         ("extras", sidecar::extras_file(job.month, language, &extras)),
+        (
+            "people",
+            sidecar::people_file(job.month, language, &people_of(job, placed)),
+        ),
     ];
     for (kind, bytes) in files {
         let file = format!("{kind}-{language}.bin");
@@ -748,7 +819,8 @@ fn write_sidecars(job: &Job, placed: &[Placed]) {
     }
 }
 
-/// `builder show <links|extras file> <language> [work]` prints one record or a count.
+/// `builder show <links|extras|people file> <language> [work|author]` prints one record or
+/// a count.
 fn show(arguments: &[String]) {
     let [file, language, rest @ ..] = arguments else {
         usage()
@@ -762,6 +834,16 @@ fn show(arguments: &[String]) {
         return match work {
             Some(work) => println!("{:#?}", links.links_of(language, work)),
             None => println!("{} works", links.links(language).map_or(0, |all| all.len())),
+        };
+    }
+    if let Some(people) = sidecar::Sidecar::parse(sidecar::PEOPLE, &bytes) {
+        eprintln!("people, month {}", people.month);
+        return match work {
+            Some(number) => println!("{:#?}", people.person_of(language, number)),
+            None => println!(
+                "{} people",
+                people.people(language).map_or(0, |all| all.len())
+            ),
         };
     }
     let Some(extras) = sidecar::Sidecar::parse(sidecar::EXTRAS, &bytes) else {
@@ -788,6 +870,7 @@ fn merge_indexes(kind: &str, arguments: &[String]) {
     let merged = match kind {
         "links" => sidecar::merge(sidecar::LINKS, inputs),
         "extras" => sidecar::merge(sidecar::EXTRAS, inputs),
+        "people" => sidecar::merge(sidecar::PEOPLE, inputs),
         _ => covers::merge(inputs),
     };
     let merged = merged.unwrap_or_else(|error| panic!("merge {kind}: {error}"));
@@ -841,7 +924,7 @@ fn main() {
         Some("qa") => return qa::command(&arguments[1..]),
         _ => {}
     }
-    let merged = ["covers", "links", "extras"];
+    let merged = ["covers", "links", "extras", "people"];
     if let Some(kind) = arguments
         .first()
         .filter(|first| merged.contains(&first.as_str()))
@@ -910,6 +993,8 @@ fn main() {
     eprintln!("month {month}, {} books", books.len());
     tags::fill_author_tags(&mut books);
     let gutenberg = enrichment::match_gutenberg(gutenberg, &books, &authors, &wikidata);
+    let credited = books.iter().flat_map(|book| book.authors.iter().copied());
+    let people = dumps::people(&options.source, &credited.collect());
     let enrichment = Enrichment {
         wikidata,
         gutenberg,
@@ -988,6 +1073,7 @@ fn main() {
             titles: &titles,
             enrichment: &enrichment,
             details: &details,
+            people: &people,
         };
         let built = build_language(&job, &titles).unwrap_or_else(|| {
             rebased[language] = true;

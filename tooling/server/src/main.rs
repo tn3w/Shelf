@@ -8,7 +8,7 @@ mod tests;
 mod v1;
 
 use axum::Router;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{StatusCode, Uri};
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
@@ -135,10 +135,15 @@ async fn book_image(
     image(&app, url, Shape::Book, width).await
 }
 
-async fn author_image(
+/// `/a/{author}/{96,192}.avif` is the photo, `/a/{author}/{language}` the author page.
+async fn author_file(
     State(app): State<Arc<App>>,
     Path((author, file)): Path<(String, String)>,
+    Query(params): Query<pages::ListParams>,
 ) -> Response {
+    if !file.ends_with(".avif") {
+        return pages::author_in(app, author, file, params).await;
+    }
     let (Some(author), Some(width)) = (number(&author), width(&file, Shape::Author))
     else {
         return invalid();
@@ -177,8 +182,9 @@ pub fn router(app: Arc<App>, gate: Arc<Gate>) -> Router {
         .route("/b/{work}/{language}", get(pages::book_in))
         .route("/b/{release}/{language}/{work}/{file}", get(book_image))
         .route("/a/{author}", get(pages::author))
-        .route("/a/{author}/{file}", get(author_image))
+        .route("/a/{author}/{file}", get(author_file))
         .route("/series/{id}", get(pages::series))
+        .route("/series/{id}/{language}", get(pages::series_in))
         .route("/l/{language}", get(pages::catalogue))
         .route("/isbn/{isbn}", get(pages::isbn))
         .route("/random", get(pages::random))

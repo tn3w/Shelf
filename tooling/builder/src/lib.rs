@@ -5,6 +5,7 @@ pub mod enrichment;
 pub mod libraries;
 pub mod linked;
 pub mod marc;
+pub mod people;
 pub mod reader;
 pub mod release;
 pub mod search;
