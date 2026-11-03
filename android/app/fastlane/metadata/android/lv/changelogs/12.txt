@@ -1,0 +1,6 @@
+• Noskenējiet grāmatas vāku vai ISBN svītrkodu, lai to atrastu, pilnībā ierīcē
+• CSV imports vispirms salīdzina grāmatas pēc ISBN
+• Drošāki dati: nekādas klusas dzēšanas lasīšanas kļūdu dēļ, pārbaudīts dublējuma imports
+• Lasīšanas mērķis skaita tikai īstas lappušu pāršķiršanas; ieradums atjaunojas pēc pusnakts
+• FB2 un TXT faili citās rakstzīmju kopās atveras pareizi
+• StoryGraph nepabeigtās grāmatas tiek importētas kā izlasītas

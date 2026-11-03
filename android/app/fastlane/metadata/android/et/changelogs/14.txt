@@ -4,5 +4,3 @@
 • Avab MOBI-, AZW3-, CBR-, CB7-, DOCX-, ODT- ja RTF-faile
 • Otsing: sarja nimi leiab iga osa, puhtamad pealkirjad, vähem topelt
 • Turvalisem: ainult https, rakenduse uuendused päev pärast väljaandmist
-• Lugeja, impordi ja taastamise krahhide parandused
-• Kataloog uuendatud

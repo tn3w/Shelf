@@ -4,5 +4,3 @@
 • Lukutavoite laskee vain todelliset sivunvaihdot; tapa päivittyy keskiyön jälkeen
 • FB2- ja TXT-tiedostot muilla merkistöillä aukeavat oikein
 • StoryGraphissa kesken jääneet kirjat tuodaan luettuina
-• Päivitysikkuna näyttää siistin muutosloki
-• Luettelo päivitetty

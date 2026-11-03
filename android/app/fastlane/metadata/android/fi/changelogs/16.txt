@@ -1,7 +1,7 @@
 • Uudet luettelot ja sovelluskielet: ruotsi, puola, tšekki, korea, suomi; sovellus myös venäjäksi
-• Ranskalainen luettelo kasvaa yli 600 000 kirjaan; englanninkielinen saa British Libraryn tiedot
-• Valitse luettelon kielet; pienempi sovellus, mukana vain englanti
-• Suositukset: löydä samankaltaisia kirjoja tai yhdistä useita
-• Tablettinäkymät, e-mustetila ja kirkkaus pyyhkäisemällä lukijassa
-• Päivittäinen varmuuskopio valittuun kansioon
-• Nopeampi ja tarkempi kansiskanneri
+• Ranskalainen luettelo kasvaa yli 600 000 kirjaan
+• Valitse luettelon kielet; pienempi sovellus
+• Löydä samankaltaisia kirjoja tai yhdistä useita
+• Tablettinäkymät, e-mustetila, kirkkaus pyyhkäisemällä
+• Päivittäinen varmuuskopio kansioon
+• Nopeampi kansiskanneri

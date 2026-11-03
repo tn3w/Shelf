@@ -1,0 +1,1 @@
+Navigācijas labojums: atgriežoties cilnē, tiek izcelta pareizā cilne, un atkārtots pieskāriens atgriež tās galvenajā ekrānā.

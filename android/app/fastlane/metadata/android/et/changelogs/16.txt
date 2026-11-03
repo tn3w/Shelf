@@ -1,7 +1,7 @@
 • Uued kataloogid ja rakenduse keeled: rootsi, poola, tšehhi, korea, soome; rakendus ka vene keeles
-• Prantsuse kataloog kasvab üle 600 000 raamatu; inglise kataloog saab British Library andmed
-• Vali kataloogi keeled; väiksem rakendus, kaasas ainult inglise keel
-• Soovitused: leia sarnaseid raamatuid või ühenda mitu
-• Tahvelarvuti paigutus, e-tindi režiim ja eredus pühkides lugejas
-• Päevane varukoopia valitud kausta
-• Kiirem ja täpsem kaaneskanner
+• Prantsuse kataloog kasvab üle 600 000 raamatu
+• Vali kataloogi keeled; väiksem rakendus
+• Leia sarnaseid raamatuid või ühenda mitu
+• Tahvelarvuti paigutus, e-tindi režiim, eredus pühkides
+• Päevane varukoopia kausta
+• Kiirem kaaneskanner

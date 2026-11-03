@@ -1,7 +1,7 @@
 • Nové katalogy a jazyky aplikace: švédština, polština, čeština, korejština, finština; aplikace i v ruštině
-• Francouzský katalog roste na více než 600 000 knih; anglický přidává data British Library
-• Výběr jazyků katalogu; menší aplikace, součástí je jen angličtina
-• Doporučení: najděte podobné knihy nebo zkombinujte několik
-• Rozvržení pro tablety, režim e-ink a jas přejetím prstem ve čtečce
-• Denní záloha do zvolené složky
-• Rychlejší a přesnější skener obálek
+• Francouzský katalog má přes 600 000 knih
+• Výběr jazyků katalogu; menší aplikace
+• Najděte podobné knihy nebo zkombinujte několik
+• Rozvržení pro tablety, režim e-ink, jas přejetím
+• Denní záloha do složky
+• Rychlejší skener obálek

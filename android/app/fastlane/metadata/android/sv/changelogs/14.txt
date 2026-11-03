@@ -4,5 +4,3 @@
 • Öppnar MOBI, AZW3, CBR, CB7, DOCX, ODT och RTF
 • Sökning: serienamn hittar varje del, renare titlar, färre dubbletter
 • Säkrare: endast https, appuppdateringar en dag efter utgivning
-• Fixar för krascher i läsare, import och återställning
-• Katalogen uppdaterad

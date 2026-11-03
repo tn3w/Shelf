@@ -35,19 +35,26 @@ def font(size, weight):
 
 
 @cache
-def hangul_font(size):
-    query = ["fc-match", "-f", "%{file}\n%{index}", "Noto Sans CJK KR:bold"]
+def cjk_font(size, region):
+    query = ["fc-match", "-f", "%{file}\n%{index}", f"Noto Sans CJK {region}:bold"]
     match = subprocess.run(query, capture_output=True, text=True, check=True).stdout
     path, index = match.split("\n")
     return ImageFont.truetype(path, size, index=int(index))
 
 
-def has_hangul(text):
-    return any("\u1100" <= char <= "\ud7af" for char in text)
+def cjk_region(text):
+    if any("\u3040" <= char <= "\u30ff" for char in text):
+        return "JP"
+    if any("\uac00" <= char <= "\ud7af" or "\u1100" <= char <= "\u11ff" for char in text):
+        return "KR"
+    if any("\u4e00" <= char <= "\u9fff" for char in text):
+        return "JP"
+    return None
 
 
 def face_for(text, size, weight):
-    return hangul_font(size) if has_hangul(text) else font(size, weight)
+    region = cjk_region(text)
+    return cjk_font(size, region) if region else font(size, weight)
 
 
 def widest(lines, face):

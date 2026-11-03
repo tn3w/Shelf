@@ -1,0 +1,4 @@
+• Pievienojiet savas grāmatas: nosaukums, autors, plaukts un vāka attēls pēc izvēles
+• Lasītājs: novērsta PDF avārija un tukšas lappuses, ātrāki komiksi un EPUB attēli, pareiza CBZ lappušu secība
+• Divreiz importēts fails paliek viena grāmata; importētie faili pārceļas līdzi uz jaunu ierīci
+• Kataloga grāmatu importētās kopijas var noņemt

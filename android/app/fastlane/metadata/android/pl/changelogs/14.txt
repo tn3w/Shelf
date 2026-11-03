@@ -4,5 +4,3 @@
 • Otwiera MOBI, AZW3, CBR, CB7, DOCX, ODT i RTF
 • Wyszukiwanie: nazwy serii znajdują każdy tom, czystsze tytuły, mniej duplikatów
 • Bezpieczniej: tylko https, aktualizacje aplikacji dzień po wydaniu
-• Poprawki awarii czytnika, importu i przywracania
-• Zaktualizowano katalog

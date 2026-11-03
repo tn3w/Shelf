@@ -4,5 +4,3 @@
 • Lugemiseesmärk loeb ainult tegelikke lehepööranguid; harjumus uueneb pärast südaööd
 • Muude märgistikega FB2- ja TXT-failid avanevad õigesti
 • StoryGraphis pooleli jäänud raamatud imporditakse loetuna
-• Uuendusdialoog näitab puhast muudatusi
-• Kataloog uuendatud

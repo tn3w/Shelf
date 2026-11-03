@@ -1,0 +1,6 @@
+• Bibliotēka: kārtošana, filtri un saraksta skats; meklēšana filtrē pēc šķautnēm
+• Sērijas ekrāns no grāmatas lapas
+• “Dzēst visu” katrai valodai, kā arī “Dzēst visas valodas”
+• EPUB ar speciālajām rakstzīmēm saitēs atveras; lasītājs pielāgojas izmēra maiņai
+• Ātrāka meklēšana, kataloga un bibliotēkas ielāde
+• F-Droid būve tagad ir reproducējama

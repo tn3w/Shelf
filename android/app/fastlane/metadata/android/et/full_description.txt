@@ -6,6 +6,6 @@ Shelf on privaatne võrguühenduseta raamatuäpp. Kogu kataloog on sinu telefoni
 * Avasta žanre, sarju ja autoreid, soovitused arvutatakse telefonis
 * Loe EPUB-, Kindle-, PDF-, koomiksi-, Wordi- ja muid faile
 * Import Goodreadsist ja StoryGraphist
-* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea ja soome keeles; rakendus ka vene keeles
+* Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea, soome, jaapani ja läti keeles; rakendus ka vene keeles
 
 Üks lüliti katkestab kogu võrgu. Sinu raamatukogu ei lahku kunagi telefonist.

@@ -450,7 +450,8 @@ Each language downloads its packs via Settings › Catalogue (Russian has none a
 English catalogue). Demo books are picked per catalogue: titles and covers from that
 catalogue, a series book for the series shot. The scan shot needs a Latin-script cover:
 the recognizer reads Latin text only. Demo mode is re-applied after each theme switch;
-Hangul headlines use Noto Sans CJK KR (`fc-match`).
+Hangul headlines use Noto Sans CJK KR, kana and kanji Noto Sans CJK JP (`fc-match`); a
+space in a CJK headline marks its line break.
 
 GitHub social preview: `python3 tooling/thumbnail.py [out]` → `android/design/thumbnail.jpg`
 (1280×640, phones cut from en-US store screenshots). Upload it in repo Settings › Social

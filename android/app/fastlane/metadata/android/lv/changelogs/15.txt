@@ -1,0 +1,4 @@
+• Lietotnes valodu var izvēlēties arī Android iestatījumos
+• “Populāras” tiek rādītas uzreiz, ja “Jums” nav pieejams
+• Labojumi: skenera avārija, iestrēguši MOBI faili, pazuduši importi, atjaunināšanas un atjaunošanas problēmas
+• CBR komiksi atveras tikai tad, ja tie ir ZIP formātā (RAR nav brīvs)

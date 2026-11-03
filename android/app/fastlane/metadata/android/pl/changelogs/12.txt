@@ -4,5 +4,3 @@
 • Cel czytania liczy tylko prawdziwe przewrócenia stron; nawyk odświeża się po północy
 • Pliki FB2 i TXT w innych kodowaniach otwierają się poprawnie
 • Porzucone w StoryGraph książki importują się jako przeczytane
-• Okno aktualizacji pokazuje listę zmian
-• Zaktualizowano katalog

@@ -4,5 +4,3 @@
 • Čtenářský cíl počítá jen skutečné otočení stránek; návyk se aktualizuje po půlnoci
 • Soubory FB2 a TXT v jiných kódováních se otevírají správně
 • Knihy nedočtené ve StoryGraph se importují jako přečtené
-• Dialog aktualizace zobrazuje přehledný seznam změn
-• Vestavěný katalog aktualizován

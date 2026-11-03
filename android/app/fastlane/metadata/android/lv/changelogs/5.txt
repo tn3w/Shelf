@@ -1,0 +1,1 @@
+Izslēgti vāki un autoru fotoattēli vairs nesūta nevienu pieprasījumu. Lejupielādējot visas pakas, katrs fails tiek ielādēts vienreiz, un pamata izmērā tagad ietilpst reitingu fails.

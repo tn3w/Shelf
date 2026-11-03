@@ -1,0 +1,1 @@
+Atveriet jebkuru grāmatas failu: importējiet to bibliotēkā, izmantojiet “Atvērt ar” vai kopīgojiet uz Shelf. Iestatiet savu kataloga avotu (GitHub repozitoriju, Gitea/Forgejo laidienus vai manifesta URL) un vāku serveri vai importējiet kataloga failus bez lejupielādes. Tīrāka pirmā palaišana un skaidrs norādījums, ja katalogs nav instalēts.

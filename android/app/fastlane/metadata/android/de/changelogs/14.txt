@@ -4,5 +4,3 @@
 • Öffnet MOBI, AZW3, CBR, CB7, DOCX, ODT und RTF
 • Suche: Reihennamen finden jeden Band, sauberere Titel, weniger Dubletten
 • Sicherer: nur https, App-Updates einen Tag nach Release
-• Absturzkorrekturen bei Reader, Import und Wiederherstellung
-• Katalog aktualisiert

@@ -4,5 +4,3 @@
 • Reading goal counts only real page turns; habit updates after midnight
 • FB2 and TXT files in other charsets open correctly
 • StoryGraph did-not-finish books import as read
-• Update dialog shows a clean changelog
-• Built-in catalogue updated

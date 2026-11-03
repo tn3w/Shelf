@@ -1,7 +1,7 @@
 • Nuevos catálogos e idiomas de la app: sueco, polaco, checo, coreano, finés; app también en ruso
-• El catálogo francés supera los 600 000 libros; el inglés suma datos de la British Library
-• Elige los idiomas del catálogo; app más ligera, solo incluye inglés
-• Recomendaciones: busca libros similares o combina varios
-• Diseños para tablet, modo e-ink y brillo deslizando en el lector
-• Copia diaria en una carpeta que elijas
-• Escáner de portadas más rápido y preciso
+• El catálogo francés supera los 600 000 libros
+• Elige los idiomas del catálogo; app más ligera
+• Busca libros similares o combina varios
+• Diseños para tablet, modo e-ink, brillo deslizando
+• Copia diaria en una carpeta
+• Escáner de portadas más rápido

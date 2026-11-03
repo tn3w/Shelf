@@ -1,7 +1,7 @@
 • Nya kataloger och appspråk: svenska, polska, tjeckiska, koreanska, finska; appen även på ryska
-• Den franska katalogen växer till över 600 000 böcker; den engelska får data från British Library
-• Välj katalogspråk; mindre app, bara engelska ingår
-• Rekommendationer: hitta liknande böcker eller kombinera flera
-• Surfplattelayout, e-bläckläge och ljusstyrka genom att svepa i läsaren
-• Daglig säkerhetskopia till vald mapp
-• Snabbare och träffsäkrare omslagsskanner
+• Den franska katalogen växer till över 600 000 böcker
+• Välj katalogspråk; mindre app
+• Hitta liknande böcker eller kombinera flera
+• Surfplattelayout, e-bläckläge, ljusstyrka med svep
+• Daglig säkerhetskopia till en mapp
+• Snabbare omslagsskanner

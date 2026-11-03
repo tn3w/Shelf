@@ -4,5 +4,3 @@
 • Opens MOBI, AZW3, CBR, CB7, DOCX, ODT and RTF
 • Search: series names find every volume, cleaner titles, fewer duplicates
 • Safer: https only, app updates a day after release
-• Fixes for reader, import and restore crashes
-• Catalogue updated

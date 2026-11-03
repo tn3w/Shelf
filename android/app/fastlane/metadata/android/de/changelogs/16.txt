@@ -1,7 +1,7 @@
 • Neue Kataloge und App-Sprachen: Schwedisch, Polnisch, Tschechisch, Koreanisch, Finnisch; App auch auf Russisch
-• Französischer Katalog wächst auf über 600.000 Bücher; Englisch ergänzt um Daten der British Library
-• Katalogsprachen wählbar; kleinere App, nur Englisch dabei
-• Empfehlungen: ähnliche Bücher finden oder mehrere kombinieren
-• Tablet-Layouts, E-Ink-Modus und Helligkeit per Wischen im Reader
-• Tagesbackup in einen Ordner deiner Wahl
-• Schnellerer, genauerer Cover-Scanner
+• Französischer Katalog mit über 600.000 Büchern
+• Katalogsprachen wählbar; kleinere App
+• Ähnliche Bücher finden oder mehrere kombinieren
+• Tablet-Layouts, E-Ink-Modus, Helligkeit per Wischen
+• Tägliches Backup in einen Ordner
+• Schnellerer Cover-Scanner

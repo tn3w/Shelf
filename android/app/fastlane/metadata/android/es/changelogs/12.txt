@@ -4,5 +4,3 @@
 • La meta diaria cuenta solo pasos de página reales; el hábito se actualiza tras medianoche
 • Archivos FB2 y TXT con otras codificaciones se abren bien
 • Libros abandonados de StoryGraph se importan como leídos
-• El diálogo de actualización muestra los cambios limpios
-• Catálogo integrado actualizado

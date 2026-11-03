@@ -4,5 +4,3 @@
 • L'objectif quotidien ne compte que les vraies pages tournées ; habitude à jour après minuit
 • Les fichiers FB2 et TXT dans d'autres encodages s'ouvrent correctement
 • Les livres abandonnés StoryGraph sont importés comme lus
-• La fenêtre de mise à jour affiche des notes propres
-• Catalogue intégré mis à jour

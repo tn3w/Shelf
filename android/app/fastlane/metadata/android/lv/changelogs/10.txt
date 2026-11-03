@@ -1,0 +1,5 @@
+• Goodreads un StoryGraph CSV imports ar atbilstību atskaiti, kā arī CSV eksports
+• Lasītājs: teksta lielums, rindstarpa, malas, burtveidols, papīra un nakts lappuses, izlīdzināšana, ekrāns ieslēgts, skaļuma un lappušu pogas
+• Tīri melns motīvs, fona tapetes krāsas, mazāk kustību
+• Automātiska grāmatu valoda, pielāgojams dienas mērķis
+• Iestatījumi sakārtoti skaidrās lapās

@@ -1,7 +1,7 @@
 • Nowe katalogi i języki aplikacji: szwedzki, polski, czeski, koreański, fiński; aplikacja także po rosyjsku
-• Francuski katalog rośnie do ponad 600 000 książek; angielski zyskuje dane British Library
-• Wybór języków katalogu; mniejsza aplikacja, w pakiecie tylko angielski
-• Rekomendacje: znajdź podobne książki lub połącz kilka
-• Układ na tablety, tryb e-ink i jasność przesunięciem w czytniku
-• Dzienna kopia do wybranego folderu
-• Szybszy i dokładniejszy skaner okładek
+• Francuski katalog ma ponad 600 000 książek
+• Wybór języków katalogu; mniejsza aplikacja
+• Znajdź podobne książki lub połącz kilka
+• Układ na tablety, tryb e-ink, jasność przesunięciem
+• Dzienna kopia do folderu
+• Szybszy skaner okładek
