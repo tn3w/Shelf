@@ -340,7 +340,7 @@
     <string name="free_books_export_headers">Ietver saglabātās galvenes, piemēram, sīkdatnes vai pilnvaras</string>
     <string name="free_books_form">Veidlapa</string>
     <string name="free_books_file">Fails</string>
-    <string name="free_books_name">Nosaukums</string>
+    <string name="free_books_name">Avota nosaukums</string>
     <string name="free_books_url">URL</string>
     <string name="free_books_body">POST pamatteksts (neobligāts)</string>
     <string name="free_books_items">Vienumi</string>
