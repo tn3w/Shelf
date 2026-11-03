@@ -169,8 +169,8 @@
         <item quantity="other">%d sidor till för att behålla sviten.</item>
     </plurals>
     <plurals name="readers">
-        <item quantity="one">%d läsare</item>
-        <item quantity="other">%d läsare</item>
+        <item quantity="one">Läst av %d person</item>
+        <item quantity="other">Läst av %d personer</item>
     </plurals>
     <plurals name="start_streak">
         <item quantity="one">Läs %d sida för att starta en svit.</item>

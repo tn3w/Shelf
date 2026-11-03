@@ -361,5 +361,6 @@
     <plurals name="matches">
         <item quantity="one">%d résultat</item>
         <item quantity="other">%d résultats</item>
+        <item quantity="many">%d résultats</item>
     </plurals>
 </resources>

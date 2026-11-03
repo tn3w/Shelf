@@ -8,9 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-10-31"
+val catalogueRelease = "catalogue-2026-11-03"
 val catalogueManifestSha256 =
-    "4aef7287ffe0c150ee81aa45b7fbdab435b0c5aabe074195e4be66fd2ab5b0a2"
+    "963fc7103fe7c095166252d9af0865a32878cd90a045534164d23aa3e73fddd4"
 val catalogueFormat = 2
 val bundledLanguage = "en"
 val bundledPacks = listOf("core", "ranks")

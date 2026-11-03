@@ -343,13 +343,13 @@
     <string name="add_bookmark">Lesezeichen setzen</string>
     <string name="bookmarks">Lesezeichen</string>
     <string name="no_bookmarks">Noch keine Lesezeichen. Tippe oben auf das Lesezeichen-Symbol, um eine Seite zu speichern.</string>
-    <string name="no_matches">Keine Treffer in diesem Buch</string>
+    <string name="no_matches">Keine Fundstellen in diesem Buch</string>
     <string name="remove_bookmark">Lesezeichen entfernen</string>
     <string name="search_book">Im Buch suchen</string>
     <string name="search_book_hint">Gib mindestens zwei Buchstaben ein, um alle Kapitel zu durchsuchen.</string>
-    <string name="many_matches">Mehr als %d Treffer</string>
+    <string name="many_matches">Mehr als %d Fundstellen</string>
     <plurals name="matches">
-        <item quantity="one">%d Treffer</item>
-        <item quantity="other">%d Treffer</item>
+        <item quantity="one">%d Fundstelle</item>
+        <item quantity="other">%d Fundstellen</item>
     </plurals>
 </resources>

@@ -361,5 +361,6 @@
     <plurals name="matches">
         <item quantity="one">%d coincidencia</item>
         <item quantity="other">%d coincidencias</item>
+        <item quantity="many">%d coincidencias</item>
     </plurals>
 </resources>
