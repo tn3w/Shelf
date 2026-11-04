@@ -114,9 +114,8 @@ catalogue as your own, with your own cover.
 Čeština · 한국어 · Suomi · 日本語 · Latviešu, with optional packs for
 fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
 
-**App:** English · Deutsch · Français · Español · Eesti · Svenska · Polski · Čeština ·
-한국어 · Suomi · Русский.
-[Help translate](https://hosted.weblate.org/engage/shelf/) — no coding needed.
+**App:** all catalogue languages plus Русский.
+[Help translate](https://hosted.weblate.org/engage/shelf/), no coding needed.
 
 <a href="https://hosted.weblate.org/engage/shelf/"><img src="https://hosted.weblate.org/widget/shelf/multi-auto.svg" alt="Translation status"></a>
 
