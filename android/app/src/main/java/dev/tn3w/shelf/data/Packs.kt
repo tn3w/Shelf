@@ -105,6 +105,9 @@ enum class PackState(@StringRes val label: Int) {
 
 data class PackInfo(val pack: String, val state: PackState, val bytes: Long)
 
+/** Time a finished download stays full so its progress animation reaches 100 %. */
+const val DOWNLOAD_SETTLE_MILLIS = 600L
+
 sealed interface Download {
     data class Running(val progress: Float) : Download
 

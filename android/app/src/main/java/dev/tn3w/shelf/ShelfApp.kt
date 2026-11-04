@@ -151,6 +151,8 @@ class ShelfApp :
                 }
             }
                 .onSuccess {
+                    _downloads.update { it + (key to Download.Running(1f)) }
+                    delay(DOWNLOAD_SETTLE_MILLIS)
                     _downloads.update { it - key }
                     if (loaded.value?.catalogue?.language == language) reload(language)
                 }

@@ -83,7 +83,9 @@ fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
     val query = Query(book.title, book.author, language, isbns.orEmpty())
     val offers by viewModel.offers.collectAsStateWithLifecycle()
     val downloading by rememberUpdatedState(offers.values.any { it is Download.Running })
-    val sheet = rememberModalBottomSheetState(true) { it != Hidden || !downloading }
+    // Stable lambda: the sheet state is keyed on it and a new one re-opens the sheet.
+    val confirm = remember { { value: SheetValue -> value != Hidden || !downloading } }
+    val sheet = rememberModalBottomSheetState(true, confirm)
     ModalBottomSheet({ if (!downloading) onDismiss() }, sheetState = sheet) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             SheetTitle(book) { if (!choosing) SourcesButton { choosing = true } }

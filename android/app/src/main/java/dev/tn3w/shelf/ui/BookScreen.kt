@@ -28,6 +28,7 @@ import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.SimilarKind
 import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.data.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -85,6 +86,10 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         report(0f)
         viewModelScope.launch {
             val done = transfer(::report) { library.download(book, offer, it) }
+            if (done) {
+                report(1f)
+                delay(DOWNLOAD_SETTLE_MILLIS)
+            }
             _offers.update { if (done) it - offer else it + (offer to Download.Failed) }
             if (done) app.open(book.work)
         }
