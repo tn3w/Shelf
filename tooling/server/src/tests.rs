@@ -25,6 +25,7 @@ const GERMAN_STONE: u32 = 2_000_010;
 const GERMAN_PRISONER: u32 = 2_000_011;
 const SWEDISH_LATER: u32 = 2_000_020;
 const ROWLING_TWIN: u32 = 103;
+const BYPASS: &str = "0123456789abcdef0123456789abcdef";
 const COVER_URL: &str = "https://covers.openlibrary.org/b/id/300-L.jpg";
 const GERMAN_COVER_KEY: u32 = 355_155_167;
 
@@ -252,7 +253,7 @@ fn pow() -> Pow {
 
 fn app_with(library: Option<Library>, images: &Path) -> Router {
     let app = App::new(library, Images::new(images.to_path_buf()));
-    router(Arc::new(app), gate(pow()))
+    router(Arc::new(app), gate(pow(), Some(BYPASS.into())))
 }
 
 fn app() -> Router {
@@ -356,6 +357,21 @@ async fn everything_but_open_routes_needs_proof_of_work() {
     let rejected = send(&app, replay).await;
     assert_eq!(rejected.status(), StatusCode::FORBIDDEN);
     assert_eq!(header_of(&rejected, header::CACHE_CONTROL), "no-store");
+}
+
+#[tokio::test]
+async fn nojscss_gated_requests_skip_the_proof_of_work() {
+    let app = app();
+    let gated = |value: &str| {
+        let mut request = get("/api/v1/languages", None);
+        request.headers_mut().insert("x-nojscss-passed", value.parse().unwrap());
+        request
+    };
+    assert_eq!(send(&app, gated(BYPASS)).await.status(), StatusCode::OK);
+    for forged in ["1", "", &BYPASS[1..], &format!("{BYPASS}0")] {
+        let status = send(&app, gated(forged)).await.status();
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{forged}");
+    }
 }
 
 #[tokio::test]

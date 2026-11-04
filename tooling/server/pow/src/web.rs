@@ -15,6 +15,7 @@ use std::sync::Arc;
 const NO_STORE: &str = "no-store";
 const COOKIE: &str = "__Host-t";
 const CHALLENGE: &str = r#"Bearer realm="shelf""#;
+const GATED: &str = "x-nojscss-passed";
 const BODY_LIMIT_BYTES: usize = 1024;
 const MAX_RETURN_BYTES: usize = 512;
 const REQUIRED: &str =
@@ -29,6 +30,7 @@ pub struct Pages {
 pub struct Gate {
     pub pow: Pow,
     pages: Pages,
+    bypass: Option<Vec<u8>>,
 }
 
 #[derive(Template)]
@@ -48,8 +50,17 @@ struct PuzzlePage<'a> {
 }
 
 impl Gate {
-    pub fn new(pow: Pow, pages: Pages) -> Arc<Gate> {
-        Arc::new(Gate { pow, pages })
+    pub fn new(pow: Pow, pages: Pages, bypass: Option<Vec<u8>>) -> Arc<Gate> {
+        Arc::new(Gate { pow, pages, bypass })
+    }
+
+    fn bypassed(&self, headers: &HeaderMap) -> bool {
+        let Some((secret, sent)) = self.bypass.as_ref().zip(headers.get(GATED)) else {
+            return false;
+        };
+        let sent = sent.as_bytes();
+        let difference = secret.iter().zip(sent).fold(0, |all, (a, b)| all | (a ^ b));
+        secret.len() == sent.len() && difference == 0
     }
 
     fn challenge_page(&self, uri: &Uri) -> Response {
@@ -90,6 +101,9 @@ pub async fn guard(
     request: Request,
     next: Next,
 ) -> Response {
+    if gate.bypassed(request.headers()) {
+        return next.run(request).await;
+    }
     let client = client(request.headers());
     match token(request.headers()).map(|token| gate.pow.check(&token, &client)) {
         Some(Check::Valid) => next.run(request).await,
@@ -271,7 +285,7 @@ mod tests {
     fn puzzle_page_escapes_the_return_path() {
         let pow = Pow::new(b"secret".to_vec(), 4, 10);
         let pages = Pages { title: "T", style: "/s/a.css", script: "/s/a.js" };
-        let gate = Gate::new(pow, pages);
+        let gate = Gate::new(pow, pages, None);
         let html = PuzzlePage {
             pages: &gate.pages,
             note: "",

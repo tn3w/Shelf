@@ -170,9 +170,9 @@ async fn missing(uri: Uri) -> Response {
     pages::not_found()
 }
 
-pub fn gate(pow: Pow) -> Arc<Gate> {
+pub fn gate(pow: Pow, bypass: Option<Vec<u8>>) -> Arc<Gate> {
     let pages = Pages { title: "Shelf", style: assets::STYLE, script: assets::SCRIPT };
-    Gate::new(pow, pages)
+    Gate::new(pow, pages, bypass)
 }
 
 pub fn router(app: Arc<App>, gate: Arc<Gate>) -> Router {
@@ -256,12 +256,22 @@ fn variable<T: std::str::FromStr>(name: &str, default: T) -> T {
     std::env::var(name).ok().and_then(|value| value.parse().ok()).unwrap_or(default)
 }
 
-fn secret() -> Vec<u8> {
+fn credential(name: &str) -> Option<Vec<u8>> {
     let directory =
         std::env::var("CREDENTIALS_DIRECTORY").expect("$CREDENTIALS_DIRECTORY");
-    let secret = std::fs::read(PathBuf::from(directory).join("secrets")).expect("secret");
+    std::fs::read(PathBuf::from(directory).join(name)).ok()
+}
+
+fn secret() -> Vec<u8> {
+    let secret = credential("secrets").expect("secret");
     assert!(secret.len() >= 16, "secret must have at least 16 bytes");
     secret
+}
+
+fn bypass() -> Option<Vec<u8>> {
+    let bypass = credential("nojscss")?.trim_ascii().to_vec();
+    assert!(bypass.len() >= 32, "nojscss bypass must have at least 32 bytes");
+    Some(bypass)
 }
 
 async fn shutdown() {
@@ -283,7 +293,7 @@ async fn main() {
     let data = PathBuf::from(variable("SHELF_DATA", "data".to_string()));
     let app = Arc::new(App::new(None, Images::new(data.join("images"))));
     tokio::spawn(keep_current(app.clone(), data));
-    let router = router(app, gate(pow));
+    let router = router(app, gate(pow, bypass()));
     if let Ok(address) = std::env::var("SHELF_LISTEN") {
         let listener = tokio::net::TcpListener::bind(&address).await.expect("bind");
         eprintln!("listening on http://{address}");
