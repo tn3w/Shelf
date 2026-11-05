@@ -340,4 +340,50 @@
     <plurals name="free_books_imported">
         <item quantity="other">%2$d 件中 %1$d 件のソースをインポートしました</item>
     </plurals>
+    <string name="stats">読書統計</string>
+    <string name="stats_empty">この年の記録はまだありません。読んだページと読み終えた本がここに表示されます。</string>
+    <string name="stats_private">この端末で計算されます。共有しない限り外部に送信されません。</string>
+    <string name="year_in_books">読書の一年</string>
+    <string name="month_by_month">月ごと</string>
+    <string name="pages_metric">ページ</string>
+    <string name="books_metric">冊数</string>
+    <string name="reading_days">読書日数</string>
+    <string name="longest_streak">最長連続記録</string>
+    <string name="finished_in">%d年に読了</string>
+    <string name="share">共有</string>
+    <string name="share_recap">私の%1$d年の読書：%2$s、%3$s。Shelfでプライベートに記録。</string>
+    <plurals name="pages_count">
+        <item quantity="other">%dページ</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="other">%d日</item>
+    </plurals>
+    <string name="close">閉じる</string>
+    <string name="wrapped_banner">%d年の読書</string>
+    <string name="wrapped_banner_text">タップして読書の一年を振り返る。</string>
+    <string name="wrapped_intro">あなたの読書の一年を振り返りましょう。</string>
+    <string name="wrapped_books">読み終えた本</string>
+    <string name="wrapped_pages">めくったページ</string>
+    <string name="wrapped_best_day">最高の日：%1$s、%2$s</string>
+    <string name="wrapped_month">ベストな月は</string>
+    <string name="wrapped_genre">トップジャンル</string>
+    <string name="wrapped_author">夢中になった著者</string>
+    <string name="wrapped_days">読書した日</string>
+    <string name="wrapped_bookends">最初から最後まで</string>
+    <string name="wrapped_first">最初</string>
+    <string name="wrapped_last">最後</string>
+    <string name="wrapped_type">あなたの読書タイプ</string>
+    <string name="type_marathoner">マラソンリーダー</string>
+    <string name="type_marathoner_text">何週間も休まず読書。誰にも止められません。</string>
+    <string name="type_explorer">エクスプローラー</string>
+    <string name="type_explorer_text">ジャンルからジャンルへ、あらゆる棚を巡ります。</string>
+    <string name="type_devotee">一途な読者</string>
+    <string name="type_devotee_text">気に入った著者の本はすべて読み尽くします。</string>
+    <string name="type_weekender">週末リーダー</string>
+    <string name="type_weekender_text">土曜と日曜は本のための時間。</string>
+    <string name="type_bookworm">本の虫</string>
+    <string name="type_bookworm_text">一年中こつこつと。読書はあなたの一部です。</string>
+    <plurals name="wrapped_hours">
+        <item quantity="other">約%d時間の読書です。</item>
+    </plurals>
 </resources>

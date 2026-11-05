@@ -352,4 +352,53 @@
         <item quantity="one">%d Fundstelle</item>
         <item quantity="other">%d Fundstellen</item>
     </plurals>
+    <string name="stats">Lesestatistik</string>
+    <string name="stats_empty">Für dieses Jahr ist noch nichts erfasst. Gelesene Seiten und beendete Bücher erscheinen hier.</string>
+    <string name="stats_private">Auf diesem Gerät berechnet. Nichts verlässt es, außer du teilst es.</string>
+    <string name="year_in_books">Lesejahr</string>
+    <string name="month_by_month">Monat für Monat</string>
+    <string name="pages_metric">Seiten</string>
+    <string name="books_metric">Bücher</string>
+    <string name="reading_days">Lesetage</string>
+    <string name="longest_streak">Längste Serie</string>
+    <string name="finished_in">Beendet in %d</string>
+    <string name="share">Teilen</string>
+    <string name="share_recap">Mein Lesejahr %1$d: %2$s und %3$s, privat erfasst mit Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d Seite</item>
+        <item quantity="other">%d Seiten</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tage</item>
+    </plurals>
+    <string name="close">Schließen</string>
+    <string name="wrapped_banner">Dein %d in Büchern</string>
+    <string name="wrapped_banner_text">Tippe, um dein Lesejahr noch einmal zu erleben.</string>
+    <string name="wrapped_intro">Ein Blick zurück auf dein Lesejahr.</string>
+    <string name="wrapped_books">Du hast beendet</string>
+    <string name="wrapped_pages">Du hast umgeblättert</string>
+    <string name="wrapped_best_day">Stärkster Tag: %1$s, %2$s</string>
+    <string name="wrapped_month">Dein bester Monat war</string>
+    <string name="wrapped_genre">Dein Top-Genre</string>
+    <string name="wrapped_author">Du konntest nicht aufhören mit</string>
+    <string name="wrapped_days">Du hast gelesen an</string>
+    <string name="wrapped_bookends">Vom ersten bis zum letzten</string>
+    <string name="wrapped_first">Erstes</string>
+    <string name="wrapped_last">Letztes</string>
+    <string name="wrapped_type">Dein Lesetyp</string>
+    <string name="type_marathoner">Marathon-Leser</string>
+    <string name="type_marathoner_text">Wochenlang lesen ohne Pause. Nichts hält dich auf.</string>
+    <string name="type_explorer">Entdecker</string>
+    <string name="type_explorer_text">Du streifst durch jedes Regal, von Genre zu Genre.</string>
+    <string name="type_devotee">Treuer Fan</string>
+    <string name="type_devotee_text">Hat dich ein Autor überzeugt, liest du alles von ihm.</string>
+    <string name="type_weekender">Wochenend-Leser</string>
+    <string name="type_weekender_text">Samstage und Sonntage gehören deinen Büchern.</string>
+    <string name="type_bookworm">Bücherwurm</string>
+    <string name="type_bookworm_text">Beständig Seite um Seite, das ganze Jahr. Lesen gehört einfach zu dir.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">Das sind etwa %d Stunde Lesezeit.</item>
+        <item quantity="other">Das sind etwa %d Stunden Lesezeit.</item>
+    </plurals>
 </resources>

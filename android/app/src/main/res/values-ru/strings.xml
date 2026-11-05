@@ -374,4 +374,59 @@
         <item quantity="many">%d совпадений</item>
         <item quantity="other">%d совпадения</item>
     </plurals>
+    <string name="stats">Статистика чтения</string>
+    <string name="stats_empty">За этот год пока ничего нет. Здесь появятся прочитанные страницы и законченные книги.</string>
+    <string name="stats_private">Считается на этом устройстве. Ничего не покидает его, пока вы не поделитесь.</string>
+    <string name="year_in_books">Год в книгах</string>
+    <string name="month_by_month">По месяцам</string>
+    <string name="pages_metric">Страницы</string>
+    <string name="books_metric">Книги</string>
+    <string name="reading_days">Дни чтения</string>
+    <string name="longest_streak">Самая длинная серия</string>
+    <string name="finished_in">Прочитано в %d</string>
+    <string name="share">Поделиться</string>
+    <string name="share_recap">Мой %1$d в книгах: %2$s и %3$s, приватно с Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d страница</item>
+        <item quantity="few">%d страницы</item>
+        <item quantity="many">%d страниц</item>
+        <item quantity="other">%d страницы</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <string name="close">Закрыть</string>
+    <string name="wrapped_banner">Ваш %d в книгах</string>
+    <string name="wrapped_banner_text">Нажмите, чтобы снова пережить свой год чтения.</string>
+    <string name="wrapped_intro">Оглянемся на ваш год чтения.</string>
+    <string name="wrapped_books">Вы дочитали</string>
+    <string name="wrapped_pages">Вы перевернули</string>
+    <string name="wrapped_best_day">Самый сильный день: %1$s, %2$s</string>
+    <string name="wrapped_month">Ваш лучший месяц —</string>
+    <string name="wrapped_genre">Ваш любимый жанр</string>
+    <string name="wrapped_author">Вы не могли оторваться от</string>
+    <string name="wrapped_days">Вы читали</string>
+    <string name="wrapped_bookends">От первой до последней</string>
+    <string name="wrapped_first">Первая</string>
+    <string name="wrapped_last">Последняя</string>
+    <string name="wrapped_type">Ваш тип читателя</string>
+    <string name="type_marathoner">Марафонец</string>
+    <string name="type_marathoner_text">Недели чтения без перерыва. Вас ничто не остановит.</string>
+    <string name="type_explorer">Исследователь</string>
+    <string name="type_explorer_text">Вы бродите по всем полкам, от жанра к жанру.</string>
+    <string name="type_devotee">Преданный поклонник</string>
+    <string name="type_devotee_text">Если автор покорил вас, вы читаете всё.</string>
+    <string name="type_weekender">Читатель выходного дня</string>
+    <string name="type_weekender_text">Субботы и воскресенья принадлежат вашим книгам.</string>
+    <string name="type_bookworm">Книжный червь</string>
+    <string name="type_bookworm_text">Ровные страницы весь год. Чтение — часть вас.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">Это около %d часа чтения.</item>
+        <item quantity="few">Это около %d часов чтения.</item>
+        <item quantity="many">Это около %d часов чтения.</item>
+        <item quantity="other">Это около %d часа чтения.</item>
+    </plurals>
 </resources>

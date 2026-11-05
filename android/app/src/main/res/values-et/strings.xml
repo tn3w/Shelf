@@ -352,4 +352,53 @@
         <item quantity="one">%d vaste</item>
         <item quantity="other">%d vastet</item>
     </plurals>
+    <string name="stats">Lugemisstatistika</string>
+    <string name="stats_empty">Sel aastal pole veel midagi kirjas. Loetud lehed ja lõpetatud raamatud ilmuvad siia.</string>
+    <string name="stats_private">Arvutatud selles seadmes. Midagi ei lahku sealt, kui sa ei jaga.</string>
+    <string name="year_in_books">Aasta raamatutes</string>
+    <string name="month_by_month">Kuu kaupa</string>
+    <string name="pages_metric">Lehed</string>
+    <string name="books_metric">Raamatud</string>
+    <string name="reading_days">Lugemispäevad</string>
+    <string name="longest_streak">Pikim seeria</string>
+    <string name="finished_in">Lõpetatud %d</string>
+    <string name="share">Jaga</string>
+    <string name="share_recap">Minu %1$d raamatutes: %2$s ja %3$s, privaatselt Shelfiga jälgitud.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d lehekülg</item>
+        <item quantity="other">%d lehekülge</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d päev</item>
+        <item quantity="other">%d päeva</item>
+    </plurals>
+    <string name="close">Sulge</string>
+    <string name="wrapped_banner">Sinu %d raamatutes</string>
+    <string name="wrapped_banner_text">Puuduta, et oma lugemisaasta uuesti läbi elada.</string>
+    <string name="wrapped_intro">Vaatame tagasi sinu lugemisaastale.</string>
+    <string name="wrapped_books">Sa lõpetasid</string>
+    <string name="wrapped_pages">Sa pöörasid</string>
+    <string name="wrapped_best_day">Suurim päev: %1$s, %2$s</string>
+    <string name="wrapped_month">Sinu parim kuu oli</string>
+    <string name="wrapped_genre">Sinu lemmikžanr</string>
+    <string name="wrapped_author">Sa ei suutnud lahti lasta</string>
+    <string name="wrapped_days">Sa lugesid</string>
+    <string name="wrapped_bookends">Esimesest viimaseni</string>
+    <string name="wrapped_first">Esimene</string>
+    <string name="wrapped_last">Viimane</string>
+    <string name="wrapped_type">Sinu lugejatüüp</string>
+    <string name="type_marathoner">Maratonijooksja</string>
+    <string name="type_marathoner_text">Nädalaid lugemist ilma pausita. Miski ei peata sind.</string>
+    <string name="type_explorer">Avastaja</string>
+    <string name="type_explorer_text">Sa uitad igal riiulil, žanrist žanrisse.</string>
+    <string name="type_devotee">Pühendunu</string>
+    <string name="type_devotee_text">Kui autor su võidab, loed sa kõik tema raamatud.</string>
+    <string name="type_weekender">Nädalavahetuse lugeja</string>
+    <string name="type_weekender_text">Laupäevad ja pühapäevad kuuluvad sinu raamatutele.</string>
+    <string name="type_bookworm">Raamatuuss</string>
+    <string name="type_bookworm_text">Ühtlased leheküljed terve aasta. Lugemine on lihtsalt osa sinust.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">See on umbes %d tund lugemist.</item>
+        <item quantity="other">See on umbes %d tundi lugemist.</item>
+    </plurals>
 </resources>

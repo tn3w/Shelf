@@ -341,4 +341,50 @@
     <plurals name="matches">
         <item quantity="other">%d개 일치</item>
     </plurals>
+    <string name="stats">독서 통계</string>
+    <string name="stats_empty">이 해의 기록이 아직 없습니다. 읽은 페이지와 다 읽은 책이 여기에 표시됩니다.</string>
+    <string name="stats_private">이 기기에서 계산됩니다. 공유하지 않으면 외부로 나가지 않습니다.</string>
+    <string name="year_in_books">책으로 본 한 해</string>
+    <string name="month_by_month">월별</string>
+    <string name="pages_metric">페이지</string>
+    <string name="books_metric">책</string>
+    <string name="reading_days">독서일</string>
+    <string name="longest_streak">최장 연속 기록</string>
+    <string name="finished_in">%d년에 완독</string>
+    <string name="share">공유</string>
+    <string name="share_recap">나의 %1$d년 독서: %2$s, %3$s. Shelf로 비공개 기록.</string>
+    <plurals name="pages_count">
+        <item quantity="other">%d페이지</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="other">%d일</item>
+    </plurals>
+    <string name="close">닫기</string>
+    <string name="wrapped_banner">%d년의 책</string>
+    <string name="wrapped_banner_text">탭하여 독서의 한 해를 다시 만나보세요.</string>
+    <string name="wrapped_intro">당신의 독서 한 해를 돌아봅시다.</string>
+    <string name="wrapped_books">다 읽은 책</string>
+    <string name="wrapped_pages">넘긴 페이지</string>
+    <string name="wrapped_best_day">최고의 날: %1$s, %2$s</string>
+    <string name="wrapped_month">최고의 달은</string>
+    <string name="wrapped_genre">최고 장르</string>
+    <string name="wrapped_author">손에서 놓지 못한 작가</string>
+    <string name="wrapped_days">책을 읽은 날</string>
+    <string name="wrapped_bookends">처음부터 마지막까지</string>
+    <string name="wrapped_first">처음</string>
+    <string name="wrapped_last">마지막</string>
+    <string name="wrapped_type">당신의 독서 유형</string>
+    <string name="type_marathoner">마라토너</string>
+    <string name="type_marathoner_text">몇 주 동안 쉬지 않고 읽었어요. 아무도 막을 수 없죠.</string>
+    <string name="type_explorer">탐험가</string>
+    <string name="type_explorer_text">장르에서 장르로, 모든 책장을 누빕니다.</string>
+    <string name="type_devotee">열혈 팬</string>
+    <string name="type_devotee_text">한 작가에게 빠지면 모든 책을 읽습니다.</string>
+    <string name="type_weekender">주말 독서가</string>
+    <string name="type_weekender_text">토요일과 일요일은 책을 위한 시간.</string>
+    <string name="type_bookworm">책벌레</string>
+    <string name="type_bookworm_text">일 년 내내 꾸준히. 독서는 당신의 일부입니다.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="other">약 %d시간의 독서입니다.</item>
+    </plurals>
 </resources>

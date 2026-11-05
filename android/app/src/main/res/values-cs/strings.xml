@@ -374,4 +374,59 @@
         <item quantity="many">%d shody</item>
         <item quantity="other">%d shod</item>
     </plurals>
+    <string name="stats">Statistiky čtení</string>
+    <string name="stats_empty">Pro tento rok zatím nic není. Přečtené stránky a dočtené knihy se zobrazí zde.</string>
+    <string name="stats_private">Spočítáno v tomto zařízení. Nic neopustí zařízení, pokud to nesdílíte.</string>
+    <string name="year_in_books">Rok v knihách</string>
+    <string name="month_by_month">Měsíc po měsíci</string>
+    <string name="pages_metric">Stránky</string>
+    <string name="books_metric">Knihy</string>
+    <string name="reading_days">Dny čtení</string>
+    <string name="longest_streak">Nejdelší série</string>
+    <string name="finished_in">Dočteno v roce %d</string>
+    <string name="share">Sdílet</string>
+    <string name="share_recap">Můj rok %1$d v knihách: %2$s a %3$s, soukromě zaznamenáno v Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d stránka</item>
+        <item quantity="few">%d stránky</item>
+        <item quantity="many">%d stránky</item>
+        <item quantity="other">%d stránek</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d den</item>
+        <item quantity="few">%d dny</item>
+        <item quantity="many">%d dne</item>
+        <item quantity="other">%d dní</item>
+    </plurals>
+    <string name="close">Zavřít</string>
+    <string name="wrapped_banner">Váš rok %d v knihách</string>
+    <string name="wrapped_banner_text">Klepnutím si znovu prožijete svůj čtenářský rok.</string>
+    <string name="wrapped_intro">Ohlédněme se za vaším čtenářským rokem.</string>
+    <string name="wrapped_books">Dočetli jste</string>
+    <string name="wrapped_pages">Otočili jste</string>
+    <string name="wrapped_best_day">Nejsilnější den: %1$s, %2$s</string>
+    <string name="wrapped_month">Váš nejlepší měsíc byl</string>
+    <string name="wrapped_genre">Váš hlavní žánr</string>
+    <string name="wrapped_author">Nemohli jste se odtrhnout od</string>
+    <string name="wrapped_days">Četli jste</string>
+    <string name="wrapped_bookends">Od první po poslední</string>
+    <string name="wrapped_first">První</string>
+    <string name="wrapped_last">Poslední</string>
+    <string name="wrapped_type">Váš typ čtenáře</string>
+    <string name="type_marathoner">Maratonec</string>
+    <string name="type_marathoner_text">Týdny čtení bez přestávky. Nic vás nezastaví.</string>
+    <string name="type_explorer">Objevitel</string>
+    <string name="type_explorer_text">Procházíte každou policí, od žánru k žánru.</string>
+    <string name="type_devotee">Věrný fanoušek</string>
+    <string name="type_devotee_text">Jakmile vás autor získá, přečtete od něj všechno.</string>
+    <string name="type_weekender">Víkendový čtenář</string>
+    <string name="type_weekender_text">Soboty a neděle patří vašim knihám.</string>
+    <string name="type_bookworm">Knihomol</string>
+    <string name="type_bookworm_text">Stálé stránky po celý rok. Čtení je prostě vaší součástí.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">To je asi %d hodina čtení.</item>
+        <item quantity="few">To jsou asi %d hodiny čtení.</item>
+        <item quantity="many">To je asi %d hodiny čtení.</item>
+        <item quantity="other">To je asi %d hodin čtení.</item>
+    </plurals>
 </resources>

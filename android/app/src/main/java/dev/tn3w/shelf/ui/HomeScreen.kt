@@ -39,6 +39,15 @@ class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }
         .asState()
     val missing = catalogueState { catalogue.workCount == 0 }
+    val wrapped = combine(library.saved, library.activity, dates()) {
+            saved,
+            activity,
+            today,
+        ->
+        wrappedYear(today)?.let {
+            recapOf(it, saved, activity)
+        }?.takeUnless { it.isEmpty }
+    }.asState()
     val genres = catalogueState {
         HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
             .map { it to recommender.popular(12, it.id) }
@@ -62,6 +71,7 @@ fun HomeScreen(navigator: Navigator) {
     val missing by viewModel.missing.collectAsStateWithLifecycle()
     fun dismiss(book: Book) = viewModel.dismiss(book)
     val genres by viewModel.genres.collectAsStateWithLifecycle()
+    val wrapped by viewModel.wrapped.collectAsStateWithLifecycle()
     val reading = saved.orEmpty().filter { it.shelf == Shelf.Reading }
     val want = saved.orEmpty().filter { it.shelf == Shelf.Want }.map { it.toBook() }
 
@@ -72,7 +82,12 @@ fun HomeScreen(navigator: Navigator) {
                 IconAction(Icons.Outlined.Settings, label, navigator::settings)
             }
         }
-        habit?.takeIf { settings.dailyGoal > 0 }?.let { item { HabitCard(it) } }
+        habit?.takeIf { settings.dailyGoal > 0 }?.let {
+            item { HabitCard(it, navigator::stats) }
+        }
+        wrapped?.let { recap ->
+            item { WrappedBanner(recap) { navigator.wrapped(recap.year) } }
+        }
         if (reading.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.continue_reading)) }
             item {
@@ -166,7 +181,7 @@ private fun rowSubtitle(row: HomeRow) = when (row.kind) {
 }
 
 @Composable
-private fun HabitCard(habit: Habit) {
+private fun HabitCard(habit: Habit, onOpen: () -> Unit) {
     val fraction by animateFloatAsState(
         (habit.today.toFloat() / habit.goal).coerceIn(0f, 1f),
         spring(
@@ -175,6 +190,7 @@ private fun HabitCard(habit: Habit) {
         ),
     )
     Surface(
+        onClick = onOpen,
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier =

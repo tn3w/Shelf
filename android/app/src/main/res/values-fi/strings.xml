@@ -352,4 +352,53 @@
         <item quantity="one">%d osuma</item>
         <item quantity="other">%d osumaa</item>
     </plurals>
+    <string name="stats">Lukutilastot</string>
+    <string name="stats_empty">Tälle vuodelle ei ole vielä mitään. Luetut sivut ja luetut kirjat näkyvät tässä.</string>
+    <string name="stats_private">Laskettu tällä laitteella. Mitään ei lähde laitteelta, ellet jaa sitä.</string>
+    <string name="year_in_books">Vuosi kirjoina</string>
+    <string name="month_by_month">Kuukausittain</string>
+    <string name="pages_metric">Sivut</string>
+    <string name="books_metric">Kirjat</string>
+    <string name="reading_days">Lukupäivät</string>
+    <string name="longest_streak">Pisin putki</string>
+    <string name="finished_in">Luettu %d</string>
+    <string name="share">Jaa</string>
+    <string name="share_recap">Minun %1$d kirjoina: %2$s ja %3$s, seurattu yksityisesti Shelfillä.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d sivu</item>
+        <item quantity="other">%d sivua</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d päivä</item>
+        <item quantity="other">%d päivää</item>
+    </plurals>
+    <string name="close">Sulje</string>
+    <string name="wrapped_banner">Sinun %d kirjoina</string>
+    <string name="wrapped_banner_text">Napauta ja elä lukuvuotesi uudelleen.</string>
+    <string name="wrapped_intro">Katsotaan taaksepäin lukuvuoteesi.</string>
+    <string name="wrapped_books">Luit loppuun</string>
+    <string name="wrapped_pages">Käänsit</string>
+    <string name="wrapped_best_day">Suurin päivä: %1$s, %2$s</string>
+    <string name="wrapped_month">Paras kuukautesi oli</string>
+    <string name="wrapped_genre">Suosikkilajisi</string>
+    <string name="wrapped_author">Et voinut laskea käsistäsi</string>
+    <string name="wrapped_days">Luit</string>
+    <string name="wrapped_bookends">Ensimmäisestä viimeiseen</string>
+    <string name="wrapped_first">Ensimmäinen</string>
+    <string name="wrapped_last">Viimeinen</string>
+    <string name="wrapped_type">Lukijatyyppisi</string>
+    <string name="type_marathoner">Maratoonari</string>
+    <string name="type_marathoner_text">Viikkoja lukemista ilman taukoa. Mikään ei pysäytä sinua.</string>
+    <string name="type_explorer">Löytöretkeilijä</string>
+    <string name="type_explorer_text">Kierrät jokaisen hyllyn lajista toiseen.</string>
+    <string name="type_devotee">Uskollinen</string>
+    <string name="type_devotee_text">Kun kirjailija voittaa sinut, luet kaiken.</string>
+    <string name="type_weekender">Viikonloppulukija</string>
+    <string name="type_weekender_text">Lauantait ja sunnuntait kuuluvat kirjoillesi.</string>
+    <string name="type_bookworm">Kirjatoukka</string>
+    <string name="type_bookworm_text">Tasaisesti sivuja koko vuoden. Lukeminen on osa sinua.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">Se on noin %d tunti lukemista.</item>
+        <item quantity="other">Se on noin %d tuntia lukemista.</item>
+    </plurals>
 </resources>

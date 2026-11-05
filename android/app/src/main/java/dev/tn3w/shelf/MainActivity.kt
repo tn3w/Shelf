@@ -75,6 +75,10 @@ data class SimilarRoute(val kind: SimilarKind, val ids: List<Int>, val name: Str
 
 @Serializable object ScanRoute
 
+@Serializable object StatsRoute
+
+@Serializable data class WrappedRoute(val year: Int)
+
 @Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
 
 private const val SCREEN_FADE_MILLIS = 220
@@ -114,6 +118,13 @@ class Navigator(
     }
 
     fun scan() = controller.navigate(ScanRoute) { launchSingleTop = true }
+
+    fun stats() = controller.navigate(StatsRoute) { launchSingleTop = true }
+
+    fun wrapped(year: Int) = controller.navigate(WrappedRoute(year)) {
+        launchSingleTop =
+            true
+    }
 
     fun settings(page: SettingsPage = SettingsPage.Main) =
         controller.navigate(SettingsRoute(page))
@@ -268,8 +279,10 @@ private fun UpdatePrompt(viewModel: MainViewModel) {
     release?.let { UpdateDialog(it, viewModel::dismissUpdate) }
 }
 
-private fun NavBackStackEntry.isReading() =
-    destination.hasRoute(ReaderRoute::class) || destination.hasRoute(ScanRoute::class)
+private val FULL_SCREEN =
+    listOf(ReaderRoute::class, ScanRoute::class, WrappedRoute::class)
+
+private fun NavBackStackEntry.isReading() = FULL_SCREEN.any { destination.hasRoute(it) }
 
 private fun NavHostController.openBook() = currentBackStackEntry
     ?.takeIf { it.destination.hasRoute(BookRoute::class) }
@@ -393,6 +406,8 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
         screen<ScanRoute> { ScanScreen(navigator) }
+        screen<StatsRoute> { StatsScreen(navigator) }
+        screen<WrappedRoute> { WrappedScreen(it.toRoute<WrappedRoute>().year, navigator) }
         screen<SettingsRoute> {
             SettingsScreen(it.toRoute<SettingsRoute>().page, navigator)
         }

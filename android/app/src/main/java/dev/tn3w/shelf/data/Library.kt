@@ -379,10 +379,12 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     val bookmarks = reading.map { it.bookmarks }.shared()
 
+    val activity = reading.map { it.activity }.shared()
+
     val settings = state.map { it.settings }.shared()
 
-    val habit = combine(reading, settings, dates()) { current, settings, today ->
-        habitOf(current.activity, settings.dailyGoal, today)
+    val habit = combine(activity, settings, dates()) { activity, settings, today ->
+        habitOf(activity, settings.dailyGoal, today)
     }.shared()
 
     private val booksDir

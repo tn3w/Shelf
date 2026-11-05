@@ -56,8 +56,8 @@ Barcodes work too.
 <td width="33%" valign="top">
 
 ### 🔥 Keep your streak
-Set a daily page goal and watch the week fill up. Sort books into
-**Want to read**, **Reading** and **Finished**.
+Set a daily page goal and watch the week fill up. Tap the streak for pages, books and
+genres per month, plus your year in books.
 
 </td>
 </tr>
@@ -85,6 +85,13 @@ leaves your phone.
 </td>
 </tr>
 </table>
+
+## Your year in books
+
+<img src="android/design/wrapped.png" width="100%" alt="Year in books: ten story slides from cover wall to shareable card">
+
+Tap the streak card for monthly pages, books and genres. **Your year in books** replays
+it as stories with your covers and ends on a card to share. All on your phone.
 
 ## Switch from Goodreads or StoryGraph in a minute
 

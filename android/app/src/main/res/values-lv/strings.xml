@@ -362,4 +362,56 @@
         <item quantity="one">Importēts %1$d no %2$d avota</item>
         <item quantity="other">Importēti %1$d no %2$d avotiem</item>
     </plurals>
+    <string name="stats">Lasīšanas statistika</string>
+    <string name="stats_empty">Šogad vēl nekas nav reģistrēts. Šeit parādīsies izlasītās lappuses un pabeigtās grāmatas.</string>
+    <string name="stats_private">Aprēķināts šajā ierīcē. Nekas to nepamet, ja vien nekopīgosi.</string>
+    <string name="year_in_books">Gads grāmatās</string>
+    <string name="month_by_month">Pa mēnešiem</string>
+    <string name="pages_metric">Lappuses</string>
+    <string name="books_metric">Grāmatas</string>
+    <string name="reading_days">Lasīšanas dienas</string>
+    <string name="longest_streak">Garākā sērija</string>
+    <string name="finished_in">Pabeigtas %d</string>
+    <string name="share">Kopīgot</string>
+    <string name="share_recap">Mans %1$d grāmatās: %2$s un %3$s, privāti ar Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="zero">%d lappušu</item>
+        <item quantity="one">%d lappuse</item>
+        <item quantity="other">%d lappuses</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="zero">%d dienu</item>
+        <item quantity="one">%d diena</item>
+        <item quantity="other">%d dienas</item>
+    </plurals>
+    <string name="close">Aizvērt</string>
+    <string name="wrapped_banner">Tavs %d grāmatās</string>
+    <string name="wrapped_banner_text">Pieskaries, lai vēlreiz izdzīvotu savu lasīšanas gadu.</string>
+    <string name="wrapped_intro">Atskatīsimies uz tavu lasīšanas gadu.</string>
+    <string name="wrapped_books">Tu pabeidzi</string>
+    <string name="wrapped_pages">Tu pāršķīri</string>
+    <string name="wrapped_best_day">Lielākā diena: %1$s, %2$s</string>
+    <string name="wrapped_month">Tavs labākais mēnesis bija</string>
+    <string name="wrapped_genre">Tavs galvenais žanrs</string>
+    <string name="wrapped_author">Tu nespēji nolikt malā</string>
+    <string name="wrapped_days">Tu lasīji</string>
+    <string name="wrapped_bookends">No pirmās līdz pēdējai</string>
+    <string name="wrapped_first">Pirmā</string>
+    <string name="wrapped_last">Pēdējā</string>
+    <string name="wrapped_type">Tavs lasītāja tips</string>
+    <string name="type_marathoner">Maratonists</string>
+    <string name="type_marathoner_text">Nedēļām lasīšana bez pārtraukuma. Nekas tevi neaptur.</string>
+    <string name="type_explorer">Pētnieks</string>
+    <string name="type_explorer_text">Tu klīsti pa katru plauktu, no žanra uz žanru.</string>
+    <string name="type_devotee">Uzticīgais</string>
+    <string name="type_devotee_text">Kad autors tevi iekaro, tu izlasi visu.</string>
+    <string name="type_weekender">Nedēļas nogales lasītājs</string>
+    <string name="type_weekender_text">Sestdienas un svētdienas pieder tavām grāmatām.</string>
+    <string name="type_bookworm">Grāmatu tārps</string>
+    <string name="type_bookworm_text">Vienmērīgas lappuses visu gadu. Lasīšana ir daļa no tevis.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="zero">Tās ir aptuveni %d stundas lasīšanas.</item>
+        <item quantity="one">Tā ir aptuveni %d stunda lasīšanas.</item>
+        <item quantity="other">Tās ir aptuveni %d stundas lasīšanas.</item>
+    </plurals>
 </resources>

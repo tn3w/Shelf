@@ -355,4 +355,53 @@
     <string name="free_books_isbn" translatable="false">ISBN</string>
     <string name="free_books_test_title" translatable="false">Pride and Prejudice</string>
     <string name="free_books_test_author" translatable="false">Jane Austen</string>
+    <string name="stats">Reading stats</string>
+    <string name="stats_empty">Nothing recorded this year yet. Pages you read and books you finish show up here.</string>
+    <string name="stats_private">Worked out on this device. Nothing leaves it unless you share.</string>
+    <string name="year_in_books">Year in books</string>
+    <string name="month_by_month">Month by month</string>
+    <string name="pages_metric">Pages</string>
+    <string name="books_metric">Books</string>
+    <string name="reading_days">Reading days</string>
+    <string name="longest_streak">Longest streak</string>
+    <string name="finished_in">Finished in %d</string>
+    <string name="share">Share</string>
+    <string name="share_recap">My %1$d in books: %2$s and %3$s, tracked privately with Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="close">Close</string>
+    <string name="wrapped_banner">Your %d in books</string>
+    <string name="wrapped_banner_text">Tap to relive your reading year.</string>
+    <string name="wrapped_intro">Let’s look back at your reading year.</string>
+    <string name="wrapped_books">You finished</string>
+    <string name="wrapped_pages">You turned</string>
+    <string name="wrapped_best_day">Biggest day: %1$s, %2$s</string>
+    <string name="wrapped_month">Your best month was</string>
+    <string name="wrapped_genre">Your top genre</string>
+    <string name="wrapped_author">You couldn’t put down</string>
+    <string name="wrapped_days">You read on</string>
+    <string name="wrapped_bookends">From first to last</string>
+    <string name="wrapped_first">First</string>
+    <string name="wrapped_last">Last</string>
+    <string name="wrapped_type">Your reader type</string>
+    <string name="type_marathoner">The Marathoner</string>
+    <string name="type_marathoner_text">Weeks of reading without a break. Nothing stops you.</string>
+    <string name="type_explorer">The Explorer</string>
+    <string name="type_explorer_text">You wander every shelf, from one genre to the next.</string>
+    <string name="type_devotee">The Devotee</string>
+    <string name="type_devotee_text">Once an author wins you over, you read them all.</string>
+    <string name="type_weekender">The Weekender</string>
+    <string name="type_weekender_text">Saturdays and Sundays belong to your books.</string>
+    <string name="type_bookworm">The Bookworm</string>
+    <string name="type_bookworm_text">Steady pages, all year long. Reading is simply part of you.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">That’s about %d hour of reading.</item>
+        <item quantity="other">That’s about %d hours of reading.</item>
+    </plurals>
 </resources>

@@ -363,4 +363,56 @@
         <item quantity="other">%d résultats</item>
         <item quantity="many">%d résultats</item>
     </plurals>
+    <string name="stats">Statistiques de lecture</string>
+    <string name="stats_empty">Rien d’enregistré cette année. Les pages lues et les livres terminés apparaîtront ici.</string>
+    <string name="stats_private">Calculé sur cet appareil. Rien n’en sort sauf si vous le partagez.</string>
+    <string name="year_in_books">Année en livres</string>
+    <string name="month_by_month">Mois par mois</string>
+    <string name="pages_metric">Pages</string>
+    <string name="books_metric">Livres</string>
+    <string name="reading_days">Jours de lecture</string>
+    <string name="longest_streak">Plus longue série</string>
+    <string name="finished_in">Terminés en %d</string>
+    <string name="share">Partager</string>
+    <string name="share_recap">Mon année %1$d en livres : %2$s et %3$s, suivis en privé avec Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d page</item>
+        <item quantity="many">%d de pages</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d jour</item>
+        <item quantity="many">%d de jours</item>
+        <item quantity="other">%d jours</item>
+    </plurals>
+    <string name="close">Fermer</string>
+    <string name="wrapped_banner">Votre %d en livres</string>
+    <string name="wrapped_banner_text">Touchez pour revivre votre année de lecture.</string>
+    <string name="wrapped_intro">Retour sur votre année de lecture.</string>
+    <string name="wrapped_books">Vous avez terminé</string>
+    <string name="wrapped_pages">Vous avez tourné</string>
+    <string name="wrapped_best_day">Votre plus grand jour : %1$s, %2$s</string>
+    <string name="wrapped_month">Votre meilleur mois était</string>
+    <string name="wrapped_genre">Votre genre favori</string>
+    <string name="wrapped_author">Vous n’avez pas pu lâcher</string>
+    <string name="wrapped_days">Vous avez lu pendant</string>
+    <string name="wrapped_bookends">Du premier au dernier</string>
+    <string name="wrapped_first">Premier</string>
+    <string name="wrapped_last">Dernier</string>
+    <string name="wrapped_type">Votre profil de lecteur</string>
+    <string name="type_marathoner">Le marathonien</string>
+    <string name="type_marathoner_text">Des semaines de lecture sans pause. Rien ne vous arrête.</string>
+    <string name="type_explorer">L’explorateur</string>
+    <string name="type_explorer_text">Vous parcourez chaque rayon, d’un genre à l’autre.</string>
+    <string name="type_devotee">Le fidèle</string>
+    <string name="type_devotee_text">Quand un auteur vous séduit, vous lisez tout de lui.</string>
+    <string name="type_weekender">Le lecteur du week-end</string>
+    <string name="type_weekender_text">Les samedis et dimanches appartiennent à vos livres.</string>
+    <string name="type_bookworm">Le rat de bibliothèque</string>
+    <string name="type_bookworm_text">Des pages régulières toute l’année. Lire fait partie de vous.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">Soit environ %d heure de lecture.</item>
+        <item quantity="many">Soit environ %d d’heures de lecture.</item>
+        <item quantity="other">Soit environ %d heures de lecture.</item>
+    </plurals>
 </resources>

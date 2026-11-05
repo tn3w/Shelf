@@ -352,4 +352,53 @@
         <item quantity="one">%d träff</item>
         <item quantity="other">%d träffar</item>
     </plurals>
+    <string name="stats">Lässtatistik</string>
+    <string name="stats_empty">Inget registrerat i år ännu. Lästa sidor och utlästa böcker visas här.</string>
+    <string name="stats_private">Beräknat på den här enheten. Inget lämnar den om du inte delar.</string>
+    <string name="year_in_books">Året i böcker</string>
+    <string name="month_by_month">Månad för månad</string>
+    <string name="pages_metric">Sidor</string>
+    <string name="books_metric">Böcker</string>
+    <string name="reading_days">Läsdagar</string>
+    <string name="longest_streak">Längsta svit</string>
+    <string name="finished_in">Utlästa %d</string>
+    <string name="share">Dela</string>
+    <string name="share_recap">Mitt %1$d i böcker: %2$s och %3$s, privat loggat med Shelf.</string>
+    <plurals name="pages_count">
+        <item quantity="one">%d sida</item>
+        <item quantity="other">%d sidor</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d dag</item>
+        <item quantity="other">%d dagar</item>
+    </plurals>
+    <string name="close">Stäng</string>
+    <string name="wrapped_banner">Ditt %d i böcker</string>
+    <string name="wrapped_banner_text">Tryck för att återuppleva ditt läsår.</string>
+    <string name="wrapped_intro">Vi blickar tillbaka på ditt läsår.</string>
+    <string name="wrapped_books">Du läste ut</string>
+    <string name="wrapped_pages">Du vände</string>
+    <string name="wrapped_best_day">Största dagen: %1$s, %2$s</string>
+    <string name="wrapped_month">Din bästa månad var</string>
+    <string name="wrapped_genre">Din toppgenre</string>
+    <string name="wrapped_author">Du kunde inte släppa</string>
+    <string name="wrapped_days">Du läste under</string>
+    <string name="wrapped_bookends">Från första till sista</string>
+    <string name="wrapped_first">Första</string>
+    <string name="wrapped_last">Sista</string>
+    <string name="wrapped_type">Din lästyp</string>
+    <string name="type_marathoner">Maratonläsaren</string>
+    <string name="type_marathoner_text">Veckor av läsning utan paus. Inget stoppar dig.</string>
+    <string name="type_explorer">Upptäckaren</string>
+    <string name="type_explorer_text">Du vandrar genom varje hylla, från genre till genre.</string>
+    <string name="type_devotee">Den trogna</string>
+    <string name="type_devotee_text">När en författare vinner dig läser du allt.</string>
+    <string name="type_weekender">Helgläsaren</string>
+    <string name="type_weekender_text">Lördagar och söndagar tillhör dina böcker.</string>
+    <string name="type_bookworm">Bokmalen</string>
+    <string name="type_bookworm_text">Jämna sidor hela året. Läsning är en del av dig.</string>
+    <plurals name="wrapped_hours">
+        <item quantity="one">Det är ungefär %d timmes läsning.</item>
+        <item quantity="other">Det är ungefär %d timmars läsning.</item>
+    </plurals>
 </resources>
