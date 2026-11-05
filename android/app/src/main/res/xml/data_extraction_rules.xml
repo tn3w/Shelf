@@ -7,5 +7,6 @@
         <include domain="file" path="datastore/" />
         <include domain="file" path="books/" />
         <include domain="file" path="shelf-sources.json" />
+        <include domain="file" path="shelf-catalogs.json" />
     </device-transfer>
 </data-extraction-rules>

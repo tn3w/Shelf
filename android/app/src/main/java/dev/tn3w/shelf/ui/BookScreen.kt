@@ -45,7 +45,7 @@ data class Related(
 )
 
 class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
-    private val _offers = MutableStateFlow<Map<Offer, Download>>(emptyMap())
+    private val _offers = MutableStateFlow<Map<Any, Download>>(emptyMap())
     val offers = _offers.asStateFlow()
     val details = catalogueState {
         val source = catalogueOf(work) ?: return@catalogueState null
@@ -83,18 +83,25 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         detached { app.open(book.work.takeIf { library.importBook(book, uri) }) }
     }
 
-    fun download(book: Book, offer: Offer) {
+    fun download(book: Book, offer: Offer) =
+        fetch(book, offer) { library.download(book, offer, it) }
+
+    fun download(book: Book, catalog: Catalog, file: Acquisition) = fetch(book, file) {
+        library.download(book, catalogs.client(catalog), file, it)
+    }
+
+    private fun fetch(book: Book, key: Any, work: suspend ((Float) -> Unit) -> Boolean) {
         if (_offers.value.values.any { it is Download.Running }) return
         fun report(progress: Float) =
-            _offers.update { it + (offer to Download.Running(progress)) }
+            _offers.update { it + (key to Download.Running(progress)) }
         report(0f)
         viewModelScope.launch {
-            val done = transfer(::report) { library.download(book, offer, it) }
+            val done = transfer(::report) { work(it) }
             if (done) {
                 report(1f)
                 delay(DOWNLOAD_SETTLE_MILLIS)
             }
-            _offers.update { if (done) it - offer else it + (offer to Download.Failed) }
+            _offers.update { if (done) it - key else it + (key to Download.Failed) }
             if (done) app.open(book.work)
         }
     }

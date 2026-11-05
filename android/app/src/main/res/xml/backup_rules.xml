@@ -3,4 +3,5 @@
     <include domain="file" path="datastore/" />
     <include domain="file" path="books/" requireFlags="deviceToDeviceTransfer" />
     <include domain="file" path="shelf-sources.json" requireFlags="deviceToDeviceTransfer" />
+    <include domain="file" path="shelf-catalogs.json" requireFlags="deviceToDeviceTransfer" />
 </full-backup-content>

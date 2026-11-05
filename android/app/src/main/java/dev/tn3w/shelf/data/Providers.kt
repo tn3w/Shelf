@@ -325,19 +325,18 @@ internal fun rank(
     offers: List<Offer>,
     limit: Int = OFFER_LIMIT,
     exact: Boolean = false,
-): List<Offer> {
-    val wanted = tokenize(mainTitle(query.title)).filterNot { it in ARTICLES }
-    val authors = tokenize(query.author).toSet()
-    fun matches(offer: Offer): Boolean {
-        if (wanted.isEmpty() || !tokenize(offer.title).containsAll(wanted)) return false
-        val writers = tokenize(offer.author)
-        return writers.isEmpty() || authors.isEmpty() || writers.any { it in authors }
-    }
-    return offers
-        .filter { exact || matches(it) }
-        .distinctBy { it.link to it.variables }
-        .sortedBy { tokenize(it.title).size }
-        .take(limit)
+): List<Offer> = offers
+    .filter { exact || query.matches(it.title, it.author) }
+    .distinctBy { it.link to it.variables }
+    .sortedBy { tokenize(it.title).size }
+    .take(limit)
+
+internal fun Query.matches(otherTitle: String, otherAuthor: String): Boolean {
+    val wanted = tokenize(mainTitle(title)).filterNot { it in ARTICLES }
+    if (wanted.isEmpty() || !tokenize(otherTitle).containsAll(wanted)) return false
+    val writers = tokenize(otherAuthor)
+    val authors = tokenize(author).toSet()
+    return writers.isEmpty() || authors.isEmpty() || writers.any { it in authors }
 }
 
 suspend fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) =
@@ -351,7 +350,7 @@ suspend fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) =
         check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
     }
 
-private fun download(response: Response, target: File, onProgress: (Float) -> Unit) {
+internal fun download(response: Response, target: File, onProgress: (Float) -> Unit) {
     val total = response.body.contentLength()
     check(total <= MAX_BOOK_BYTES) { "book too large" }
     response.stream.use { input ->

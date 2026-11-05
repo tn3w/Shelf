@@ -504,6 +504,15 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     suspend fun download(book: Book, offer: Offer, onProgress: (Float) -> Unit) =
         attach(book, "${book.work}.${offer.format}") { fetchBook(offer, it, onProgress) }
 
+    suspend fun download(
+        book: Book,
+        client: CatalogClient,
+        file: Acquisition,
+        onProgress: (Float) -> Unit,
+    ) = attach(book, "${book.work}.${file.format}") {
+        client.download(file, it, onProgress)
+    }
+
     private suspend fun attach(
         book: Book,
         name: String,
@@ -527,25 +536,41 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     suspend fun importFile(uri: Uri): Int? = withContext(Dispatchers.IO) {
         val fileName = runSuspendCatching { context.displayName(uri) }.getOrNull()
         if (fileName == null || !isReadable(fileName)) return@withContext null
-        val temporary = File.createTempFile("import", ".tmp", booksDir.apply { mkdirs() })
-        val work = context.readFrom(uri) { input ->
-            temporary.outputStream().use { contentWork(input, it) }
+        importBook(fileName) { output ->
+            context.readFrom(uri) { input -> contentWork(input, output) }
         }
+    }
+
+    suspend fun importDownload(file: File, title: String, author: String) =
+        withContext(Dispatchers.IO) {
+            importBook("$title.${file.extension}", author) { output ->
+                file.inputStream().use { contentWork(it, output) }
+            }
+        }
+
+    private suspend fun importBook(
+        fileName: String,
+        fallbackAuthor: String = "",
+        write: suspend (OutputStream) -> Int?,
+    ): Int? {
+        val temporary = File.createTempFile("import", ".tmp", booksDir.apply { mkdirs() })
+        val work = temporary.outputStream().use { write(it) }
         val name = "$work.${extensionOf(fileName)}"
         if (work == null || !temporary.renameTo(bookFile(name))) {
             temporary.delete()
-            return@withContext null
+            return null
         }
         deleteOtherFormats(booksDir, work, keep = name)
         val metadata = readMetadata(bookFile(name))
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
+        val author = metadata?.author ?: fallbackAuthor
         readingStore.change {
             it.copy(progress = importedProgress(it.progress, work, name))
         }
         val existing = saved.first().firstOrNull { it.work == work }
-        val book = bookOf(work, title, metadata?.author.orEmpty(), existing?.cover ?: 0)
+        val book = bookOf(work, title, author, existing?.cover ?: 0)
         place(book, existing?.shelf ?: Shelf.Reading)
-        work
+        return work
     }
 
     private fun extensionOf(fileName: String) = File(fileName).extension.lowercase()

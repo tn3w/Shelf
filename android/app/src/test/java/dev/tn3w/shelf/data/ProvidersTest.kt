@@ -158,10 +158,10 @@ class ProvidersTest {
 
     @Test
     fun providersAreOffByDefault() {
-        val recipes = listOf(bundled("gutenberg"), htmlRecipe())
+        val recipes = listOf(bundled("wikisource"), htmlRecipe())
         assertTrue(Settings().enabledProviders(recipes).isEmpty())
-        val chosen = Settings(providers = setOf("gutenberg", "gone"))
-        assertEquals(listOf("gutenberg"), chosen.enabledProviders(recipes).map { it.id })
+        val chosen = Settings(providers = setOf("wikisource", "gone"))
+        assertEquals(listOf("wikisource"), chosen.enabledProviders(recipes).map { it.id })
     }
 
     @Test
@@ -177,72 +177,10 @@ class ProvidersTest {
 
     @Test
     fun providersServeTheirLanguages() {
-        assertTrue(Provider(bundled("standard-ebooks")).serves("en"))
-        assertFalse(Provider(bundled("standard-ebooks")).serves("de"))
-        assertTrue(Provider(bundled("gutenberg")).serves("de"))
-    }
-
-    @Test
-    fun standardEbooksOffersCompatibleEpubWithCoverAndSize() {
-        pages["/feeds/atom/all"] = feed(
-            """<entry><title>Pride and Prejudice</title>
-            <author><name>Jane Austen</name></author>
-            <media:thumbnail url="https://standardebooks.org/cover.jpg"/>
-            <link href="https://standardebooks.org/a" type="application/xhtml+xml"/>
-            <link href="https://standardebooks.org/a.epub" length="831959"
-                type="application/epub+zip"/>
-            <link href="https://standardebooks.org/b.epub" type="application/epub+zip"/>
-            </entry>""",
-            "<entry><title>Pride and Prejudice</title></entry>",
-        )
-        val offer = local("standard-ebooks", "https://standardebooks.org").offers(PRIDE)
-            .single()
-        assertEquals("Jane Austen", offer.author)
-        assertEquals("https://standardebooks.org/a.epub", offer.link)
-        assertEquals("https://standardebooks.org/cover.jpg", offer.cover)
-        assertEquals(831959L, offer.bytes)
-    }
-
-    @Test
-    fun gutenbergLooksUpEpubAndDropsAudioBooks() {
-        pages["/ebooks/search.opds/"] = feed(
-            """<entry><id>https://www.gutenberg.org/ebooks/1342.opds</id>
-            <title>Pride and Prejudice</title><content>Jane Austen</content></entry>""",
-            """<entry><id>https://www.gutenberg.org/ebooks/7.opds</id>
-            <title>Pride and Prejudice</title><content>Jane Austen</content></entry>""",
-            """<entry><id>https://www.gutenberg.org/ebooks/authors.opds</id>
-            <title>Authors</title></entry>""",
-        )
-        pages["/ebooks/1342.opds"] = feed(
-            """<entry>
-            <link type="application/epub+zip" length="10" href="https://g.org/1342.epub"/>
-            <link type="application/epub+zip" length="20"
-                href="https://g.org/1342.epub3.images"/>
-            </entry>""",
-        )
-        pages["/ebooks/7.opds"] =
-            feed("""<entry><link type="audio/mpeg" href="/7.mp3"/></entry>""")
-        val offer = local("gutenberg", "https://www.gutenberg.org").offers(PRIDE).single()
-        assertEquals("Jane Austen", offer.author)
-        assertEquals("https://g.org/1342.epub3.images", offer.link)
-        assertEquals(20L, offer.bytes)
-        assertTrue(offer.cover.orEmpty().endsWith("/1342/pg1342.cover.small.jpg"))
-        assertTrue(requests.any { it.endsWith("Jane Austen l.en") })
-    }
-
-    @Test
-    fun gutenbergDropsLanguageNoteAndDecodesEntities() {
-        pages["/ebooks/search.opds/"] = feed(
-            """<entry><id>https://www.gutenberg.org/ebooks/22367.opds</id>
-            <title>Die Verwandlung &amp; Anderes (German)</title>
-            <content>Franz Kafka</content></entry>""",
-        )
-        pages["/ebooks/22367.opds"] = feed(
-            """<entry><link type="application/epub+zip" length="1"
-                href="https://g.org/22367.epub3.images"/></entry>""",
-        )
-        val offer = local("gutenberg", "https://www.gutenberg.org").offers(KAFKA).single()
-        assertEquals("Die Verwandlung & Anderes", offer.title)
+        val english = Provider(htmlRecipe().copy(languages = setOf("en")))
+        assertTrue(english.serves("en"))
+        assertFalse(english.serves("de"))
+        assertTrue(Provider(bundled("wikisource")).serves("de"))
     }
 
     @Test

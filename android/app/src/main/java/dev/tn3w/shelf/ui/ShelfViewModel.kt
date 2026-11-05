@@ -16,6 +16,7 @@ open class ShelfViewModel(protected val app: ShelfApp) : ViewModel() {
     val library = app.library
     val loaded = app.loaded
     val sources = app.sources
+    val catalogs = app.catalogs
     val downloads = app.downloads
     val session = app.session
     val recognizer

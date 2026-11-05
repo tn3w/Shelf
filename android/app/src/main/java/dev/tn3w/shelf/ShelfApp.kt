@@ -37,6 +37,7 @@ class ShelfApp :
     val library by lazy { Library(this, scope) }
     val packs by lazy { Packs(this) }
     val sources by lazy { Sources(this) }
+    val catalogs by lazy { Catalogs(this) }
     private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }
     val canScan get() = BuildConfig.BUNDLED_SCAN_MODEL || scanCopy.exists()
     val recognizer by lazy { Recognizer(scanModel()) }

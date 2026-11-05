@@ -75,9 +75,9 @@ enum class SettingsPage(
     Privacy(Icons.Outlined.Shield, R.string.privacy, R.string.privacy_hint),
     Data(Icons.Outlined.Inventory2, R.string.your_data, R.string.your_data_hint),
     FreeBooks(
-        Icons.Outlined.CloudDownload,
-        R.string.free_books,
-        R.string.free_books_hint,
+        Icons.Outlined.LocalLibrary,
+        R.string.online_libraries,
+        R.string.online_libraries_summary,
     ),
 }
 
@@ -277,7 +277,7 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
         when (page) {
             SettingsPage.Main -> SettingsOverview(navigator)
             SettingsPage.Catalogue -> CatalogueSettings()
-            SettingsPage.FreeBooks -> FreeBookSettings()
+            SettingsPage.FreeBooks -> FreeBookSettings(navigator)
             SettingsPage.General -> GeneralSettings(navigator)
             SettingsPage.Reading -> ReadingSettings()
             SettingsPage.Privacy -> PrivacySettings()

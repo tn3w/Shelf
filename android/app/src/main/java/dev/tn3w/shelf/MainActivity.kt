@@ -79,6 +79,9 @@ data class SimilarRoute(val kind: SimilarKind, val ids: List<Int>, val name: Str
 
 @Serializable object StatsRoute
 
+@Serializable
+data class CatalogRoute(val id: String, val url: String = "", val title: String = "")
+
 @Serializable data class WrappedRoute(val year: Int)
 
 @Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
@@ -132,6 +135,11 @@ class Navigator(
 
     fun settings(page: SettingsPage = SettingsPage.Main) =
         controller.navigate(SettingsRoute(page))
+
+    fun onlineLibraries() = settings(SettingsPage.FreeBooks)
+
+    fun catalog(id: String, url: String = "", title: String = "") =
+        controller.navigate(CatalogRoute(id, url, title))
 
     fun library() = tab(LibraryRoute, reselected = false)
 
@@ -412,6 +420,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
         screen<ScanRoute> { ScanScreen(navigator) }
         screen<StatsRoute> { StatsScreen(navigator) }
+        screen<CatalogRoute> { CatalogScreen(it.toRoute<CatalogRoute>(), navigator) }
         screen<WrappedRoute> { WrappedScreen(it.toRoute<WrappedRoute>().year, navigator) }
         screen<SettingsRoute> {
             SettingsScreen(it.toRoute<SettingsRoute>().page, navigator)

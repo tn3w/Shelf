@@ -126,6 +126,8 @@ fun LibraryScreen(navigator: Navigator) {
             IconAction(Icons.Outlined.FileOpen, stringResource(R.string.import_book)) {
                 picker.launch(arrayOf("*/*"))
             }
+            val online = stringResource(R.string.online_libraries)
+            IconAction(Icons.Outlined.LocalLibrary, online, navigator::onlineLibraries)
         }
         if (searching) {
             SearchField(
