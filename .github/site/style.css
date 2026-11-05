@@ -508,7 +508,7 @@ svg {
   --height: clamp(10rem, 22vw, 18rem);
   height: var(--height);
   margin-top: 3rem;
-  background: url(covers-light.webp) 0 0 / auto 100% repeat-x;
+  background: url(covers.webp) 0 0 / auto 100% repeat-x;
   animation: drift 90s linear infinite;
 }
 
@@ -516,10 +516,6 @@ svg {
   to {
     background-position-x: calc(var(--height) * -2004 / 360);
   }
-}
-
-:root[data-theme="dark"] .cover-strip {
-  background-image: url(covers-dark.webp);
 }
 
 .privacy {

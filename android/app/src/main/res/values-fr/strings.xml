@@ -415,4 +415,31 @@
         <item quantity="many">Soit environ %d d’heures de lecture.</item>
         <item quantity="other">Soit environ %d heures de lecture.</item>
     </plurals>
+    <string name="color_yellow">Jaune</string>
+    <string name="color_green">Vert</string>
+    <string name="color_blue">Bleu</string>
+    <string name="color_pink">Rose</string>
+    <string name="notes">Notes</string>
+    <string name="no_highlights">Aucun surlignage pour l\'instant. Appuyez longuement sur un mot, glissez pour en sélectionner plus, puis choisissez une couleur.</string>
+    <string name="add_note">Ajouter une note</string>
+    <string name="edit_note">Modifier la note</string>
+    <string name="note">Note</string>
+    <string name="note_hint">Qu\'est-ce que ce passage vous inspire ?</string>
+    <string name="copy">Copier</string>
+    <string name="copied">Copié</string>
+    <string name="export_notes">Exporter les notes</string>
+    <string name="share_markdown">Partager en Markdown</string>
+    <string name="save_markdown">Enregistrer en Markdown</string>
+    <string name="save_readwise">Enregistrer en CSV pour Readwise</string>
+    <string name="notes_exported">Notes exportées.</string>
+    <string name="notes_hint">Tous les surlignages et notes de vos livres, en Markdown ou en CSV importable dans Readwise.</string>
+    <string name="notes_markdown">Exporter en Markdown</string>
+    <string name="notes_readwise">Exporter en CSV pour Readwise</string>
+    <string name="highlight_removed">Surlignage supprimé</string>
+    <string name="undo">Annuler</string>
+    <plurals name="highlights">
+        <item quantity="one">%d surlignage</item>
+        <item quantity="many">%d surlignages</item>
+        <item quantity="other">%d surlignages</item>
+    </plurals>
 </resources>

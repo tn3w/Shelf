@@ -1,11 +1,17 @@
 package dev.tn3w.shelf.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
-import android.provider.Settings.System
+import android.net.Uri
+import android.os.Build
 import android.view.Window
 import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -15,6 +21,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.pager.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.List
@@ -25,7 +32,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -46,11 +55,12 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.math.roundToInt
+import android.provider.Settings.System as SystemSettings
 
 private val PAGE_PADDING = 28.dp
 private val HEADING_SCALE = mapOf(1 to 1.6f, 2 to 1.4f, 3 to 1.25f, 4 to 1.1f)
 private const val SEARCH_DELAY = 250L
-private val HIGHLIGHT = Color(0x66FFC107)
+private val SEARCH_MATCH = Color(0x669575CD)
 
 private data class TextPage(
     val section: Int,
@@ -105,6 +115,51 @@ class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app
         library.changeBookmarks(work) { it - bookmark }
     }
 
+    val highlights = library.highlights.map { it[work].orEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    var editing by mutableStateOf<Editing?>(null)
+    var removed by mutableStateOf<Highlight?>(null)
+
+    fun addHighlight(highlight: Highlight) = detached {
+        library.changeHighlights(work) { it + highlight }
+    }
+
+    fun updateHighlight(highlight: Highlight) = detached {
+        library.changeHighlights(work) { marks ->
+            marks.map { if (it.created == highlight.created) highlight else it }
+        }
+    }
+
+    fun removeHighlight(highlight: Highlight) {
+        editing = null
+        removed = highlight
+        detached {
+            library.changeHighlights(work) { marks ->
+                marks.filter { it.created != highlight.created }
+            }
+        }
+    }
+
+    fun restoreHighlight() {
+        removed?.let(::addHighlight)
+        removed = null
+    }
+
+    fun exportNotes(uri: Uri, format: NotesFormat) = detached {
+        val saved = library.exportNotes(uri, format, work)
+        val message = if (saved) R.string.notes_exported else R.string.export_failed
+        withContext(Dispatchers.Main) { toast(message) }
+    }
+
+    fun copy(text: String) {
+        val clipboard = app.getSystemService(ClipboardManager::class.java)
+        clipboard.setPrimaryClip(ClipData.newPlainText(text, text))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) toast(R.string.copied)
+    }
+
+    private fun toast(@StringRes message: Int) =
+        Toast.makeText(app, message, Toast.LENGTH_SHORT).show()
+
     fun closeSearch() {
         showSearch = false
         query = ""
@@ -136,6 +191,7 @@ private fun readerViewModel(work: Int) = shelfViewModel { ReaderViewModel(it, wo
 private data class ReaderState(
     val viewModel: ReaderViewModel,
     val title: String,
+    val author: String,
     val navigator: Navigator,
     val onFontScale: ((Float) -> Unit)?,
     val volumeKeys: Boolean,
@@ -196,7 +252,9 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
     val viewModel = readerViewModel(work)
     val settings = loadedSettings() ?: Settings()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
-    val title = saved.firstOrNull { it.work == work }?.title.orEmpty()
+    val entry = saved.firstOrNull { it.work == work }
+    val title = entry?.title.orEmpty()
+    val author = entry?.author.orEmpty()
     val opened by viewModel.opened.collectAsStateWithLifecycle()
     val view = LocalView.current
     DisposableEffect(settings.keepScreenOn) {
@@ -204,9 +262,14 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
         onDispose { view.keepScreenOn = false }
     }
 
-    val state = remember(viewModel, title, navigator, settings.volumeKeys) {
+    val state = remember(viewModel, title, author, navigator, settings.volumeKeys) {
         ReaderState(
-            viewModel, title, navigator, viewModel::changeFont, settings.volumeKeys,
+            viewModel,
+            title,
+            author,
+            navigator,
+            viewModel::changeFont,
+            settings.volumeKeys,
         )
     }
     val palette = pagePalette(settings)
@@ -243,7 +306,8 @@ private fun Window.setBrightness(brightness: Float?) {
 }
 
 private fun Context.systemBrightness(): Float {
-    val level = System.getInt(contentResolver, System.SCREEN_BRIGHTNESS, MAX_LEVEL / 2)
+    val key = SystemSettings.SCREEN_BRIGHTNESS
+    val level = SystemSettings.getInt(contentResolver, key, MAX_LEVEL / 2)
     return level / MAX_LEVEL.toFloat()
 }
 
@@ -402,16 +466,36 @@ private fun List<TextPage>.indexAt(section: Int, offset: Int) =
     indexOfLast { it.section < section || (it.section == section && it.start <= offset) }
         .coerceAtLeast(0)
 
-private fun AnnotatedString.highlighted(query: String): AnnotatedString {
-    val ranges = matchRanges(text, query)
-    if (ranges.isEmpty()) return this
+private fun TextPage.marked(
+    highlights: List<Highlight>,
+    query: String,
+    selected: TextRange?,
+    selectionColor: Color,
+): AnnotatedString {
+    val matches = matchRanges(text.text, query)
+    val marks = highlights.mapNotNull { highlight ->
+        highlight.rangeOn(section, start, text.length)?.let { highlight to it }
+    }
+    if (matches.isEmpty() && marks.isEmpty() && selected == null) return text
     return buildAnnotatedString {
-        append(this@highlighted)
-        ranges.forEach {
-            addStyle(SpanStyle(background = HIGHLIGHT), it.first, it.last + 1)
+        append(text)
+        marks.forEach { (highlight, range) ->
+            val underline = TextDecoration.Underline.takeIf {
+                highlight.note.isNotBlank()
+            }
+            val style =
+                SpanStyle(background = highlight.color.wash, textDecoration = underline)
+            addStyle(style, range.first, range.last + 1)
         }
+        matches.forEach {
+            addStyle(SpanStyle(background = SEARCH_MATCH), it.first, it.last + 1)
+        }
+        selected?.let { addStyle(SpanStyle(background = selectionColor), it.min, it.max) }
     }
 }
+
+private fun TextPage.selectedText(range: TextRange) =
+    paragraphsIn(text.text, text.paragraphStyles.map { it.start }, range.min, range.max)
 
 private class PageMarks(
     val placed: List<Pair<Bookmark, Int>>,
@@ -439,6 +523,7 @@ private fun TextReader(
     val style = readerStyle(settings, pagePalette(settings).text)
     val margin = settings.margin.dp
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
     val hits by viewModel.hits.collectAsStateWithLifecycle()
     var position by rememberSaveable(stateSaver = jsonSaver()) {
         mutableStateOf(progress)
@@ -467,9 +552,15 @@ private fun TextReader(
             }
         }
         val marks = remember(bookmarks, current) { textMarks(bookmarks, current) }
+        val padding = PaddingValues(horizontal = side, vertical = margin)
+        val origin = Offset(horizontal.toFloat(), vertical.toFloat())
         key(current) {
             val pager = rememberPagerState(initial) { current.size }
             val scope = rememberCoroutineScope()
+            val annotator = remember(origin) { Annotator(current, chapters, origin) }
+            val export = rememberNotesExport(state)
+            LaunchedEffect(pager.currentPage) { annotator.selection = null }
+            BackHandler(annotator.selection != null) { annotator.selection = null }
             Pages(
                 pager,
                 state,
@@ -481,22 +572,21 @@ private fun TextReader(
                     Progress(progress.file, page.section, page.start, index, current.size)
                         .also { position = it }
                 },
+                notes = { onSelect -> NotesTab(state, current, export, onSelect) },
+                onTap = { index, offset ->
+                    annotator.tap(index, offset, highlights) {
+                        viewModel.editing = Editing(it.created)
+                    }
+                },
             ) { index ->
                 val page = current[index]
                 if (page.image == null) {
-                    val text = remember(page.text, hits.query) {
-                        page.text.highlighted(hits.query)
-                    }
-                    Text(
-                        text,
-                        style = style,
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(horizontal = side, vertical = margin),
-                    )
+                    AnnotatedPage(state, index, page, annotator, style, padding)
                 } else {
                     PageImage(document, page.image)
                 }
             }
+            SelectionActions(state, annotator)
             if (viewModel.showSearch) {
                 SearchPanel(
                     viewModel,
@@ -509,8 +599,233 @@ private fun TextReader(
                     scope.launch { pager.scrollToPage(target) }
                 }
             }
+            HighlightEditor(state)
+            UndoRemove(viewModel, Modifier.align(Alignment.BottomCenter))
         }
     }
+}
+
+@Composable
+private fun UndoRemove(viewModel: ReaderViewModel, modifier: Modifier) {
+    val host = remember { SnackbarHostState() }
+    val message = stringResource(R.string.highlight_removed)
+    val undo = stringResource(R.string.undo)
+    LaunchedEffect(viewModel.removed) {
+        if (viewModel.removed == null) return@LaunchedEffect
+        val result = host.showSnackbar(message, undo, duration = SnackbarDuration.Short)
+        if (result == SnackbarResult.ActionPerformed) viewModel.restoreHighlight()
+        viewModel.removed = null
+    }
+    SnackbarHost(host, modifier)
+}
+
+@Stable
+private class Annotator(
+    val pages: List<TextPage>,
+    val chapters: List<Pair<String, Int>>,
+    val origin: Offset,
+) {
+    var selection by mutableStateOf<PageSelection?>(null)
+    val layouts = mutableMapOf<Int, TextLayoutResult>()
+
+    fun select(page: Int, range: TextRange, settled: Boolean) {
+        selection =
+            PageSelection(page, range, settled).takeUnless { settled && range.collapsed }
+    }
+
+    fun tap(
+        index: Int,
+        offset: Offset,
+        highlights: List<Highlight>,
+        onEdit: (Highlight) -> Unit,
+    ): Boolean {
+        if (selection != null) {
+            selection = null
+            return true
+        }
+        val char = layouts[index]?.charAt(offset - origin) ?: return false
+        val page = pages[index]
+        val hit = highlights.at(page.section, page.start + char) ?: return false
+        onEdit(hit)
+        return true
+    }
+
+    fun moveEdge(start: Boolean, char: Int, settled: Boolean) {
+        val chosen = selection ?: return
+        val (min, max) = chosen.range.min to chosen.range.max
+        val range = if (start) {
+            TextRange(minOf(char, max - 1), max)
+        } else {
+            TextRange(min, maxOf(char, min + 1))
+        }
+        selection = chosen.copy(range = range, settled = settled)
+    }
+
+    fun bounds(chosen: PageSelection) = layouts[chosen.page]
+        ?.getPathForRange(chosen.range.min, chosen.range.max)
+        ?.getBounds()
+        ?.translate(origin)
+
+    fun textOf(chosen: PageSelection) = pages[chosen.page].selectedText(chosen.range)
+
+    fun highlightOf(
+        chosen: PageSelection,
+        color: HighlightColor = HighlightColor.Yellow,
+    ): Highlight {
+        val start = pages[chosen.page].start
+        return Highlight(
+            pages[chosen.page].section,
+            start + chosen.range.min,
+            start + chosen.range.max,
+            textOf(chosen),
+            color = color,
+            chapter = chapterAt(chapters, chosen.page)?.first.orEmpty(),
+            created = System.currentTimeMillis(),
+        )
+    }
+}
+
+@Composable
+private fun AnnotatedPage(
+    state: ReaderState,
+    index: Int,
+    page: TextPage,
+    annotator: Annotator,
+    style: TextStyle,
+    padding: PaddingValues,
+) {
+    val viewModel = state.viewModel
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
+    val hits by viewModel.hits.collectAsStateWithLifecycle()
+    val haptic = LocalHapticFeedback.current
+    val selectionColor = LocalTextSelectionColors.current.backgroundColor
+    val selected = annotator.selection?.takeIf { it.page == index }?.range
+    val text = remember(page, highlights, hits.query, selected, selectionColor) {
+        page.marked(highlights, hits.query, selected, selectionColor)
+    }
+    Text(
+        text,
+        style = style,
+        onTextLayout = { annotator.layouts[index] = it },
+        modifier = Modifier.fillMaxWidth()
+            .padding(padding)
+            .wordSelection({ annotator.layouts[index] }) { range, settled ->
+                if (annotator.selection == null) {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.chrome = false
+                }
+                annotator.select(index, range, settled)
+            },
+    )
+}
+
+@Composable
+private fun SelectionActions(state: ReaderState, annotator: Annotator) {
+    val chosen = annotator.selection ?: return
+    val layout = annotator.layouts[chosen.page] ?: return
+    val origin = annotator.origin
+    listOf(true, false).forEach { start ->
+        val edge = if (start) chosen.range.min else chosen.range.max
+        SelectionHandle(layout.getCursorRect(edge).translate(origin)) { point, settled ->
+            val char = layout.getOffsetForPosition(point - origin)
+            annotator.moveEdge(start, char, settled)
+        }
+    }
+    if (!chosen.settled) return
+    val anchor = annotator.bounds(chosen) ?: return
+    val viewModel = state.viewModel
+    val context = LocalContext.current
+    fun add(color: HighlightColor, writing: Boolean) {
+        val highlight = annotator.highlightOf(chosen, color)
+        viewModel.addHighlight(highlight)
+        if (writing) viewModel.editing = Editing(highlight.created, writing = true)
+        annotator.selection = null
+    }
+    SelectionBar(
+        anchor,
+        onHighlight = { add(it, writing = false) },
+        onNote = { add(HighlightColor.Yellow, writing = true) },
+        onCopy = {
+            viewModel.copy(annotator.textOf(chosen))
+            annotator.selection = null
+        },
+        onShare = {
+            val quote =
+                quoteText(annotator.highlightOf(chosen), state.title, state.author)
+            context.shareText(quote, state.title)
+            annotator.selection = null
+        },
+    )
+}
+
+@Composable
+private fun rememberNotesExport(state: ReaderState): (NotesAction) -> Unit {
+    val viewModel = state.viewModel
+    val context = LocalContext.current
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
+    fun launcher(format: NotesFormat) = CreateDocument(format.mimeType)
+    val markdown = rememberLauncherForActivityResult(launcher(NotesFormat.Markdown)) {
+        it?.let { uri -> viewModel.exportNotes(uri, NotesFormat.Markdown) }
+    }
+    val readwise = rememberLauncherForActivityResult(launcher(NotesFormat.Readwise)) {
+        it?.let { uri -> viewModel.exportNotes(uri, NotesFormat.Readwise) }
+    }
+    return { action ->
+        when (action) {
+            NotesAction.Share -> {
+                val notes = BookNotes(state.title, state.author, highlights)
+                context.shareText(notesMarkdown(listOf(notes)), state.title)
+            }
+
+            NotesAction.Markdown ->
+                markdown.launch(notesFileName(state.title, NotesFormat.Markdown))
+
+            NotesAction.Readwise ->
+                readwise.launch(notesFileName(state.title, NotesFormat.Readwise))
+        }
+    }
+}
+
+@Composable
+private fun NotesTab(
+    state: ReaderState,
+    pages: List<TextPage>,
+    onExport: (NotesAction) -> Unit,
+    onSelect: (Int) -> Unit,
+) {
+    val viewModel = state.viewModel
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
+    val placed = remember(highlights, pages) {
+        highlights.inReadingOrder().map { it to pages.indexAt(it.section, it.start) }
+    }
+    NotesList(
+        placed,
+        onSelect,
+        onEdit = {
+            viewModel.showChapters = false
+            viewModel.editing = Editing(it.created)
+        },
+        onExport = onExport,
+    )
+}
+
+@Composable
+private fun HighlightEditor(state: ReaderState) {
+    val viewModel = state.viewModel
+    val context = LocalContext.current
+    val highlights by viewModel.highlights.collectAsStateWithLifecycle()
+    val editing = viewModel.editing ?: return
+    val highlight = highlights.firstOrNull { it.created == editing.created } ?: return
+    HighlightSheet(
+        highlight,
+        editing.writing,
+        onSave = viewModel::updateHighlight,
+        onDelete = { viewModel.removeHighlight(highlight) },
+        onShare = {
+            context.shareText(quoteText(it, state.title, state.author), state.title)
+        },
+        onDismiss = { viewModel.editing = null },
+    )
 }
 
 @Composable
@@ -597,9 +912,12 @@ private fun Pages(
     marks: PageMarks,
     onSearch: (() -> Unit)?,
     save: (Int) -> Progress,
+    notes: (@Composable (onSelect: (Int) -> Unit) -> Unit)? = null,
+    onTap: (Int, Offset) -> Boolean = { _, _ -> false },
     page: @Composable (Int) -> Unit,
 ) {
     val viewModel = state.viewModel
+    val tapped by rememberUpdatedState(onTap)
     val scope = rememberCoroutineScope()
     var chrome by viewModel::chrome
     var showChapters by viewModel::showChapters
@@ -641,9 +959,10 @@ private fun Pages(
         ) { index ->
             Box(
                 Modifier.fillMaxSize().pointerInput(Unit) {
-                    detectTapGestures { offset ->
+                    detectTapGestures(onLongPress = {}) { offset ->
                         val third = size.width / 3
                         when {
+                            tapped(index, offset) -> Unit
                             offset.x < third -> turn(index - 1)
                             offset.x > 2 * third -> turn(index + 1)
                             else -> chrome = !chrome
@@ -691,6 +1010,7 @@ private fun Pages(
                 chapter,
                 marks.placed,
                 pager.pageCount,
+                notes,
                 onDismiss = { showChapters = false },
                 onRemove = viewModel::removeBookmark,
             ) { target ->
@@ -818,6 +1138,7 @@ private fun ReaderBottomBar(
 private enum class SheetTab(@StringRes val label: Int) {
     Contents(R.string.contents),
     Bookmarks(R.string.bookmarks),
+    Notes(R.string.notes),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -827,12 +1148,19 @@ private fun ContentsSheet(
     current: Pair<String, Int>?,
     bookmarks: List<Pair<Bookmark, Int>>,
     pageCount: Int,
+    notes: (@Composable (onSelect: (Int) -> Unit) -> Unit)?,
     onDismiss: () -> Unit,
     onRemove: (Bookmark) -> Unit,
     onSelect: (Int) -> Unit,
 ) {
     val listed = chapters.filter { it.second >= 0 }
-    val tabs = if (listed.isEmpty()) listOf(SheetTab.Bookmarks) else SheetTab.entries
+    val tabs = SheetTab.entries.filter {
+        when (it) {
+            SheetTab.Contents -> listed.isNotEmpty()
+            SheetTab.Bookmarks -> true
+            SheetTab.Notes -> notes != null
+        }
+    }
     var selected by rememberSaveable { mutableStateOf(tabs.first()) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         if (tabs.size > 1) {
@@ -860,6 +1188,8 @@ private fun ContentsSheet(
 
             SheetTab.Bookmarks ->
                 BookmarkList(bookmarks, chapters, pageCount, onRemove, onSelect)
+
+            SheetTab.Notes -> notes?.invoke(onSelect)
         }
     }
 }
@@ -892,7 +1222,7 @@ private fun ChapterList(
 }
 
 @Composable
-private fun PageNumber(index: Int) {
+fun PageNumber(index: Int) {
     Text(
         "${index + 1}",
         style = MaterialTheme.typography.labelMedium,
@@ -1031,7 +1361,7 @@ private fun SearchPanel(
 
 private fun snippet(match: Match) = buildAnnotatedString {
     append(match.before)
-    withStyle(SpanStyle(fontWeight = FontWeight.Bold, background = HIGHLIGHT)) {
+    withStyle(SpanStyle(fontWeight = FontWeight.Bold, background = SEARCH_MATCH)) {
         append(match.text)
     }
     append(match.after)

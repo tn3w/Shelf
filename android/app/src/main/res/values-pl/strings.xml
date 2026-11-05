@@ -429,4 +429,32 @@
         <item quantity="many">To około %d godzin czytania.</item>
         <item quantity="other">To około %d godziny czytania.</item>
     </plurals>
+    <string name="color_yellow">Żółty</string>
+    <string name="color_green">Zielony</string>
+    <string name="color_blue">Niebieski</string>
+    <string name="color_pink">Różowy</string>
+    <string name="notes">Notatki</string>
+    <string name="no_highlights">Brak zakreśleń. Przytrzymaj słowo, przeciągnij, aby zaznaczyć więcej, i wybierz kolor.</string>
+    <string name="add_note">Dodaj notatkę</string>
+    <string name="edit_note">Edytuj notatkę</string>
+    <string name="note">Notatka</string>
+    <string name="note_hint">Co myślisz o tym fragmencie?</string>
+    <string name="copy">Kopiuj</string>
+    <string name="copied">Skopiowano</string>
+    <string name="export_notes">Eksportuj notatki</string>
+    <string name="share_markdown">Udostępnij jako Markdown</string>
+    <string name="save_markdown">Zapisz jako Markdown</string>
+    <string name="save_readwise">Zapisz CSV dla Readwise</string>
+    <string name="notes_exported">Wyeksportowano notatki.</string>
+    <string name="notes_hint">Wszystkie zakreślenia i notatki z twoich książek jako Markdown lub CSV do importu w Readwise.</string>
+    <string name="notes_markdown">Eksportuj Markdown</string>
+    <string name="notes_readwise">Eksportuj CSV dla Readwise</string>
+    <string name="highlight_removed">Usunięto zakreślenie</string>
+    <string name="undo">Cofnij</string>
+    <plurals name="highlights">
+        <item quantity="one">%d zakreślenie</item>
+        <item quantity="few">%d zakreślenia</item>
+        <item quantity="many">%d zakreśleń</item>
+        <item quantity="other">%d zakreślenia</item>
+    </plurals>
 </resources>

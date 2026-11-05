@@ -401,4 +401,30 @@
         <item quantity="one">Det är ungefär %d timmes läsning.</item>
         <item quantity="other">Det är ungefär %d timmars läsning.</item>
     </plurals>
+    <string name="color_yellow">Gul</string>
+    <string name="color_green">Grön</string>
+    <string name="color_blue">Blå</string>
+    <string name="color_pink">Rosa</string>
+    <string name="notes">Anteckningar</string>
+    <string name="no_highlights">Inga markeringar än. Tryck länge på ett ord, dra för att välja mer och välj en färg.</string>
+    <string name="add_note">Lägg till anteckning</string>
+    <string name="edit_note">Redigera anteckning</string>
+    <string name="note">Anteckning</string>
+    <string name="note_hint">Vad får det här stycket dig att tänka på?</string>
+    <string name="copy">Kopiera</string>
+    <string name="copied">Kopierat</string>
+    <string name="export_notes">Exportera anteckningar</string>
+    <string name="share_markdown">Dela som Markdown</string>
+    <string name="save_markdown">Spara som Markdown</string>
+    <string name="save_readwise">Spara CSV för Readwise</string>
+    <string name="notes_exported">Anteckningar exporterade.</string>
+    <string name="notes_hint">Alla markeringar och anteckningar från dina böcker, som Markdown eller som CSV som Readwise kan importera.</string>
+    <string name="notes_markdown">Exportera Markdown</string>
+    <string name="notes_readwise">Exportera CSV för Readwise</string>
+    <string name="highlight_removed">Markering borttagen</string>
+    <string name="undo">Ångra</string>
+    <plurals name="highlights">
+        <item quantity="one">%d markering</item>
+        <item quantity="other">%d markeringar</item>
+    </plurals>
 </resources>

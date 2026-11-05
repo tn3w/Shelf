@@ -242,7 +242,7 @@
     <string name="brightness_swipe">スワイプで明るさを調整</string>
     <string name="brightness_swipe_hint">ページを上下にスワイプします。オフ: システムの明るさ。</string>
     <string name="reader_hint">文字の設定は EPUB、FB2、TXT、HTML に適用されます。PDF とコミックは元のレイアウトのままです。</string>
-    <string name="pages_suffix">ページ</string>
+    <string name="pages_suffix">ページ/日</string>
     <string name="reader_sample">アリスは土手の上で姉さんのそばにすわって、なんにもすることがないのにすっかりあきてきました。一、二回、姉さんの読んでいる本をのぞいてみましたが、絵も会話もありません。「絵も会話もない本なんて、なんの役にたつの？」とアリスは思いました。</string>
     <string name="download_all_short">すべてダウンロード</string>
     <string name="csv_progress">本を照合中… %d%%</string>
@@ -385,5 +385,30 @@
     <string name="type_bookworm_text">一年中こつこつと。読書はあなたの一部です。</string>
     <plurals name="wrapped_hours">
         <item quantity="other">約%d時間の読書です。</item>
+    </plurals>
+    <string name="color_yellow">黄</string>
+    <string name="color_green">緑</string>
+    <string name="color_blue">青</string>
+    <string name="color_pink">ピンク</string>
+    <string name="notes">ハイライトとメモ</string>
+    <string name="no_highlights">ハイライトはまだありません。単語を長押しし、ドラッグで範囲を広げて色を選んでください。</string>
+    <string name="add_note">メモを追加</string>
+    <string name="edit_note">メモを編集</string>
+    <string name="note">メモ</string>
+    <string name="note_hint">この一節について思ったことは？</string>
+    <string name="copy">コピー</string>
+    <string name="copied">コピーしました</string>
+    <string name="export_notes">メモを書き出す</string>
+    <string name="share_markdown">Markdownで共有</string>
+    <string name="save_markdown">Markdownで保存</string>
+    <string name="save_readwise">Readwise用CSVで保存</string>
+    <string name="notes_exported">メモを書き出しました。</string>
+    <string name="notes_hint">本のハイライトとメモをすべて、MarkdownまたはReadwiseで読み込めるCSVで書き出します。</string>
+    <string name="notes_markdown">Markdownを書き出す</string>
+    <string name="notes_readwise">Readwise用CSVを書き出す</string>
+    <string name="highlight_removed">ハイライトを削除しました</string>
+    <string name="undo">元に戻す</string>
+    <plurals name="highlights">
+        <item quantity="other">%d件のハイライト</item>
     </plurals>
 </resources>

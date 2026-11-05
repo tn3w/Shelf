@@ -429,4 +429,32 @@
         <item quantity="many">Это около %d часов чтения.</item>
         <item quantity="other">Это около %d часа чтения.</item>
     </plurals>
+    <string name="color_yellow">Жёлтый</string>
+    <string name="color_green">Зелёный</string>
+    <string name="color_blue">Синий</string>
+    <string name="color_pink">Розовый</string>
+    <string name="notes">Заметки</string>
+    <string name="no_highlights">Выделений пока нет. Удерживайте слово, проведите, чтобы выделить больше, и выберите цвет.</string>
+    <string name="add_note">Добавить заметку</string>
+    <string name="edit_note">Изменить заметку</string>
+    <string name="note">Заметка</string>
+    <string name="note_hint">О чём вас заставил задуматься этот отрывок?</string>
+    <string name="copy">Копировать</string>
+    <string name="copied">Скопировано</string>
+    <string name="export_notes">Экспорт заметок</string>
+    <string name="share_markdown">Поделиться в Markdown</string>
+    <string name="save_markdown">Сохранить в Markdown</string>
+    <string name="save_readwise">Сохранить CSV для Readwise</string>
+    <string name="notes_exported">Заметки экспортированы.</string>
+    <string name="notes_hint">Все выделения и заметки из ваших книг в Markdown или в CSV для импорта в Readwise.</string>
+    <string name="notes_markdown">Экспорт в Markdown</string>
+    <string name="notes_readwise">Экспорт CSV для Readwise</string>
+    <string name="highlight_removed">Выделение удалено</string>
+    <string name="undo">Отменить</string>
+    <plurals name="highlights">
+        <item quantity="one">%d выделение</item>
+        <item quantity="few">%d выделения</item>
+        <item quantity="many">%d выделений</item>
+        <item quantity="other">%d выделения</item>
+    </plurals>
 </resources>

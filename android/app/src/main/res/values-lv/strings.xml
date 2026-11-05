@@ -414,4 +414,31 @@
         <item quantity="one">Tā ir aptuveni %d stunda lasīšanas.</item>
         <item quantity="other">Tās ir aptuveni %d stundas lasīšanas.</item>
     </plurals>
+    <string name="color_yellow">Dzeltena</string>
+    <string name="color_green">Zaļa</string>
+    <string name="color_blue">Zila</string>
+    <string name="color_pink">Rozā</string>
+    <string name="notes">Piezīmes</string>
+    <string name="no_highlights">Vēl nav izcēlumu. Ilgi turiet vārdu, velciet, lai atlasītu vairāk, un izvēlieties krāsu.</string>
+    <string name="add_note">Pievienot piezīmi</string>
+    <string name="edit_note">Labot piezīmi</string>
+    <string name="note">Piezīme</string>
+    <string name="note_hint">Ko jums liek domāt šis fragments?</string>
+    <string name="copy">Kopēt</string>
+    <string name="copied">Nokopēts</string>
+    <string name="export_notes">Eksportēt piezīmes</string>
+    <string name="share_markdown">Kopīgot kā Markdown</string>
+    <string name="save_markdown">Saglabāt kā Markdown</string>
+    <string name="save_readwise">Saglabāt CSV Readwise</string>
+    <string name="notes_exported">Piezīmes eksportētas.</string>
+    <string name="notes_hint">Visi jūsu grāmatu izcēlumi un piezīmes Markdown formātā vai CSV failā importēšanai Readwise.</string>
+    <string name="notes_markdown">Eksportēt Markdown</string>
+    <string name="notes_readwise">Eksportēt CSV Readwise</string>
+    <string name="highlight_removed">Izcēlums noņemts</string>
+    <string name="undo">Atsaukt</string>
+    <plurals name="highlights">
+        <item quantity="zero">%d izcēlumu</item>
+        <item quantity="one">%d izcēlums</item>
+        <item quantity="other">%d izcēlumi</item>
+    </plurals>
 </resources>

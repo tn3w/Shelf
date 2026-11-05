@@ -241,7 +241,7 @@
     <string name="brightness_swipe">Helligkeit wischen</string>
     <string name="brightness_swipe_hint">Auf der Seite nach oben oder unten wischen. Aus: Systemhelligkeit.</string>
     <string name="reader_hint">Textoptionen gelten für EPUB, FB2, TXT und HTML. PDF und Comics behalten ihr Layout.</string>
-    <string name="pages_suffix">Seiten</string>
+    <string name="pages_suffix">Seiten pro Tag</string>
     <string name="reader_sample">Alice fing an sich zu langweilen; sie saß schon lange bei ihrer Schwester am Ufer und hatte nichts zu tun. Das Buch, das ihre Schwester las, gefiel ihr nicht; denn es waren weder Bilder noch Gespräche darin. „Und was nützen Bücher“, dachte Alice, „ohne Bilder und Gespräche?“</string>
     <string name="download_all_short">Alle herunterladen</string>
     <string name="csv_progress">Bücher werden abgeglichen… %d%%</string>
@@ -400,5 +400,31 @@
     <plurals name="wrapped_hours">
         <item quantity="one">Das sind etwa %d Stunde Lesezeit.</item>
         <item quantity="other">Das sind etwa %d Stunden Lesezeit.</item>
+    </plurals>
+    <string name="color_yellow">Gelb</string>
+    <string name="color_green">Grün</string>
+    <string name="color_blue">Blau</string>
+    <string name="color_pink">Rosa</string>
+    <string name="notes">Notizen</string>
+    <string name="no_highlights">Noch keine Markierungen. Halte ein Wort gedrückt, ziehe für mehr Text und wähle eine Farbe.</string>
+    <string name="add_note">Notiz hinzufügen</string>
+    <string name="edit_note">Notiz bearbeiten</string>
+    <string name="note">Notiz</string>
+    <string name="note_hint">Was geht dir bei dieser Stelle durch den Kopf?</string>
+    <string name="copy">Kopieren</string>
+    <string name="copied">Kopiert</string>
+    <string name="export_notes">Notizen exportieren</string>
+    <string name="share_markdown">Als Markdown teilen</string>
+    <string name="save_markdown">Als Markdown speichern</string>
+    <string name="save_readwise">CSV für Readwise speichern</string>
+    <string name="notes_exported">Notizen exportiert.</string>
+    <string name="notes_hint">Alle Markierungen und Notizen aus deinen Büchern, als Markdown oder als CSV für Readwise.</string>
+    <string name="notes_markdown">Markdown exportieren</string>
+    <string name="notes_readwise">CSV für Readwise exportieren</string>
+    <string name="highlight_removed">Markierung entfernt</string>
+    <string name="undo">Rückgängig</string>
+    <plurals name="highlights">
+        <item quantity="one">%d Markierung</item>
+        <item quantity="other">%d Markierungen</item>
     </plurals>
 </resources>

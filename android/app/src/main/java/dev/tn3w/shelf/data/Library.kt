@@ -161,6 +161,7 @@ data class Backup(
     val dismissed: Set<Int> = emptySet(),
     val settings: Settings = Settings(),
     val bookmarks: Map<Int, List<Bookmark>> = emptyMap(),
+    val highlights: Map<Int, List<Highlight>> = emptyMap(),
 )
 
 data class Habit(
@@ -272,6 +273,7 @@ data class ReadingState(
     val progress: Map<Int, Progress> = emptyMap(),
     val activity: Map<String, Int> = emptyMap(),
     val bookmarks: Map<Int, List<Bookmark>> = emptyMap(),
+    val highlights: Map<Int, List<Highlight>> = emptyMap(),
 )
 
 internal class JsonSerializer<T>(
@@ -379,6 +381,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     val bookmarks = reading.map { it.bookmarks }.shared()
 
+    val highlights = reading.map { it.highlights }.shared()
+
     val activity = reading.map { it.activity }.shared()
 
     val settings = state.map { it.settings }.shared()
@@ -427,7 +431,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             deleteOtherFormats(booksDir, book.work, keep = name)
         }
         val previous = progress.first()[book.work]?.takeIf { it.file == name }
-        if (previous == null) changeBookmarks(book.work) { emptyList() }
+        if (previous == null) forgetMarks(book.work)
         saveProgress(book.work, previous ?: Progress(name))
         place(book, Shelf.Reading)
         return true
@@ -488,7 +492,11 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         withContext(Dispatchers.IO) {
             progress.first()[work]?.let { bookFile(it.file).delete() }
             readingStore.change {
-                it.copy(progress = it.progress - work, bookmarks = it.bookmarks - work)
+                it.copy(
+                    progress = it.progress - work,
+                    bookmarks = it.bookmarks - work,
+                    highlights = it.highlights - work,
+                )
             }
             if (keepShelves) return@withContext
             deleteCovers(work)
@@ -553,12 +561,22 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         }
 
     suspend fun changeBookmarks(work: Int, change: (List<Bookmark>) -> List<Bookmark>) =
-        readingStore.change { reading ->
-            val marks = change(reading.bookmarks[work].orEmpty())
-            val others = reading.bookmarks - work
-            val kept = if (marks.isEmpty()) others else others + (work to marks)
-            reading.copy(bookmarks = kept)
-        }
+        readingStore.change { it.copy(bookmarks = it.bookmarks.changed(work, change)) }
+
+    suspend fun changeHighlights(
+        work: Int,
+        change: (List<Highlight>) -> List<Highlight>,
+    ) = readingStore.change { it.copy(highlights = it.highlights.changed(work, change)) }
+
+    private suspend fun forgetMarks(work: Int) = readingStore.change {
+        it.copy(bookmarks = it.bookmarks - work, highlights = it.highlights - work)
+    }
+
+    suspend fun exportNotes(uri: Uri, format: NotesFormat, work: Int? = null): Boolean {
+        val marks = highlights.first().filterKeys { work == null || it == work }
+        val books = bookNotes(saved.first(), marks)
+        return context.writeTo(uri) { it.write(format.render(books).toByteArray()) }
+    }
 
     suspend fun updateSettings(change: (Settings) -> Settings) =
         libraryStore.change { it.copy(settings = change(it.settings)) }
@@ -693,6 +711,7 @@ internal fun backupOf(library: LibraryState, reading: ReadingState) = Backup(
     library.dismissed,
     library.settings,
     reading.bookmarks,
+    reading.highlights,
 )
 
 internal fun LibraryState.merge(imported: Backup) = copy(
@@ -704,11 +723,29 @@ internal fun LibraryState.merge(imported: Backup) = copy(
 internal fun ReadingState.merge(imported: Backup) = copy(
     progress = imported.progress.filterValues { BOOK_FILE.matches(it.file) } + progress,
     activity = maxPerDay(imported.activity, activity),
-    bookmarks = (imported.bookmarks.keys + bookmarks.keys).associateWith { work ->
-        (bookmarks[work].orEmpty() + imported.bookmarks[work].orEmpty())
-            .distinctBy { Triple(it.section, it.offset, it.page) }
+    bookmarks = joined(bookmarks, imported.bookmarks) {
+        Triple(it.section, it.offset, it.page)
+    },
+    highlights = joined(highlights, imported.highlights) {
+        Triple(it.section, it.start, it.end)
     },
 )
+
+private fun <T> joined(
+    current: Map<Int, List<T>>,
+    imported: Map<Int, List<T>>,
+    key: (T) -> Any,
+) = (imported.keys + current.keys).associateWith { work ->
+    (current[work].orEmpty() + imported[work].orEmpty()).distinctBy(key)
+}
+
+internal fun <T> Map<Int, List<T>>.changed(
+    work: Int,
+    change: (List<T>) -> List<T>,
+): Map<Int, List<T>> {
+    val marks = change(this[work].orEmpty())
+    return if (marks.isEmpty()) this - work else this + (work to marks)
+}
 
 private fun restoredSettings(imported: Settings, current: Settings) = imported.copy(
     onboarded = current.onboarded,
@@ -743,10 +780,13 @@ internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(
     progress = progress.entries.associate { (work, progress) ->
         work.moved(alias) to progress.copy(file = movedFile(progress.file, alias))
     },
-    bookmarks = bookmarks.entries
-        .groupBy({ it.key.moved(alias) }, { it.value })
-        .mapValues { (_, marks) -> marks.flatten() },
+    bookmarks = bookmarks.moved(alias),
+    highlights = highlights.moved(alias),
 )
+
+private fun <T> Map<Int, List<T>>.moved(alias: (Int) -> Int?) = entries
+    .groupBy({ it.key.moved(alias) }, { it.value })
+    .mapValues { (_, marks) -> marks.flatten() }
 
 private fun newestPerWork(entries: List<Saved>) =
     entries.groupBy { it.work }.map { (_, saved) -> saved.maxBy { it.updated } }

@@ -429,4 +429,32 @@
         <item quantity="many">To je asi %d hodiny čtení.</item>
         <item quantity="other">To je asi %d hodin čtení.</item>
     </plurals>
+    <string name="color_yellow">Žlutá</string>
+    <string name="color_green">Zelená</string>
+    <string name="color_blue">Modrá</string>
+    <string name="color_pink">Růžová</string>
+    <string name="notes">Poznámky</string>
+    <string name="no_highlights">Zatím žádná zvýraznění. Podržte slovo, tažením vyberte víc a zvolte barvu.</string>
+    <string name="add_note">Přidat poznámku</string>
+    <string name="edit_note">Upravit poznámku</string>
+    <string name="note">Poznámka</string>
+    <string name="note_hint">Co vás na této pasáži zaujalo?</string>
+    <string name="copy">Kopírovat</string>
+    <string name="copied">Zkopírováno</string>
+    <string name="export_notes">Exportovat poznámky</string>
+    <string name="share_markdown">Sdílet jako Markdown</string>
+    <string name="save_markdown">Uložit jako Markdown</string>
+    <string name="save_readwise">Uložit CSV pro Readwise</string>
+    <string name="notes_exported">Poznámky exportovány.</string>
+    <string name="notes_hint">Všechna zvýraznění a poznámky z vašich knih jako Markdown nebo CSV pro import do Readwise.</string>
+    <string name="notes_markdown">Exportovat Markdown</string>
+    <string name="notes_readwise">Exportovat CSV pro Readwise</string>
+    <string name="highlight_removed">Zvýraznění odstraněno</string>
+    <string name="undo">Zpět</string>
+    <plurals name="highlights">
+        <item quantity="one">%d zvýrazněná pasáž</item>
+        <item quantity="few">%d zvýrazněné pasáže</item>
+        <item quantity="many">%d zvýrazněné pasáže</item>
+        <item quantity="other">%d zvýrazněných pasáží</item>
+    </plurals>
 </resources>

@@ -35,8 +35,7 @@ jobs:
           cp android/design/shelf-icon.svg .github/site/icon.svg
           cp android/design/thumbnail.jpg .github/site/thumbnail.jpg
           webp="cwebp -quiet -q 75 -m 6 -sharp_yuv"
-          $webp android/design/covers.jpg -o .github/site/covers-light.webp
-          $webp android/design/covers-dark.jpg -o .github/site/covers-dark.webp
+          $webp android/design/covers.png -o .github/site/covers.webp
           light=android/app/fastlane/metadata/android/en-US/images/phoneScreenshots
           for theme in light dark; do
             source=$light

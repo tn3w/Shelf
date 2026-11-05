@@ -415,4 +415,31 @@
         <item quantity="many">Eso es cerca de %d de horas de lectura.</item>
         <item quantity="other">Eso es cerca de %d horas de lectura.</item>
     </plurals>
+    <string name="color_yellow">Amarillo</string>
+    <string name="color_green">Verde</string>
+    <string name="color_blue">Azul</string>
+    <string name="color_pink">Rosa</string>
+    <string name="notes">Notas</string>
+    <string name="no_highlights">Aún no hay subrayados. Mantén pulsada una palabra, arrastra para seleccionar más y elige un color.</string>
+    <string name="add_note">Añadir nota</string>
+    <string name="edit_note">Editar nota</string>
+    <string name="note">Nota</string>
+    <string name="note_hint">¿Qué te sugiere este pasaje?</string>
+    <string name="copy">Copiar</string>
+    <string name="copied">Copiado</string>
+    <string name="export_notes">Exportar notas</string>
+    <string name="share_markdown">Compartir como Markdown</string>
+    <string name="save_markdown">Guardar como Markdown</string>
+    <string name="save_readwise">Guardar CSV para Readwise</string>
+    <string name="notes_exported">Notas exportadas.</string>
+    <string name="notes_hint">Todos los subrayados y notas de tus libros, en Markdown o en un CSV que Readwise importa.</string>
+    <string name="notes_markdown">Exportar Markdown</string>
+    <string name="notes_readwise">Exportar CSV para Readwise</string>
+    <string name="highlight_removed">Subrayado eliminado</string>
+    <string name="undo">Deshacer</string>
+    <plurals name="highlights">
+        <item quantity="one">%d subrayado</item>
+        <item quantity="many">%d subrayados</item>
+        <item quantity="other">%d subrayados</item>
+    </plurals>
 </resources>

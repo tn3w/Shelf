@@ -404,4 +404,30 @@
         <item quantity="one">That’s about %d hour of reading.</item>
         <item quantity="other">That’s about %d hours of reading.</item>
     </plurals>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_green">Green</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_pink">Pink</string>
+    <string name="notes">Notes</string>
+    <string name="no_highlights">No highlights yet. Long-press a word, drag to select more, then pick a colour.</string>
+    <string name="add_note">Add note</string>
+    <string name="edit_note">Edit note</string>
+    <string name="note">Note</string>
+    <string name="note_hint">What does this passage make you think?</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Copied</string>
+    <string name="export_notes">Export notes</string>
+    <string name="share_markdown">Share as Markdown</string>
+    <string name="save_markdown">Save as Markdown</string>
+    <string name="save_readwise">Save CSV for Readwise</string>
+    <string name="notes_exported">Notes exported.</string>
+    <string name="notes_hint">Every highlight and note from your books, as Markdown or as a CSV that Readwise imports.</string>
+    <string name="notes_markdown">Export Markdown</string>
+    <string name="notes_readwise">Export CSV for Readwise</string>
+    <string name="highlight_removed">Highlight removed</string>
+    <string name="undo">Undo</string>
+    <plurals name="highlights">
+        <item quantity="one">%d highlight</item>
+        <item quantity="other">%d highlights</item>
+    </plurals>
 </resources>

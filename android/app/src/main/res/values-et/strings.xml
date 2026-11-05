@@ -401,4 +401,30 @@
         <item quantity="one">See on umbes %d tund lugemist.</item>
         <item quantity="other">See on umbes %d tundi lugemist.</item>
     </plurals>
+    <string name="color_yellow">Kollane</string>
+    <string name="color_green">Roheline</string>
+    <string name="color_blue">Sinine</string>
+    <string name="color_pink">Roosa</string>
+    <string name="notes">Märkmed</string>
+    <string name="no_highlights">Esiletõstmisi veel pole. Vajuta sõnale pikalt, lohista rohkema valimiseks ja vali värv.</string>
+    <string name="add_note">Lisa märge</string>
+    <string name="edit_note">Muuda märget</string>
+    <string name="note">Märge</string>
+    <string name="note_hint">Mida see lõik sinus tekitab?</string>
+    <string name="copy">Kopeeri</string>
+    <string name="copied">Kopeeritud</string>
+    <string name="export_notes">Ekspordi märkmed</string>
+    <string name="share_markdown">Jaga Markdownina</string>
+    <string name="save_markdown">Salvesta Markdownina</string>
+    <string name="save_readwise">Salvesta CSV Readwise’i jaoks</string>
+    <string name="notes_exported">Märkmed eksporditud.</string>
+    <string name="notes_hint">Kõik su raamatute esiletõstmised ja märkmed Markdownina või Readwise’i imporditava CSV-na.</string>
+    <string name="notes_markdown">Ekspordi Markdown</string>
+    <string name="notes_readwise">Ekspordi CSV Readwise’i jaoks</string>
+    <string name="highlight_removed">Esiletõst eemaldatud</string>
+    <string name="undo">Võta tagasi</string>
+    <plurals name="highlights">
+        <item quantity="one">%d esiletõst</item>
+        <item quantity="other">%d esiletõstu</item>
+    </plurals>
 </resources>

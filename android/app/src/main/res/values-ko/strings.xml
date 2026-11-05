@@ -387,4 +387,29 @@
     <plurals name="wrapped_hours">
         <item quantity="other">약 %d시간의 독서입니다.</item>
     </plurals>
+    <string name="color_yellow">노랑</string>
+    <string name="color_green">초록</string>
+    <string name="color_blue">파랑</string>
+    <string name="color_pink">분홍</string>
+    <string name="notes">하이라이트와 메모</string>
+    <string name="no_highlights">아직 하이라이트가 없습니다. 단어를 길게 누르고 드래그해 범위를 넓힌 뒤 색을 고르세요.</string>
+    <string name="add_note">메모 추가</string>
+    <string name="edit_note">메모 편집</string>
+    <string name="note">메모</string>
+    <string name="note_hint">이 구절에서 어떤 생각이 드나요?</string>
+    <string name="copy">복사</string>
+    <string name="copied">복사됨</string>
+    <string name="export_notes">메모 내보내기</string>
+    <string name="share_markdown">Markdown으로 공유</string>
+    <string name="save_markdown">Markdown으로 저장</string>
+    <string name="save_readwise">Readwise용 CSV로 저장</string>
+    <string name="notes_exported">메모를 내보냈습니다.</string>
+    <string name="notes_hint">책의 모든 하이라이트와 메모를 Markdown 또는 Readwise에서 가져올 수 있는 CSV로 내보냅니다.</string>
+    <string name="notes_markdown">Markdown 내보내기</string>
+    <string name="notes_readwise">Readwise용 CSV 내보내기</string>
+    <string name="highlight_removed">하이라이트를 삭제했습니다</string>
+    <string name="undo">실행취소</string>
+    <plurals name="highlights">
+        <item quantity="other">하이라이트 %d개</item>
+    </plurals>
 </resources>

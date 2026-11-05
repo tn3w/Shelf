@@ -3,6 +3,7 @@ package dev.tn3w.shelf.data
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
@@ -10,6 +11,9 @@ private val DATE = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val EXPORT_COLUMNS = listOf(
     "Title", "Author", "ISBN", "My Rating", "Date Read", "Date Added", "Exclusive Shelf",
 )
+private val READWISE_COLUMNS =
+    listOf("Highlight", "Title", "Author", "Note", "Location", "Date")
+private val READWISE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
@@ -114,11 +118,38 @@ private fun dateOf(value: String) = runCatching {
 private fun formatDate(millis: Long) =
     DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
 
-fun csvOf(entries: List<Saved>): String {
-    fun quoted(value: String): String {
-        val safe = if (value.firstOrNull() in FORMULA_STARTS) "'$value" else value
-        return "\"${safe.replace("\"", "\"\"")}\""
+private fun csvField(value: String): String {
+    val safe = if (value.firstOrNull() in FORMULA_STARTS) "'$value" else value
+    return "\"${safe.replace("\"", "\"\"")}\""
+}
+
+private fun csvText(rows: List<List<String>>) = rows.joinToString("") { row ->
+    row.joinToString(",", postfix = "\n", transform = ::csvField)
+}
+
+private fun readwiseDate(millis: Long) = if (millis <= 0) {
+    ""
+} else {
+    READWISE_DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC))
+}
+
+fun readwiseCsv(books: List<BookNotes>): String {
+    val rows = books.flatMap { book ->
+        book.highlights.inReadingOrder().mapIndexed { index, highlight ->
+            listOf(
+                highlight.text,
+                book.title,
+                book.author,
+                highlight.note,
+                "${index + 1}",
+                readwiseDate(highlight.created),
+            )
+        }
     }
+    return csvText(listOf(READWISE_COLUMNS) + rows)
+}
+
+fun csvOf(entries: List<Saved>): String {
     val rows = entries.map { saved ->
         val date = formatDate(saved.updated)
         listOf(
@@ -131,7 +162,5 @@ fun csvOf(entries: List<Saved>): String {
             SHELF_NAMES.getValue(saved.shelf),
         )
     }
-    return (listOf(EXPORT_COLUMNS) + rows).joinToString("") { row ->
-        row.joinToString(",", postfix = "\n", transform = ::quoted)
-    }
+    return csvText(listOf(EXPORT_COLUMNS) + rows)
 }

@@ -401,4 +401,30 @@
         <item quantity="one">Se on noin %d tunti lukemista.</item>
         <item quantity="other">Se on noin %d tuntia lukemista.</item>
     </plurals>
+    <string name="color_yellow">Keltainen</string>
+    <string name="color_green">Vihreä</string>
+    <string name="color_blue">Sininen</string>
+    <string name="color_pink">Pinkki</string>
+    <string name="notes">Muistiinpanot</string>
+    <string name="no_highlights">Ei vielä korostuksia. Paina sanaa pitkään, vedä valitaksesi lisää ja valitse väri.</string>
+    <string name="add_note">Lisää muistiinpano</string>
+    <string name="edit_note">Muokkaa muistiinpanoa</string>
+    <string name="note">Muistiinpano</string>
+    <string name="note_hint">Mitä tämä kohta herättää sinussa?</string>
+    <string name="copy">Kopioi</string>
+    <string name="copied">Kopioitu</string>
+    <string name="export_notes">Vie muistiinpanot</string>
+    <string name="share_markdown">Jaa Markdownina</string>
+    <string name="save_markdown">Tallenna Markdownina</string>
+    <string name="save_readwise">Tallenna CSV Readwiseen</string>
+    <string name="notes_exported">Muistiinpanot viety.</string>
+    <string name="notes_hint">Kaikki kirjojesi korostukset ja muistiinpanot Markdownina tai Readwiseen tuotavana CSV:nä.</string>
+    <string name="notes_markdown">Vie Markdown</string>
+    <string name="notes_readwise">Vie CSV Readwiseen</string>
+    <string name="highlight_removed">Korostus poistettu</string>
+    <string name="undo">Kumoa</string>
+    <plurals name="highlights">
+        <item quantity="one">%d korostus</item>
+        <item quantity="other">%d korostusta</item>
+    </plurals>
 </resources>

@@ -65,8 +65,8 @@ genres per month, plus your year in books.
 <td valign="top">
 
 ### 📖 Read your ebooks
-Open EPUB, Kindle, PDF, comics, Word files and more. Paper and night pages, e-ink mode,
-page turns with volume keys.
+Open EPUB, Kindle, PDF, comics, Word files and more. Highlight in four colours, add
+notes, export them as Markdown. Paper and night pages, e-ink mode, volume-key turns.
 
 </td>
 <td valign="top">
@@ -93,6 +93,10 @@ leaves your phone.
 Tap the streak card for monthly pages, books and genres. **Your year in books** replays
 it as stories with your covers and ends on a card to share. All on your phone.
 
+## Highlights and notes
+
+Long-press to highlight, add a note, then export as Markdown or a CSV for Readwise.
+
 ## Switch from Goodreads or StoryGraph in a minute
 
 | 1. Export | 2. Import | 3. Done |
@@ -102,7 +106,7 @@ it as stories with your covers and ends on a card to share. All on your phone.
 ## No cover? Shelf draws one
 
 <p align="center">
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/covers-dark.jpg"><img src="android/design/covers.jpg" width="100%" alt="Eight covers drawn on device: dystopian, adventure, science fiction, romance, vintage, fantasy, mystery and spiritual"></picture>
+<img src="android/design/covers.png" width="100%" alt="Eight covers drawn on device: dystopian, adventure, science fiction, romance, vintage, fantasy, mystery and spiritual">
 </p>
 
 Every book without a cover gets its own, drawn on your phone in the style of its genre.
@@ -165,7 +169,8 @@ Shelf needs Android 8 or newer.
 <summary><b>Can I back up my library?</b></summary>
 
 Yes. Shelf can save a daily backup to a folder you choose, for example a Syncthing
-folder. You can also export everything as CSV, and move your library to a new phone.
+folder. You can also export everything as CSV, your highlights and notes as Markdown,
+and move your library to a new phone.
 </details>
 
 <details>

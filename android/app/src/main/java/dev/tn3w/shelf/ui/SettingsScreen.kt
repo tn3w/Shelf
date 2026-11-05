@@ -98,6 +98,8 @@ enum class SettingsAction {
     BackupImport,
     CsvImport,
     CsvExport,
+    NotesExport,
+    ReadwiseExport,
 }
 
 data class ActionStatus(val busy: Boolean = false, @StringRes val message: Int? = null)

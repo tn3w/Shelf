@@ -36,6 +36,29 @@ fun DataSettings() {
     SettingsGroup(stringResource(R.string.csv), stringResource(R.string.csv_hint)) {
         CsvRows()
     }
+    SettingsGroup(stringResource(R.string.notes), stringResource(R.string.notes_hint)) {
+        NotesRows()
+    }
+}
+
+@Composable
+private fun NotesRows() {
+    NotesRow(R.string.notes_markdown, SettingsAction.NotesExport, NotesFormat.Markdown)
+    NotesRow(R.string.notes_readwise, SettingsAction.ReadwiseExport, NotesFormat.Readwise)
+}
+
+@Composable
+private fun NotesRow(@StringRes title: Int, action: SettingsAction, format: NotesFormat) {
+    val viewModel = settingsViewModel()
+    FileRow(
+        title,
+        action,
+        Icons.Outlined.Upload,
+        CreateDocument(format.mimeType),
+        notesFileName("shelf", format),
+        R.string.notes_exported,
+        R.string.export_failed,
+    ) { viewModel.library.exportNotes(it, format) }
 }
 
 @Composable
