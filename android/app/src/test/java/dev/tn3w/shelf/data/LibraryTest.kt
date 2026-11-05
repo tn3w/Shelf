@@ -377,4 +377,29 @@ class LibraryTest {
         val stored = """{"work":1,"shelf":"Read","updated":0}"""
         assertEquals(null, json.decodeFromString<Saved>(stored).libraryCover)
     }
+
+    @Test
+    fun placingTracksStartAndFinishDates() {
+        val book = Book(SYNTHETIC + 1, "T")
+        val wanted = placed(book, Shelf.Want, null, now = 10)
+        assertEquals(0L to 0L, wanted.started to wanted.finished)
+        val reading = placed(book, Shelf.Reading, wanted, now = 20)
+        assertEquals(20L, reading.started)
+        val again = placed(book, Shelf.Reading, reading.copy(rating = 4), now = 30)
+        assertEquals(20L to 4, again.started to again.rating)
+        val read = placed(book, Shelf.Read, again, now = 40)
+        assertEquals(20L to 40L, read.started to read.finished)
+        assertEquals(40L, placed(book, Shelf.Read, read, now = 50).finished)
+        assertEquals(60L, placed(book, Shelf.Reading, read, now = 60).started)
+    }
+
+    @Test
+    fun editingKeepsLegacyFinishDate() {
+        val entries = listOf(Saved(1, Shelf.Read, 5), Saved(2, Shelf.Reading, 6))
+        val edited = entries.edited(1, now = 9) { it.copy(rating = 5) }
+        assertEquals(Saved(1, Shelf.Read, 9, rating = 5, finished = 5), edited[0])
+        assertEquals(entries[1], edited[1])
+        val book = Book(1, "T")
+        assertEquals(5L, placed(book, Shelf.Read, entries[0], now = 9).finished)
+    }
 }

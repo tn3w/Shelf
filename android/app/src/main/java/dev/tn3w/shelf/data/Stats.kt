@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 private const val PAGES_PER_HOUR = 40
 private const val MARATHON_DAYS = 21
@@ -64,6 +65,8 @@ data class Recap(
             .orEmpty()
     val topAuthor
         get() = authorBooks.firstOrNull()?.author
+    val averageRating
+        get() = books.map { it.rating }.filter { it > 0 }.ifEmpty { null }?.average()
     val readerType
         get() = when {
             longestStreak >= MARATHON_DAYS -> ReaderType.Marathoner
@@ -86,12 +89,23 @@ fun wrappedYear(today: LocalDate) = when (today.month) {
     else -> null
 }
 
-fun Saved.finishedOn(zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
-    if (shelf == Shelf.Read && updated > 0) {
-        Instant.ofEpochMilli(updated).atZone(zone).toLocalDate()
-    } else {
-        null
-    }
+private fun dayOf(millis: Long, zone: ZoneId) =
+    millis.takeIf { it > 0 }?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+
+fun millisOf(day: LocalDate, zone: ZoneId = ZoneId.systemDefault()) =
+    day.atStartOfDay(zone).toInstant().toEpochMilli()
+
+fun Saved.finishedOn(zone: ZoneId = ZoneId.systemDefault()) =
+    if (shelf == Shelf.Read) dayOf(finishedAt, zone) else null
+
+fun Saved.startedOn(zone: ZoneId = ZoneId.systemDefault()) =
+    if (shelf == Shelf.Want) null else dayOf(started, zone)
+
+fun Saved.daysToFinish(zone: ZoneId = ZoneId.systemDefault()): Int? {
+    val start = startedOn(zone) ?: return null
+    val end = finishedOn(zone) ?: return null
+    return ChronoUnit.DAYS.between(start, end).toInt().coerceAtLeast(0) + 1
+}
 
 private fun readingDays(activity: Map<String, Int>) = activity
     .filterValues { it > 0 }
@@ -141,7 +155,7 @@ fun recapOf(
 ): Recap {
     val finished = entries
         .filter { it.finishedOn(zone)?.year == year }
-        .sortedBy { it.updated }
+        .sortedBy { it.finishedAt }
     val days = readingDays(activity).filterKeys { it.year == year }
     val months = Month.entries.map { month ->
         val current = YearMonth.of(year, month)

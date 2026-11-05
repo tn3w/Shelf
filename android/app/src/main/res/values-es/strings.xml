@@ -442,4 +442,11 @@
         <item quantity="many">%d subrayados</item>
         <item quantity="other">%d subrayados</item>
     </plurals>
+    <string name="your_reading">Tu lectura</string>
+    <string name="rate_stars">%d de 5 estrellas</string>
+    <string name="started_on">Empezado</string>
+    <string name="finished_on">Terminado</string>
+    <string name="add_date">Añadir fecha</string>
+    <string name="read_in">Leído en %s</string>
+    <string name="average_rating">%s de media</string>
 </resources>

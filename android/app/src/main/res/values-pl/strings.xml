@@ -457,4 +457,11 @@
         <item quantity="many">%d zakreśleń</item>
         <item quantity="other">%d zakreślenia</item>
     </plurals>
+    <string name="your_reading">Twoje czytanie</string>
+    <string name="rate_stars">%d z 5 gwiazdek</string>
+    <string name="started_on">Rozpoczęto</string>
+    <string name="finished_on">Ukończono</string>
+    <string name="add_date">Dodaj datę</string>
+    <string name="read_in">Przeczytano w %s</string>
+    <string name="average_rating">średnio %s</string>
 </resources>

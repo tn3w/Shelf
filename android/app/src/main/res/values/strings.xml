@@ -430,4 +430,11 @@
         <item quantity="one">%d highlight</item>
         <item quantity="other">%d highlights</item>
     </plurals>
+    <string name="your_reading">Your reading</string>
+    <string name="rate_stars">%d of 5 stars</string>
+    <string name="started_on">Started</string>
+    <string name="finished_on">Finished</string>
+    <string name="add_date">Add date</string>
+    <string name="read_in">Read in %s</string>
+    <string name="average_rating">%s average</string>
 </resources>

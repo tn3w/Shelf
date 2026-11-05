@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Insights
@@ -86,16 +88,7 @@ fun StatsScreen(navigator: Navigator) {
             item { SectionHeader(stringResource(R.string.genres)) }
             item { GenreBars(current.genres) }
         }
-        if (current.books.isNotEmpty()) {
-            item {
-                BookSection(
-                    stringResource(R.string.finished_in, year),
-                    current.books.reversed().map { it.toBook() },
-                    "stats-$year",
-                    navigator::book,
-                )
-            }
-        }
+        if (current.books.isNotEmpty()) readingLog(current, navigator)
         item {
             Hint(
                 stringResource(R.string.stats_private),
@@ -104,6 +97,46 @@ fun StatsScreen(navigator: Navigator) {
         }
     }
 }
+
+private fun LazyListScope.readingLog(recap: Recap, navigator: Navigator) {
+    item {
+        val count = recap.books.size
+        val average = recap.averageRating?.let {
+            val locale = LocalConfiguration.current.locales[0]
+            stringResource(R.string.average_rating, "★ %.1f".format(locale, it))
+        }
+        val books = pluralStringResource(R.plurals.books, count, count)
+        SectionHeader(
+            stringResource(R.string.finished_in, recap.year),
+            listOfNotNull(books, average).joinToString(" · "),
+        )
+    }
+    recap.months.reversed().filter { it.books.isNotEmpty() }.forEach { month ->
+        item(key = "month-${month.month}") {
+            Text(
+                monthName(month.month),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+            )
+        }
+        items(month.books.reversed(), key = { it.work }) { saved ->
+            BookListItem(
+                saved.toBook(),
+                "stats-${recap.year}",
+                detail = logDetail(saved),
+                onOpen = navigator::book,
+            )
+        }
+    }
+}
+
+@Composable
+private fun logDetail(saved: Saved) = listOfNotNull(
+    saved.finishedOn()?.let { dateLabel(it) },
+    saved.rating.takeIf { it > 0 }?.let { "★".repeat(it) },
+    saved.daysToFinish()?.let { days(it) },
+).joinToString(" · ")
 
 @Composable
 private fun YearChips(years: List<Int>, selected: Int, onSelect: (Int) -> Unit) {

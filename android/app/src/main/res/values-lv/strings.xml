@@ -441,4 +441,11 @@
         <item quantity="one">%d izcēlums</item>
         <item quantity="other">%d izcēlumi</item>
     </plurals>
+    <string name="your_reading">Tava lasīšana</string>
+    <string name="rate_stars">%d no 5 zvaigznēm</string>
+    <string name="started_on">Sākta</string>
+    <string name="finished_on">Pabeigta</string>
+    <string name="add_date">Pievienot datumu</string>
+    <string name="read_in">Izlasīta %s</string>
+    <string name="average_rating">vidēji %s</string>
 </resources>

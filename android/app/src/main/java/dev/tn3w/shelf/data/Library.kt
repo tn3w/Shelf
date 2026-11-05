@@ -75,7 +75,39 @@ data class Saved(
     val isbn: String = "",
     val added: Long = 0,
     val libraryCover: LibraryCover? = null,
+    val started: Long = 0,
+    val finished: Long = 0,
 )
+
+val Saved.finishedAt
+    get() = finished.takeIf { it > 0 } ?: updated
+
+fun Saved.dated() = if (shelf == Shelf.Read) copy(finished = finishedAt) else this
+
+internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Saved {
+    val kept = previous?.dated()
+    val started = when {
+        shelf == Shelf.Reading && kept?.shelf != Shelf.Reading -> now
+        else -> kept?.started ?: 0
+    }
+    val finished = when {
+        shelf != Shelf.Read -> kept?.finished ?: 0
+        kept?.shelf == Shelf.Read -> kept.finished
+        else -> now
+    }
+    return book.toSaved(shelf).copy(
+        updated = now,
+        rating = kept?.rating ?: 0,
+        isbn = kept?.isbn.orEmpty(),
+        added = kept?.added?.takeIf { it > 0 } ?: now,
+        started = started,
+        finished = finished,
+    )
+}
+
+internal fun List<Saved>.edited(work: Int, now: Long, change: (Saved) -> Saved) = map {
+    if (it.work == work) change(it.dated()).copy(updated = now) else it
+}
 
 const val MAX_DAILY_GOAL = 500
 
@@ -509,12 +541,13 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val entries = library.entries
         val previous = entries.firstOrNull { it.work == book.work }
         val others = entries.filter { it.work != book.work }
-        val placed = shelf?.let(book::toSaved)?.copy(
-            rating = previous?.rating ?: 0,
-            isbn = previous?.isbn.orEmpty(),
-            added = previous?.added?.takeIf { it > 0 } ?: System.currentTimeMillis(),
-        )
-        library.copy(entries = placed?.let { others + it } ?: others)
+        val now = System.currentTimeMillis()
+        val entry = shelf?.let { placed(book, it, previous, now) }
+        library.copy(entries = entry?.let { others + it } ?: others)
+    }
+
+    suspend fun edit(work: Int, change: (Saved) -> Saved) = libraryStore.change {
+        it.copy(entries = it.entries.edited(work, System.currentTimeMillis(), change))
     }
 
     suspend fun importCsv(

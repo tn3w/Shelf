@@ -149,4 +149,28 @@ class StatsTest {
         assertEquals(YEAR - 1, wrappedYear(day(1, 31)))
         assertNull(wrappedYear(day(2, 1)))
     }
+
+    @Test
+    fun finishDateOverridesLastUpdate() {
+        val entry = finished(1, day(5, 1)).copy(
+            started = millis(day(1, 10)),
+            finished = millis(day(1, 19)),
+            rating = 4,
+        )
+        assertEquals(day(1, 19), entry.finishedOn(ZONE))
+        assertEquals(day(1, 10), entry.startedOn(ZONE))
+        assertEquals(10, entry.daysToFinish(ZONE))
+        val recap =
+            recapOf(YEAR, listOf(entry, finished(2, day(2, 1))), emptyMap(), zone = ZONE)
+        assertEquals(listOf(1), recap.months[0].books.map { it.work })
+        assertEquals(4.0, recap.averageRating)
+    }
+
+    @Test
+    fun unstartedOrUnfinishedBooksHaveNoDuration() {
+        assertNull(finished(1, day(1, 1)).daysToFinish(ZONE))
+        val reading = Saved(2, Shelf.Reading, 1, started = millis(day(1, 1)))
+        assertNull(reading.daysToFinish(ZONE))
+        assertNull(recapOf(YEAR, emptyList(), emptyMap(), zone = ZONE).averageRating)
+    }
 }

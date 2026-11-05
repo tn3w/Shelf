@@ -11,10 +11,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
@@ -31,6 +34,11 @@ import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+
+private const val MAX_STARS = 5
 
 data class Details(
     val book: Book,
@@ -71,6 +79,10 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         }
     }
 
+    fun edit(work: Int, change: (Saved) -> Saved) {
+        detached { library.edit(work, change) }
+    }
+
     fun delete(book: Book) {
         detached { library.deleteBook(book.work, keepShelves = !book.isLocal) }
     }
@@ -109,6 +121,9 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         item { BackBar(navigator::back) }
         if (book == null) return@LazyColumn
         item { BookHeader(book, entry?.shelf, origin, navigator, viewModel) }
+        if (entry != null && entry.shelf != Shelf.Want) {
+            item { ReadingCard(entry) { viewModel.edit(work, it) } }
+        }
         val tags = details?.tags.orEmpty()
         if (tags.isNotEmpty()) item { TagFlow(tags, navigator) }
         val description = details?.description?.takeIf { it.text.isNotBlank() }
@@ -276,6 +291,146 @@ private fun ReadButton(
         } ?: stringResource(if (position != null) R.string.resume else R.string.start)
         Text(label, Modifier.padding(start = 8.dp))
     }
+}
+
+private enum class ReadingDate { Started, Finished }
+
+@Composable
+private fun ReadingCard(entry: Saved, onEdit: ((Saved) -> Saved) -> Unit) {
+    var picking by rememberSaveable { mutableStateOf<ReadingDate?>(null) }
+    val started = entry.startedOn()
+    val finished = entry.finishedOn()
+    Surface(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = ScreenPadding)
+            .padding(bottom = 16.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.your_reading),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            StarRating(entry.rating) { stars ->
+                onEdit { it.copy(rating = if (it.rating == stars) 0 else stars) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val modifier = Modifier.weight(1f)
+                DateTile(R.string.started_on, started, modifier) {
+                    picking = ReadingDate.Started
+                }
+                if (entry.shelf == Shelf.Read) {
+                    DateTile(R.string.finished_on, finished, modifier) {
+                        picking = ReadingDate.Finished
+                    }
+                }
+            }
+            entry.daysToFinish()?.let { Hint(stringResource(R.string.read_in, days(it))) }
+        }
+    }
+    val today = LocalDate.now()
+    when (picking) {
+        ReadingDate.Started -> ReadingDatePicker(
+            started ?: finished ?: today,
+            LocalDate.MIN..(finished ?: today),
+            onDismiss = { picking = null },
+        ) { day -> onEdit { it.copy(started = millisOf(day)) } }
+
+        ReadingDate.Finished -> ReadingDatePicker(
+            finished ?: today,
+            (started ?: LocalDate.MIN)..today,
+            onDismiss = { picking = null },
+        ) { day -> onEdit { it.copy(finished = millisOf(day)) } }
+
+        null -> Unit
+    }
+}
+
+@Composable
+private fun StarRating(rating: Int, onRate: (Int) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.offset(x = (-12).dp)) {
+        (1..MAX_STARS).forEach { stars ->
+            val filled = stars <= rating
+            IconButton(onClick = { onRate(stars) }) {
+                Icon(
+                    if (filled) Icons.Rounded.Star else Icons.Rounded.StarOutline,
+                    stringResource(R.string.rate_stars, stars),
+                    Modifier.size(32.dp),
+                    tint = if (filled) colors.primary else colors.outline,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DateTile(
+    @StringRes label: Int,
+    day: LocalDate?,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    OutlinedCard(onClick = onClick, modifier = modifier) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Hint(stringResource(label))
+            Text(
+                day?.let { dateLabel(it) } ?: stringResource(R.string.add_date),
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (day ==
+                    null
+                ) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    Color.Unspecified
+                },
+            )
+        }
+    }
+}
+
+private fun utcMillis(day: LocalDate) = millisOf(day, ZoneOffset.UTC)
+
+private fun utcDay(millis: Long) =
+    Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReadingDatePicker(
+    initial: LocalDate,
+    range: ClosedRange<LocalDate>,
+    onDismiss: () -> Unit,
+    onPick: (LocalDate) -> Unit,
+) {
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = utcMillis(initial.coerceIn(range)),
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) =
+                utcDay(utcTimeMillis) in range
+
+            override fun isSelectableYear(year: Int) =
+                year in range.start.year..range.endInclusive.year
+        },
+    )
+    fun confirm() {
+        state.selectedDateMillis?.let { onPick(utcDay(it)) }
+        onDismiss()
+    }
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = ::confirm, enabled = state.selectedDateMillis != null) {
+                Text(stringResource(R.string.done))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    ) { DatePicker(state) }
 }
 
 @Composable

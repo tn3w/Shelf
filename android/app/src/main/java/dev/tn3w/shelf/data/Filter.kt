@@ -71,7 +71,7 @@ fun List<Saved>.sorted(sort: LibrarySort): List<Saved> {
         LibrarySort.Rating -> compareByDescending<Saved> { it.rating }.then(byTitle)
 
         LibrarySort.Finished -> compareByDescending<Saved> { it.shelf == Shelf.Read }
-            .thenByDescending { it.updated }
+            .thenByDescending { it.finishedAt }
     }
     return sortedWith(comparator)
 }

@@ -43,7 +43,7 @@
     <string name="for_you">あなたへのおすすめ</string>
     <string name="for_you_subtitle">あなたのライブラリに基づいています。</string>
     <string name="formats">本の種類</string>
-    <string name="genres">ジャンル</string>
+    <string name="genres">ジャンル一覧</string>
     <string name="goal_reached">今日の目標を達成しました。また明日！</string>
     <string name="home">ホーム</string>
     <string name="import_to_start">ファイルをインポートして始める</string>
@@ -223,9 +223,9 @@
     <string name="margins">余白</string>
     <string name="typeface">書体</string>
     <string name="page_color">ページの色</string>
-    <string name="spacing_compact">狭い</string>
+    <string name="spacing_compact">詰める</string>
     <string name="normal">標準</string>
-    <string name="spacing_relaxed">広い</string>
+    <string name="spacing_relaxed">ゆったり</string>
     <string name="margin_narrow">狭い</string>
     <string name="margin_wide">広い</string>
     <string name="typeface_serif">明朝体</string>
@@ -312,7 +312,7 @@
     <string name="free_ebook">無料の電子書籍</string>
     <string name="free_books_retry">もう一度試す</string>
     <string name="provider_own">独自のソース</string>
-    <string name="free_books_own">独自のソース</string>
+    <string name="free_books_own">独自のソース一覧</string>
     <string name="free_books_own_hint">任意のサイト、ローカルサーバー、API をデータとして記述します: 検索、抽出、追加リクエスト、ダウンロード。スクリプトは実行されません。この端末にのみ保存されます。書き出したファイルには API キーなどのヘッダーが含まれます。</string>
     <string name="free_books_add">ソースを作成</string>
     <string name="free_books_import">ファイルをインポート</string>
@@ -332,7 +332,7 @@
     <string name="free_books_headers">ヘッダー</string>
     <string name="free_books_header_add">ヘッダーを追加</string>
     <string name="free_books_header_value">値</string>
-    <string name="free_books_languages">言語</string>
+    <string name="free_books_languages">言語一覧</string>
     <string name="free_books_attribute">属性</string>
     <string name="free_books_form_help">{name} は変数を URL エンコードして、{+name} はそのまま挿入します。検索では {query}、{title}、{author}、{titleWords}、{surname}、{language}、{language3}、{languageName}、{isbn}、{isbns} が使えます。各ルールはその名前を追加します。{isbn} を含む検索は本の ISBN を 1 つずつ試し、すべての結果を残します。ルールは CSS、JSON パス、属性、正規表現 (最初のグループ) の順に実行されます。XML ページは XML として解析されます。size (バイト) と format という名前のルールはファイルを表し、skip は項目を除外します。相対リンクは前のページを基準に解決されます。</string>
     <string name="free_books_test">テスト</string>
@@ -411,4 +411,11 @@
     <plurals name="highlights">
         <item quantity="other">%d件のハイライト</item>
     </plurals>
+    <string name="your_reading">あなたの読書</string>
+    <string name="rate_stars">5つ星中%d</string>
+    <string name="started_on">読み始め</string>
+    <string name="finished_on">読了</string>
+    <string name="add_date">日付を追加</string>
+    <string name="read_in">%sで読了</string>
+    <string name="average_rating">平均 %s</string>
 </resources>

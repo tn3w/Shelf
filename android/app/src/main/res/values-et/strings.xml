@@ -427,4 +427,11 @@
         <item quantity="one">%d esiletõst</item>
         <item quantity="other">%d esiletõstu</item>
     </plurals>
+    <string name="your_reading">Sinu lugemine</string>
+    <string name="rate_stars">%d tärni 5-st</string>
+    <string name="started_on">Alustatud</string>
+    <string name="finished_on">Lõpetatud</string>
+    <string name="add_date">Lisa kuupäev</string>
+    <string name="read_in">Loetud %s jooksul</string>
+    <string name="average_rating">keskmine %s</string>
 </resources>

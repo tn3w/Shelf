@@ -427,4 +427,11 @@
         <item quantity="one">%d markering</item>
         <item quantity="other">%d markeringar</item>
     </plurals>
+    <string name="your_reading">Din läsning</string>
+    <string name="rate_stars">%d av 5 stjärnor</string>
+    <string name="started_on">Påbörjad</string>
+    <string name="finished_on">Utläst</string>
+    <string name="add_date">Lägg till datum</string>
+    <string name="read_in">Läst på %s</string>
+    <string name="average_rating">%s i snitt</string>
 </resources>

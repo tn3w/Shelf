@@ -259,7 +259,8 @@ private fun LibraryList(
         items(entries, key = { it.work }) { saved ->
             val detail = listOfNotNull(
                 saved.author.ifEmpty { null },
-                stringResource(saved.shelf.label),
+                saved.finishedOn()?.let { dateLabel(it) }
+                    ?: stringResource(saved.shelf.label),
                 saved.rating.takeIf { it > 0 }?.let { "★ $it" },
             )
             Column(Modifier.animateItem()) {

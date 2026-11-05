@@ -151,13 +151,12 @@ fun readwiseCsv(books: List<BookNotes>): String {
 
 fun csvOf(entries: List<Saved>): String {
     val rows = entries.map { saved ->
-        val date = formatDate(saved.updated)
         listOf(
             saved.title,
             saved.author,
             saved.isbn,
             saved.rating.toString(),
-            if (saved.shelf == Shelf.Read) date else "",
+            if (saved.shelf == Shelf.Read) formatDate(saved.finishedAt) else "",
             formatDate(saved.added.takeIf { it > 0 } ?: saved.updated),
             SHELF_NAMES.getValue(saved.shelf),
         )

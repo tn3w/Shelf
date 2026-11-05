@@ -42,7 +42,7 @@
     <string name="for_you">추천</string>
     <string name="for_you_subtitle">내 서재를 바탕으로.</string>
     <string name="formats">책 종류</string>
-    <string name="genres">장르</string>
+    <string name="genres">장르 목록</string>
     <string name="goal_reached">오늘 목표 달성. 내일 또 만나요!</string>
     <string name="home">홈</string>
     <string name="import_to_start">파일을 가져와 시작하세요</string>
@@ -213,9 +213,9 @@
     <string name="margins">여백</string>
     <string name="typeface">글꼴</string>
     <string name="page_color">페이지 색</string>
-    <string name="spacing_compact">좁게</string>
+    <string name="spacing_compact">촘촘하게</string>
     <string name="normal">보통</string>
-    <string name="spacing_relaxed">넓게</string>
+    <string name="spacing_relaxed">여유 있게</string>
     <string name="margin_narrow">좁게</string>
     <string name="margin_wide">넓게</string>
     <string name="typeface_serif">세리프</string>
@@ -302,7 +302,7 @@
     <string name="free_ebook">무료 전자책</string>
     <string name="free_books_retry">다시 시도</string>
     <string name="provider_own">내 소스</string>
-    <string name="free_books_own">내 소스</string>
+    <string name="free_books_own">내 소스 목록</string>
     <string name="free_books_own_hint">모든 사이트, 로컬 서버 또는 API를 데이터로 기술합니다: 검색, 추출, 추가 요청, 다운로드. 스크립트는 실행되지 않습니다. 이 기기에만 저장되며, 내보낸 파일에는 API 키 같은 헤더가 포함됩니다.</string>
     <string name="free_books_add">소스 만들기</string>
     <string name="free_books_import">파일 가져오기</string>
@@ -322,7 +322,7 @@
     <string name="free_books_headers">헤더</string>
     <string name="free_books_header_add">헤더 추가</string>
     <string name="free_books_header_value">값</string>
-    <string name="free_books_languages">언어</string>
+    <string name="free_books_languages">언어 목록</string>
     <string name="free_books_attribute">속성</string>
     <string name="free_books_form_help">{name}은 변수를 URL 인코딩해 넣고, {+name}은 그대로 넣습니다. 검색은 {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn}, {isbns}를 알며, 각 규칙은 자신의 이름을 추가합니다. {isbn}을 쓰는 검색은 책의 ISBN을 하나씩 시도하고 모든 결과를 유지합니다. 규칙은 CSS, JSON 경로, 속성, 정규식(첫 번째 그룹) 순으로 실행되며 XML 페이지는 XML로 해석합니다. size(바이트)와 format이라는 이름의 규칙은 파일을 설명하고, skip은 항목을 건너뜁니다. 상대 링크는 이전 페이지를 기준으로 해석합니다.</string>
     <string name="free_books_test">테스트</string>
@@ -412,4 +412,11 @@
     <plurals name="highlights">
         <item quantity="other">하이라이트 %d개</item>
     </plurals>
+    <string name="your_reading">나의 독서</string>
+    <string name="rate_stars">별 5개 중 %d개</string>
+    <string name="started_on">시작</string>
+    <string name="finished_on">완독</string>
+    <string name="add_date">날짜 추가</string>
+    <string name="read_in">%s 만에 완독</string>
+    <string name="average_rating">평균 %s</string>
 </resources>

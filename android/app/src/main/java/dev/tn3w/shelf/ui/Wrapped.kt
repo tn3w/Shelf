@@ -335,7 +335,7 @@ internal fun monthName(
 }
 
 @Composable
-private fun dateLabel(day: LocalDate): String {
+internal fun dateLabel(day: LocalDate): String {
     val locale = LocalConfiguration.current.locales[0]
     val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
     return day.format(format.withLocale(locale))

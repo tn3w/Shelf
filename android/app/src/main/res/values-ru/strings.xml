@@ -457,4 +457,11 @@
         <item quantity="many">%d выделений</item>
         <item quantity="other">%d выделения</item>
     </plurals>
+    <string name="your_reading">Ваше чтение</string>
+    <string name="rate_stars">%d из 5 звёзд</string>
+    <string name="started_on">Начато</string>
+    <string name="finished_on">Закончено</string>
+    <string name="add_date">Добавить дату</string>
+    <string name="read_in">Прочитано за %s</string>
+    <string name="average_rating">в среднем %s</string>
 </resources>

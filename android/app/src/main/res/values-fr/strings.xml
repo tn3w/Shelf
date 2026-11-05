@@ -436,10 +436,17 @@
     <string name="notes_markdown">Exporter en Markdown</string>
     <string name="notes_readwise">Exporter en CSV pour Readwise</string>
     <string name="highlight_removed">Surlignage supprimé</string>
-    <string name="undo">Annuler</string>
+    <string name="undo">Défaire</string>
     <plurals name="highlights">
         <item quantity="one">%d surlignage</item>
         <item quantity="many">%d surlignages</item>
         <item quantity="other">%d surlignages</item>
     </plurals>
+    <string name="your_reading">Votre lecture</string>
+    <string name="rate_stars">%d étoiles sur 5</string>
+    <string name="started_on">Commencé</string>
+    <string name="finished_on">Fini</string>
+    <string name="add_date">Ajouter une date</string>
+    <string name="read_in">Lu en %s</string>
+    <string name="average_rating">%s de moyenne</string>
 </resources>

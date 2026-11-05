@@ -450,11 +450,18 @@
     <string name="notes_markdown">Exportovat Markdown</string>
     <string name="notes_readwise">Exportovat CSV pro Readwise</string>
     <string name="highlight_removed">Zvýraznění odstraněno</string>
-    <string name="undo">Zpět</string>
+    <string name="undo">Vrátit zpět</string>
     <plurals name="highlights">
         <item quantity="one">%d zvýrazněná pasáž</item>
         <item quantity="few">%d zvýrazněné pasáže</item>
         <item quantity="many">%d zvýrazněné pasáže</item>
         <item quantity="other">%d zvýrazněných pasáží</item>
     </plurals>
+    <string name="your_reading">Vaše čtení</string>
+    <string name="rate_stars">%d z 5 hvězd</string>
+    <string name="started_on">Začato</string>
+    <string name="finished_on">Dočteno</string>
+    <string name="add_date">Přidat datum</string>
+    <string name="read_in">Přečteno za %s</string>
+    <string name="average_rating">průměr %s</string>
 </resources>

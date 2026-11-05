@@ -427,4 +427,11 @@
         <item quantity="one">%d Markierung</item>
         <item quantity="other">%d Markierungen</item>
     </plurals>
+    <string name="your_reading">Dein Lesen</string>
+    <string name="rate_stars">%d von 5 Sternen</string>
+    <string name="started_on">Begonnen</string>
+    <string name="finished_on">Beendet</string>
+    <string name="add_date">Datum hinzufügen</string>
+    <string name="read_in">Gelesen in %s</string>
+    <string name="average_rating">%s im Schnitt</string>
 </resources>

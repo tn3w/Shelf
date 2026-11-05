@@ -427,4 +427,11 @@
         <item quantity="one">%d korostus</item>
         <item quantity="other">%d korostusta</item>
     </plurals>
+    <string name="your_reading">Sinun lukemisesi</string>
+    <string name="rate_stars">%d / 5 tähteä</string>
+    <string name="started_on">Aloitettu</string>
+    <string name="finished_on">Luettu</string>
+    <string name="add_date">Lisää päivämäärä</string>
+    <string name="read_in">Luettu ajassa %s</string>
+    <string name="average_rating">keskiarvo %s</string>
 </resources>
