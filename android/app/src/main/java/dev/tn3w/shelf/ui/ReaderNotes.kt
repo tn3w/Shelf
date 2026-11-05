@@ -130,7 +130,8 @@ fun SelectionHandle(cursor: Rect, onMove: (Offset, settled: Boolean) -> Unit) {
     Box(
         Modifier
             .offset {
-                IntOffset((cursor.center.x - half).roundToInt(), cursor.bottom.roundToInt())
+                val left = cursor.center.x - half
+                IntOffset(left.roundToInt(), cursor.bottom.roundToInt())
             }
             .size(HANDLE_TOUCH)
             .pointerInput(Unit) {

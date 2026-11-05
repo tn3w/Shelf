@@ -48,6 +48,8 @@ class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
             recapOf(it, saved, activity)
         }?.takeUnless { it.isEmpty }
     }.asState()
+    val habit = library.habit.asState()
+    val progress = library.progress.asState()
     val genres = catalogueState {
         HOME_TAGS.mapNotNull { catalogue.tagBySlug[it] }
             .map { it to recommender.popular(12, it.id) }
@@ -62,9 +64,9 @@ class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
 fun HomeScreen(navigator: Navigator) {
     val viewModel = shelfViewModel(create = ::HomeViewModel)
     val library = viewModel.library
-    val saved by library.saved.collectAsStateWithLifecycle(null)
-    val progress by library.progress.collectAsStateWithLifecycle(emptyMap())
-    val habit by library.habit.collectAsStateWithLifecycle(null)
+    val saved by viewModel.saved.collectAsStateWithLifecycle()
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
+    val habit by viewModel.habit.collectAsStateWithLifecycle()
     val settings = loadedSettings() ?: Settings()
     val scope = rememberCoroutineScope()
     val rows by viewModel.rows.collectAsStateWithLifecycle()
@@ -97,7 +99,7 @@ fun HomeScreen(navigator: Navigator) {
                 ) {
                     items(reading, key = { it.work }) { entry ->
                         val book = entry.toBook()
-                        val position = progress[entry.work]
+                        val position = progress?.get(entry.work)
                         ContinueCard(book, position?.fraction) {
                             scope.launch {
                                 if (library.hasFile(position)) {

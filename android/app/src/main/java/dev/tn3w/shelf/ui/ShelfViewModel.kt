@@ -20,6 +20,7 @@ open class ShelfViewModel(protected val app: ShelfApp) : ViewModel() {
     val session = app.session
     val recognizer
         get() = app.recognizer
+    val saved by lazy { library.saved.asState() }
 
     fun bookLanguage(settings: Settings) = app.bookLanguage(settings)
 

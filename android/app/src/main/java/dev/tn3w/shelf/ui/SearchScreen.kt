@@ -66,6 +66,7 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
 
 class SearchViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val trending = catalogueState { recommender.popular(8) }
+    val recent = library.recentSearches.asState()
     var results by mutableStateOf<Results?>(null)
     var searched: Any? = null
 
@@ -87,9 +88,8 @@ fun SearchScreen(navigator: Navigator) {
     var era by rememberSaveable { mutableStateOf<Int?>(null) }
     var sort by rememberSaveable { mutableStateOf(ResultSort.Relevance) }
     val filter = SearchFilter(tag, era?.let(ERAS::get), sort)
-    val library = viewModel.library
-    val saved by library.saved.collectAsStateWithLifecycle(emptyList())
-    val recent by library.recentSearches.collectAsStateWithLifecycle(emptyList())
+    val saved by viewModel.saved.collectAsStateWithLifecycle()
+    val recent by viewModel.recent.collectAsStateWithLifecycle()
     val trending by viewModel.trending.collectAsStateWithLifecycle()
     var addingOwn by rememberSaveable { mutableStateOf(false) }
     val selection = rememberSelection()
@@ -117,7 +117,7 @@ fun SearchScreen(navigator: Navigator) {
         sort = ResultSort.Relevance
     }
 
-    val owned = saved.filtered(query).take(LIBRARY_LIMIT)
+    val owned = saved.orEmpty().filtered(query).take(LIBRARY_LIMIT)
         .takeIf { query.isNotBlank() }
         .orEmpty()
 
@@ -142,7 +142,7 @@ fun SearchScreen(navigator: Navigator) {
         }
         LazyColumn {
             if (current == null) {
-                suggestions(recent, trending.orEmpty(), { query = it }) {
+                suggestions(recent.orEmpty(), trending.orEmpty(), { query = it }) {
                     viewModel.clearSearches()
                 }
                 return@LazyColumn

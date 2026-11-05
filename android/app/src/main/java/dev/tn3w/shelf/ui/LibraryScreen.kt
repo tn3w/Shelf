@@ -60,7 +60,7 @@ fun libraryViewModel() = shelfViewModel(create = ::LibraryViewModel)
 @Composable
 fun LibraryScreen(navigator: Navigator) {
     val viewModel = libraryViewModel()
-    val saved by viewModel.library.saved.collectAsStateWithLifecycle(null)
+    val saved by viewModel.saved.collectAsStateWithLifecycle()
     val settings = loadedSettings()
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
