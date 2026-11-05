@@ -457,11 +457,28 @@
         <item quantity="many">%d выделений</item>
         <item quantity="other">%d выделения</item>
     </plurals>
-    <string name="your_reading">Ваше чтение</string>
     <string name="rate_stars">%d из 5 звёзд</string>
     <string name="started_on">Начато</string>
     <string name="finished_on">Закончено</string>
-    <string name="add_date">Добавить дату</string>
     <string name="read_in">Прочитано за %s</string>
     <string name="average_rating">в среднем %s</string>
+    <string name="review">Отзыв</string>
+    <string name="review_hint">Как вам? Это увидите только вы.</string>
+    <string name="write_review">Написать отзыв</string>
+    <string name="book_notes_hint">Личные заметки, например кому вы её одолжили</string>
+    <string name="add_notes">Добавить заметки</string>
+    <string name="add_to_list">Добавить в список</string>
+    <string name="new_list">Новый список</string>
+    <string name="list_hint">напр. Избранное, У Анны</string>
+    <string name="rename_list">Переименовать список</string>
+    <string name="delete_list">Удалить список</string>
+    <string name="delete_list_confirm">Удалить список %s? Книги останутся в библиотеке.</string>
+    <string name="private_note">Хранится только на вашем телефоне</string>
+    <string name="lists">Списки</string>
+    <string name="edit_lists">Изменить списки</string>
+    <string name="share_list">Поделиться списком</string>
+    <string name="read_of_list">Прочитано: %d</string>
+    <string name="your_book">Ваша книга</string>
+    <string name="add_started">Добавить дату начала</string>
+    <string name="add_finished">Добавить дату окончания</string>
 </resources>

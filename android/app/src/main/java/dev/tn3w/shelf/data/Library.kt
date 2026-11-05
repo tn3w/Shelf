@@ -77,7 +77,59 @@ data class Saved(
     val libraryCover: LibraryCover? = null,
     val started: Long = 0,
     val finished: Long = 0,
+    val review: String = "",
+    val notes: String = "",
+    val lists: List<String> = emptyList(),
 )
+
+fun listName(name: String) = name.replace(',', ' ').trim().replace(Regex("""\s+"""), " ")
+
+fun withList(lists: List<String>, name: String) =
+    (lists + listName(name)).filter(String::isNotEmpty).distinctBy(String::lowercase)
+
+fun List<String>.hasList(name: String) = any { it.equals(name, ignoreCase = true) }
+
+private fun List<String>.without(name: String) =
+    filterNot { it.equals(name, ignoreCase = true) }
+
+fun toggledList(lists: List<String>, name: String) =
+    if (lists.hasList(name)) lists.without(name) else withList(lists, name)
+
+fun List<Saved>.listNames() = flatMap { it.lists }
+    .distinctBy(String::lowercase)
+    .sortedBy(String::lowercase)
+
+data class BookList(val name: String, val books: List<Saved>)
+
+fun List<Saved>.bookLists() =
+    listNames().map { name -> BookList(name, filter { it.lists.hasList(name) }) }
+
+fun List<Saved>.commonLists() = listNames().filter { name ->
+    isNotEmpty() && all { it.lists.hasList(name) }
+}
+
+internal fun List<Saved>.toggledList(works: Collection<Int>, name: String): List<Saved> {
+    val inAll = filter { it.work in works }.commonLists().hasList(name)
+    return map { saved ->
+        if (saved.work !in works) return@map saved
+        val lists = if (inAll) saved.lists.without(name) else withList(saved.lists, name)
+        saved.copy(lists = lists)
+    }
+}
+
+fun listText(name: String, books: List<Saved>) = buildString {
+    appendLine(name)
+    books.forEach { book ->
+        append("\n• ").append(book.title)
+        if (book.author.isNotBlank()) append(" — ").append(book.author)
+    }
+}
+
+internal fun List<Saved>.renamedList(from: String, to: String?) = map { saved ->
+    if (!saved.lists.hasList(from)) return@map saved
+    val others = saved.lists.without(from)
+    saved.copy(lists = to?.let { withList(others, it) } ?: others)
+}
 
 val Saved.finishedAt
     get() = finished.takeIf { it > 0 } ?: updated
@@ -99,6 +151,9 @@ internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Save
         updated = now,
         rating = kept?.rating ?: 0,
         isbn = kept?.isbn.orEmpty(),
+        review = kept?.review.orEmpty(),
+        notes = kept?.notes.orEmpty(),
+        lists = kept?.lists.orEmpty(),
         added = kept?.added?.takeIf { it > 0 } ?: now,
         started = started,
         finished = finished,
@@ -550,6 +605,14 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         it.copy(entries = it.entries.edited(work, System.currentTimeMillis(), change))
     }
 
+    suspend fun toggleList(works: Collection<Int>, name: String) = libraryStore.change {
+        it.copy(entries = it.entries.toggledList(works, name))
+    }
+
+    suspend fun renameList(from: String, to: String?) = libraryStore.change {
+        it.copy(entries = it.entries.renamedList(from, to))
+    }
+
     suspend fun importCsv(
         uri: Uri,
         loaded: Loaded?,
@@ -572,6 +635,9 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                         rating = row.rating,
                         isbn = row.isbn,
                         added = row.date,
+                        review = row.review,
+                        notes = row.notes,
+                        lists = row.lists,
                     )
             }
         }

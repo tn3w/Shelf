@@ -212,4 +212,31 @@ class TextTest {
         val csv = "Title,My Rating\nHigh,9\nLow,-3"
         assertEquals(listOf(5, 0), csvBooks(csv).map { it.rating })
     }
+
+    @Test
+    fun importsReviewsNotesAndCustomShelves() {
+        val goodreads = "Title,Exclusive Shelf,Bookshelves,My Review,Private Notes\n" +
+            "Dune,read,\"favourites, read, lent-to-anna\",Great<br/>saga,Signed copy"
+        val book = csvBooks(goodreads).single()
+        assertEquals(listOf("favourites", "lent-to-anna"), book.lists)
+        assertEquals("Great\nsaga" to "Signed copy", book.review to book.notes)
+        val storyGraph = "Title,Read Status,Tags,Review\nEmma,to-read,cozy,Fun"
+        val story = csvBooks(storyGraph).single()
+        assertEquals(listOf("cozy") to "Fun", story.lists to story.review)
+    }
+
+    @Test
+    fun exportKeepsReviewNotesAndLists() {
+        val entry = Saved(
+            1, Shelf.Read, millis("2023-04-05"), "T", "A",
+            review = "Line one\nline two",
+            notes = "Lent",
+            lists = listOf("Best", "Lent to Anna"),
+        )
+        val book = csvBooks(csvOf(listOf(entry))).single()
+        assertEquals(
+            Triple(entry.review, entry.notes, entry.lists),
+            Triple(book.review, book.notes, book.lists),
+        )
+    }
 }

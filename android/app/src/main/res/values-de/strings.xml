@@ -427,11 +427,28 @@
         <item quantity="one">%d Markierung</item>
         <item quantity="other">%d Markierungen</item>
     </plurals>
-    <string name="your_reading">Dein Lesen</string>
     <string name="rate_stars">%d von 5 Sternen</string>
     <string name="started_on">Begonnen</string>
     <string name="finished_on">Beendet</string>
-    <string name="add_date">Datum hinzufügen</string>
     <string name="read_in">Gelesen in %s</string>
     <string name="average_rating">%s im Schnitt</string>
+    <string name="review">Rezension</string>
+    <string name="review_hint">Wie fandest du es? Nur du siehst das.</string>
+    <string name="write_review">Rezension schreiben</string>
+    <string name="book_notes_hint">Private Notizen, z. B. an wen du es verliehen hast</string>
+    <string name="add_notes">Notizen hinzufügen</string>
+    <string name="add_to_list">Zu Liste hinzufügen</string>
+    <string name="new_list">Neue Liste</string>
+    <string name="list_hint">z. B. Favoriten, Verliehen an Anna</string>
+    <string name="rename_list">Liste umbenennen</string>
+    <string name="delete_list">Liste löschen</string>
+    <string name="delete_list_confirm">Liste %s löschen? Die Bücher bleiben in deiner Bibliothek.</string>
+    <string name="private_note">Bleibt nur auf deinem Handy</string>
+    <string name="lists">Listen</string>
+    <string name="edit_lists">Listen bearbeiten</string>
+    <string name="share_list">Liste teilen</string>
+    <string name="read_of_list">%d gelesen</string>
+    <string name="your_book">Dein Buch</string>
+    <string name="add_started">Startdatum hinzufügen</string>
+    <string name="add_finished">Enddatum hinzufügen</string>
 </resources>

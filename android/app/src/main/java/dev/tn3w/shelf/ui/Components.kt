@@ -358,13 +358,19 @@ fun SelectableTitle(
     text: String,
     selection: Selection,
     navigator: Navigator,
+    selectionActions: @Composable () -> Unit = {},
     action: @Composable () -> Unit = {},
 ) {
-    if (selection.active) SelectionBar(selection, navigator) else LargeTitle(text, action)
+    if (!selection.active) return LargeTitle(text, action)
+    SelectionBar(selection, navigator, selectionActions)
 }
 
 @Composable
-private fun SelectionBar(selection: Selection, navigator: Navigator) {
+private fun SelectionBar(
+    selection: Selection,
+    navigator: Navigator,
+    actions: @Composable () -> Unit,
+) {
     BackHandler(onBack = selection::clear)
     val count = selection.works.size
     Row(
@@ -378,6 +384,7 @@ private fun SelectionBar(selection: Selection, navigator: Navigator) {
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.weight(1f),
         )
+        actions()
         TextButton(
             onClick = {
                 navigator.similar(SimilarRoute(SimilarKind.Books, selection.works))

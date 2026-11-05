@@ -457,11 +457,28 @@
         <item quantity="many">%d zvýrazněné pasáže</item>
         <item quantity="other">%d zvýrazněných pasáží</item>
     </plurals>
-    <string name="your_reading">Vaše čtení</string>
     <string name="rate_stars">%d z 5 hvězd</string>
     <string name="started_on">Začato</string>
     <string name="finished_on">Dočteno</string>
-    <string name="add_date">Přidat datum</string>
     <string name="read_in">Přečteno za %s</string>
     <string name="average_rating">průměr %s</string>
+    <string name="review">Recenze</string>
+    <string name="review_hint">Jak se ti líbila? Uvidíš to jen ty.</string>
+    <string name="write_review">Napsat recenzi</string>
+    <string name="book_notes_hint">Soukromé poznámky, třeba komu jsi ji půjčil</string>
+    <string name="add_notes">Přidat poznámky</string>
+    <string name="add_to_list">Přidat do seznamu</string>
+    <string name="new_list">Nový seznam</string>
+    <string name="list_hint">např. Oblíbené, Půjčeno Anně</string>
+    <string name="rename_list">Přejmenovat seznam</string>
+    <string name="delete_list">Smazat seznam</string>
+    <string name="delete_list_confirm">Smazat seznam %s? Knihy zůstanou ve tvé knihovně.</string>
+    <string name="private_note">Zůstává jen ve tvém telefonu</string>
+    <string name="lists">Seznamy</string>
+    <string name="edit_lists">Upravit seznamy</string>
+    <string name="share_list">Sdílet seznam</string>
+    <string name="read_of_list">Přečteno: %d</string>
+    <string name="your_book">Tvoje kniha</string>
+    <string name="add_started">Přidat datum začátku</string>
+    <string name="add_finished">Přidat datum dočtení</string>
 </resources>

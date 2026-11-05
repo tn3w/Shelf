@@ -427,11 +427,28 @@
         <item quantity="one">%d markering</item>
         <item quantity="other">%d markeringar</item>
     </plurals>
-    <string name="your_reading">Din läsning</string>
     <string name="rate_stars">%d av 5 stjärnor</string>
     <string name="started_on">Påbörjad</string>
     <string name="finished_on">Utläst</string>
-    <string name="add_date">Lägg till datum</string>
     <string name="read_in">Läst på %s</string>
     <string name="average_rating">%s i snitt</string>
+    <string name="review">Recension</string>
+    <string name="review_hint">Vad tyckte du? Bara du ser det här.</string>
+    <string name="write_review">Skriv en recension</string>
+    <string name="book_notes_hint">Privata anteckningar, till exempel vem du lånat ut den till</string>
+    <string name="add_notes">Lägg till anteckningar</string>
+    <string name="add_to_list">Lägg till i lista</string>
+    <string name="new_list">Ny lista</string>
+    <string name="list_hint">t.ex. Favoriter, Utlånad till Anna</string>
+    <string name="rename_list">Byt namn på listan</string>
+    <string name="delete_list">Radera listan</string>
+    <string name="delete_list_confirm">Radera listan %s? Böckerna finns kvar i ditt bibliotek.</string>
+    <string name="private_note">Sparas bara på din telefon</string>
+    <string name="lists">Listor</string>
+    <string name="edit_lists">Redigera listor</string>
+    <string name="share_list">Dela listan</string>
+    <string name="read_of_list">%d lästa</string>
+    <string name="your_book">Din bok</string>
+    <string name="add_started">Lägg till startdatum</string>
+    <string name="add_finished">Lägg till slutdatum</string>
 </resources>

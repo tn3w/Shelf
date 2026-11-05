@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,6 +47,14 @@ class LibraryViewModel(app: ShelfApp) : ShelfViewModel(app) {
         detached { app.open(library.importFile(uri)) }
     }
 
+    fun renameList(from: String, to: String?) {
+        detached { library.renameList(from, to) }
+    }
+
+    fun toggleList(works: List<Int>, name: String) {
+        detached { library.toggleList(works, name) }
+    }
+
     fun addOwn(book: Book, shelf: Shelf, image: Uri?) {
         detached {
             val cover = image?.let { library.saveCover(book.work, it) } ?: 0
@@ -66,6 +75,7 @@ fun LibraryScreen(navigator: Navigator) {
     var query by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf<Shelf?>(null) }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
+    val lists = saved.orEmpty().bookLists()
     val tagsByWork by viewModel.tagsByWork.collectAsStateWithLifecycle()
     val catalogueTags by viewModel.catalogueTags.collectAsStateWithLifecycle()
     val tagLists = tagsByWork?.values?.filterNotNull().orEmpty()
@@ -73,7 +83,7 @@ fun LibraryScreen(navigator: Navigator) {
         .distinct()
         .mapNotNull { catalogueTags?.getOrNull(it) }
     val sort = settings?.librarySort ?: LibrarySort.Added
-    val list = settings?.libraryList == true
+    val listView = settings?.libraryList == true
     val shown = saved
         ?.filtered(query, shelf, tag) { tagsByWork?.get(it).orEmpty() }
         ?.sorted(sort)
@@ -82,6 +92,7 @@ fun LibraryScreen(navigator: Navigator) {
     }
     var addingOwn by rememberSaveable { mutableStateOf(false) }
     var options by rememberSaveable { mutableStateOf(false) }
+    var addingToList by rememberSaveable { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     val selection = rememberSelection()
     LaunchedEffect(searching) { if (searching) focus.requestFocus() }
@@ -94,7 +105,17 @@ fun LibraryScreen(navigator: Navigator) {
     }
 
     Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        SelectableTitle(stringResource(R.string.library), selection, navigator) {
+        SelectableTitle(
+            stringResource(R.string.library),
+            selection,
+            navigator,
+            selectionActions = {
+                val label = stringResource(R.string.add_to_list)
+                IconAction(Icons.AutoMirrored.Outlined.PlaylistAdd, label) {
+                    addingToList = true
+                }
+            },
+        ) {
             if (!saved.isNullOrEmpty()) {
                 val icon = with(Icons.Outlined) { if (searching) SearchOff else Search }
                 IconAction(icon, stringResource(R.string.search_library), ::toggleSearch)
@@ -125,6 +146,7 @@ fun LibraryScreen(navigator: Navigator) {
                 }
             }
         }
+        val showLists = lists.isNotEmpty() && !searching && shelf == null && tag == null
         if (shown?.isEmpty() == true) {
             val empty = when {
                 saved.isNullOrEmpty() -> R.string.library_empty
@@ -132,13 +154,32 @@ fun LibraryScreen(navigator: Navigator) {
             }
             EmptyState(Icons.AutoMirrored.Outlined.LibraryBooks, stringResource(empty))
         }
-        if (list) {
-            LibraryList(shown.orEmpty(), navigator, selection)
+        if (listView) {
+            LibraryList(shown.orEmpty(), navigator, selection) {
+                if (showLists) fullWidth { ListsRow(lists, navigator::list) }
+            }
         } else {
-            BookGrid(shown?.map { it.toBook() }, "library", navigator::book, selection)
+            BookGrid(
+                shown?.map { it.toBook() },
+                "library",
+                navigator::book,
+                selection,
+                header = {
+                    if (showLists) fullBleed { ListsRow(lists, navigator::list) }
+                },
+            )
         }
     }
     if (addingOwn) OwnBookSheet("", navigator) { addingOwn = false }
+    if (addingToList && selection.active) {
+        val chosen = saved.orEmpty().filter { it.work in selection.works }
+        ListSheet(
+            chosen.commonLists(),
+            lists.map { it.name },
+            onToggle = { viewModel.toggleList(selection.works, it) },
+            onDismiss = { addingToList = false },
+        )
+    }
     if (!options) return
     LibraryOptions(
         sort = sort,
@@ -146,7 +187,7 @@ fun LibraryScreen(navigator: Navigator) {
         genres = genres,
         tag = tag,
         onTag = { chosen -> tag = chosen.takeIf { it != tag } },
-        list = list,
+        list = listView,
         onList = { chosen -> change { it.copy(libraryList = chosen) } },
         onDismiss = { options = false },
     )
@@ -251,11 +292,13 @@ private fun LibraryList(
     entries: List<Saved>,
     navigator: Navigator,
     selection: Selection,
+    header: LazyGridScope.() -> Unit,
 ) {
     LazyVerticalGrid(
         GridCells.Adaptive(ListColumnWidth),
         contentPadding = PaddingValues(vertical = 8.dp),
     ) {
+        header()
         items(entries, key = { it.work }) { saved ->
             val detail = listOfNotNull(
                 saved.author.ifEmpty { null },

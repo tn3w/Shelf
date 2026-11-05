@@ -412,11 +412,28 @@
     <plurals name="highlights">
         <item quantity="other">하이라이트 %d개</item>
     </plurals>
-    <string name="your_reading">나의 독서</string>
     <string name="rate_stars">별 5개 중 %d개</string>
     <string name="started_on">시작</string>
     <string name="finished_on">완독</string>
-    <string name="add_date">날짜 추가</string>
     <string name="read_in">%s 만에 완독</string>
     <string name="average_rating">평균 %s</string>
+    <string name="review">리뷰</string>
+    <string name="review_hint">어땠나요? 나만 볼 수 있어요.</string>
+    <string name="write_review">리뷰 쓰기</string>
+    <string name="book_notes_hint">빌려준 사람 같은 개인 메모</string>
+    <string name="add_notes">메모 추가</string>
+    <string name="add_to_list">목록에 추가</string>
+    <string name="new_list">새 목록</string>
+    <string name="list_hint">예: 즐겨찾기, 안나에게 빌려줌</string>
+    <string name="rename_list">목록 이름 바꾸기</string>
+    <string name="delete_list">목록 삭제</string>
+    <string name="delete_list_confirm">%s 목록을 삭제할까요? 책은 서재에 그대로 남아요.</string>
+    <string name="private_note">내 휴대폰에만 저장돼요</string>
+    <string name="lists">목록</string>
+    <string name="edit_lists">목록 편집</string>
+    <string name="share_list">목록 공유</string>
+    <string name="read_of_list">%d권 읽음</string>
+    <string name="your_book">내 책</string>
+    <string name="add_started">시작 날짜 추가</string>
+    <string name="add_finished">완독 날짜 추가</string>
 </resources>

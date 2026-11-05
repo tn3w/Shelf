@@ -411,11 +411,28 @@
     <plurals name="highlights">
         <item quantity="other">%d件のハイライト</item>
     </plurals>
-    <string name="your_reading">あなたの読書</string>
     <string name="rate_stars">5つ星中%d</string>
     <string name="started_on">読み始め</string>
     <string name="finished_on">読了</string>
-    <string name="add_date">日付を追加</string>
     <string name="read_in">%sで読了</string>
     <string name="average_rating">平均 %s</string>
+    <string name="review">レビュー</string>
+    <string name="review_hint">どうでしたか？あなただけが見られます。</string>
+    <string name="write_review">レビューを書く</string>
+    <string name="book_notes_hint">貸した相手などの個人メモ</string>
+    <string name="add_notes">メモを追加</string>
+    <string name="add_to_list">リストに追加</string>
+    <string name="new_list">新しいリスト</string>
+    <string name="list_hint">例：お気に入り、アンナに貸出中</string>
+    <string name="rename_list">リスト名を変更</string>
+    <string name="delete_list">リストを削除</string>
+    <string name="delete_list_confirm">リスト「%s」を削除しますか？本はライブラリに残ります。</string>
+    <string name="private_note">このスマホにだけ保存されます</string>
+    <string name="lists">リスト</string>
+    <string name="edit_lists">リストを編集</string>
+    <string name="share_list">リストを共有</string>
+    <string name="read_of_list">%d冊読了</string>
+    <string name="your_book">あなたの本</string>
+    <string name="add_started">開始日を追加</string>
+    <string name="add_finished">読了日を追加</string>
 </resources>

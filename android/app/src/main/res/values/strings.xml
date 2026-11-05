@@ -430,11 +430,28 @@
         <item quantity="one">%d highlight</item>
         <item quantity="other">%d highlights</item>
     </plurals>
-    <string name="your_reading">Your reading</string>
     <string name="rate_stars">%d of 5 stars</string>
     <string name="started_on">Started</string>
     <string name="finished_on">Finished</string>
-    <string name="add_date">Add date</string>
     <string name="read_in">Read in %s</string>
     <string name="average_rating">%s average</string>
+    <string name="review">Review</string>
+    <string name="review_hint">What did you think? Only you will see this.</string>
+    <string name="write_review">Write a review</string>
+    <string name="book_notes_hint">Private notes, like who you lent it to</string>
+    <string name="add_notes">Add notes</string>
+    <string name="add_to_list">Add to list</string>
+    <string name="new_list">New list</string>
+    <string name="list_hint">e.g. Favourites, Lent to Anna</string>
+    <string name="rename_list">Rename list</string>
+    <string name="delete_list">Delete list</string>
+    <string name="delete_list_confirm">Delete the list %s? Its books stay in your library.</string>
+    <string name="private_note">Kept on your phone only</string>
+    <string name="lists">Lists</string>
+    <string name="edit_lists">Edit lists</string>
+    <string name="share_list">Share list</string>
+    <string name="read_of_list">%d read</string>
+    <string name="your_book">Your book</string>
+    <string name="add_started">Add start date</string>
+    <string name="add_finished">Add finish date</string>
 </resources>

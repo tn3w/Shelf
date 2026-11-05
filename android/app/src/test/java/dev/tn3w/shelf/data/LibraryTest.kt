@@ -402,4 +402,99 @@ class LibraryTest {
         val book = Book(1, "T")
         assertEquals(5L, placed(book, Shelf.Read, entries[0], now = 9).finished)
     }
+
+    @Test
+    fun placingKeepsReviewNotesAndLists() {
+        val book = Book(SYNTHETIC + 1, "T")
+        val previous = placed(book, Shelf.Want, null, now = 10)
+            .copy(review = "Loved it", notes = "Lent to Anna", lists = listOf("Lent"))
+        val read = placed(book, Shelf.Read, previous, now = 20)
+        assertEquals(
+            Triple("Loved it", "Lent to Anna", listOf("Lent")),
+            Triple(read.review, read.notes, read.lists),
+        )
+    }
+
+    @Test
+    fun listsIgnoreCaseAndExtraSpaces() {
+        val lists = withList(listOf("Favourites"), "  favourites ")
+        assertEquals(listOf("Favourites"), lists)
+        val spaced = withList(lists, " Lent  to\tAnna")
+        assertEquals(listOf("Favourites", "Lent to Anna"), spaced)
+        assertEquals(listOf("Favourites"), withList(lists, " , "))
+        assertEquals(emptyList<String>(), toggledList(lists, "FAVOURITES"))
+        assertEquals(listOf("Favourites", "Gift"), toggledList(lists, "Gift"))
+    }
+
+    @Test
+    fun renamingListMergesAndDeletingKeepsBooks() {
+        val entries = listOf(
+            Saved(1, Shelf.Read, 1, lists = listOf("lent", "Gift")),
+            Saved(2, Shelf.Want, 2, lists = listOf("Gift")),
+            Saved(3, Shelf.Want, 3),
+        )
+        assertEquals(listOf("Gift", "lent"), entries.listNames())
+        val renamed = entries.renamedList("LENT", "Gift")
+        assertEquals(
+            listOf(listOf("Gift"), listOf("Gift"), emptyList()),
+            renamed.map {
+                it.lists
+            },
+        )
+        assertEquals(entries[2], renamed[2])
+        val deleted = entries.renamedList("gift", null)
+        assertEquals(
+            listOf(listOf("lent"), emptyList(), emptyList()),
+            deleted.map {
+                it.lists
+            },
+        )
+        assertEquals(3, deleted.size)
+    }
+
+    @Test
+    fun bookListsGroupBooksByName() {
+        val entries = listOf(
+            Saved(1, Shelf.Read, 1, lists = listOf("Gift")),
+            Saved(2, Shelf.Want, 2, lists = listOf("gift", "Lent")),
+        )
+        val lists = entries.bookLists()
+        assertEquals(listOf("Gift", "Lent"), lists.map { it.name })
+        assertEquals(
+            listOf(listOf(1, 2), listOf(2)),
+            lists.map { list ->
+                list.books.map { it.work }
+            },
+        )
+        assertEquals(listOf("Gift"), entries.commonLists())
+        assertEquals(emptyList<String>(), emptyList<Saved>().commonLists())
+    }
+
+    @Test
+    fun togglingListForSeveralBooksAddsThenRemoves() {
+        val entries = listOf(
+            Saved(1, Shelf.Read, 1, lists = listOf("Gift")),
+            Saved(2, Shelf.Want, 2),
+            Saved(3, Shelf.Want, 3),
+        )
+        val added = entries.toggledList(listOf(1, 2), "gift")
+        assertEquals(
+            listOf(listOf("Gift"), listOf("gift"), emptyList()),
+            added.map {
+                it.lists
+            },
+        )
+        val removed = added.toggledList(listOf(1, 2), "GIFT")
+        assertEquals(List(3) { emptyList<String>() }, removed.map { it.lists })
+    }
+
+    @Test
+    fun listTextNamesEveryBook() {
+        val books =
+            listOf(
+                Saved(1, Shelf.Read, 1, "Dune", "Frank Herbert"),
+                Saved(2, Shelf.Want, 2, "Emma"),
+            )
+        assertEquals("Lent\n\n• Dune — Frank Herbert\n• Emma", listText("Lent", books))
+    }
 }

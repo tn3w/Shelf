@@ -53,8 +53,11 @@ fun List<Saved>.filtered(
 ) = filter { saved ->
     (shelf == null || saved.shelf == shelf) &&
         (tag == null || tag in tagsOf(saved.work)) &&
-        matchesWords("${saved.title} ${saved.author}", query)
+        matchesWords(saved.searchText, query)
 }
+
+private val Saved.searchText
+    get() = listOf(title, author, review, notes).plus(lists).joinToString(" ")
 
 private val Saved.since
     get() = added.takeIf { it > 0 } ?: updated

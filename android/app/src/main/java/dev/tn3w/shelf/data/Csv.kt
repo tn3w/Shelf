@@ -10,11 +10,15 @@ import kotlin.math.roundToInt
 private val DATE = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private val EXPORT_COLUMNS = listOf(
     "Title", "Author", "ISBN", "My Rating", "Date Read", "Date Added", "Exclusive Shelf",
+    "Bookshelves", "My Review", "Private Notes",
 )
 private val READWISE_COLUMNS =
     listOf("Highlight", "Title", "Author", "Note", "Location", "Date")
 private val READWISE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
+private val LINE_BREAK = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
+private val STATUS_NAMES =
+    setOf("read", "currently-reading", "to-read", "did-not-finish", "paused")
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
     Shelf.Reading to "currently-reading",
@@ -28,6 +32,9 @@ data class CsvBook(
     val rating: Int,
     val date: Long,
     val isbn: String = "",
+    val review: String = "",
+    val notes: String = "",
+    val lists: List<String> = emptyList(),
 )
 
 data class CsvReport(val total: Int, val missing: List<String>)
@@ -87,6 +94,9 @@ fun csvBooks(text: String): List<CsvBook> {
     val authorOf = column("author", "authors")
     val ratingOf = column("my rating", "star rating")
     val isbnColumns = listOf(column("isbn13"), column("isbn"), column("isbn/uid"))
+    val reviewOf = column("my review", "review")
+    val notesOf = column("private notes")
+    val listsOf = column("bookshelves", "tags")
     return rows.drop(1).mapNotNull { row ->
         val title = titleOf(row).ifEmpty { return@mapNotNull null }
         val shelf = shelfOf(statusOf(row))
@@ -99,9 +109,16 @@ fun csvBooks(text: String): List<CsvBook> {
             ratingOf(row).toFloatOrNull()?.roundToInt()?.coerceIn(0, 5) ?: 0,
             read ?: added ?: System.currentTimeMillis(),
             isbnColumns.firstNotNullOfOrNull { normalizedIsbn(it(row)) }.orEmpty(),
+            reviewOf(row).replace(LINE_BREAK, "\n").trim(),
+            notesOf(row),
+            listsIn(listsOf(row)),
         )
     }
 }
+
+private fun listsIn(column: String) = column.split(',')
+    .filterNot { it.trim().lowercase() in STATUS_NAMES }
+    .fold(emptyList(), ::withList)
 
 private fun shelfOf(status: String) = when (status.lowercase()) {
     "read", "did-not-finish" -> Shelf.Read
@@ -159,6 +176,9 @@ fun csvOf(entries: List<Saved>): String {
             if (saved.shelf == Shelf.Read) formatDate(saved.finishedAt) else "",
             formatDate(saved.added.takeIf { it > 0 } ?: saved.updated),
             SHELF_NAMES.getValue(saved.shelf),
+            saved.lists.joinToString(", "),
+            saved.review,
+            saved.notes,
         )
     }
     return csvText(listOf(EXPORT_COLUMNS) + rows)

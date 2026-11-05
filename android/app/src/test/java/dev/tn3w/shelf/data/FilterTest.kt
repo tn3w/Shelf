@@ -90,4 +90,19 @@ class FilterTest {
         assertEquals(listOf(1, 2, 3, 4), search(SearchFilter(sort = ResultSort.Oldest)))
         assertEquals(2, search(SearchFilter(sort = ResultSort.Popular)).first())
     }
+
+    @Test
+    fun searchMatchesNotesAndLists() {
+        val noted = entries.mapIndexed { index, saved ->
+            if (index ==
+                0
+            ) {
+                saved.copy(notes = "Lent to Anna", lists = listOf("Gifts"))
+            } else {
+                saved
+            }
+        }
+        assertEquals(listOf(1), noted.filtered("anna").works())
+        assertEquals(listOf(1), noted.filtered("gift").works())
+    }
 }

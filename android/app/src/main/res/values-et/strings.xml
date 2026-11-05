@@ -427,11 +427,28 @@
         <item quantity="one">%d esiletõst</item>
         <item quantity="other">%d esiletõstu</item>
     </plurals>
-    <string name="your_reading">Sinu lugemine</string>
     <string name="rate_stars">%d tärni 5-st</string>
     <string name="started_on">Alustatud</string>
     <string name="finished_on">Lõpetatud</string>
-    <string name="add_date">Lisa kuupäev</string>
     <string name="read_in">Loetud %s jooksul</string>
     <string name="average_rating">keskmine %s</string>
+    <string name="review">Arvustus</string>
+    <string name="review_hint">Mida sa arvasid? Seda näed ainult sina.</string>
+    <string name="write_review">Kirjuta arvustus</string>
+    <string name="book_notes_hint">Privaatsed märkmed, näiteks kellele sa selle laenasid</string>
+    <string name="add_notes">Lisa märkmeid</string>
+    <string name="add_to_list">Lisa loendisse</string>
+    <string name="new_list">Uus loend</string>
+    <string name="list_hint">nt Lemmikud, Laenatud Annale</string>
+    <string name="rename_list">Nimeta loend ümber</string>
+    <string name="delete_list">Kustuta loend</string>
+    <string name="delete_list_confirm">Kas kustutada loend %s? Raamatud jäävad sinu raamatukokku.</string>
+    <string name="private_note">Jääb ainult sinu telefoni</string>
+    <string name="lists">Loendid</string>
+    <string name="edit_lists">Muuda loendeid</string>
+    <string name="share_list">Jaga loendit</string>
+    <string name="read_of_list">%d loetud</string>
+    <string name="your_book">Sinu raamat</string>
+    <string name="add_started">Lisa alguskuupäev</string>
+    <string name="add_finished">Lisa lõpukuupäev</string>
 </resources>

@@ -457,11 +457,28 @@
         <item quantity="many">%d zakreśleń</item>
         <item quantity="other">%d zakreślenia</item>
     </plurals>
-    <string name="your_reading">Twoje czytanie</string>
     <string name="rate_stars">%d z 5 gwiazdek</string>
     <string name="started_on">Rozpoczęto</string>
     <string name="finished_on">Ukończono</string>
-    <string name="add_date">Dodaj datę</string>
     <string name="read_in">Przeczytano w %s</string>
     <string name="average_rating">średnio %s</string>
+    <string name="review">Recenzja</string>
+    <string name="review_hint">Co o tym myślisz? Tylko ty to zobaczysz.</string>
+    <string name="write_review">Napisz recenzję</string>
+    <string name="book_notes_hint">Prywatne notatki, np. komu ją pożyczyłeś</string>
+    <string name="add_notes">Dodaj notatki</string>
+    <string name="add_to_list">Dodaj do listy</string>
+    <string name="new_list">Nowa lista</string>
+    <string name="list_hint">np. Ulubione, Pożyczone Ani</string>
+    <string name="rename_list">Zmień nazwę listy</string>
+    <string name="delete_list">Usuń listę</string>
+    <string name="delete_list_confirm">Usunąć listę %s? Jej książki zostaną w bibliotece.</string>
+    <string name="private_note">Zostaje tylko na twoim telefonie</string>
+    <string name="lists">Listy</string>
+    <string name="edit_lists">Edytuj listy</string>
+    <string name="share_list">Udostępnij listę</string>
+    <string name="read_of_list">Przeczytane: %d</string>
+    <string name="your_book">Twoja książka</string>
+    <string name="add_started">Dodaj datę rozpoczęcia</string>
+    <string name="add_finished">Dodaj datę ukończenia</string>
 </resources>

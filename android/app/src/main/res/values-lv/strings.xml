@@ -441,11 +441,28 @@
         <item quantity="one">%d izcēlums</item>
         <item quantity="other">%d izcēlumi</item>
     </plurals>
-    <string name="your_reading">Tava lasīšana</string>
     <string name="rate_stars">%d no 5 zvaigznēm</string>
     <string name="started_on">Sākta</string>
     <string name="finished_on">Pabeigta</string>
-    <string name="add_date">Pievienot datumu</string>
     <string name="read_in">Izlasīta %s</string>
     <string name="average_rating">vidēji %s</string>
+    <string name="review">Atsauksme</string>
+    <string name="review_hint">Ko tu domāji? To redzēsi tikai tu.</string>
+    <string name="write_review">Rakstīt atsauksmi</string>
+    <string name="book_notes_hint">Privātas piezīmes, piemēram, kam to aizdevi</string>
+    <string name="add_notes">Pievienot piezīmes</string>
+    <string name="add_to_list">Pievienot sarakstam</string>
+    <string name="new_list">Jauns saraksts</string>
+    <string name="list_hint">piem., Favorīti, Aizdota Annai</string>
+    <string name="rename_list">Pārdēvēt sarakstu</string>
+    <string name="delete_list">Dzēst sarakstu</string>
+    <string name="delete_list_confirm">Dzēst sarakstu %s? Grāmatas paliks tavā bibliotēkā.</string>
+    <string name="private_note">Glabājas tikai tavā tālrunī</string>
+    <string name="lists">Saraksti</string>
+    <string name="edit_lists">Rediģēt sarakstus</string>
+    <string name="share_list">Kopīgot sarakstu</string>
+    <string name="read_of_list">Izlasītas: %d</string>
+    <string name="your_book">Tava grāmata</string>
+    <string name="add_started">Pievienot sākuma datumu</string>
+    <string name="add_finished">Pievienot beigu datumu</string>
 </resources>

@@ -427,11 +427,28 @@
         <item quantity="one">%d korostus</item>
         <item quantity="other">%d korostusta</item>
     </plurals>
-    <string name="your_reading">Sinun lukemisesi</string>
     <string name="rate_stars">%d / 5 tähteä</string>
     <string name="started_on">Aloitettu</string>
     <string name="finished_on">Luettu</string>
-    <string name="add_date">Lisää päivämäärä</string>
     <string name="read_in">Luettu ajassa %s</string>
     <string name="average_rating">keskiarvo %s</string>
+    <string name="review">Arvio</string>
+    <string name="review_hint">Mitä mieltä olit? Vain sinä näet tämän.</string>
+    <string name="write_review">Kirjoita arvio</string>
+    <string name="book_notes_hint">Yksityiset muistiinpanot, kuten kenelle lainasit sen</string>
+    <string name="add_notes">Lisää muistiinpanoja</string>
+    <string name="add_to_list">Lisää listaan</string>
+    <string name="new_list">Uusi lista</string>
+    <string name="list_hint">esim. Suosikit, Lainassa Annalla</string>
+    <string name="rename_list">Nimeä lista uudelleen</string>
+    <string name="delete_list">Poista lista</string>
+    <string name="delete_list_confirm">Poistetaanko lista %s? Sen kirjat jäävät kirjastoosi.</string>
+    <string name="private_note">Säilyy vain puhelimessasi</string>
+    <string name="lists">Listat</string>
+    <string name="edit_lists">Muokkaa listoja</string>
+    <string name="share_list">Jaa lista</string>
+    <string name="read_of_list">%d luettu</string>
+    <string name="your_book">Sinun kirjasi</string>
+    <string name="add_started">Lisää aloituspäivä</string>
+    <string name="add_finished">Lisää lopetuspäivä</string>
 </resources>

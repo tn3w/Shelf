@@ -442,11 +442,28 @@
         <item quantity="many">%d subrayados</item>
         <item quantity="other">%d subrayados</item>
     </plurals>
-    <string name="your_reading">Tu lectura</string>
     <string name="rate_stars">%d de 5 estrellas</string>
     <string name="started_on">Empezado</string>
     <string name="finished_on">Terminado</string>
-    <string name="add_date">Añadir fecha</string>
     <string name="read_in">Leído en %s</string>
     <string name="average_rating">%s de media</string>
+    <string name="review">Reseña</string>
+    <string name="review_hint">¿Qué te pareció? Solo tú lo verás.</string>
+    <string name="write_review">Escribir una reseña</string>
+    <string name="book_notes_hint">Notas privadas, como a quién se lo prestaste</string>
+    <string name="add_notes">Añadir notas</string>
+    <string name="add_to_list">Añadir a una lista</string>
+    <string name="new_list">Nueva lista</string>
+    <string name="list_hint">p. ej. Favoritos, Prestado a Ana</string>
+    <string name="rename_list">Renombrar lista</string>
+    <string name="delete_list">Eliminar lista</string>
+    <string name="delete_list_confirm">¿Eliminar la lista %s? Sus libros siguen en tu biblioteca.</string>
+    <string name="private_note">Solo se guarda en tu teléfono</string>
+    <string name="lists">Listas</string>
+    <string name="edit_lists">Editar listas</string>
+    <string name="share_list">Compartir lista</string>
+    <string name="read_of_list">%d leídos</string>
+    <string name="your_book">Tu libro</string>
+    <string name="add_started">Añadir fecha de inicio</string>
+    <string name="add_finished">Añadir fecha de fin</string>
 </resources>

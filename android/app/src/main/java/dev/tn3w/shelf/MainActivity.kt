@@ -65,6 +65,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class SeriesRoute(val work: Int)
 
+@Serializable data class ListRoute(val name: String)
+
 @Keep
 enum class SimilarKind { Books, Writer, Saga }
 
@@ -110,6 +112,8 @@ class Navigator(
     fun tag(id: Int) = controller.navigate(TagRoute(id))
 
     fun series(work: Int) = controller.navigate(SeriesRoute(work))
+
+    fun list(name: String) = controller.navigate(ListRoute(name))
 
     fun similar(route: SimilarRoute) = controller.navigate(route)
 
@@ -403,6 +407,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
         screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
+        screen<ListRoute> { ListScreen(it.toRoute<ListRoute>().name, navigator) }
         screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }
         screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
         screen<ScanRoute> { ScanScreen(navigator) }
