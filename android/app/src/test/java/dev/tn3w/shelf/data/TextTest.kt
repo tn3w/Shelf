@@ -31,6 +31,7 @@ class TextTest {
         assertEquals(listOf("dveselu", "putenis"), tokenize("Dvēseļu putenis"))
         assertEquals(listOf("zalgirio", "musis"), tokenize("Žalgirio mūšis"))
         assertEquals(listOf("채식주의자"), tokenize("채식주의자"))
+        assertEquals(listOf("ежик", "в", "тумане"), tokenize("Ёжик в тумане"))
     }
 
     @Test

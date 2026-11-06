@@ -1,0 +1,11 @@
+O Shelf é uma app de livros privada e offline. O catálogo inteiro fica no seu telemóvel, criado a partir do Open Library, da British Library e de bibliotecas nacionais. Sem conta, sem anúncios, sem rastreio.
+
+* Pesquisa tolerante a erros por títulos, autores, séries e ISBN
+* Digitalize a capa ou o código de barras de um livro para o encontrar
+* Estantes Quero ler, A ler e Lidos, objetivo diário e sequências
+* Explore géneros, séries e autores, com recomendações feitas no seu telemóvel
+* Leia EPUB, Kindle, PDF, banda desenhada, ficheiros Word e mais
+* Importe do Goodreads e do StoryGraph
+* Catálogos em inglês, alemão, francês, espanhol, estónio, sueco, polaco, checo, coreano, finlandês, japonês, letão, português, russo e italiano
+
+Um único interruptor desliga toda a rede. A sua biblioteca nunca sai do seu telemóvel.

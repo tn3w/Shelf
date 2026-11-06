@@ -1,0 +1,4 @@
+• Idioma da app também escolhido nas definições do Android
+• Populares aparece logo quando Para si não está disponível
+• Correções: falha do digitalizador, ficheiros MOBI bloqueados, importações perdidas, problemas de atualização e restauro
+• Banda desenhada CBR só abre quando compactada como ZIP (RAR não é livre)

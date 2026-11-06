@@ -1,0 +1,1 @@
+Compilações reproduzíveis: as bibliotecas nativas já não são reduzidas, e as dependências foram atualizadas.

@@ -1,0 +1,4 @@
+• Idioma do app também selecionável nas configurações do Android
+• Populares aparece direto quando Para você não está disponível
+• Correções: travamento do scanner, arquivos MOBI travados, importações perdidas, problemas de atualização e restauração
+• Quadrinhos CBR só abrem quando compactados como ZIP (RAR não é livre)

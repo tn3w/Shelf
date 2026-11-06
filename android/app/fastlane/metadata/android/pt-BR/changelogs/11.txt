@@ -1,0 +1,4 @@
+• Adicione seus próprios livros: título, autor, estante e capa opcional
+• Leitor: travamento em PDF e páginas em branco corrigidos, quadrinhos e imagens EPUB mais rápidos, ordem correta das páginas CBZ
+• O mesmo arquivo importado duas vezes continua sendo um livro só; arquivos importados acompanham a transferência de aparelho
+• Cópias importadas de livros do catálogo podem ser removidas

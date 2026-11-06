@@ -1,0 +1,4 @@
+• Aggiungi i tuoi libri: titolo, autore, scaffale e copertina facoltativa
+• Lettore: risolti crash dei PDF e pagine vuote, fumetti e immagini EPUB più veloci, ordine corretto delle pagine CBZ
+• Lo stesso file importato due volte resta un solo libro; i file importati seguono il trasferimento a un nuovo dispositivo
+• Le copie importate dei libri del catalogo si possono rimuovere

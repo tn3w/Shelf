@@ -15,8 +15,8 @@ pub mod translations;
 pub mod unify;
 pub mod works;
 
-pub const LANGUAGES: [&str; 12] = [
-    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv",
+pub const LANGUAGES: [&str; 15] = [
+    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv", "pt", "ru", "it",
 ];
 pub const LANGUAGE_COUNT: usize = LANGUAGES.len();
 pub type Built = [bool; LANGUAGE_COUNT];

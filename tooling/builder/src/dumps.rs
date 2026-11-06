@@ -972,6 +972,9 @@ fn implied_language(edition: &Value, isbn_language: Option<usize>) -> Option<usi
     if title.chars().any(catalog::is_kana) {
         return Some(crate::language_index("ja"));
     }
+    if catalog::is_russian(&title) {
+        return Some(crate::language_index("ru"));
+    }
     if !catalog::is_mostly_latin(&title) {
         return None;
     }

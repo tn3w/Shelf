@@ -6,6 +6,6 @@ Shelf on yksityinen offline-kirjasovellus. Koko luettelo on puhelimessasi, koott
 * Tutustu lajityyppeihin, sarjoihin ja kirjailijoihin, suositukset lasketaan puhelimessa
 * Lue EPUB-, Kindle-, PDF-, sarjakuva-, Word- ja muita tiedostoja
 * Tuonti Goodreadsista ja StoryGraphista
-* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi, suomeksi, japaniksi ja latviaksi; sovellus myös venäjäksi
+* Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi, suomeksi, japaniksi, latviaksi, portugaliksi, venäjäksi ja italiaksi
 
 Yksi kytkin katkaisee kaiken verkon. Kirjastosi ei koskaan poistu puhelimesta.

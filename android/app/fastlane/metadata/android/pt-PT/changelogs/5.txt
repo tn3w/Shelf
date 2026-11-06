@@ -1,0 +1,1 @@
+Capas e fotos de autores desativadas já não fazem qualquer pedido. Transferir todos os pacotes obtém cada ficheiro uma única vez, e o tamanho do pacote base inclui agora o ficheiro de classificação.

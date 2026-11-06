@@ -52,7 +52,8 @@ fn usage() -> ! {
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
          [--base-url <url>] [--languages en,de,...] [--dump <dir>] \
          [--wikidata <dir>] [--gutenberg <rdf file>] \
-         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf|bnb|bne|cinii|lnb_lv\
+         [--library dnb|erb|libris|bnp|nkp|nlk|fennica|bnf|bnb|bne|cinii|lnb_lv|bn_pt\
+         |lnb_ru|loc_ru|loc_it|loc_pt\
 =<file>[,<file>]]"
     );
     std::process::exit(2)

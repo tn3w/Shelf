@@ -1,0 +1,6 @@
+• Libreria: ordinamento, filtri e vista elenco; la ricerca filtra per categoria
+• Schermata della saga dalla pagina del libro
+• "Elimina tutto" per lingua, più "Elimina tutte le lingue"
+• Si aprono gli EPUB con caratteri speciali nei link; il lettore si adatta al ridimensionamento
+• Ricerca, catalogo e libreria più veloci
+• La build F-Droid ora è riproducibile

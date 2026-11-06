@@ -122,10 +122,10 @@ catalogue as your own, with your own cover.
 ## Books in your language
 
 **Catalogue:** English · Deutsch · Français · Español · Eesti · Svenska · Polski ·
-Čeština · 한국어 · Suomi · 日本語 · Latviešu, with optional packs for
-fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
+Čeština · 한국어 · Suomi · 日本語 · Latviešu · Português · Русский · Italiano, with optional
+packs for fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
 
-**App:** all catalogue languages plus Русский.
+**App:** all catalogue languages; Português in Brazilian and European variants.
 [Help translate](https://hosted.weblate.org/engage/shelf/), no coding needed.
 
 <a href="https://hosted.weblate.org/engage/shelf/"><img src="https://hosted.weblate.org/widget/shelf/multi-auto.svg" alt="Translation status"></a>
@@ -199,8 +199,8 @@ Developers: building, architecture and the catalogue pipeline are in
 <a href="https://openlibrary.org">Open Library</a>, <a href="https://www.wikidata.org">Wikidata</a>,
 <a href="https://www.gutenberg.org">Project Gutenberg</a> and the national libraries of Germany
 (DNB), Estonia (ERB), France (BnF), Sweden (LIBRIS), Poland (BN), the Czech Republic
-(NKP), Korea (NLK), Finland (Fennica), the UK (BNB, English series), Spain (BNE) and Latvia
-(LNB). Japanese records: NACSIS-CAT via <a href="https://ci.nii.ac.jp/books/">CiNii
+(NKP), Korea (NLK), Finland (Fennica), the UK (BNB, English series), Spain (BNE), Latvia
+(LNB) and Portugal (BNP), plus the Library of Congress for Portuguese, Russian and Italian. Japanese records: NACSIS-CAT via <a href="https://ci.nii.ac.jp/books/">CiNii
 Books</a>, National Institute of Informatics,
 <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
 </sub>

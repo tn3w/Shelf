@@ -6,6 +6,6 @@ Shelf is a private, offline book app. The whole catalogue lives on your phone, b
 * Explore genres, series and authors, with recommendations made on your phone
 * Read EPUB, Kindle, PDF, comics, Word files and more
 * Import from Goodreads and StoryGraph
-* Catalogues in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean, Finnish, Japanese and Latvian; app also in Russian
+* Catalogues in English, German, French, Spanish, Estonian, Swedish, Polish, Czech, Korean, Finnish, Japanese, Latvian, Portuguese, Russian and Italian
 
 One switch turns off all network. Your library never leaves your phone.

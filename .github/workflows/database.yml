@@ -149,7 +149,7 @@ jobs:
     timeout-minutes: 240
     strategy:
       matrix:
-        language: [en, de, fr, es, et, sv, pl, cs, ko, fi, ja, lv]
+        language: [en, de, fr, es, et, sv, pl, cs, ko, fi, ja, lv, pt, ru, it]
     env:
       LANGUAGE: ${{ matrix.language }}
       RELEASE: ${{ needs.prepare.outputs.release }}
@@ -232,6 +232,24 @@ jobs:
             cat /mnt/dumps/parts/"$1".zst.part* | zstd -dc > "/mnt/dumps/$1"
             rm -r /mnt/dumps/parts
           }
+          latvia() {
+            dom=https://dom.lndb.lv/data/obj
+            books=$(curl -sSf "$dom/1642421.xml" \
+              | grep -oE 'hasPart digitalObjectId="[0-9]+"' | grep -oE '[0-9]+' | tail -1)
+            curl -sSf "$dom/$books.xml" \
+              | grep -oE 'id="[0-9]+" type="Access" [^>]*name="bk_[a-z0-9_]+\.xml"' \
+              | sed -E 's/id="([0-9]+)".*name="([^"]+)"/\1 \2/' \
+              | while read -r id name; do
+                stream "lnb-$name" "$dom/file/$id" >&2
+                printf '/mnt/dumps/lnb-%s\n' "$name"
+              done | paste -sd,
+          }
+          congress() {
+            base=https://www.loc.gov/cds/downloads/MDSConnect
+            seq -f "$base/BooksAll.2016.part%02g.utf8.gz" 1 43 > /mnt/dumps/congress.txt
+            aria -i /mnt/dumps/congress.txt >&2
+            ls /mnt/dumps/BooksAll.2016.part*.utf8.gz | paste -sd,
+          }
           case "$LANGUAGE" in
             en)
               stream BNBLODBooks_201805_nt.zip \
@@ -284,9 +302,15 @@ jobs:
               snapshot cinii.jsonl
               library="cinii=/mnt/dumps/cinii.jsonl" ;;
             lv)
-              stream lnb-latvia.zip \
-                https://dati.lnb.lv/files/natl_bibliography-2014-2023-marc.zip
-              library="lnb_lv=/mnt/dumps/lnb-latvia.zip" ;;
+              library="lnb_lv=$(latvia)" ;;
+            pt)
+              aria https://opendata.bnportugal.gov.pt/docs/catalogo.marcxchange.zip
+              library="bn_pt=/mnt/dumps/catalogo.marcxchange.zip"
+              library="$library --library loc_pt=$(congress)" ;;
+            ru)
+              library="lnb_ru=$(latvia) --library loc_ru=$(congress)" ;;
+            it)
+              library="loc_it=$(congress)" ;;
           esac
           echo "LIBRARY=${library:+--library $library}" >> "$GITHUB_ENV"
           wait

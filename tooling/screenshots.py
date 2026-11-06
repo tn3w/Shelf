@@ -254,6 +254,30 @@ TRANSLATED = {
             ("Читайте свои файлы", FORMATS),
             ("Сканируйте любую обложку", "Распознаётся на телефоне"),
             ("Приватность по умолчанию", "Без аккаунта · Офлайн-режим")]),
+    "pt": ("pt-BR", ["Alice no País das Maravilhas", "Harry Potter e a Pedra Filosofal",
+                     "Projeto Ave Maria", "O Nome do Vento", "Circe", "Duna",
+                     "A Biblioteca da Meia-Noite", "O Hobbit", "1984",
+                     "O Pequeno Príncipe"],
+           [("Seus livros, offline", "Sem conta · Sem anúncios"),
+            ("Saia do Goodreads", "Importe estantes via CSV"),
+            ("Encontre qualquer livro", "Busca offline rápida"),
+            ("Acompanhe suas séries", "Séries e autores"),
+            ("Descubra sua próxima leitura", "Sugestões feitas no celular"),
+            ("Leia seus arquivos", FORMATS),
+            ("Escaneie qualquer capa", "Reconhecida no seu celular"),
+            ("Privado por design", "Sem conta · Modo offline")]),
+    "it": ("it-IT", ["Alice nel Paese delle Meraviglie",
+                     "Harry Potter e la pietra filosofale", "L’ultimo uomo",
+                     "Il nome del vento", "Circe", "Dune", "La biblioteca di mezzanotte",
+                     "Lo Hobbit", "1984", "Il Piccolo Principe"],
+           [("I tuoi libri, offline", "Niente account · Niente pubblicità"),
+            ("Lascia Goodreads", "Importa gli scaffali da CSV"),
+            ("Trova ogni libro", "Ricerca offline veloce"),
+            ("Segui le tue saghe", "Saghe e autori"),
+            ("Scopri la prossima lettura", "Consigli creati sul telefono"),
+            ("Leggi i tuoi file", FORMATS),
+            ("Scansiona ogni copertina", "Riconosciuta sul telefono"),
+            ("Privato per scelta", "Niente account · Modalità offline")]),
 }
 
 
@@ -328,7 +352,10 @@ LOCALES |= {
     language: translated(*values, local=IN_LANGUAGE.get(language))
     for language, values in TRANSLATED.items()
 }
-LOCALES["ru"]["catalogue"] = "en"
+for language in ("ru", "pt", "it"):
+    LOCALES[language]["catalogue"] = "en"
+LOCALES["pt"]["reader"] = (1003040, "Dom Casmurro", "Machado de Assis", 14625893, 55752)
+LOCALES["it"] |= dict(reader=(*LOCALES["it"]["reader"][:4], 28371), section=18)
 
 
 STRINGS = ROOT / "android/app/src/main/res"
@@ -354,6 +381,14 @@ def fragment(language, name):
     return max(re.split(r"%\d\$s", label(language, name)), key=len).strip()
 
 
+def series_label(language):
+    folder = "values" if language == "en" else f"values-{language}"
+    tree = ElementTree.parse(STRINGS / folder / "strings.xml")
+    plural = tree.getroot().find("plurals[@name='books_in_series']")
+    texts = [max(re.split(r"%\d?\$?d", item.text), key=len) for item in plural]
+    return os.path.commonprefix([text[::-1] for text in texts])[::-1].strip()
+
+
 def with_labels(language):
     return LOCALES[language] | dict(
         language=language,
@@ -362,6 +397,7 @@ def with_labels(language):
         cover=prefix(language, "cover_of"),
         picks=fragment(language, "because_you_read"),
         about=label(language, "about_book"),
+        series=series_label(language),
         scan=(label(language, "search"), label(language, "scan"),
               label(language, "scan_again"), LOCALES[language]["scan"]),
     )
@@ -420,7 +456,9 @@ def library(locale, theme):
              title=book[1], author=book[2], cover=book[3])
         for index, (book, shelf) in enumerate(shelves)
     ]
-    progress = {reader[0]: dict(file=f"{reader[0]}.epub", section=3, page=14, pages=96)}
+    file = f"{reader[0]}.epub"
+    section = locale.get("section", 3)
+    progress = {reader[0]: dict(file=file, section=section, page=14, pages=96)}
     today = datetime.date.today()
     pages = [34, 22, 41, 27, 30, 25, 38, 21, 29, 45, 23, 31, 26, 18]
     activity = {str(today - datetime.timedelta(days)): count
@@ -590,12 +628,13 @@ def download_packs(locale):
     wait(lambda current: not find(button)(current), timeout=900)
 
 
-def has_series(locale):
+def series_heading(locale):
     try:
-        wait(covers(locale, 4), timeout=6)
+        count = wait(find(locale["series"], exact=False), timeout=6)[0]
     except TimeoutError:
-        return False
-    return True
+        return None
+    above = [node for node in nodes() if node[0] and int(node[5]) <= int(count[3])]
+    return max(above, key=lambda node: int(node[5]))[0]
 
 
 def series_book(locale, current):
@@ -608,10 +647,12 @@ def series_book(locale, current):
                 tap(book[1], timeout=8)
                 wait(find(book[2]))
             scroll_to(locale["about"])
+            heading = series_heading(locale)
+            if heading:
+                scroll_to(heading)
+                return
         except TimeoutError:
             continue
-        if has_series(locale):
-            return
     log(f"{locale['language']}: no book with a series in this catalogue")
 
 

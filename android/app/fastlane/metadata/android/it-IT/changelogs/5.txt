@@ -1,0 +1,1 @@
+Copertine e foto degli autori disattivate non inviano più alcuna richiesta. Scaricare tutti i pacchetti recupera ogni file una sola volta, e la dimensione del pacchetto base ora include il file delle classifiche.

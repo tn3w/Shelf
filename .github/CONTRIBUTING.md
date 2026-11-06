@@ -162,7 +162,7 @@ real-time scanning (`--tune`, `--rematch` rescores stored lines without OCR).
 
 <table>
 <tr><th width="1%">Type</th><th width="1%">Contents</th></tr>
-<tr><td>Languages</td><td>English · Deutsch · Français · Español · Eesti · Svenska · Polski · Čeština · 한국어 · Suomi · 日本語 · Latviešu</td></tr>
+<tr><td>Languages</td><td>English · Deutsch · Français · Español · Eesti · Svenska · Polski · Čeština · 한국어 · Suomi · 日本語 · Latviešu · Português · Русский · Italiano</td></tr>
 <tr><td>Genre packs</td><td>fantasy · scifi · mystery · romance</td></tr>
 <tr><td>More packs</td><td>kids · young-adult · nonfiction · general</td></tr>
 </table>
@@ -173,7 +173,11 @@ language's `core` unless it is installed. Language pickers (app and catalogue) s
 native names as chips: English, Deutsch, Français, Español plus the chosen and installed
 ones; **Show all** reveals the rest. ✓ marks the chosen one, a download mark installed
 catalogues. Catalogue language ≠ app language: `LANGUAGES` (catalogues) extends
-`APP_LANGUAGES` (Weblate strings) in `Packs.kt`.
+`APP_LANGUAGES` (Weblate strings) in `Packs.kt`; `APP_LOCALES` adds regional variants
+(`pt-PT`, `values-pt-rPT` overrides only differing strings over `values-pt`, Brazilian).
+Other regions (en-GB, de-AT, fr-CA, es-MX, …) fall back to the base language. Builder
+`LANGUAGES` already has pt, ru, it; move them into the app's `LANGUAGES` once a catalogue
+release contains their packs.
 Packs include ISBNs of editions in their language; older apps ignore them.
 
 <table>
@@ -190,14 +194,18 @@ Packs include ISBNs of editions in their language; older apps ignore them.
 <tr><td><a href="https://bl.iro.bl.uk/server/api/core/items/d194ffaf-4d53-4313-b6f2-25a97f92e99f">BNB</a> linked data (2018)</td><td>English series and titles for Open Library works</td><td>CC0</td></tr>
 <tr><td><a href="https://www.bne.es/es/catalogos/datos-enlazados">BNE</a> MARC21 + persona authorities</td><td>Spanish editions, series, volumes, ISBNs, genres, translators, VIAF/ISNI/Wikidata authors</td><td>CC0</td></tr>
 <tr><td><a href="https://support.nii.ac.jp/en/cinii/api/api_outline">CiNii Books</a> (NACSIS-CAT)</td><td>Japanese editions (NCID), ISBNs, series, translators</td><td>CC BY 4.0, NII</td></tr>
-<tr><td><a href="https://dati.lnb.lv/">LNB</a> Latvian bibliography 2014–2023</td><td>Latvian editions, ISBNs, genres, original language</td><td>CC0</td></tr>
+<tr><td><a href="https://dati.lnb.lv/en/dataset/retrospective_bibliography">LNB</a> retrospective bibliography (1525–, yearly)</td><td>Latvian and Russian editions, ISBNs, genres, original language</td><td>CC0</td></tr>
+<tr><td><a href="https://opendata.bnportugal.gov.pt/eng_index.htm">BNP</a> catalogue (UNIMARC MarcXchange)</td><td>Portuguese editions, series, ISBNs, UDC forms, audience</td><td>CC0</td></tr>
+<tr><td><a href="https://www.loc.gov/cds/products/MDSConnect-books_all.html">Library of Congress</a> Books All 2016</td><td>Portuguese, Russian and Italian editions, ISBNs, series, genres</td><td>public domain</td></tr>
 <tr><td><a href="https://www.wikidata.org">Wikidata</a> via <a href="https://qlever.dev">QLever</a></td><td>work Q ids, labels, original language, OL ids, author GND/VIAF/ISNI (sidecars, author guard)</td><td>CC0</td></tr>
 <tr><td><a href="https://www.gutenberg.org/ebooks/offline_catalogs.html">Project Gutenberg</a> RDF</td><td><code>pg:</code> ids, summaries (sidecars)</td><td>public domain</td></tr>
 </table>
 
 One library per catalogue: DNB → de, ERB → et, BnF → fr, LIBRIS → sv, BN → pl, NKP → cs,
 NLK → ko, Fennica → fi, BNB → en (joins only, adds no works), BNE → es, CiNii → ja, LNB →
-lv. CiNii has no genre: Japanese records (kana in title or publisher) with ISBN
+lv (`lnb_lv`) and ru (`lnb_ru`, same files, 008 `rus`), BNP → pt, Library of Congress →
+pt, ru, it (`loc_pt`/`loc_ru`/`loc_it`, same 43 files filtered by 008/35). Russian,
+Italian and Brazilian books have no open national dump (RSL, NLR, SBN, FBN). CiNii has no genre: Japanese records (kana in title or publisher) with ISBN
 join; only titles or series naming a literary form (小説, 文庫, 童話, 詩集, …) add works.
 Join Open Library works by ISBN, else title or original title + author; per language, so
 editions never cross catalogues. Missing works get stable ids `1,000,000,000 + base +
@@ -212,8 +220,11 @@ alias. Rank below Open Library books with readers.
 | ERB | 1,000 M | 20 M | `b` number |
 | CiNii | 1,020 M | 27 M | NCID prefix slot + 7 digits (`NCID_RANGES`, 12.8 M NCIDs) |
 | LNB Latvia | 1,047 M | 10 M | `LNC04`/`NBA02` slot + number |
+| BNP Portugal | 1,057 M | 10 M | record number |
+| LNB Russian | 1,067 M | 10 M | `LNC04`/`NBA02` slot + number |
+| LoC ru, it, pt | 1,077 M, 1,107 M, 1,127 M | 30 M, 20 M, 20 M | LCCN hash |
 
-Free: 1,057 M – 1,147 M. Hashed ids that collide are probed to the next free id in the
+Free: none below 2³¹ − 10⁹ (1,147 M). Hashed ids that collide are probed to the next free id in the
 range (sorted by record id, so stable).
 
 Join guards (`libraries.rs`, named constants):
@@ -234,7 +245,8 @@ local Open Library edition title is foreign, take library series. Series with �
 writers whose titles don't name it are publisher series and dropped. Genre-only pulp
 issues (`Dr. Norden 631 - Arztroman`) skipped.
 
-MARC libraries (ERB, BN, NKP, Fennica, BNE, LNB Latvia; `marc.rs`, binary or XML):
+MARC libraries (ERB, BN, NKP, Fennica, BNE, LNB, Library of Congress; `marc.rs`, binary
+or XML):
 language from 008/35,
 literature from 008/33 fiction form, UDC `821`, YKL 80–85 or a literary 655/380 genre;
 textbook, activity, colouring, song books skipped; 008/22 audience; genres → tags;
@@ -242,7 +254,8 @@ textbook, activity, colouring, song books skipped; 008/22 audience; genres → t
 series; 240 or 246 (translations) → original title; 041 `$h` or UDC `821.xxx` → original
 language; 700 translator roles, 264/260 `$b` publisher, 520 description, 100 `$0` authority.
 BNE persona file: name + birth year → VIAF/ISNI/Wikidata (name/title authorities skipped,
-ambiguous names dropped). BnF UNIMARC: 101 `fre`, 105/11
+ambiguous names dropped). BNP reuses the UNIMARC parser (101 `por`, MarcXchange XML,
+UDC 675 `821…-31/-32/-1/-2/-93` → fiction, stories, poetry, drama, kids). BnF UNIMARC: 101 `fre`, 105/11
 literature code, 100/17 audience, 686 class (803 novels, 801 poetry, 802 drama, 805
 comics, 809 children), 200 `$h`/`$i` volumes, 225/461 series, 454 original.
 LIBRIS (`linked.rs`): Swedish instances with literary genre/form term or SAB `H`
@@ -272,8 +285,8 @@ Covers: Open Library → DNB (ISBN), DIGAR thumbnail (ERB 856 `nlib-digar` id), 
 (LIBRIS, ISBN) or Open Library by ISBN (other libraries), view time only → drawn. Wide
 jacket scans show front half. Author photos from Open Library follow **Online covers**.
 
-Search folds Latin accents (Polish, Czech, Latvian too), maps full-width
-ASCII, keeps Hangul syllables and splits kana/kanji runs into overlapping bigrams
+Search folds Latin accents (Polish, Czech, Latvian too), lowercases Cyrillic (ё → е),
+maps full-width ASCII, keeps Hangul syllables and splits kana/kanji runs into overlapping bigrams
 (`ノルウェイの森` → `ノル ルウ ウェ ェイ イの の森`, `・` breaks runs); builder and app
 tokenize alike (`catalog.rs` / `Search.kt`, same test strings).
 
@@ -383,7 +396,9 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
   [--library nkp=<nkc.xml.gz>] [--library nlk=<book_json_*.zip>] \
   [--library fennica=<Fennica-bib-*.zip>] [--library bnb=<BNBLODBooks_*_nt.zip>] \
   [--library bne=<monomodernas-MARC.mrc>[,<persona-MARC.mrc>]]... \
-  [--library cinii=<cinii.jsonl[.gz]>] [--library lnb_lv=<natl_bibliography-*-marc.zip>] \
+  [--library cinii=<cinii.jsonl[.gz]>] [--library lnb_lv=<bk_*.xml>,...] \
+  [--library lnb_ru=<bk_*.xml>,...] [--library bn_pt=<catalogo.marcxchange.zip>] \
+  [--library loc_ru|loc_it|loc_pt=<BooksAll.2016.partNN.utf8.gz>,...] \
   [--wikidata <dir of tooling/wikidata.sh TSVs>] [--gutenberg <rdf-files as .rdf.gz>]
 target/release/builder links|extras|people <out.bin> <kind-xx.bin>...
 target/release/builder unify <works.bin> <release dir> [previous works.bin]
@@ -446,8 +461,8 @@ Scan shot: emulator camera plays a rendered book-on-table loop; taps to capture 
 for any section shot. Tab, settings, cover and scan labels come from
 `values-<lang>/strings.xml`, so Weblate translations reach the screenshots. Only headlines
 and demo books live in the script.
-Each language downloads its packs via Settings › Catalogue (Russian has none and uses the
-English catalogue). Demo books are picked per catalogue: titles and covers from that
+Each language downloads its packs via Settings › Catalogue (Russian, Portuguese and Italian
+use the English catalogue until their packs ship; drop `catalogue` in `screenshots.py`). Demo books are picked per catalogue: titles and covers from that
 catalogue, a series book for the series shot. The scan shot needs a Latin-script cover:
 the recognizer reads Latin text only. Demo mode is re-applied after each theme switch;
 Hangul headlines use Noto Sans CJK KR, kana and kanji Noto Sans CJK JP (`fc-match`); a
@@ -522,8 +537,9 @@ full description, changelogs `1`–`16` per language under
 `android/app/fastlane/metadata/android/<lang>/`) are translated on
 [Hosted Weblate](https://hosted.weblate.org/engage/shelf/). Weblate opens pull requests
 from its `weblate` branch. Store texts are limited to 30 (title), 80 (short), 4000 (full)
-and 500 (changelog) characters. App languages: `APP_LANGUAGES` (the first ten catalogue
-languages) plus Russian; 日本語 and Latviešu are catalogue-only.
+and 500 (changelog) characters. Store folders: `pt-BR` and `pt-PT` (European wording),
+`it-IT`, `ru-RU`; other locales use the bare language. App languages: `APP_LANGUAGES`
+(all catalogue languages plus Russian, Portuguese and Italian).
 
 ## Reporting
 

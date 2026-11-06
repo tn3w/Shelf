@@ -1,0 +1,4 @@
+• Lingua dell’app selezionabile anche nelle impostazioni di Android
+• Popolari compare subito quando Per te non è disponibile
+• Correzioni: crash dello scanner, file MOBI bloccati, importazioni perse, problemi di aggiornamento e ripristino
+• I fumetti CBR si aprono solo se compressi come ZIP (RAR non è libero)

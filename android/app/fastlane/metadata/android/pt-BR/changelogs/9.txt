@@ -1,0 +1,1 @@
+Correção do gesto de voltar: a página do livro agora desaparece corretamente, sem deixar o texto sobre o Início.

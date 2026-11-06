@@ -1,0 +1,1 @@
+Correzione del gesto indietro: la pagina del libro ora scompare in modo pulito, senza lasciare il testo sopra la Home.

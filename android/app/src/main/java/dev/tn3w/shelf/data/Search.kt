@@ -38,6 +38,7 @@ val ARTICLES =
 private val ARTICLE = Regex("^(${ARTICLES.joinToString("|")}) ")
 private val TITLE_BREAK = Regex("[:;(/]")
 private val HANGUL = '\uac00'..'\ud7a3'
+private val CYRILLIC = '\u0400'..'\u04ff'
 private val KANA = listOf('\u3040'..'\u30ff', '\u31f0'..'\u31ff', '\uff66'..'\uff9f')
 private val KANJI = listOf('\u3400'..'\u4dbf', '\u4e00'..'\u9fff', '\uf900'..'\ufaff')
 private val FULLWIDTH = '\uff01'..'\uff5e'
@@ -90,6 +91,11 @@ private fun foldCharacter(character: Char): Char? {
     val lowered = if (narrow.code < 128) narrow.lowercaseChar() else narrow
     if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
     if (character in HANGUL) return character
+    if (character in
+        CYRILLIC
+    ) {
+        return character.lowercaseChar().takeIf { it != 'ё' } ?: 'е'
+    }
     return FOLD[character]
 }
 

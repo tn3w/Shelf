@@ -61,6 +61,11 @@ const FOLDED: [(&str, char); 24] = [
     ("ōŌ", 'o'),
 ];
 pub const HANGUL: RangeInclusive<char> = '\u{ac00}'..='\u{d7a3}';
+const CYRILLIC: RangeInclusive<char> = '\u{400}'..='\u{4ff}';
+
+pub fn is_cyrillic(character: char) -> bool {
+    CYRILLIC.contains(&character)
+}
 const KANA: [RangeInclusive<char>; 3] = [
     '\u{3040}'..='\u{30ff}',
     '\u{31f0}'..='\u{31ff}',
@@ -91,6 +96,10 @@ fn fold(character: char) -> Option<char> {
     let lowered = narrow.unwrap_or(character).to_ascii_lowercase();
     if lowered.is_ascii_alphanumeric() || HANGUL.contains(&character) {
         return Some(lowered);
+    }
+    if is_cyrillic(character) {
+        let lowered = character.to_lowercase().next()?;
+        return Some(if lowered == 'ё' { 'е' } else { lowered });
     }
     let found = FOLDED.iter().find(|(set, _)| set.contains(character));
     found.map(|&(_, folded)| folded)

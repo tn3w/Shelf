@@ -365,6 +365,58 @@ pub const LNB_LV: Profile = Profile {
     teens: &["jauniešiem", "pusaudž"],
 };
 
+pub const LNB_RU: Profile = Profile {
+    language: "rus",
+    ..LNB_LV
+};
+
+const LOC: Profile = Profile {
+    language: "",
+    literature: &["fiction", "novels", "short stories", "poetry", "drama"],
+    skipped: &[
+        "coloring books",
+        "textbooks",
+        "cookbooks",
+        "readers (",
+        "exercises",
+    ],
+    subjects: &[
+        ("detective and mystery", "fiction / mystery & detective"),
+        ("science fiction", "fiction / science fiction"),
+        ("fantasy", "fiction / fantasy"),
+        ("romance", "fiction / romance"),
+        ("historical fiction", "fiction / historical"),
+        ("horror", "fiction / horror"),
+        ("thrillers", "fiction / thrillers"),
+        ("adventure", "fiction / action & adventure"),
+        ("short stories", "fiction / short stories"),
+        ("humor", "humor"),
+        ("comics", "comics & graphic novels"),
+        ("graphic novels", "comics & graphic novels"),
+        ("picture books", "picture books"),
+        ("fairy tales", "fairy tales"),
+        ("poetry", "poetry"),
+        ("drama", "drama"),
+    ],
+    kids: &["juvenile", "children's"],
+    teens: &["young adult"],
+};
+
+pub const LOC_RU: Profile = Profile {
+    language: "rus",
+    ..LOC
+};
+
+pub const LOC_IT: Profile = Profile {
+    language: "ita",
+    ..LOC
+};
+
+pub const LOC_PT: Profile = Profile {
+    language: "por",
+    ..LOC
+};
+
 const BNF_SUBJECTS: [(&str, &str); 13] = [
     ("policier", "fiction / mystery & detective"),
     ("science-fiction", "fiction / science fiction"),
@@ -380,6 +432,48 @@ const BNF_SUBJECTS: [(&str, &str); 13] = [
     ("contes", "fairy tales"),
     ("humour", "humor"),
 ];
+
+const BN_PT_SUBJECTS: [(&str, &str); 13] = [
+    ("policia", "fiction / mystery & detective"),
+    ("ficção científica", "fiction / science fiction"),
+    ("fantasia", "fiction / fantasy"),
+    ("romances de amor", "fiction / romance"),
+    ("romances históricos", "fiction / historical"),
+    ("terror", "fiction / horror"),
+    ("suspense", "fiction / thrillers"),
+    ("aventuras", "fiction / action & adventure"),
+    ("livros ilustrados", "picture books"),
+    ("banda desenhada", "comics & graphic novels"),
+    ("histórias em quadrinhos", "comics & graphic novels"),
+    ("contos de fadas", "fairy tales"),
+    ("humor", "humor"),
+];
+
+const UDC_FORMS: [(&str, &str); 5] = [
+    ("-1", "poetry"),
+    ("-2", "drama"),
+    ("-31", "fiction"),
+    ("-32", "fiction / short stories"),
+    ("-93", "juvenile fiction"),
+];
+
+pub struct Unimarc {
+    source: Source,
+    language: &'static str,
+    subjects: &'static [(&'static str, &'static str)],
+}
+
+pub const BNF: Unimarc = Unimarc {
+    source: Source::Bnf,
+    language: "fre",
+    subjects: &BNF_SUBJECTS,
+};
+
+pub const BN_PT: Unimarc = Unimarc {
+    source: Source::BnPt,
+    language: "por",
+    subjects: &BN_PT_SUBJECTS,
+};
 
 const BNF_CLASSES: [(&str, &str); 5] = [
     ("801", "poetry"),
@@ -701,7 +795,7 @@ fn marc_id(source: Source, control: &str) -> Option<u32> {
     let sequence = match source {
         Source::Erb => return erb_id(control),
         Source::Bne => bne_sequence(control),
-        Source::LnbLv => lnb_lv_sequence(control),
+        Source::LnbLv | Source::LnbRu => lnb_lv_sequence(control),
         _ => None,
     };
     Some(source.local_id(sequence.as_deref().unwrap_or(control)))
@@ -890,7 +984,7 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
             .unwrap_or_default(),
     );
     let year: String = fixed.get(7..11).unwrap_or_default().iter().collect();
-    let control = marc.control("001");
+    let control = marc.control("001").trim();
     let authorities = heading_authorities(marc);
     let contributors = contributors(marc);
     Some(Record {
@@ -923,26 +1017,37 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
     })
 }
 
-fn bnf_name(marc: &Marc) -> String {
+fn unimarc_name(marc: &Marc) -> String {
     let authors = marc.fields("700").chain(marc.fields("701"));
     let mut authors = authors.filter(|field| field.get('4').is_none_or(|role| role == "070"));
     let Some(author) = authors.next() else {
         return String::new();
     };
-    let surname = clean(author.get('a').unwrap_or_default());
-    match author.get('b').map(clean) {
-        Some(given) if !given.is_empty() => normalized_name(&format!("{given} {surname}")),
-        _ => normalized_name(&surname),
+    let part = |code| clean(author.get(code).unwrap_or_default().trim_end_matches(','));
+    let (surname, given) = (part('a'), part('b'));
+    match given.is_empty() {
+        true => normalized_name(&surname),
+        false => normalized_name(&format!("{given} {surname}")),
     }
 }
 
-pub fn bnf_record(marc: &Marc) -> Option<Record> {
+fn udc_forms(marc: &Marc) -> Vec<&'static str> {
+    let literary = |class: &&str| class.starts_with("821");
+    let classes: Vec<&str> = marc.values("675", 'a').filter(literary).collect();
+    let listed = |suffix: &str| classes.iter().any(|class| class.contains(suffix));
+    let forms = UDC_FORMS.iter().filter(|(suffix, _)| listed(suffix));
+    forms.map(|&(_, subject)| subject).collect()
+}
+
+pub fn unimarc_record(marc: &Marc, profile: &Unimarc) -> Option<Record> {
+    let source = profile.source;
     let coded: Vec<char> = marc.first("100", 'a').chars().collect();
     let literature = marc.first("105", 'a').chars().nth(11).unwrap_or('y');
-    if marc.leader.get(6..8) != Some("am") || marc.first("101", 'a') != "fre" {
+    let forms = udc_forms(marc);
+    if marc.leader.get(6..8) != Some("am") || marc.first("101", 'a') != profile.language {
         return None;
     }
-    if !BNF_LITERATURE.contains(literature) {
+    if !BNF_LITERATURE.contains(literature) && forms.is_empty() {
         return None;
     }
     let isbns = isbn_keys(marc.values("010", 'a'));
@@ -955,10 +1060,12 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
         .flat_map(|tag| marc.values(tag, 'a'))
         .map(genre_term)
         .collect();
-    let mapped = BNF_SUBJECTS
+    let mapped = profile
+        .subjects
         .iter()
         .filter(|(stem, _)| mentions(&terms, &[stem]));
     let mut subjects: Vec<&'static str> = mapped.map(|&(_, subject)| subject).collect();
+    subjects.extend(forms.iter().filter(|&&form| form != "juvenile fiction"));
     let classed = BNF_CLASSES.iter().filter(|(code, _)| *code == class);
     subjects.extend(classed.map(|&(_, subject)| subject));
     subjects.extend(match literature {
@@ -969,7 +1076,8 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
     });
     let audience = coded.get(17).copied().unwrap_or(' ');
     let teen = audience == 'e';
-    let kid = !teen && (BNF_JUVENILE.contains(audience) || class == "809");
+    let juvenile = class == "809" || forms.contains(&"juvenile fiction");
+    let kid = !teen && (BNF_JUVENILE.contains(audience) || juvenile);
     let comics = subjects.contains(&"comics & graphic novels");
     let reader = Reader {
         kid,
@@ -978,7 +1086,7 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
         comics,
         poetry: subjects.contains(&"poetry"),
         drama: subjects.contains(&"drama"),
-        fiction: literature == 'a' || class == "803",
+        fiction: literature == 'a' || class == "803" || forms.contains(&"fiction"),
     };
     let series = series_of(marc, &["225", "461"], 'a');
     let series = match series.0.is_empty() {
@@ -990,7 +1098,12 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
     let binding = marc.first("010", 'b');
     let format = match () {
         _ if comics => COMIC,
-        _ if binding.starts_with("rel") || binding.starts_with("cart") => HARDCOVER,
+        _ if ["rel", "cart", "enc"]
+            .iter()
+            .any(|bound| binding.starts_with(bound)) =>
+        {
+            HARDCOVER
+        }
         _ => PAPERBACK,
     };
     let control = marc.control("001");
@@ -999,21 +1112,21 @@ pub fn bnf_record(marc: &Marc) -> Option<Record> {
         .filter(char::is_ascii_digit)
         .take(8)
         .collect();
-    let name = bnf_name(marc);
+    let name = unimarc_name(marc);
     let contributors = contributors(marc);
     let year: String = coded.get(9..13).unwrap_or_default().iter().collect();
     Some(Record {
-        source: Source::Bnf,
-        id: Source::Bnf.local_id(&digits),
-        identifier: format!("bnf:{control}"),
-        language: Source::Bnf.language(),
+        source,
+        id: source.local_id(&digits),
+        identifier: format!("{}:{control}", source.name()),
+        language: source.language(),
         isbns,
         title,
         original: field_text(marc.first("454", 't')),
         original_language: marc.first("101", 'c').to_string(),
         series,
         volume,
-        author: Source::Bnf.author_id(&name),
+        author: source.author_id(&name),
         name,
         translators: translators(&contributors),
         contributors,

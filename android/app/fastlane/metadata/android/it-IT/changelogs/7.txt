@@ -1,0 +1,1 @@
+Apri qualsiasi file di libro: importalo in Libreria, usa Apri con o condividilo con Shelf. Imposta la tua fonte del catalogo (repository GitHub, release Gitea/Forgejo o URL di un manifest) e il server delle copertine, oppure importa i file del catalogo senza scaricarli. Primo avvio più pulito e un avviso chiaro quando non c’è un catalogo installato.

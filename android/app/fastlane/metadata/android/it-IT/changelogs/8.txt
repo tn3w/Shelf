@@ -1,0 +1,1 @@
+Correzione della navigazione: tornando a una scheda ora viene evidenziata quella giusta, e toccandola di nuovo si torna alla sua schermata principale.

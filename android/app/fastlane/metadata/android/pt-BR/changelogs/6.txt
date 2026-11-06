@@ -1,0 +1,1 @@
+Builds reproduzíveis: as bibliotecas nativas não são mais reduzidas, e as dependências foram atualizadas.

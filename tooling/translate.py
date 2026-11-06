@@ -31,6 +31,7 @@ NLLB_CODES = {
     "fi": "fin_Latn",
     "ja": "jpn_Jpan",
     "lv": "lvs_Latn",
+    "ru": "rus_Cyrl",
 }
 UNSPACED = {"ja"}
 OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "et": "est"}

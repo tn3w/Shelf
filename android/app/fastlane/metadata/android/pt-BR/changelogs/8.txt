@@ -1,0 +1,1 @@
+Correção de navegação: voltar a uma aba agora destaca a aba certa, e tocar nela de novo volta para a tela principal.

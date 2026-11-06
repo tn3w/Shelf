@@ -1,0 +1,1 @@
+Primeira versão: novo formato de catálogo, pacotes para baixar, quatro idiomas.

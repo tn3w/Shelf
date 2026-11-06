@@ -149,6 +149,11 @@ pub enum Source {
     Bne,
     Cinii,
     LnbLv,
+    BnPt,
+    LnbRu,
+    LocRu,
+    LocIt,
+    LocPt,
 }
 
 pub const DNB_COVER: u8 = 1;
@@ -156,7 +161,7 @@ const DIGAR_COVER: u8 = 2;
 const ISBN_COVER: u8 = 3;
 const BOOKBITES_COVER: u8 = 4;
 
-const NAMES: [(&str, Source); 12] = [
+const NAMES: [(&str, Source); 17] = [
     ("dnb", Source::Dnb),
     ("erb", Source::Erb),
     ("libris", Source::Libris),
@@ -169,9 +174,14 @@ const NAMES: [(&str, Source); 12] = [
     ("bne", Source::Bne),
     ("cinii", Source::Cinii),
     ("lnb_lv", Source::LnbLv),
+    ("bn_pt", Source::BnPt),
+    ("lnb_ru", Source::LnbRu),
+    ("loc_ru", Source::LocRu),
+    ("loc_it", Source::LocIt),
+    ("loc_pt", Source::LocPt),
 ];
 
-pub const ID_RANGES: [(Source, u32, u32); 12] = [
+pub const ID_RANGES: [(Source, u32, u32); 17] = [
     (Source::Dnb, 0, MAX_DNB_ID),
     (Source::Libris, 200_000_000, LOCAL_IDS),
     (Source::Bnp, 300_000_000, LOCAL_IDS),
@@ -184,6 +194,11 @@ pub const ID_RANGES: [(Source, u32, u32); 12] = [
     (Source::Erb, 1_000_000_000, ERB_IDS),
     (Source::Cinii, 1_020_000_000, CINII_IDS),
     (Source::LnbLv, 1_047_000_000, 10_000_000),
+    (Source::BnPt, 1_057_000_000, 10_000_000),
+    (Source::LnbRu, 1_067_000_000, 10_000_000),
+    (Source::LocRu, 1_077_000_000, 30_000_000),
+    (Source::LocIt, 1_107_000_000, 20_000_000),
+    (Source::LocPt, 1_127_000_000, 20_000_000),
 ];
 
 impl Source {
@@ -220,6 +235,9 @@ impl Source {
             Source::Bne => "es",
             Source::Cinii => "ja",
             Source::LnbLv => "lv",
+            Source::BnPt | Source::LocPt => "pt",
+            Source::LnbRu | Source::LocRu => "ru",
+            Source::LocIt => "it",
         };
         crate::language_index(code)
     }
@@ -228,8 +246,10 @@ impl Source {
         match self {
             Source::Dnb => b"\n</rdf:Description>\n",
             Source::Erb | Source::Fennica => b"</marc:record>",
-            Source::Nkp | Source::LnbLv => b"</record>",
+            Source::Nkp | Source::LnbLv | Source::LnbRu => b"</record>",
+            Source::BnPt => b"</mx:record>",
             Source::Bnp | Source::Bnf | Source::Bne => b"\x1d",
+            Source::LocRu | Source::LocIt | Source::LocPt => b"\x1d",
             Source::Nlk => linked::NLK_SEPARATOR,
             Source::Libris | Source::Bnb | Source::Cinii => b"\n",
         }
@@ -243,9 +263,14 @@ impl Source {
             Source::Nkp => marc::marc21_record(&Marc::xml(text()?), self, &marc::NKP),
             Source::Fennica => marc::marc21_record(&Marc::xml(text()?), self, &marc::FENNICA),
             Source::LnbLv => marc::marc21_record(&Marc::xml(text()?), self, &marc::LNB_LV),
+            Source::LnbRu => marc::marc21_record(&Marc::xml(text()?), self, &marc::LNB_RU),
+            Source::LocRu => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::LOC_RU),
+            Source::LocIt => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::LOC_IT),
+            Source::LocPt => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::LOC_PT),
             Source::Bnp => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNP),
             Source::Bne => marc::marc21_record(&Marc::binary(bytes)?, self, &marc::BNE),
-            Source::Bnf => marc::bnf_record(&Marc::binary(bytes)?),
+            Source::Bnf => marc::unimarc_record(&Marc::binary(bytes)?, &marc::BNF),
+            Source::BnPt => marc::unimarc_record(&Marc::xml(text()?), &marc::BN_PT),
             Source::Nlk => linked::nlk_record(text()?),
             Source::Cinii => linked::cinii_record(text()?),
             Source::Libris | Source::Bnb => None,
@@ -1394,11 +1419,13 @@ fn load_source(source: Source, location: &str) -> Vec<Record> {
         Source::Bne => marc::bne_records(location),
         _ => {
             let mut records = Vec::new();
-            let reader = dumps::open_location(location, source.separator());
-            let parse = |bytes: &[u8]| source.parse(bytes);
-            dumps::scan_records(reader, source.separator(), parse, |record| {
-                records.push(record)
-            });
+            for file in location.split(',') {
+                let reader = dumps::open_location(file, source.separator());
+                let parse = |bytes: &[u8]| source.parse(bytes);
+                dumps::scan_records(reader, source.separator(), parse, |record| {
+                    records.push(record)
+                });
+            }
             records
         }
     };
@@ -3594,6 +3621,116 @@ mod tests {
         assert_eq!(record.title, "Harijs Poters un Filozofu akmens");
         assert_eq!(record.original_language, "eng");
         assert_eq!(record.subjects, ["fiction"]);
+    }
+
+    #[test]
+    fn portuguese_unimarc_novel_parsed() {
+        let record = r#"<mx:record format="Unimarc" type="bibliographic">
+            <mx:leader>00747cam  2200241   450 </mx:leader>
+            <mx:controlfield tag="001">1234567</mx:controlfield>
+            <mx:datafield tag="010" ind1=" " ind2=" ">
+              <mx:subfield code="a">978-972-23-2529-5</mx:subfield>
+              <mx:subfield code="b">enc.</mx:subfield></mx:datafield>
+            <mx:datafield tag="100" ind1=" " ind2=" ">
+              <mx:subfield code="a">20000508d2000    k  y0pory0103    ba</mx:subfield>
+            </mx:datafield>
+            <mx:datafield tag="101" ind1="1" ind2=" ">
+              <mx:subfield code="a">por</mx:subfield>
+              <mx:subfield code="c">eng</mx:subfield></mx:datafield>
+            <mx:datafield tag="200" ind1="1" ind2=" ">
+              <mx:subfield code="a">Harry Potter e a pedra filosofal</mx:subfield>
+            </mx:datafield>
+            <mx:datafield tag="675" ind1=" " ind2=" ">
+              <mx:subfield code="a">821.111-31"19"</mx:subfield></mx:datafield>
+            <mx:datafield tag="700" ind1=" " ind2="1">
+              <mx:subfield code="a">Rowling,</mx:subfield>
+              <mx:subfield code="b">J. K.,</mx:subfield></mx:datafield>
+            </mx:record>"#;
+        let record = Source::BnPt.parse(record.as_bytes()).expect("record");
+        assert_eq!(record.id, 1_057_000_000 + 1_234_567);
+        assert_eq!(record.identifier, "bn_pt:1234567");
+        assert_eq!(record.language, crate::language_index("pt"));
+        assert_eq!(record.title, "Harry Potter e a pedra filosofal");
+        assert_eq!(record.name, "J. K. Rowling");
+        assert_eq!(record.original_language, "eng");
+        assert_eq!(record.format, HARDCOVER);
+        assert_eq!(record.subjects, ["fiction"]);
+    }
+
+    fn iso2709(fields: &[(&str, &str)]) -> Vec<u8> {
+        let mut directory = String::new();
+        let mut data = String::new();
+        for (tag, value) in fields {
+            let field = format!("{value}\u{1e}");
+            directory += &format!("{tag}{:04}{:05}", field.len(), data.len());
+            data += &field;
+        }
+        let base = 24 + directory.len() + 1;
+        let length = base + data.len() + 1;
+        format!("{length:05}nam a22{base:05} a 4500{directory}\u{1e}{data}\u{1d}").into_bytes()
+    }
+
+    #[test]
+    fn library_of_congress_keeps_only_its_language() {
+        let fixed = "110321s2011    ru            000 1 rus  ";
+        let fields = [
+            ("001", "  2011401234 "),
+            ("008", fixed),
+            ("020", "  \u{1f}a9785389074354"),
+            (
+                "100",
+                "1 \u{1f}aБулгаков, Михаил Афанасьевич,\u{1f}d1891-1940.",
+            ),
+            ("245", "10\u{1f}aМастер и Маргарита :\u{1f}bроман."),
+        ];
+        let bytes = iso2709(&fields);
+        let record = Source::LocRu.parse(&bytes).expect("record");
+        assert_eq!(record.identifier, "loc_ru:2011401234");
+        assert_eq!(record.language, crate::language_index("ru"));
+        assert_eq!(record.title, "Мастер и Маргарита");
+        assert!(Source::LocIt.parse(&bytes).is_none());
+        let italian = fixed.replace("ru            000 1 rus", "it            000 1 ita");
+        let fields = [
+            ("008", italian.as_str()),
+            ("020", "  \u{1f}a9788804538660"),
+            fields[4],
+        ];
+        let record = Source::LocIt.parse(&iso2709(&fields)).expect("record");
+        assert_eq!(record.language, crate::language_index("it"));
+    }
+
+    #[test]
+    fn russian_books_in_latvian_bibliography_parsed() {
+        let fixed = "141210s2014    lv            000 1 rus d";
+        let record = marc(
+            "LNC04-000001234",
+            fixed,
+            &[
+                ("020", &[('a', "9789934151002")]),
+                ("245", &[('a', "Рижские истории /")]),
+            ],
+        );
+        assert!(Source::LnbLv.parse(record.as_bytes()).is_none());
+        let record = Source::LnbRu.parse(record.as_bytes()).expect("record");
+        assert_eq!(record.id, 1_067_000_000 + 1234);
+        assert_eq!(record.language, crate::language_index("ru"));
+    }
+
+    #[test]
+    fn cyrillic_titles_search_and_detect_as_russian() {
+        assert_eq!(
+            crate::search::tokenize("Ёжик в тумане"),
+            ["ежик", "в", "тумане"]
+        );
+        assert_eq!(
+            catalog::detect_language("Мастер и Маргарита"),
+            Some(crate::language_index("ru"))
+        );
+        assert_eq!(catalog::detect_language("Кобзар і думи"), None);
+        assert_eq!(
+            catalog::isbn_language("9788804538660"),
+            Some(crate::language_index("it"))
+        );
     }
 
     #[test]

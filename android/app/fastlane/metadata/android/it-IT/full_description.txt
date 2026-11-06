@@ -1,0 +1,11 @@
+Shelf è un’app privata per i libri che funziona offline. L’intero catalogo vive sul tuo telefono, costruito da Open Library, dalla British Library e dalle biblioteche nazionali. Nessun account, nessuna pubblicità, nessun tracciamento.
+
+* Ricerca tollerante agli errori per titoli, autori, serie e ISBN
+* Scansiona la copertina o il codice a barre di un libro per trovarlo
+* Scaffali Da leggere, In lettura e Letti, obiettivo giornaliero e serie di lettura
+* Esplora generi, saghe e autori, con consigli creati sul tuo telefono
+* Leggi EPUB, Kindle, PDF, fumetti, file Word e altro
+* Importa da Goodreads e StoryGraph
+* Cataloghi in inglese, tedesco, francese, spagnolo, estone, svedese, polacco, ceco, coreano, finlandese, giapponese, lettone, portoghese, russo e italiano
+
+Un solo interruttore spegne tutta la rete. La tua libreria non lascia mai il tuo telefono.

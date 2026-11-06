@@ -1,0 +1,6 @@
+• App e catálogo em estónio, capas da biblioteca nacional
+• O catálogo alemão cresce para 388 000 livros com capas da DNB
+• Ebooks gratuitos de fontes abertas, além das suas próprias fontes
+• Abre MOBI, AZW3, CBR, CB7, DOCX, ODT e RTF
+• Pesquisa: nomes de séries encontram todos os volumes, títulos mais limpos, menos duplicados
+• Mais segura: apenas https, atualizações da app um dia após o lançamento

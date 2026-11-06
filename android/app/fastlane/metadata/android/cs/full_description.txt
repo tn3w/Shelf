@@ -6,6 +6,6 @@ Shelf je soukromá offline aplikace na knihy. Celý katalog je ve vašem telefon
 * Objevujte žánry, série a autory, s doporučeními počítanými v telefonu
 * Čtěte EPUB, Kindle, PDF, komiksy, soubory Word a další
 * Import z Goodreads a StoryGraph
-* Katalogy v angličtině, němčině, francouzštině, španělštině, estonštině, švédštině, polštině, češtině, korejštině, finštině, japonštině a lotyštině; aplikace i v ruštině
+* Katalogy v angličtině, němčině, francouzštině, španělštině, estonštině, švédštině, polštině, češtině, korejštině, finštině, japonštině, lotyštině, portugalštině, ruštině a italštině
 
 Jeden přepínač vypne veškerou síť. Vaše knihovna nikdy neopustí telefon.

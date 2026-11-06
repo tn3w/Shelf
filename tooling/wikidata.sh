@@ -7,7 +7,7 @@ set -euo pipefail
 out=$1
 queries=$(dirname "$0")/wikidata
 endpoint=https://qlever.dev/api/wikidata
-languages="en de fr es et sv pl cs ko fi ja lv"
+languages="en de fr es et sv pl cs ko fi ja lv pt ru it"
 
 fetch() {
   curl -sSfL --retry 5 --retry-all-errors --max-time 900 "$endpoint" \

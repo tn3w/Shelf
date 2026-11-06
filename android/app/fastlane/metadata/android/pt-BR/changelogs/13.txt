@@ -1,0 +1,6 @@
+• Biblioteca: ordenar, filtrar e visualização em lista; filtros por faceta na busca
+• Tela de série a partir da página do livro
+• "Excluir tudo" por idioma, além de "Excluir todos os idiomas"
+• EPUBs com caracteres especiais em links abrem; o leitor se adapta ao redimensionamento
+• Busca, catálogo e biblioteca carregam mais rápido
+• A build do F-Droid agora é reproduzível

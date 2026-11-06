@@ -1,5 +1,6 @@
 use crate::catalog::{
-    Entry, MAX_SERIES_MEMBERS, is_mostly_japanese, is_mostly_latin, series_key, title_key, tokenize,
+    Entry, MAX_SERIES_MEMBERS, is_mostly_cyrillic, is_mostly_japanese, is_mostly_latin, series_key,
+    title_key, tokenize,
 };
 use crate::dumps::Book;
 use crate::tags;
@@ -136,7 +137,7 @@ fn clean_series_name(raw: &str) -> Option<String> {
     let name = name.trim_end_matches('-').trim_end();
     let lowered = name.to_ascii_lowercase();
     let plain = (MIN_SERIES_NAME..=MAX_SERIES_NAME).contains(&name.len())
-        && (is_mostly_latin(name) || is_mostly_japanese(name))
+        && (is_mostly_latin(name) || is_mostly_japanese(name) || is_mostly_cyrillic(name))
         && name.chars().any(char::is_alphabetic)
         && position_of(name).is_none()
         && !name.contains(" / ")

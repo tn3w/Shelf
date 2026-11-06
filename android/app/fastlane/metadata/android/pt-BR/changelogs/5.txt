@@ -1,0 +1,1 @@
+Capas e fotos de autores desativadas não fazem mais nenhuma requisição. Baixar todos os pacotes busca cada arquivo uma única vez, e o tamanho do pacote básico agora inclui o arquivo de ranking.

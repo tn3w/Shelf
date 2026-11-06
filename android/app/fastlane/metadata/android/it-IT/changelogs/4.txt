@@ -1,0 +1,1 @@
+Le copertine generate si adattano meglio a ogni libro: riconoscimento dei generi migliorato e nuovi stili per classici, biografie e distopie.

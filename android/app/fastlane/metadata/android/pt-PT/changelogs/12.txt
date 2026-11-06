@@ -1,0 +1,6 @@
+• Digitalize a capa ou o código de barras ISBN para encontrar um livro, tudo no dispositivo
+• A importação de CSV procura primeiro pelo ISBN
+• Dados mais seguros: nada é apagado sem aviso em erros de leitura, importação de cópias validada
+• O objetivo de leitura conta só viragens de página reais; a sequência atualiza depois da meia-noite
+• Ficheiros FB2 e TXT noutras codificações abrem corretamente
+• Livros abandonados no StoryGraph são importados como lidos

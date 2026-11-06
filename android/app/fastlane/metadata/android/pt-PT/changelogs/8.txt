@@ -1,0 +1,1 @@
+Correção de navegação: voltar a um separador destaca agora o separador certo, e tocar-lhe de novo volta ao ecrã principal.

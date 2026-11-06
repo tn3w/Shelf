@@ -1,0 +1,1 @@
+Abra qualquer arquivo de livro: importe na Biblioteca, use Abrir com ou compartilhe com o Shelf. Defina sua própria fonte de catálogo (repositório do GitHub, releases do Gitea/Forgejo ou URL de manifesto) e servidor de capas, ou importe arquivos do catálogo sem baixar. Primeira abertura mais limpa e um aviso claro quando nenhum catálogo está instalado.

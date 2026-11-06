@@ -23,7 +23,7 @@ private fun translatable(folder: String): Set<String> {
 
 private val PLURAL_FORMS = mapOf(
     listOf("one", "other") to listOf("de", "et", "sv", "fi"),
-    listOf("one", "many", "other") to listOf("fr", "es"),
+    listOf("one", "many", "other") to listOf("fr", "es", "pt", "it"),
     listOf("one", "few", "many", "other") to listOf("pl", "cs", "ru"),
     listOf("zero", "one", "other") to listOf("lv"),
     listOf("other") to listOf("ko", "ja"),
@@ -60,6 +60,16 @@ class TranslationsTest {
     fun appSpeaksEveryCatalogueLanguageAndMore() {
         assertTrue(APP_LANGUAGES.containsAll(LANGUAGES))
         assertTrue(APP_LANGUAGES.size > LANGUAGES.size)
+    }
+
+    @Test
+    fun regionalLocalesOnlyOverrideKnownStrings() {
+        val english = translatable("values")
+        for (tag in APP_LOCALES - APP_LANGUAGES.toSet()) {
+            val (language, region) = tag.split("-")
+            val overrides = translatable("values-$language-r$region")
+            assertTrue(tag, overrides.isNotEmpty() && english.containsAll(overrides))
+        }
     }
 
     @Test

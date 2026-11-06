@@ -1,0 +1,6 @@
+• Scansiona la copertina o il codice a barre ISBN per trovare un libro, tutto sul dispositivo
+• L’importazione CSV cerca prima per ISBN
+• Dati più sicuri: nessuna cancellazione silenziosa in caso di errori di lettura, importazione dei backup verificata
+• L’obiettivo di lettura conta solo i veri cambi di pagina; la serie si aggiorna dopo mezzanotte
+• I file FB2 e TXT in altre codifiche si aprono correttamente
+• I libri abbandonati su StoryGraph vengono importati come letti

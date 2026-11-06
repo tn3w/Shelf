@@ -2,7 +2,7 @@ use crate::dumps::{Authors, Book, FLAG_COVER, FLAG_ISBN, FLAG_PUBLISHER, FLAG_RE
 use crate::dumps::{Facts, Signal, TitleRecord, Titles};
 use crate::libraries::{self, SYNTHETIC};
 use crate::release::State;
-use crate::search::HANGUL;
+use crate::search::{HANGUL, is_cyrillic};
 pub use crate::search::{is_cjk, is_kana, tokenize};
 use crate::{LANGUAGE_COUNT, LANGUAGES};
 use std::collections::HashMap;
@@ -202,9 +202,9 @@ const JUDGED_WORDS: usize = 25;
 const MIN_STOP_WORD_SHARE: f32 = 0.05;
 const MAX_STOP_WORD_BYTES: usize = 16;
 
-pub const SOURCE_LANGUAGES: [&str; 17] = [
-    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv", "lt", "pt", "it", "nl",
-    "da",
+pub const SOURCE_LANGUAGES: [&str; 18] = [
+    "en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv", "pt", "ru", "it", "lt",
+    "nl", "da",
 ];
 
 const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
@@ -231,16 +231,20 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
      ole",
     "",
     "arī viņš viņa viņi līdz pēc bija būs tika tiek savu",
-    "yra kaip jis jie buvo bus apie prie nuo iki savo labai kuris kuri",
     "não uma os com dos são foi ele ela seu sua seus suas ao pelo pela pelos pelas \
      também muito já está têm quando sem nas num numa isso esse essa mesmo ainda depois \
      onde",
+    "что это как его она они был была было были для или если уже только когда \
+     ещё даже меня тебя себя который которая которые очень потом теперь",
     "gli che di sono alla della nel nella delle dei degli per non più come questo \
      questa anche suo suoi sue hanno molto tra fra dopo essere stato stata",
+    "yra kaip jis jie buvo bus apie prie nuo iki savo labai kuris kuri",
     "het een van dat zijn niet wordt naar voor ook maar deze wij zij hun werd waren \
      heeft hebben geen door met bij uit over zich ik",
     "og af ikke til på ved når hendes havde bliver mod ikkje frå eit jeg hvad hvor",
 ];
+
+const NOT_RUSSIAN: &str = "іїєґўђјљњћџІЇЄҐЎЂЈЉЊЋЏ";
 
 const KINDRED_LANGUAGES: [(&str, &str); 1] = [("et", "fi")];
 
@@ -372,7 +376,8 @@ const PRINT_ON_DEMAND: &[&str] = &[
 ];
 
 pub const TARGET_CODES: [&str; LANGUAGE_COUNT] = [
-    "eng", "ger", "fre", "spa", "est", "swe", "pol", "cze", "kor", "fin", "jpn", "lav",
+    "eng", "ger", "fre", "spa", "est", "swe", "pol", "cze", "kor", "fin", "jpn", "lav", "por",
+    "rus", "ita",
 ];
 
 const LANGUAGE_CODES: [&str; 27] = [
@@ -404,7 +409,7 @@ const UDC_LANGUAGES: [(&str, &str); 20] = [
     ("821.113.5", "nor"),
 ];
 
-const ISBN_GROUPS: [(&str, usize); 33] = [
+const ISBN_GROUPS: [(&str, usize); 40] = [
     ("9780", 0),
     ("9781", 0),
     ("9798", 0),
@@ -438,6 +443,13 @@ const ISBN_GROUPS: [(&str, usize); 33] = [
     ("9784", 10),
     ("9789934", 11),
     ("9789984", 11),
+    ("978972", 12),
+    ("978989", 12),
+    ("97885", 12),
+    ("97865", 12),
+    ("9785", 13),
+    ("97888", 14),
+    ("97912", 14),
 ];
 
 const ISBN_BASE: u64 = 978_000_000_000;
@@ -943,7 +955,13 @@ pub fn clean_description(text: &str) -> String {
     }
     let stripped = without_citations(&without_links(&without_tags(&text)));
     let text = tidy(&without_urls(&stripped));
-    let readable = is_mostly_latin(&text) || is_mostly_hangul(&text) || is_mostly_japanese(&text);
+    let scripts = [
+        is_mostly_latin,
+        is_mostly_hangul,
+        is_mostly_japanese,
+        is_mostly_cyrillic,
+    ];
+    let readable = scripts.iter().any(|script| script(&text));
     if is_subject_list(&text) || !readable {
         return String::new();
     }
@@ -1078,6 +1096,9 @@ pub fn detect_language(text: &str) -> Option<usize> {
     if text.chars().any(is_kana) {
         return Some(crate::language_index("ja"));
     }
+    if is_russian(text) {
+        return Some(crate::language_index("ru"));
+    }
     let (hits, words) = stop_word_hits(text);
     let best = (0..hits.len()).max_by_key(|&language| hits[language])?;
     let others = hits
@@ -1106,6 +1127,17 @@ pub fn is_mostly_hangul(text: &str) -> bool {
         && is_mostly(text, |character| HANGUL.contains(&character))
 }
 
+pub fn is_mostly_cyrillic(text: &str) -> bool {
+    text.chars().any(char::is_alphabetic) && is_mostly(text, is_cyrillic)
+}
+
+pub fn is_russian(text: &str) -> bool {
+    is_mostly_cyrillic(text)
+        && !text
+            .chars()
+            .any(|character| NOT_RUSSIAN.contains(character))
+}
+
 pub fn is_mostly_japanese(text: &str) -> bool {
     text.chars().any(char::is_alphabetic) && is_mostly(text, is_cjk)
 }
@@ -1126,6 +1158,7 @@ pub fn is_native_script(text: &str, language: usize) -> bool {
     match LANGUAGES[language] {
         "ko" => is_mostly_hangul(text) || is_mostly_latin(text),
         "ja" => is_mostly_japanese(text) || is_mostly_latin(text),
+        "ru" => is_mostly_cyrillic(text) || is_mostly_latin(text),
         _ => is_mostly_latin(text),
     }
 }
@@ -1508,6 +1541,7 @@ impl<'a> Resolver<'a> {
         let native = |ballot: &(String, &str, u16)| match LANGUAGES[self.language] {
             "ko" => is_mostly_hangul(ballot.1),
             "ja" => is_mostly_japanese(ballot.1),
+            "ru" => is_mostly_cyrillic(ballot.1),
             _ => false,
         };
         if ballots.iter().any(native) {

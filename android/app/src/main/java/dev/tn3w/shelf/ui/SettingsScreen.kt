@@ -82,7 +82,7 @@ enum class SettingsPage(
 }
 
 fun nativeName(language: String) = Locale.forLanguageTag(language).let {
-    it.getDisplayLanguage(it).replaceFirstChar(Char::uppercase)
+    it.getDisplayName(it).replaceFirstChar(Char::uppercase)
 }
 
 @Composable
@@ -712,11 +712,12 @@ fun <T> Choice(
 
 @Composable
 private fun AppLanguageChoice() {
-    val chosen = AppCompatDelegate.getApplicationLocales()[0]?.language
+    val chosen = AppCompatDelegate.getApplicationLocales()[0]
+    val tags = listOfNotNull(chosen?.toLanguageTag(), chosen?.language)
     var current by rememberSaveable {
-        mutableStateOf(chosen?.takeIf { it in APP_LANGUAGES }.orEmpty())
+        mutableStateOf(tags.firstOrNull { it in APP_LOCALES }.orEmpty())
     }
-    val options = listOf("") + APP_LANGUAGES
+    val options = listOf("") + APP_LOCALES
     LanguageChips(options, current, R.string.app_language) { language ->
         current = language
         val locales = LocaleListCompat.forLanguageTags(language)
