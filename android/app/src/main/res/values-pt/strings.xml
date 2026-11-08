@@ -458,7 +458,7 @@
         <item quantity="other">%d destaques</item>
     </plurals>
     <string name="rate_stars">%d de 5 estrelas</string>
-    <string name="started_on">Início</string>
+    <string name="started_on">Iniciado</string>
     <string name="finished_on">Fim</string>
     <string name="read_in">Lido em %s</string>
     <string name="average_rating">Média %s</string>

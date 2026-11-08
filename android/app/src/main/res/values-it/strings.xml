@@ -89,11 +89,11 @@
     <string name="pack_kids">Bambini</string>
     <string name="pack_mystery">Gialli e thriller</string>
     <string name="pack_nonfiction">Saggistica</string>
-    <string name="pack_romance">Rosa</string>
+    <string name="pack_romance">Romanzo</string>
     <string name="pack_scifi">Fantascienza</string>
     <string name="pack_suggestion">La maggior parte dei libri come questi è nel pacchetto “%s”, non ancora installato. Scaricalo per vederne molti di più.</string>
     <string name="pack_update">Aggiornamento disponibile</string>
-    <string name="pack_young_adult">Young adult</string>
+    <string name="pack_young_adult">Giovani adulti</string>
     <string name="page_of">Pagina %1$d di %2$d</string>
     <string name="pages_of_goal">%1$d / %2$d pagine</string>
     <string name="percent_read">%d%% letto</string>
@@ -451,7 +451,7 @@
     <string name="notes_markdown">Esporta Markdown</string>
     <string name="notes_readwise">Esporta CSV per Readwise</string>
     <string name="highlight_removed">Evidenziazione rimossa</string>
-    <string name="undo">Annulla</string>
+    <string name="undo">Annulla azione</string>
     <plurals name="highlights">
         <item quantity="one">%d evidenziazione</item>
         <item quantity="many">%d di evidenziazioni</item>

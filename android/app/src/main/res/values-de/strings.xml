@@ -477,7 +477,7 @@
     <string name="speech_speed">Tempo</string>
     <string name="sleep_timer">Schlaftimer</string>
     <string name="sleep_off">Aus</string>
-    <string name="sleep_minutes">%d Min.</string>
+    <string name="sleep_minutes">%d Min</string>
     <string name="sleep_chapter_end">Ende des Kapitels</string>
     <string name="sleep_stops_in">Stoppt in %s</string>
     <string name="time_left">Noch %s</string>
