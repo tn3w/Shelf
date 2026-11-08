@@ -464,7 +464,7 @@
         <item quantity="other">%d destaques</item>
     </plurals>
     <string name="rate_stars">%d de 5 estrelas</string>
-    <string name="started_on">Início</string>
+    <string name="started_on">Iniciado</string>
     <string name="finished_on">Fim</string>
     <string name="read_in">Lido em %s</string>
     <string name="average_rating">Média %s</string>
@@ -481,4 +481,24 @@
     <string name="your_book">O seu livro</string>
     <string name="add_started">Adicionar data de início</string>
     <string name="add_finished">Adicionar data de conclusão</string>
+    <string name="listen">Ouvir</string>
+    <string name="play">Reproduzir</string>
+    <string name="pause">Pausar</string>
+    <string name="stop">Parar</string>
+    <string name="previous_chapter">Capítulo anterior</string>
+    <string name="next_chapter">Capítulo seguinte</string>
+    <string name="previous_sentence">Frase anterior</string>
+    <string name="next_sentence">Frase seguinte</string>
+    <string name="speech_speed">Velocidade</string>
+    <string name="sleep_timer">Temporizador de suspensão</string>
+    <string name="sleep_off">Desligado</string>
+    <string name="sleep_minutes">%d min</string>
+    <string name="sleep_chapter_end">Fim do capítulo</string>
+    <string name="sleep_stops_in">Para em %s</string>
+    <string name="time_left">%s restantes</string>
+    <string name="voice">Voz</string>
+    <string name="voice_missing">Não está instalada nenhuma voz para o idioma deste livro.</string>
+    <string name="voice_settings">Definições de voz</string>
+    <string name="listen_failed">Motor de voz indisponível</string>
+    <string name="no_text">Este livro não tem texto legível</string>
 </resources>
