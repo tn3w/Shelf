@@ -451,4 +451,24 @@
     <string name="your_book">내 책</string>
     <string name="add_started">시작 날짜 추가</string>
     <string name="add_finished">완독 날짜 추가</string>
+    <string name="listen">듣기</string>
+    <string name="play">재생</string>
+    <string name="pause">일시정지</string>
+    <string name="stop">중지</string>
+    <string name="previous_chapter">이전 장</string>
+    <string name="next_chapter">다음 장</string>
+    <string name="previous_sentence">이전 문장</string>
+    <string name="next_sentence">다음 문장</string>
+    <string name="speech_speed">속도</string>
+    <string name="sleep_timer">수면 타이머</string>
+    <string name="sleep_off">끔</string>
+    <string name="sleep_minutes">%d분</string>
+    <string name="sleep_chapter_end">장 끝</string>
+    <string name="sleep_stops_in">%s 후 정지</string>
+    <string name="time_left">%s 남음</string>
+    <string name="voice">음성</string>
+    <string name="voice_missing">이 책의 언어에 설치된 음성이 없습니다.</string>
+    <string name="voice_settings">음성 설정</string>
+    <string name="listen_failed">음성 엔진을 사용할 수 없음</string>
+    <string name="no_text">이 책에는 읽을 수 있는 텍스트가 없습니다</string>
 </resources>

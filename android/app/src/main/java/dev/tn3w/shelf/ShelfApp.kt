@@ -35,6 +35,7 @@ class ShelfApp :
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + logErrors)
     val session = Random.nextLong()
     val library by lazy { Library(this, scope) }
+    val narrator by lazy { Narrator(this) }
     val packs by lazy { Packs(this) }
     val sources by lazy { Sources(this) }
     val catalogs by lazy { Catalogs(this) }

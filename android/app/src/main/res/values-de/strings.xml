@@ -466,4 +466,24 @@
     <string name="your_book">Dein Buch</string>
     <string name="add_started">Startdatum hinzufügen</string>
     <string name="add_finished">Enddatum hinzufügen</string>
+    <string name="listen">Vorlesen</string>
+    <string name="play">Wiedergabe</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stopp</string>
+    <string name="previous_chapter">Vorheriges Kapitel</string>
+    <string name="next_chapter">Nächstes Kapitel</string>
+    <string name="previous_sentence">Vorheriger Satz</string>
+    <string name="next_sentence">Nächster Satz</string>
+    <string name="speech_speed">Tempo</string>
+    <string name="sleep_timer">Schlaftimer</string>
+    <string name="sleep_off">Aus</string>
+    <string name="sleep_minutes">%d Min.</string>
+    <string name="sleep_chapter_end">Ende des Kapitels</string>
+    <string name="sleep_stops_in">Stoppt in %s</string>
+    <string name="time_left">Noch %s</string>
+    <string name="voice">Stimme</string>
+    <string name="voice_missing">Für die Sprache dieses Buchs ist keine Stimme installiert.</string>
+    <string name="voice_settings">Spracheinstellungen</string>
+    <string name="listen_failed">Sprachausgabe nicht verfügbar</string>
+    <string name="no_text">Dieses Buch enthält keinen lesbaren Text</string>
 </resources>

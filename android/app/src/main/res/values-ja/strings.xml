@@ -450,4 +450,24 @@
     <string name="your_book">あなたの本</string>
     <string name="add_started">開始日を追加</string>
     <string name="add_finished">読了日を追加</string>
+    <string name="listen">聴く</string>
+    <string name="play">再生</string>
+    <string name="pause">一時停止</string>
+    <string name="stop">停止</string>
+    <string name="previous_chapter">前の章</string>
+    <string name="next_chapter">次の章</string>
+    <string name="previous_sentence">前の文</string>
+    <string name="next_sentence">次の文</string>
+    <string name="speech_speed">速度</string>
+    <string name="sleep_timer">スリープタイマー</string>
+    <string name="sleep_off">オフ</string>
+    <string name="sleep_minutes">%d分</string>
+    <string name="sleep_chapter_end">章の終わり</string>
+    <string name="sleep_stops_in">%s後に停止</string>
+    <string name="time_left">残り%s</string>
+    <string name="voice">音声</string>
+    <string name="voice_missing">この本の言語の音声がインストールされていません。</string>
+    <string name="voice_settings">音声設定</string>
+    <string name="listen_failed">音声合成エンジンを利用できません</string>
+    <string name="no_text">この本には読み上げ可能なテキストがありません</string>
 </resources>

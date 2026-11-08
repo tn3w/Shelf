@@ -3,6 +3,7 @@ package dev.tn3w.shelf.data
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
@@ -155,6 +156,17 @@ class PdfDocument(file: File) : PagedDocument {
                 }
             }
         }
+
+    fun texts(): List<String>? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return null
+        return synchronized(renderer) {
+            List(pageCount) { index ->
+                renderer.openPage(index).use { page ->
+                    page.textContents.joinToString("\n") { it.text }
+                }
+            }
+        }
+    }
 
     override fun close() = synchronized(renderer) {
         renderer.close()

@@ -216,6 +216,8 @@ data class Settings(
     val keepScreenOn: Boolean = true,
     val volumeKeys: Boolean = false,
     val brightnessSwipe: Boolean = true,
+    val speechRate: Float = 1f,
+    val speechVoice: String = "",
     val readerBrightness: Float? = null,
     val offline: Boolean = false,
     val onlineCovers: Boolean = true,

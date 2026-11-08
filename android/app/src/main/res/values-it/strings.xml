@@ -481,4 +481,24 @@
     <string name="your_book">Il tuo libro</string>
     <string name="add_started">Aggiungi data di inizio</string>
     <string name="add_finished">Aggiungi data di fine</string>
+    <string name="listen">Ascolta</string>
+    <string name="play">Riproduci</string>
+    <string name="pause">Pausa</string>
+    <string name="stop">Interrompi</string>
+    <string name="previous_chapter">Capitolo precedente</string>
+    <string name="next_chapter">Capitolo successivo</string>
+    <string name="previous_sentence">Frase precedente</string>
+    <string name="next_sentence">Frase successiva</string>
+    <string name="speech_speed">Velocità</string>
+    <string name="sleep_timer">Timer di spegnimento</string>
+    <string name="sleep_off">No</string>
+    <string name="sleep_minutes">%d min</string>
+    <string name="sleep_chapter_end">Fine del capitolo</string>
+    <string name="sleep_stops_in">Si ferma tra %s</string>
+    <string name="time_left">Restano %s</string>
+    <string name="voice">Voce</string>
+    <string name="voice_missing">Nessuna voce installata per la lingua di questo libro.</string>
+    <string name="voice_settings">Impostazioni voce</string>
+    <string name="listen_failed">Sintesi vocale non disponibile</string>
+    <string name="no_text">Questo libro non ha testo leggibile</string>
 </resources>

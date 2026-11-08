@@ -466,4 +466,24 @@
     <string name="your_book">Din bok</string>
     <string name="add_started">Lägg till startdatum</string>
     <string name="add_finished">Lägg till slutdatum</string>
+    <string name="listen">Lyssna</string>
+    <string name="play">Spela upp</string>
+    <string name="pause">Paus</string>
+    <string name="stop">Stopp</string>
+    <string name="previous_chapter">Föregående kapitel</string>
+    <string name="next_chapter">Nästa kapitel</string>
+    <string name="previous_sentence">Föregående mening</string>
+    <string name="next_sentence">Nästa mening</string>
+    <string name="speech_speed">Hastighet</string>
+    <string name="sleep_timer">Insomningstimer</string>
+    <string name="sleep_off">Av</string>
+    <string name="sleep_minutes">%d min</string>
+    <string name="sleep_chapter_end">Slutet av kapitlet</string>
+    <string name="sleep_stops_in">Stannar om %s</string>
+    <string name="time_left">%s kvar</string>
+    <string name="voice">Röst</string>
+    <string name="voice_missing">Ingen röst är installerad för bokens språk.</string>
+    <string name="voice_settings">Röstinställningar</string>
+    <string name="listen_failed">Talsyntes otillgänglig</string>
+    <string name="no_text">Boken har ingen läsbar text</string>
 </resources>

@@ -1,8 +1,10 @@
 package dev.tn3w.shelf.ui
 
+import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Build
 import android.view.Window
@@ -12,6 +14,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.annotation.StringRes
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -48,9 +51,11 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
+import dev.tn3w.shelf.Narration
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
+import dev.tn3w.shelf.Source
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -60,6 +65,7 @@ import android.provider.Settings.System as SystemSettings
 private val PAGE_PADDING = 28.dp
 private val HEADING_SCALE = mapOf(1 to 1.6f, 2 to 1.4f, 3 to 1.25f, 4 to 1.1f)
 private const val SEARCH_DELAY = 250L
+private const val SPOKEN_ALPHA = 0.22f
 private val SEARCH_MATCH = Color(0x669575CD)
 
 private data class TextPage(
@@ -77,7 +83,7 @@ sealed interface Opened {
     data object Failed : Opened
 }
 
-class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app) {
+class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
     private val opening = app.scope.async(Dispatchers.IO) {
         runSuspendCatching {
             val progress = library.progress.first().getValue(work)
@@ -89,6 +95,8 @@ class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app
     var chrome by mutableStateOf(false)
     var showChapters by mutableStateOf(false)
     var showSearch by mutableStateOf(false)
+    var showListen by mutableStateOf(false)
+    val narrator = app.narrator
     var query by mutableStateOf("")
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -159,6 +167,21 @@ class ReaderViewModel(app: ShelfApp, private val work: Int) : ShelfViewModel(app
 
     private fun toast(@StringRes message: Int) =
         Toast.makeText(app, message, Toast.LENGTH_SHORT).show()
+
+    fun listen(title: String, build: suspend () -> Source) {
+        showListen = true
+        viewModelScope.launch {
+            val current = narrator.state.value
+            if (current.work == work && (current.active || current.loading)) return@launch
+            val source = withContext(Dispatchers.Default) { build() }
+            if (source.passages.isEmpty()) {
+                showListen = false
+                return@launch toast(R.string.no_text)
+            }
+            narrator.open(work, title, source)
+            narrator.play()
+        }
+    }
 
     fun closeSearch() {
         showSearch = false
@@ -494,6 +517,22 @@ private fun TextPage.marked(
     }
 }
 
+private fun spokenRange(page: TextPage, narration: Narration, work: Int): IntRange? {
+    if (!narration.active || narration.work != work) return null
+    if (narration.section != page.section) return null
+    val start = narration.offset - page.start
+    val end = minOf(start + narration.text.length, page.text.length)
+    return if (start in 0 until end) start until end else null
+}
+
+private fun AnnotatedString.withSpoken(range: IntRange?, color: Color): AnnotatedString {
+    if (range == null) return this
+    return buildAnnotatedString {
+        append(this@withSpoken)
+        addStyle(SpanStyle(background = color), range.first, range.last + 1)
+    }
+}
+
 private fun TextPage.selectedText(range: TextRange) =
     paragraphsIn(text.text, text.paragraphStyles.map { it.start }, range.min, range.max)
 
@@ -560,6 +599,21 @@ private fun TextReader(
             val annotator = remember(origin) { Annotator(current, chapters, origin) }
             val export = rememberNotesExport(state)
             LaunchedEffect(pager.currentPage) { annotator.selection = null }
+            val narration by viewModel.narrator.state.collectAsStateWithLifecycle()
+            val spokenPage = if (narration.playing && narration.work == viewModel.work) {
+                current.indexAt(narration.section, narration.offset)
+            } else {
+                null
+            }
+            LaunchedEffect(spokenPage) {
+                spokenPage?.let {
+                    if (it !=
+                        pager.currentPage
+                    ) {
+                        pager.animateScrollToPage(it)
+                    }
+                }
+            }
             BackHandler(annotator.selection != null) { annotator.selection = null }
             Pages(
                 pager,
@@ -576,6 +630,21 @@ private fun TextReader(
                 onTap = { index, offset ->
                     annotator.tap(index, offset, highlights) {
                         viewModel.editing = Editing(it.created)
+                    }
+                },
+                onListen = {
+                    viewModel.listen(state.title) {
+                        val passages = speechOf(document)
+                        Source(passages, document.chapters, position) {
+                                passage,
+                                fraction,
+                            ->
+                            position.copy(
+                                section = passage.section,
+                                offset = passage.offset,
+                                page = (fraction * position.pages).toInt(),
+                            )
+                        }
                     }
                 },
             ) { index ->
@@ -700,8 +769,12 @@ private fun AnnotatedPage(
     val haptic = LocalHapticFeedback.current
     val selectionColor = LocalTextSelectionColors.current.backgroundColor
     val selected = annotator.selection?.takeIf { it.page == index }?.range
-    val text = remember(page, highlights, hits.query, selected, selectionColor) {
+    val narration by viewModel.narrator.state.collectAsStateWithLifecycle()
+    val spoken = spokenRange(page, narration, viewModel.work)
+    val spokenColor = MaterialTheme.colorScheme.primary.copy(alpha = SPOKEN_ALPHA)
+    val text = remember(page, highlights, hits.query, selected, selectionColor, spoken) {
         page.marked(highlights, hits.query, selected, selectionColor)
+            .withSpoken(spoken, spokenColor)
     }
     Text(
         text,
@@ -852,6 +925,13 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             Bookmark(page = it)
         }
     }
+    val narration by state.viewModel.narrator.state.collectAsStateWithLifecycle()
+    val spoken = narration.section.takeIf {
+        narration.playing && narration.work == state.viewModel.work
+    }
+    LaunchedEffect(spoken) {
+        spoken?.let { if (it != pager.currentPage) pager.animateScrollToPage(it) }
+    }
     BoxWithConstraints(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
@@ -864,6 +944,17 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             marks,
             onSearch = null,
             save = { progress.copy(page = it, pages = count) },
+            onListen = (document as? PdfDocument)?.let { pdf ->
+                {
+                    state.viewModel.listen(state.title) {
+                        val start = progress.copy(section = progress.page)
+                        val pages = pdf.texts().orEmpty()
+                        Source(speechOf(pages), emptyList(), start) { passage, _ ->
+                            progress.copy(page = passage.section, pages = count)
+                        }
+                    }
+                }
+            },
         ) {
             val page by produceState<Result<Any>?>(null, it, width, height) {
                 value = withContext(Dispatchers.IO) {
@@ -914,9 +1005,11 @@ private fun Pages(
     save: (Int) -> Progress,
     notes: (@Composable (onSelect: (Int) -> Unit) -> Unit)? = null,
     onTap: (Int, Offset) -> Boolean = { _, _ -> false },
+    onListen: (() -> Unit)? = null,
     page: @Composable (Int) -> Unit,
 ) {
     val viewModel = state.viewModel
+    val askNotifications = rememberNotificationRequest()
     val tapped by rememberUpdatedState(onTap)
     val scope = rememberCoroutineScope()
     var chrome by viewModel::chrome
@@ -992,6 +1085,12 @@ private fun Pages(
                 onSearch = onSearch,
                 contents = contents,
                 onContents = { showChapters = true },
+                onListen = onListen?.let { start ->
+                    {
+                        askNotifications()
+                        start()
+                    }
+                },
             )
         }
         AnimatedVisibility(
@@ -1002,6 +1101,11 @@ private fun Pages(
         ) {
             ReaderBottomBar(pager, chapter?.first, state.onFontScale) {
                 scope.launch { pager.scrollToPage(it) }
+            }
+        }
+        if (viewModel.showListen) {
+            ListenSheet(viewModel.work, viewModel.narrator) {
+                viewModel.showListen = false
             }
         }
         if (showChapters) {
@@ -1023,6 +1127,17 @@ private fun Pages(
 }
 
 @Composable
+private fun rememberNotificationRequest(): () -> Unit {
+    val context = LocalContext.current
+    val request = rememberLauncherForActivityResult(RequestPermission()) {}
+    return {
+        val needed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(POST_NOTIFICATIONS) != PERMISSION_GRANTED
+        if (needed) request.launch(POST_NOTIFICATIONS)
+    }
+}
+
+@Composable
 private fun BoxScope.BookmarkRibbon() {
     Icon(
         Icons.Filled.Bookmark,
@@ -1040,6 +1155,7 @@ private fun ReaderTopBar(
     onSearch: (() -> Unit)?,
     contents: SheetTab,
     onContents: () -> Unit,
+    onListen: (() -> Unit)?,
 ) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 2.dp) {
         Row(
@@ -1061,6 +1177,9 @@ private fun ReaderTopBar(
             onSearch?.let {
                 val search = stringResource(R.string.search_book)
                 IconAction(Icons.Outlined.Search, search, it)
+            }
+            onListen?.let {
+                IconAction(Icons.Outlined.Headphones, stringResource(R.string.listen), it)
             }
             BookmarkToggle(bookmarked, onBookmark)
             val list = Icons.AutoMirrored.Outlined.List

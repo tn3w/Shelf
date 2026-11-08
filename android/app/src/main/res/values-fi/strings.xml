@@ -466,4 +466,24 @@
     <string name="your_book">Sinun kirjasi</string>
     <string name="add_started">Lisää aloituspäivä</string>
     <string name="add_finished">Lisää lopetuspäivä</string>
+    <string name="listen">Kuuntele</string>
+    <string name="play">Toista</string>
+    <string name="pause">Tauko</string>
+    <string name="stop">Pysäytä</string>
+    <string name="previous_chapter">Edellinen luku</string>
+    <string name="next_chapter">Seuraava luku</string>
+    <string name="previous_sentence">Edellinen lause</string>
+    <string name="next_sentence">Seuraava lause</string>
+    <string name="speech_speed">Nopeus</string>
+    <string name="sleep_timer">Uniajastin</string>
+    <string name="sleep_off">Pois</string>
+    <string name="sleep_minutes">%d min</string>
+    <string name="sleep_chapter_end">Luvun loppu</string>
+    <string name="sleep_stops_in">Pysähtyy: %s</string>
+    <string name="time_left">%s jäljellä</string>
+    <string name="voice">Ääni</string>
+    <string name="voice_missing">Tämän kirjan kielelle ei ole asennettu ääntä.</string>
+    <string name="voice_settings">Ääniasetukset</string>
+    <string name="listen_failed">Puhemoottori ei ole käytettävissä</string>
+    <string name="no_text">Tässä kirjassa ei ole luettavaa tekstiä</string>
 </resources>

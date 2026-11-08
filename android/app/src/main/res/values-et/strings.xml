@@ -466,4 +466,24 @@
     <string name="your_book">Sinu raamat</string>
     <string name="add_started">Lisa alguskuupäev</string>
     <string name="add_finished">Lisa lõpukuupäev</string>
+    <string name="listen">Kuula</string>
+    <string name="play">Esita</string>
+    <string name="pause">Paus</string>
+    <string name="stop">Peata</string>
+    <string name="previous_chapter">Eelmine peatükk</string>
+    <string name="next_chapter">Järgmine peatükk</string>
+    <string name="previous_sentence">Eelmine lause</string>
+    <string name="next_sentence">Järgmine lause</string>
+    <string name="speech_speed">Kiirus</string>
+    <string name="sleep_timer">Uinumistaimer</string>
+    <string name="sleep_off">Väljas</string>
+    <string name="sleep_minutes">%d min</string>
+    <string name="sleep_chapter_end">Peatüki lõpp</string>
+    <string name="sleep_stops_in">Peatub: %s</string>
+    <string name="time_left">%s jäänud</string>
+    <string name="voice">Hääl</string>
+    <string name="voice_missing">Selle raamatu keele jaoks pole häält installitud.</string>
+    <string name="voice_settings">Hääleseaded</string>
+    <string name="listen_failed">Kõnesüntesaator pole saadaval</string>
+    <string name="no_text">Sellel raamatul pole loetavat teksti</string>
 </resources>
