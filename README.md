@@ -97,6 +97,20 @@ it as stories with your covers and ends on a card to share. All on your phone.
 
 Long-press to highlight, add a note, then export as Markdown or a CSV for Readwise.
 
+## Listen to your books
+
+Tap the headphones in the reader. Your phone's own speech engine reads aloud, no AI
+models, no network. Shelf finds where the story starts and ends, skipping covers,
+contents, copyright, dedications, acknowledgements and licence text, in any format
+with text (PDF needs Android 15+). It highlights the spoken sentence and turns the
+pages. Control it from the lock screen or headphones, set speed and voice, and use the
+sleep timer (5-60 minutes with a slow fade-out, or end of chapter).
+
+Extractor prototype and checks: `testing/tts` (`check.py`). Kotlin: `data/Speech.kt`
+(extractor, language guess, sleep helpers), `Narrator.kt` and `NarrationService.kt`
+(Android TTS, media session), `ui/Listen.kt` (player sheet). Samples:
+`android/app/src/test/samples`.
+
 ## Switch from Goodreads or StoryGraph in a minute
 
 | 1. Export | 2. Import | 3. Done |
