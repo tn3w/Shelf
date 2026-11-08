@@ -1,1 +1,3 @@
 .github/site/** linguist-documentation
+tooling/** linguist-vendored
+.github/site/** linguist-vendored
