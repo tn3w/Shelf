@@ -1,3 +1,4 @@
-.github/site/** linguist-documentation
-tooling/** linguist-vendored
 .github/site/** linguist-vendored
+android/app/src/test/samples/** linguist-vendored
+tooling/** linguist-vendored
+tooling/**/*.rs -linguist-vendored
