@@ -234,6 +234,8 @@ val wallpaperColorsSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 @Composable
 private fun ShelfColors.withWallpaperAccent(): ShelfColors {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return this
+
     val context = LocalContext.current
     val scheme =
         if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

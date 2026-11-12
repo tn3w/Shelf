@@ -49,3 +49,5 @@ scanbench/
 .github/site/covers-*.webp
 .github/site/icon.svg
 .github/site/thumbnail.jpg
+
+tooling/show/
