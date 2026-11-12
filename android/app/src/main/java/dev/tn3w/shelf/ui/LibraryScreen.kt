@@ -44,7 +44,7 @@ class LibraryViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val catalogueTags = catalogueState { catalogue.tags }
 
     fun importFile(uri: Uri) {
-        detached { app.open(library.importFile(uri)) }
+        detached { app.open(library.importFile(uri, app::findInCatalogue)) }
     }
 
     fun renameList(from: String, to: String?) {
@@ -54,6 +54,9 @@ class LibraryViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun toggleList(works: List<Int>, name: String) {
         detached { library.toggleList(works, name) }
     }
+
+    suspend fun findInCatalogue(title: String, author: String) =
+        withContext(Dispatchers.Default) { app.findInCatalogue(title, author) }
 
     fun addOwn(book: Book, shelf: Shelf, image: Uri?) {
         detached {
@@ -337,9 +340,14 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
     val placeholder =
         book.copy(title = shownTitle, authors = listOf(Author(0, shownAuthor)))
     var preview by remember { mutableStateOf(placeholder) }
+    var match by remember { mutableStateOf<Book?>(null) }
+    var useMatch by rememberSaveable { mutableStateOf(true) }
+    val found = match?.takeIf { useMatch }
     LaunchedEffect(placeholder) {
         delay(300)
         preview = placeholder
+        match = book.title.takeIf(String::isNotEmpty)
+            ?.let { viewModel.findInCatalogue(it, book.author) }
     }
     LaunchedEffect(Unit) {
         if (query.isBlank()) titleFocus.requestFocus() else authorFocus.requestFocus()
@@ -347,9 +355,12 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
 
     fun add() {
         if (book.title.isEmpty()) return
-        viewModel.addOwn(book, shelf, image)
+        when (found) {
+            null -> viewModel.addOwn(book, shelf, image)
+            else -> viewModel.place(found, shelf)
+        }
         onDismiss()
-        navigator.book(book, "own")
+        navigator.book(found ?: book, "own")
     }
 
     ModalBottomSheet(
@@ -368,14 +379,10 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
                 stringResource(R.string.own_book),
                 style = MaterialTheme.typography.titleLarge,
             )
-            EditableCover({ image = it }, Modifier.padding(bottom = 8.dp)) {
-                if (image == null) return@EditableCover BookCover(preview, 112.dp)
-                AsyncImage(
-                    model = image,
-                    contentDescription = stringResource(R.string.cover_of, preview.title),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.width(112.dp).aspectRatio(2f / 3f),
-                )
+            if (found != null) {
+                BookCover(found, 112.dp, Modifier.padding(bottom = 8.dp))
+            } else {
+                OwnCover(preview, image) { image = it }
             }
             OwnBookField(title, R.string.title, Modifier.focusRequester(titleFocus)) {
                 authorFocus.requestFocus()
@@ -383,12 +390,54 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
             OwnBookField(author, R.string.author, Modifier.focusRequester(authorFocus)) {
                 add()
             }
+            match?.let { CatalogueMatch(it, useMatch) { useMatch = it } }
             ShelfPicker(shelf) { shelf = it }
             Button(
                 onClick = ::add,
                 enabled = book.title.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) { Text(stringResource(R.string.add)) }
+        }
+    }
+}
+
+@Composable
+private fun OwnCover(preview: Book, image: Uri?, onImage: (Uri) -> Unit) =
+    EditableCover(onImage, Modifier.padding(bottom = 8.dp)) {
+        if (image == null) return@EditableCover BookCover(preview, 112.dp)
+        AsyncImage(
+            model = image,
+            contentDescription = stringResource(R.string.cover_of, preview.title),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.width(112.dp).aspectRatio(2f / 3f),
+        )
+    }
+
+@Composable
+private fun CatalogueMatch(book: Book, selected: Boolean, onSelect: (Boolean) -> Unit) {
+    val year = book.year.takeIf { it > 0 }?.toString()
+    val details = listOfNotNull(book.title, book.author.ifEmpty { null }, year)
+    Surface(
+        onClick = { onSelect(!selected) },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Row(
+            Modifier.fillMaxWidth()
+                .padding(start = 16.dp, end = 8.dp)
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(Icons.Outlined.AutoStories, null)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.found_in_catalogue),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Hint(details.joinToString(" · "))
+            }
+            Switch(selected, onSelect)
         }
     }
 }

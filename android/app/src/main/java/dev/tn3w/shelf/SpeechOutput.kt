@@ -30,6 +30,9 @@ private const val PARAGRAPH_PAUSE = 0.25f
 
 data class SpeechVoice(val name: String, val label: String)
 
+internal fun voiceLabel(id: String) =
+    id.split('_').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
+
 interface SpeechEvents {
     fun started(tag: Int, index: Int)
 
@@ -216,7 +219,7 @@ class PocketOutput(
     private var seed = 1L
     private val worker = thread(name = "pocket") { loop() }
 
-    override val voices = pool.map { SpeechVoice(it.id, it.id.replace('_', ' ')) }
+    override val voices = pool.map { SpeechVoice(it.id, voiceLabel(it.id)) }
 
     override val narrator get() = caster.narrator.id
 

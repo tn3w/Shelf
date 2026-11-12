@@ -159,7 +159,9 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
         val target = File.createTempFile("opds", ".${file.format}", app.cacheDir)
         try {
             client.download(file, target, onProgress)
-            return checkNotNull(library.importDownload(target, entry.title, entry.author))
+            val find = app::findInCatalogue
+            val work = library.importDownload(target, entry.title, entry.author, find)
+            return checkNotNull(work)
         } finally {
             target.delete()
         }

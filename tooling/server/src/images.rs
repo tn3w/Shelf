@@ -4,9 +4,10 @@ use builder::reader::Book;
 use image::imageops::FilterType;
 use image::{DynamicImage, GrayImage};
 use sha2::{Digest, Sha256};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Semaphore;
+use tokio::sync::{Semaphore, oneshot};
 
 /// Same agent as the app, see `USER_AGENT` in `Network.kt`.
 pub const USER_AGENT: &str = "Shelf (https://github.com/tn3w/Shelf)";
@@ -55,9 +56,9 @@ pub fn cover_url(book: &Book) -> Option<String> {
     })
 }
 
-/// Author photo address as in the app's `Author.photoUrl("M")`.
+/// Largest author photo; every width is encoded from it.
 pub fn author_url(number: u32) -> String {
-    format!("https://covers.openlibrary.org/a/olid/OL{number}A-M.jpg?default=false")
+    format!("https://covers.openlibrary.org/a/olid/OL{number}A-L.jpg?default=false")
 }
 
 /// Box an image is scaled to cover, like `ContentScale.Crop` in the app.
@@ -93,7 +94,7 @@ pub struct Images {
     client: reqwest::Client,
     directory: PathBuf,
     downloads: Semaphore,
-    encodes: Semaphore,
+    encodes: Arc<Semaphore>,
 }
 
 pub fn key(url: &str) -> String {
@@ -184,8 +185,8 @@ fn avif(image: &DynamicImage) -> Option<Vec<u8>> {
     Some(encoded.avif_file)
 }
 
-/// Decodes a download and scales it to `width`, `None` when it is not a real cover.
-fn encode(bytes: &[u8], shape: Shape, width: u32) -> Option<Vec<u8>> {
+/// Decodes a download, `None` when it is not a real cover.
+fn decode(bytes: &[u8]) -> Option<DynamicImage> {
     if is_placeholder(bytes) {
         return None;
     }
@@ -193,10 +194,47 @@ fn encode(bytes: &[u8], shape: Shape, width: u32) -> Option<Vec<u8>> {
     if image.width() < MIN_SIDE || image.height() < MIN_SIDE {
         return None;
     }
-    if contrast(&image.to_luma8()) < MIN_CONTRAST {
-        return None;
+    (contrast(&image.to_luma8()) >= MIN_CONTRAST).then_some(image)
+}
+
+#[cfg(test)]
+fn encode(bytes: &[u8], shape: Shape, width: u32) -> Option<Vec<u8>> {
+    avif(&cover(&decode(bytes)?, shape, width))
+}
+
+fn store(path: &Path, bytes: &[u8]) {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
     }
-    avif(&cover(&image, shape, width))
+    let temporary = path.with_extension("part");
+    if std::fs::write(&temporary, bytes).is_ok() {
+        let _ = std::fs::rename(&temporary, path);
+    }
+}
+
+/// Sends the requested width as soon as it is encoded, then stores the shape's other
+/// widths so later sizes of the same cover need no second download.
+fn encode_all(
+    bytes: &[u8],
+    shape: Shape,
+    wanted: (u32, PathBuf),
+    others: Vec<(u32, PathBuf)>,
+    sender: oneshot::Sender<Option<Vec<u8>>>,
+) {
+    let Some(image) = decode(bytes) else {
+        let _ = sender.send(None);
+        return;
+    };
+    let first = avif(&cover(&image, shape, wanted.0));
+    if let Some(avif) = &first {
+        store(&wanted.1, avif);
+    }
+    let _ = sender.send(first);
+    for (width, path) in others.into_iter().filter(|(_, path)| !path.exists()) {
+        if let Some(avif) = avif(&cover(&image, shape, width)) {
+            store(&path, &avif);
+        }
+    }
 }
 
 impl Images {
@@ -212,7 +250,7 @@ impl Images {
             client,
             directory,
             downloads: Semaphore::new(DOWNLOADS),
-            encodes: Semaphore::new(cpus),
+            encodes: Arc::new(Semaphore::new(cpus)),
         }
     }
 
@@ -236,16 +274,6 @@ impl Images {
         Ok((MIN_DOWNLOAD..=MAX_DOWNLOAD).contains(&bytes.len()).then(|| bytes.to_vec()))
     }
 
-    async fn store(&self, path: PathBuf, bytes: &[u8]) {
-        if let Some(parent) = path.parent() {
-            let _ = tokio::fs::create_dir_all(parent).await;
-        }
-        let temporary = path.with_extension("part");
-        if tokio::fs::write(&temporary, bytes).await.is_ok() {
-            let _ = tokio::fs::rename(&temporary, &path).await;
-        }
-    }
-
     /// The image at `url` as AVIF at `width`, one of the shape's widths.
     pub async fn get(&self, url: &str, shape: Shape, width: u32) -> Outcome {
         let path = self.file(url, width);
@@ -257,16 +285,20 @@ impl Images {
             Ok(None) => return Outcome::Missing,
             Err(()) => return Outcome::Unavailable,
         };
-        let Ok(_permit) = self.encodes.acquire().await else {
+        let Ok(permit) = self.encodes.clone().acquire_owned().await else {
             return Outcome::Unavailable;
         };
-        let encoded =
-            tokio::task::spawn_blocking(move || encode(&bytes, shape, width)).await;
-        let Some(avif) = encoded.ok().flatten() else {
-            return Outcome::Missing;
-        };
-        self.store(path, &avif).await;
-        Outcome::Found(avif)
+        let others = shape.widths().iter().filter(|&&other| other != width);
+        let others = others.map(|&other| (other, self.file(url, other))).collect();
+        let (sender, receiver) = oneshot::channel();
+        tokio::task::spawn_blocking(move || {
+            encode_all(&bytes, shape, (width, path), others, sender);
+            drop(permit);
+        });
+        match receiver.await {
+            Ok(Some(avif)) => Outcome::Found(avif),
+            _ => Outcome::Missing,
+        }
     }
 }
 
@@ -364,7 +396,7 @@ pub mod tests {
         assert!(library(9, "1").is_none() && cover_url(&book(0, None)).is_none());
         assert_eq!(
             author_url(7),
-            "https://covers.openlibrary.org/a/olid/OL7A-M.jpg?default=false"
+            "https://covers.openlibrary.org/a/olid/OL7A-L.jpg?default=false"
         );
     }
 

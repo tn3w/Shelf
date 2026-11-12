@@ -1111,6 +1111,7 @@ private fun Pages(
                 state.title,
                 viewModel.narrator,
                 viewModel.audiobooks,
+                onSettings = { state.navigator.settings(SettingsPage.Listening) },
             ) { viewModel.showListen = false }
         }
         if (showChapters) {

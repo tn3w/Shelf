@@ -91,6 +91,15 @@ fun fits(model: Model, memory: Long) = model.ram <= memory / 2
 fun isSupported(model: Model) =
     model.kind in SUPPORTED_KINDS && (model.kind != "tts" || model.quality in QUALITIES)
 
+fun voicesByLanguage(models: List<Model>) = models
+    .filter { it.kind == "tts" && it.language.isNotEmpty() }
+    .sortedBy { QUALITIES.indexOf(it.quality) }
+    .groupBy { it.language }
+
+fun preferredModel(choices: List<Model>, installed: Set<String>) =
+    choices.lastOrNull { stateOf(it, installed) != PackState.Available }
+        ?: choices.first()
+
 fun parseModels(text: String) = runCatching { json.decodeFromString<ModelManifest>(text) }
     .getOrNull()
     ?.takeIf { it.format == MODELS_FORMAT }

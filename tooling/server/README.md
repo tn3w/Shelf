@@ -62,7 +62,7 @@ page language where present. Rows show
 | `/a/{author}/{96,192}.avif` | Open Library author photo, square |
 | `/api/v1/…` | `search`, `works/{id}`, `authors/{id}`, `series/{id}`, `isbn/{isbn}`, `suggest`, `similar/{id}`, `languages`, `catalogue/{language}` |
 
-Open without token: `/health`, `/robots.txt`, `/s/{asset}`, `/api/pow`, `/pow`. Errors:
+Open without token: `/health`, `/robots.txt`, `/s/{asset}`, `/api/pow`, `/pow`, `*.avif`. Errors:
 `{"error":{"code","message"}}` with `invalid_parameter` 400, `pow_required` 401,
 `invalid_solution` 403, `not_found` 404, `rate_limited` 429, `unavailable` 503. JSON
 leaves out `null` and empty-text fields.

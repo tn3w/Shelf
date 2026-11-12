@@ -44,6 +44,28 @@ class ModelsTest {
         runBlocking { runCatching { resume(file, partial, open) {} } }
 
     @Test
+    fun groupsVoicesByLanguageFromStandardToHigh() {
+        fun tts(id: String, language: String, quality: String) =
+            model().copy(id = id, kind = "tts", language = language, quality = quality)
+        val high = tts("de-high", "de", "high")
+        val standard = tts("de", "de", "standard")
+        val french = tts("fr", "fr", "standard")
+        val grouped = voicesByLanguage(listOf(high, model(), french, standard))
+        val expected = mapOf("de" to listOf(standard, high), "fr" to listOf(french))
+        assertEquals(expected, grouped)
+    }
+
+    @Test
+    fun prefersInstalledModelOtherwiseFirst() {
+        val standard = model().copy(id = "tts-de")
+        val high = model().copy(id = "tts-de-24l")
+        val choices = listOf(standard, high)
+        assertEquals(standard, preferredModel(choices, emptySet()))
+        assertEquals(high, preferredModel(choices, setOf(high.folder)))
+        assertEquals(high, preferredModel(choices, setOf("tts-de-24l@old")))
+    }
+
+    @Test
     fun keepsOnlyOpenlyLicensedWellFormedModels() {
         val text = manifest(
             model(),

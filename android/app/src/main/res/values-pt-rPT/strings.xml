@@ -156,7 +156,6 @@
     <string name="next">Continuar</string>
     <string name="library">Biblioteca</string>
     <string name="license">Licença (MIT)</string>
-    <string name="mark_finished">Marcar como lido</string>
     <string name="more_by">Mais de %s</string>
     <string name="no_matches">Nenhum resultado neste livro</string>
     <string name="no_results">Nenhum resultado.</string>
@@ -489,16 +488,24 @@
     <string name="next_chapter">Capítulo seguinte</string>
     <string name="previous_sentence">Frase anterior</string>
     <string name="next_sentence">Frase seguinte</string>
-    <string name="speech_speed">Velocidade</string>
     <string name="sleep_timer">Temporizador de suspensão</string>
     <string name="sleep_off">Desligado</string>
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Fim do capítulo</string>
-    <string name="sleep_stops_in">Para em %s</string>
     <string name="time_left">%s restantes</string>
     <string name="voice">Voz</string>
     <string name="voice_missing">Não está instalada nenhuma voz para o idioma deste livro.</string>
     <string name="voice_settings">Definições de voz</string>
     <string name="listen_failed">Motor de voz indisponível</string>
     <string name="no_text">Este livro não tem texto legível</string>
+    <string name="listening">Ouvir</string>
+    <string name="listening_hint">Vozes, leitura em voz alta e audiolivros</string>
+    <string name="narration">Narração</string>
+    <string name="character_voices_model">Transfira a deteção de oradores abaixo para usar isto</string>
+    <string name="system_voices">Vozes do sistema</string>
+    <string name="system_voices_hint">Motor de conversão de texto em voz e dados de voz do Android</string>
+    <string name="quality_standard">Padrão</string>
+    <string name="quality_high">Alta qualidade</string>
+    <string name="other_languages">Outros idiomas</string>
+    <string name="found_in_catalogue">Encontrado no catálogo</string>
 </resources>

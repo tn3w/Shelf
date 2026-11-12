@@ -312,6 +312,8 @@ private fun bookOf(
     libraryCover = libraryCover,
 )
 
+typealias BookFinder = (title: String, author: String) -> Book?
+
 val Book.isLocal
     get() = work < 0
 
@@ -541,55 +543,71 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         return true
     }
 
-    suspend fun importFile(uri: Uri): Int? = withContext(Dispatchers.IO) {
-        val fileName = runSuspendCatching { context.displayName(uri) }.getOrNull()
-        if (fileName != null && extensionOf(fileName) in AUDIO_EXTENSIONS) {
-            return@withContext importAudio(uri)
-        }
-        if (fileName == null || !isReadable(fileName)) return@withContext null
-        importBook(fileName) { output ->
-            context.readFrom(uri) { input -> contentWork(input, output) }
-        }
-    }
-
-    suspend fun importDownload(file: File, title: String, author: String) =
+    suspend fun importFile(uri: Uri, find: BookFinder): Int? =
         withContext(Dispatchers.IO) {
-            importBook("$title.${file.extension}", author) { output ->
-                file.inputStream().use { contentWork(it, output) }
+            val fileName = runSuspendCatching { context.displayName(uri) }.getOrNull()
+            if (fileName != null && extensionOf(fileName) in AUDIO_EXTENSIONS) {
+                return@withContext importAudio(uri, find)
+            }
+            if (fileName == null || !isReadable(fileName)) return@withContext null
+            importBook(fileName, find = find) { output ->
+                context.readFrom(uri) { input -> contentWork(input, output) }
             }
         }
+
+    suspend fun importDownload(
+        file: File,
+        title: String,
+        author: String,
+        find: BookFinder,
+    ) = withContext(Dispatchers.IO) {
+        importBook("$title.${file.extension}", author, find) { output ->
+            file.inputStream().use { contentWork(it, output) }
+        }
+    }
 
     private suspend fun importBook(
         fileName: String,
         fallbackAuthor: String = "",
+        find: BookFinder,
         write: suspend (OutputStream) -> Int?,
     ): Int? {
         val temporary = File.createTempFile("import", ".tmp", booksDir.apply { mkdirs() })
-        val work = temporary.outputStream().use { write(it) }
-        val name = "$work.${extensionOf(fileName)}"
-        if (work == null || !temporary.renameTo(bookFile(name))) {
+        val hashed = temporary.outputStream().use { write(it) }
+        val extension = extensionOf(fileName)
+        val written = bookFile("$hashed.$extension")
+        if (hashed == null || !temporary.renameTo(written)) {
             temporary.delete()
             return null
         }
-        deleteOtherFormats(booksDir, work, keep = name)
-        val metadata = readMetadata(bookFile(name))
+        val metadata = readMetadata(written)
         val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
         val author = metadata?.author ?: fallbackAuthor
-        readingStore.change {
-            it.copy(progress = importedProgress(it.progress, work, name))
+        val entries = saved.first()
+        val known = entries.firstOrNull { it.work == hashed }
+        val book = known?.let { bookOf(hashed, title, author, it.cover) }
+            ?: find(title, author)
+            ?: bookOf(hashed, title, author)
+        val name = "${book.work}.$extension"
+        if (book.work != hashed && !written.renameTo(bookFile(name))) {
+            written.delete()
+            return null
         }
-        val existing = saved.first().firstOrNull { it.work == work }
-        val book = bookOf(work, title, author, existing?.cover ?: 0)
-        place(book, existing?.shelf ?: Shelf.Reading)
-        return work
+        deleteOtherFormats(booksDir, book.work, keep = name)
+        readingStore.change {
+            it.copy(progress = importedProgress(it.progress, book.work, name))
+        }
+        val shelf = entries.firstOrNull { it.work == book.work }?.shelf
+        place(book, shelf ?: Shelf.Reading)
+        return book.work
     }
 
-    private suspend fun importAudio(uri: Uri): Int? {
+    private suspend fun importAudio(uri: Uri, find: BookFinder): Int? {
         val files = listOfNotNull(keptAudio(uri)).ifEmpty { return null }
         val title = titleOf(files)
         val author = authorOf(files)
         val match = matchingBook(saved.first(), title, author)
-        val book = match?.toBook() ?: ownBook(title, author)
+        val book = match?.toBook() ?: find(title, author) ?: ownBook(title, author)
         if (match == null) place(book, Shelf.Reading)
         storeAudio(book.work, files)
         return book.work

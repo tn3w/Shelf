@@ -217,8 +217,11 @@ class ShelfApp :
 
     fun openFile(uri: Uri) = scope.launch {
         val content = uri.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }
-        open(content?.let { library.importFile(it) })
+        open(content?.let { library.importFile(it, ::findInCatalogue) })
     }
+
+    fun findInCatalogue(title: String, author: String) =
+        loaded.value?.searcher?.find(title, author)
 
     fun open(work: Int?) {
         if (work != null) _openedWork.value = work else show(R.string.unsupported_file)

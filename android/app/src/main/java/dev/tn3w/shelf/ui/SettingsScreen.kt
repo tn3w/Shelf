@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.content.Intent
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
@@ -37,6 +38,7 @@ import kotlinx.coroutines.flow.*
 import java.util.Locale
 import kotlin.math.roundToInt
 
+private const val TTS_SETTINGS = "com.android.settings.TTS_SETTINGS"
 private const val SOURCE_URL = "https://github.com/tn3w/Shelf"
 private const val LICENSE_URL = "https://github.com/tn3w/Shelf/blob/master/LICENSE"
 private val DATA_LICENSES = listOf(
@@ -72,6 +74,7 @@ enum class SettingsPage(
         R.string.reading_settings,
         R.string.reading_hint,
     ),
+    Listening(Icons.Outlined.Headphones, R.string.listening, R.string.listening_hint),
     Privacy(Icons.Outlined.Shield, R.string.privacy, R.string.privacy_hint),
     Data(Icons.Outlined.Inventory2, R.string.your_data, R.string.your_data_hint),
     FreeBooks(
@@ -152,6 +155,8 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun pauseModel(model: Model) = app.pauseModel(model)
 
     fun removeModel(model: Model) = app.removeModel(model)
+
+    fun setCharacterVoices(enabled: Boolean) = app.narrator.setCharacterVoices(enabled)
 
     fun removePacks(language: String, pack: String? = null) {
         app.removePacks(language, pack)
@@ -290,6 +295,7 @@ fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
             SettingsPage.FreeBooks -> FreeBookSettings(navigator)
             SettingsPage.General -> GeneralSettings(navigator)
             SettingsPage.Reading -> ReadingSettings()
+            SettingsPage.Listening -> ListeningSettings()
             SettingsPage.Privacy -> PrivacySettings()
             SettingsPage.Data -> DataSettings()
         }
@@ -410,7 +416,33 @@ private fun ReadingSettings() {
             settings.brightnessSwipe,
         ) { on -> update { it.copy(brightnessSwipe = on, readerBrightness = null) } }
     }
-    VoiceModels(settings.isOffline(LocalContext.current))
+}
+
+@Composable
+private fun ListeningSettings() {
+    val viewModel = settingsViewModel()
+    val context = LocalContext.current
+    val settings = loadedSettings() ?: return
+    val installed by viewModel.models.installed.collectAsStateWithLifecycle()
+    val detects = remember(installed) { viewModel.models.installed("speaker") != null }
+    SettingsGroup(stringResource(R.string.narration)) {
+        val hint = when {
+            detects -> R.string.character_voices_hint
+            else -> R.string.character_voices_model
+        }
+        SwitchRow(
+            R.string.character_voices,
+            hint,
+            settings.characterVoices && detects,
+            enabled = detects,
+            onChange = viewModel::setCharacterVoices,
+        )
+        LinkRow(
+            stringResource(R.string.system_voices),
+            stringResource(R.string.system_voices_hint),
+        ) { runCatching { context.startActivity(Intent(TTS_SETTINGS)) } }
+    }
+    VoiceModels(settings.isOffline(context), viewModel.bookLanguage(settings))
 }
 
 @Composable

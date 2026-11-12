@@ -278,26 +278,31 @@ private fun BookHeader(
             ) {
                 if (it) Icons.Outlined.BookmarkAdded else Icons.Outlined.BookmarkAdd
             }
-            ShelfToggle(
-                shelf == Shelf.Read, R.string.mark_finished, { place(Shelf.Read) },
-            ) {
-                if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
-            }
             FilledTonalIconButton(onClick = ::listen) {
                 Icon(Icons.Outlined.Headphones, stringResource(R.string.listen))
             }
-            MoreMenu(
-                onFindFree = { findFree = true }.takeIf { online && !hasFile },
-                onDelete = { confirmDelete = true }
-                    .takeIf { book.isLocal || position != null },
-            )
+            if (online && !hasFile) {
+                FilledTonalIconButton(onClick = { findFree = true }) {
+                    val label = stringResource(R.string.free_ebook)
+                    Icon(Icons.Outlined.CloudDownload, label)
+                }
+            }
+            if (book.isLocal || position != null) {
+                FilledTonalIconButton(onClick = { confirmDelete = true }) {
+                    Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
+                }
+            }
         }
     }
     if (findFree && !hasFile) FreeBookSheet(book, viewModel) { findFree = false }
     if (listening && hasAudio) {
-        ListenSheet(book.work, book.title, viewModel.narrator, viewModel.audiobooks) {
-            listening = false
-        }
+        ListenSheet(
+            book.work,
+            book.title,
+            viewModel.narrator,
+            viewModel.audiobooks,
+            onSettings = { navigator.settings(SettingsPage.Listening) },
+        ) { listening = false }
     }
     if (confirmDelete) {
         DeleteDialog(book, onDismiss = { confirmDelete = false }) {
@@ -333,32 +338,6 @@ private fun ReadButton(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun MoreMenu(onFindFree: (() -> Unit)?, onDelete: (() -> Unit)?) {
-    if (onFindFree == null && onDelete == null) return
-    var open by remember { mutableStateOf(false) }
-    Box {
-        FilledTonalIconButton(onClick = { open = true }) {
-            Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_options))
-        }
-        DropdownMenu(open, onDismissRequest = { open = false }) {
-            @Composable
-            fun entry(icon: ImageVector, @StringRes label: Int, action: () -> Unit) =
-                DropdownMenuItem(
-                    text = { Text(stringResource(label)) },
-                    leadingIcon = { Icon(icon, null) },
-                    onClick = {
-                        open = false
-                        action()
-                    },
-                )
-            val cloud = Icons.Outlined.CloudDownload
-            onFindFree?.let { entry(cloud, R.string.free_ebook, it) }
-            onDelete?.let { entry(Icons.Outlined.Delete, R.string.delete_book, it) }
-        }
     }
 }
 

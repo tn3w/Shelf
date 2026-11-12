@@ -304,7 +304,7 @@ class Narrator(app: ShelfApp) :
         voicing = null
         output?.recast(emptyList())
         current.update { it.copy(speakers = 0) }
-        if (enabled) startVoicing(current.value.work)
+        if (enabled && current.value.work != 0) startVoicing(current.value.work)
         if (current.value.playing) speakFrom(current.value.index)
     }
 

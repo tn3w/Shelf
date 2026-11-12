@@ -175,6 +175,18 @@ pub fn gate(pow: Pow, bypass: Option<Vec<u8>>) -> Arc<Gate> {
     Gate::new(pow, pages, bypass)
 }
 
+/// Covers and author photos are open so the app and other sites can show them.
+async fn gated(
+    state: State<Arc<Gate>>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    if request.uri().path().ends_with(".avif") {
+        return next.run(request).await;
+    }
+    pow::guard(state, request, next).await
+}
+
 pub fn router(app: Arc<App>, gate: Arc<Gate>) -> Router {
     let content = Router::new()
         .route("/", get(pages::home))
@@ -200,7 +212,7 @@ pub fn router(app: Arc<App>, gate: Arc<Gate>) -> Router {
         .route("/api/v1/catalogue/{language}", get(v1::catalogue))
         .fallback(missing)
         .layer(from_fn_with_state(app.clone(), http::cached))
-        .layer(from_fn_with_state(gate.clone(), pow::guard))
+        .layer(from_fn_with_state(gate.clone(), gated))
         .layer(from_fn(http::canonical));
     let open = Router::new()
         .route("/health", get(health))

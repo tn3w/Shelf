@@ -115,6 +115,7 @@ fun OnboardingScreen() {
                         }
                     }
                 }
+                VoiceModels(offline = false, language, showOthers = false)
             }
             SettingsGroup {
                 ExpandRow(R.string.own_sources, showSources) {

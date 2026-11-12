@@ -335,8 +335,11 @@ async fn everything_but_open_routes_needs_proof_of_work() {
     let body: serde_json::Value = serde_json::from_str(&text_of(api).await).unwrap();
     assert_eq!(body["error"]["code"], "pow_required");
     let image = send(&app, get("/b/10/en/160.avif", None)).await;
-    assert_eq!(image.status(), StatusCode::UNAUTHORIZED);
-    assert_eq!(header_of(&image, header::CACHE_CONTROL), "no-store");
+    assert_ne!(image.status(), StatusCode::UNAUTHORIZED);
+    let photo = send(&app, get("/a/100/96.avif", None)).await;
+    assert_ne!(photo.status(), StatusCode::UNAUTHORIZED);
+    let author_page = send(&app, get("/a/100/en", None)).await;
+    assert_eq!(author_page.status(), StatusCode::UNAUTHORIZED);
     let forged = send(&app, get("/", Some(&"ab".repeat(32)))).await;
     assert_eq!(forged.status(), StatusCode::UNAUTHORIZED);
     for open in ["/health", "/robots.txt", assets::STYLE, "/api/pow", "/pow"] {
