@@ -26,7 +26,6 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 
 private const val AHEAD = 3
-private const val SAVE_EVERY = 20
 private const val POCKET_THREADS = 4
 private const val LOG_TAG = "Narrator"
 
@@ -175,11 +174,14 @@ class Narrator(app: ShelfApp) :
     private fun started(index: Int) {
         moveTo(index)
         enqueue(index + AHEAD)
-        if (index % SAVE_EVERY == 0) save()
+        save()
     }
 
     private fun finished(index: Int) {
-        if (index + 1 >= passages.size) return finishAt(passages.lastIndex)
+        if (index + 1 >= passages.size) {
+            reachedEnd()
+            return finishAt(passages.lastIndex)
+        }
         if (current.value.sleep == Sleep.ChapterEnd && atChapterStart(index + 1, true)) {
             finishAt(index + 1)
         }
@@ -318,9 +320,8 @@ class Narrator(app: ShelfApp) :
         val now = current.value
         val passage = passages.getOrNull(now.index) ?: return
         val fraction = now.index.toFloat() / passages.size
-        app.scope.launch {
-            app.library.saveProgress(now.work, loaded.progressAt(passage, fraction))
-        }
+        val progress = loaded.progressAt(passage, fraction)
+        app.scope.launch { app.library.saveListened(now.work, progress) }
     }
 
     override fun stop() {

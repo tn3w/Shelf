@@ -336,11 +336,15 @@ private fun ReadButton(
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let { viewModel.import(book, it) }
     }
+    val scope = rememberCoroutineScope()
     val label = position?.fraction?.let {
         stringResource(R.string.continue_percent, (it * 100).toInt())
     } ?: stringResource(if (position != null) R.string.resume else R.string.start)
     Pill(label, modifier, Icons.AutoMirrored.Rounded.MenuBook) {
-        if (hasFile) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
+        if (!hasFile) return@Pill picker.launch(arrayOf("*/*"))
+        scope.launch {
+            navigator.reader(book.work, listen = viewModel.library.isListening(book.work))
+        }
     }
 }
 

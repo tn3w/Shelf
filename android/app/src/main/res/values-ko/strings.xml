@@ -29,8 +29,6 @@
     <string name="contents">목차</string>
     <string name="continue_percent">계속 · %d%%</string>
     <string name="continue_reading">이어 읽기</string>
-    <string name="core_offline">가장 인기 있는 책은 바로 오프라인으로 이용할 수 있습니다.</string>
-    <string name="core_required">Shelf를 사용하려면 기본 카탈로그가 필요합니다. 다운로드를 누르기 전에는 아무것도 받지 않습니다.</string>
     <string name="cover_of">%s 표지</string>
     <string name="daily_goal">하루 목표</string>
     <string name="daily_goal_hint">연속 기록을 유지하려면 매일 읽을 쪽수. 0이면 위젯을 숨깁니다.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">읽고 싶은 책</string>
     <string name="want_to_read_subtitle">다음에 읽고 싶은 책.</string>
     <string name="welcome">Shelf에 오신 것을 환영합니다</string>
-    <string name="welcome_download">오프라인에서 책을 찾고, 기록하고, 읽으세요. 먼저 다운로드할 카탈로그를 고르세요.</string>
     <string name="welcome_text">오프라인에서 책을 찾고, 기록하고, 읽으세요.</string>
     <plurals name="books">
         <item quantity="other">책 %d권</item>

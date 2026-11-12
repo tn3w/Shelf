@@ -34,6 +34,20 @@ class ReaderTest {
     }
 
     @Test
+    fun wideMiddleOpensMenuAndEdgesTurnPages() {
+        assertEquals(TapAction.Previous, tapAction(50f, 1000, menuShown = false))
+        assertEquals(TapAction.Menu, tapAction(300f, 1000, menuShown = false))
+        assertEquals(TapAction.Menu, tapAction(700f, 1000, menuShown = false))
+        assertEquals(TapAction.Next, tapAction(950f, 1000, menuShown = false))
+    }
+
+    @Test
+    fun anyTapClosesOpenMenu() {
+        assertEquals(TapAction.Menu, tapAction(50f, 1000, menuShown = true))
+        assertEquals(TapAction.Menu, tapAction(950f, 1000, menuShown = true))
+    }
+
+    @Test
     fun keepsMarginOnPhones() {
         assertEquals(28.dp, sideMargin(width = 400.dp, margin = 28.dp))
     }

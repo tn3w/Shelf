@@ -72,6 +72,7 @@ class ProvidersTest {
 
     @Before
     fun start() {
+        networkAllowed = true
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/") { exchange ->
             requests += URLDecoder.decode(exchange.requestURI.rawQuery.orEmpty(), "UTF-8")

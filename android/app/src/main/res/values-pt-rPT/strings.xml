@@ -10,7 +10,6 @@
     <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é guardado nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos.</string>
     <string name="check_updates">Atualizações da app</string>
     <string name="continue_reading">Continuar a ler</string>
-    <string name="core_required">O catálogo básico é necessário para usar o Shelf. Nada é transferido até tocar em Transferir.</string>
     <string name="download">Transferir</string>
     <string name="download_item">Transferir %s</string>
     <string name="genres">Géneros</string>
@@ -38,7 +37,6 @@
     <string name="unsupported_file">Ficheiro não suportado. Tente EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT ou HTML.</string>
     <string name="update_wait_note">Publicada %s. O Shelf oferece atualizações um dia após o lançamento, para que uma versão comprometida possa ser detetada e retirada antes.</string>
     <string name="welcome">Bem-vindo ao Shelf</string>
-    <string name="welcome_download">Encontre, acompanhe e leia livros offline. Escolha primeiro um catálogo para transferir.</string>
     <string name="catalogue_check_failed">Não foi possível aceder à fonte do catálogo.</string>
     <string name="book_language_hint">Auto segue o idioma da app.</string>
     <string name="black_theme_hint">Fundo preto no modo escuro. Poupa bateria em ecrãs OLED.</string>
@@ -138,7 +136,6 @@
     <string name="clear">Limpar</string>
     <string name="contents">Índice</string>
     <string name="continue_percent">Continuar · %d%%</string>
-    <string name="core_offline">Os livros mais populares funcionam offline desde já.</string>
     <string name="cover_of">Capa de %s</string>
     <string name="daily_goal">Objetivo diário</string>
     <string name="daily_goal_hint">Páginas por dia para manter a sequência. 0 oculta o widget.</string>

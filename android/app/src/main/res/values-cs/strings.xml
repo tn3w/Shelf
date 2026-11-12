@@ -29,8 +29,6 @@
     <string name="contents">Obsah</string>
     <string name="continue_percent">Pokračovat · %d %%</string>
     <string name="continue_reading">Pokračovat ve čtení</string>
-    <string name="core_offline">Nejoblíbenější knihy fungují offline hned.</string>
-    <string name="core_required">K používání Shelf je potřeba základní katalog. Nic se nestáhne, dokud neklepnete na Stáhnout.</string>
     <string name="cover_of">Obálka: %s</string>
     <string name="daily_goal">Denní cíl</string>
     <string name="daily_goal_hint">Počet stran, které každý den přečtete, abyste udrželi sérii. 0 skryje widget.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Chci číst</string>
     <string name="want_to_read_subtitle">Knihy, které chcete číst příště.</string>
     <string name="welcome">Vítejte v Shelf</string>
-    <string name="welcome_download">Hledejte, sledujte a čtěte knihy offline. Nejprve vyberte katalog ke stažení.</string>
     <string name="welcome_text">Hledejte, sledujte a čtěte knihy offline.</string>
     <plurals name="books">
         <item quantity="one">%d kniha</item>

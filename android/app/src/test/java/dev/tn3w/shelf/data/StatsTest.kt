@@ -55,6 +55,38 @@ class StatsTest {
     }
 
     @Test
+    fun audioCountsOnlyPlayedSeconds() {
+        assertEquals(1, heardSeconds(before = 100, after = 101))
+        assertEquals(2, heardSeconds(before = 100, after = 102))
+        assertEquals(0, heardSeconds(before = 100, after = 400))
+        assertEquals(0, heardSeconds(before = 100, after = 90))
+    }
+
+    @Test
+    fun hourOfAudioCountsAsHourOfPages() {
+        val pages = pagesHeard(3600)
+        val activity = mapOf(day(1, 1).toString() to pages)
+        assertEquals(1, recapOf(YEAR, emptyList(), activity).hours)
+        assertEquals(0, pagesHeard(secondsOfPages(1) - 1))
+    }
+
+    @Test
+    fun recapCountsBooksStillBeingRead() {
+        val reading =
+            Saved(1, Shelf.Reading, millis(day(5, 2)), started = millis(day(5, 1)))
+        val lastYear = millis(LocalDate.of(YEAR - 1, 9, 1))
+        val nextYear = millis(LocalDate.of(YEAR + 1, 1, 1))
+        val earlier = reading.copy(work = 2, started = lastYear)
+        val later = reading.copy(work = 3, started = nextYear)
+        val entries = listOf(reading, earlier, later, finished(4, day(6, 1)))
+        val recap = recapOf(YEAR, entries, emptyMap(), zone = ZONE)
+        assertEquals(listOf(4), recap.books.map { it.work })
+        assertEquals(setOf(1, 2, 4), recap.allBooks.map { it.work }.toSet())
+        assertEquals(listOf(1), recap.months[4].allBooks.map { it.work })
+        assertTrue(!recap.isEmpty)
+    }
+
+    @Test
     fun genresRankByFinishedBooks() {
         val entries = listOf(
             finished(1, day(1, 1)),

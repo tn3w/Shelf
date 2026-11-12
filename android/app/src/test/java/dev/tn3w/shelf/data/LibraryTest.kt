@@ -349,6 +349,38 @@ class LibraryTest {
     }
 
     @Test
+    fun openingReaderKeepsSpokenPositionOnItsPage() {
+        val start = Progress("7.epub", section = 2, offset = 100, page = 4, pages = 50)
+        val next = Progress("7.epub", section = 2, offset = 900)
+        val spoken = Progress("7.epub", section = 2, offset = 420, page = 3, pages = 49)
+        val kept = keptPosition(spoken, start, next)
+        assertEquals(spoken.copy(page = 4, pages = 50), kept)
+        assertEquals(start, keptPosition(spoken.copy(offset = 900), start, next))
+        assertEquals(start, keptPosition(spoken.copy(section = 1), start, next))
+        assertEquals(start, keptPosition(spoken.copy(file = "7.pdf"), start, next))
+        assertEquals(start, keptPosition(null, start, next))
+        assertEquals(spoken.copy(page = 4, pages = 50), keptPosition(spoken, start, null))
+    }
+
+    @Test
+    fun remembersBooksLeftWhileListening() {
+        val started = ReadingState().listeningTo(7, listening = true)
+        assertEquals(setOf(7), started.listening)
+        assertEquals(setOf(7, 8), started.listeningTo(8, listening = true).listening)
+        assertEquals(emptySet<Int>(), started.listeningTo(7, listening = false).listening)
+    }
+
+    @Test
+    fun listeningCountsPagesTurnedNotJumps() {
+        val before = Progress("7.epub", page = 10, pages = 50)
+        assertEquals(1, listenedPages(before, before.copy(page = 11)))
+        assertEquals(0, listenedPages(before, before))
+        assertEquals(0, listenedPages(before, before.copy(page = 9)))
+        assertEquals(0, listenedPages(before, before.copy(page = 30)))
+        assertEquals(0, listenedPages(null, before))
+    }
+
+    @Test
     fun deleteOtherFormatsKeepsOnlyNewFileAndOtherWorks() {
         val directory = Files.createTempDirectory("books").toFile()
         val names = listOf("7.epub", "7.pdf", "70.epub", "7-cover-5")

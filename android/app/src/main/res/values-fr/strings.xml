@@ -29,8 +29,6 @@
     <string name="contents">Sommaire</string>
     <string name="continue_percent">Continuer · %d%%</string>
     <string name="continue_reading">Reprendre la lecture</string>
-    <string name="core_offline">Les livres les plus populaires sont disponibles hors ligne.</string>
-    <string name="core_required">Le catalogue principal est nécessaire pour utiliser Shelf. Rien n’est téléchargé avant que vous appuyiez sur Télécharger.</string>
     <string name="cover_of">Couverture de %s</string>
     <string name="daily_goal">Objectif quotidien</string>
     <string name="daily_goal_hint">Pages à lire chaque jour pour garder la série. 0 masque le widget.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">À lire</string>
     <string name="want_to_read_subtitle">Les livres à lire ensuite.</string>
     <string name="welcome">Bienvenue sur Shelf</string>
-    <string name="welcome_download">Trouvez, suivez et lisez des livres hors ligne. Choisissez d’abord un catalogue à télécharger.</string>
     <string name="welcome_text">Trouvez, suivez et lisez des livres hors ligne.</string>
     <plurals name="books">
         <item quantity="one">%d livre</item>

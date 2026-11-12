@@ -30,8 +30,6 @@
     <string name="contents">Saturs</string>
     <string name="continue_percent">Turpināt · %d%%</string>
     <string name="continue_reading">Turpināt lasīt</string>
-    <string name="core_offline">Populārākās grāmatas uzreiz darbojas bezsaistē.</string>
-    <string name="core_required">Lai lietotu Shelf, nepieciešams pamatkatalogs. Nekas netiek lejupielādēts, kamēr nepieskaraties “Lejupielādēt”.</string>
     <string name="cover_of">%s vāks</string>
     <string name="daily_goal">Dienas mērķis</string>
     <string name="daily_goal_hint">Lappuses, kas jāizlasa katru dienu, lai saglabātu sēriju. 0 paslēpj logrīku.</string>
@@ -143,7 +141,6 @@
     <string name="want_to_read">Gribu izlasīt</string>
     <string name="want_to_read_subtitle">Grāmatas, kuras vēlaties lasīt nākamās.</string>
     <string name="welcome">Laipni lūdzam Shelf</string>
-    <string name="welcome_download">Atrodiet, sekojiet un lasiet grāmatas bezsaistē. Vispirms izvēlieties katalogu, ko lejupielādēt.</string>
     <string name="welcome_text">Atrodiet, sekojiet un lasiet grāmatas bezsaistē.</string>
     <plurals name="books">
         <item quantity="zero">%d grāmatu</item>

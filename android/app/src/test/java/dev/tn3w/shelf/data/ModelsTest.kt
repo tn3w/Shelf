@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 import java.security.MessageDigest
 
 private val content = "a model file with some bytes in it".toByteArray()
@@ -28,6 +29,13 @@ private fun manifest(vararg models: Model, format: Int = 1): String {
 }
 
 class ModelsTest {
+    @Test
+    fun bundledManifestListsSpeakerAndVoices() {
+        val models = parseModels(File("src/main/assets/voices.json").readText())
+        assertTrue(models.any { it.kind == "speaker" })
+        assertTrue(voicesByLanguage(models).isNotEmpty())
+    }
+
     @get:Rule
     val folder = TemporaryFolder()
 

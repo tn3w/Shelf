@@ -4,14 +4,14 @@ Tooling for the optional models the app downloads (`data/Models.kt`).
 
 ## Manifest
 
-The app lists models from `voices.json` in the release named by `VOICES_RELEASE`.
-`manifest.py` builds it: the speaker model (GitHub release, hash from its `.sha256`)
-and Pocket TTS per language in standard (6 layers) and high (24 layers) quality, plus
-English fast, standard and high, all pinned to one Hugging Face revision.
+The app lists models from `voices.json`, bundled in `android/app/src/main/assets`, so
+listing them needs no network. `manifest.py` builds it: the speaker model (GitHub
+release, hash from its `.sha256`) and Pocket TTS per language in standard (6 layers)
+and high (24 layers) quality, plus English fast, standard and high, all pinned to one
+Hugging Face revision.
 
 ```sh
-python -I manifest.py voices.json GGUF_FOLDER
-gh release upload voices-2026-11 voices.json --clobber -R tn3w/Shelf
+python -I manifest.py android/app/src/main/assets/voices.json GGUF_FOLDER
 ```
 
 Every model and voice carries licence, attribution and source; the script and the app

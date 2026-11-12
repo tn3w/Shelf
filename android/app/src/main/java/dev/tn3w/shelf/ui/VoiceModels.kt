@@ -36,33 +36,44 @@ import dev.tn3w.shelf.data.voicesByLanguage
 import kotlin.math.roundToInt
 
 @Composable
-fun VoiceModels(offline: Boolean, language: String, showOthers: Boolean = true) {
-    val viewModel = settingsViewModel()
-    val models by viewModel.models.available.collectAsStateWithLifecycle()
+fun usableModels(): List<Model> {
+    val models by settingsViewModel().models.available.collectAsStateWithLifecycle()
     val memory = totalMemory()
-    val usable = models.filter { isSupported(it) && fits(it, memory) }
-    LaunchedEffect(offline) { if (!offline) viewModel.refreshModels() }
+    return models.filter { isSupported(it) && fits(it, memory) }
+}
+
+@Composable
+fun VoiceModels(offline: Boolean, language: String) {
+    val usable = usableModels()
     if (usable.isEmpty()) return
-    val voices = voicesByLanguage(usable)
-    val others = voices - language
-    var expanded by rememberSaveable { mutableStateOf(false) }
     SettingsGroup(
         stringResource(R.string.voice_models),
         stringResource(R.string.voice_models_hint),
-    ) {
-        voices[language]?.let { LanguageRow(language, it, offline) }
-        usable.firstOrNull { it.kind == "speaker" }?.let { speaker ->
-            ModelRow(stringResource(R.string.model_speaker), listOf(speaker), offline)
-        }
-        if (!showOthers || others.isEmpty()) return@SettingsGroup
-        val icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore
-        SettingRow(
-            stringResource(R.string.other_languages),
-            onClick = { expanded = !expanded },
-        ) { Icon(icon, null, tint = Look.colors.faint) }
-        if (!expanded) return@SettingsGroup
-        others.forEach { (other, choices) -> LanguageRow(other, choices, offline) }
+    ) { VoiceModelRows(usable, language, offline) }
+}
+
+@Composable
+fun VoiceModelRows(
+    usable: List<Model>,
+    language: String,
+    offline: Boolean,
+    showOthers: Boolean = true,
+) {
+    val voices = voicesByLanguage(usable)
+    val others = voices - language
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    voices[language]?.let { LanguageRow(language, it, offline) }
+    usable.firstOrNull { it.kind == "speaker" }?.let { speaker ->
+        ModelRow(stringResource(R.string.model_speaker), listOf(speaker), offline)
     }
+    if (!showOthers || others.isEmpty()) return
+    val icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore
+    SettingRow(
+        stringResource(R.string.other_languages),
+        onClick = { expanded = !expanded },
+    ) { Icon(icon, null, tint = Look.colors.faint) }
+    if (!expanded) return
+    others.forEach { (other, choices) -> LanguageRow(other, choices, offline) }
 }
 
 @Composable

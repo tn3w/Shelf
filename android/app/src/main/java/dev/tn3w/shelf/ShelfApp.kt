@@ -67,6 +67,9 @@ class ShelfApp :
     override fun onCreate() {
         super.onCreate()
         scope.launch {
+            library.settings.collect { networkAllowed = !it.isOffline(this@ShelfApp) }
+        }
+        scope.launch {
             val settings = library.settings.first()
             packs.source = settings.catalogueSource
             library.deleteTemporaryFiles()

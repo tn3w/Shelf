@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.*
@@ -82,7 +83,7 @@ enum class SimilarKind { Books, Writer, Saga }
 @Serializable
 data class SimilarRoute(val kind: SimilarKind, val ids: List<Int>, val name: String = "")
 
-@Serializable data class ReaderRoute(val work: Int)
+@Serializable data class ReaderRoute(val work: Int, val listen: Boolean = false)
 
 @Serializable object ScanRoute
 
@@ -94,6 +95,8 @@ data class CatalogRoute(val id: String, val url: String = "", val title: String 
 @Serializable data class WrappedRoute(val year: Int)
 
 @Serializable data class SettingsRoute(val page: SettingsPage = SettingsPage.Main)
+
+const val OPEN_PLAYER = "dev.tn3w.shelf.OPEN_PLAYER"
 
 private const val SCREEN_FADE_MILLIS = 220
 private const val DAY_MILLIS = 24L * 60 * 60 * 1000
@@ -107,6 +110,8 @@ private val tabs = listOf(
     Tab(R.string.search, Icons.Rounded.Search, SearchRoute),
 )
 private val DockSpace = 70.dp
+private val PlayerSpace = 48.dp
+private val DockShape = RoundedCornerShape(29.dp)
 private val RailWidth = 84.dp
 
 class Navigator(
@@ -132,9 +137,10 @@ class Navigator(
 
     fun similar(route: SimilarRoute) = controller.navigate(route)
 
-    fun reader(work: Int) = controller.navigate(ReaderRoute(work)) {
-        popUpTo<ReaderRoute> { inclusive = true }
-    }
+    fun reader(work: Int, listen: Boolean = false) =
+        controller.navigate(ReaderRoute(work, listen)) {
+            popUpTo<ReaderRoute> { inclusive = true }
+        }
 
     fun scan() = controller.navigate(ScanRoute) { launchSingleTop = true }
 
@@ -185,6 +191,9 @@ class MainViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val openedWork = app.openedWork
     val installConfirmation = app.installConfirmation
     val messages = app.messages
+    val narrator = app.narrator
+    val audiobooks = app.audiobooks
+    var playerRequested by mutableStateOf(false)
     private val _update = MutableStateFlow<Release?>(null)
     val update = _update.asStateFlow()
 
@@ -196,7 +205,7 @@ class MainViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     fun consumeOpenedWork() = app.consumeOpenedWork()
 
-    suspend fun hasText(work: Int) = library.hasFile(library.progress.first()[work])
+    suspend fun hasText(work: Int) = library.hasFile(library.progressOf(work))
 
     fun consumeInstallConfirmation() = app.confirmInstall(null)
 
@@ -230,7 +239,7 @@ class MainActivity : AppCompatActivity() {
         }
         super.onCreate(savedInstanceState)
         transparentBars(SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT))
-        if (savedInstanceState == null) openedFile(intent)?.let(viewModel::openFile)
+        if (savedInstanceState == null) open(intent)
         showMessages()
         setContent {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -257,6 +266,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        open(intent)
+    }
+
+    private fun open(intent: Intent) {
+        if (intent.action == OPEN_PLAYER) viewModel.playerRequested = true
         openedFile(intent)?.let(viewModel::openFile)
     }
 
@@ -279,12 +293,12 @@ private fun OpenFile(viewModel: MainViewModel, navigator: Navigator) {
     val opened by viewModel.openedWork.collectAsStateWithLifecycle()
     LaunchedEffect(opened) {
         val work = opened ?: return@LaunchedEffect
-        viewModel.consumeOpenedWork()
         if (viewModel.hasText(work)) {
             navigator.reader(work)
         } else {
             navigator.bookPage(work, "opened")
         }
+        viewModel.consumeOpenedWork()
     }
 }
 
@@ -338,6 +352,26 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
     val rail = window.windowSizeClass
         .isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
     val hidden = reading || WindowInsets.isImeVisible
+    val speech by viewModel.narrator.state.collectAsStateWithLifecycle()
+    val audio by viewModel.audiobooks.state.collectAsStateWithLifecycle()
+    val playing = listOf(audio, speech).firstOrNull { it.active || it.loading }
+    val listening = !hidden && playing != null
+    val scope = rememberCoroutineScope()
+    fun openPlaying() {
+        val work = playing?.work ?: return
+        scope.launch {
+            if (viewModel.hasText(work)) {
+                navigator.reader(work, listen = true)
+            } else {
+                navigator.bookPage(work, "playing")
+            }
+        }
+    }
+    LaunchedEffect(viewModel.playerRequested, playing?.work) {
+        if (!viewModel.playerRequested) return@LaunchedEffect
+        viewModel.playerRequested = false
+        openPlaying()
+    }
     val language = viewModel.bookLanguage(settings)
     LaunchedEffect(language) { viewModel.showLanguage(language) }
     LaunchedEffect(entry) {
@@ -360,7 +394,11 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
     ConfirmInstall(viewModel)
     val sides = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
     Box(Modifier.fillMaxSize().windowInsetsPadding(sides)) {
-        val dock = if (rail || hidden) 0.dp else DockSpace
+        val dock = when {
+            hidden -> 0.dp
+            rail -> if (listening) DockSpace else 0.dp
+            else -> DockSpace + if (listening) PlayerSpace else 0.dp
+        }
         CompositionLocalProvider(LocalDock provides dock) {
             Row {
                 if (rail && !hidden) Rail(selected, ::open)
@@ -377,13 +415,25 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
                 BookPane(controller, pane, width)
             }
         }
-        if (rail) return@Box
+        val player: @Composable () -> Unit = {
+            NowPlaying(viewModel.narrator, viewModel.audiobooks, ::openPlaying)
+        }
+        if (rail) {
+            if (!listening) return@Box
+            return@Box Box(
+                Modifier.align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp)
+                    .widthIn(max = 420.dp)
+                    .floatingBar(),
+            ) { player() }
+        }
         AnimatedVisibility(
             !hidden,
             Modifier.align(Alignment.BottomCenter),
             enter = fadeIn() + slideInVertically { it },
             exit = fadeOut() + slideOutVertically { it },
-        ) { Dock(selected, ::open) }
+        ) { Dock(selected, ::open, player.takeIf { listening }) }
     }
 }
 
@@ -397,18 +447,34 @@ private fun tabColors(selected: Boolean): Pair<Tint, Tint> {
     }
 }
 
-/** The floating bar that carries the four places of the app. */
 @Composable
-private fun Dock(selected: Int, onSelect: (Int) -> Unit) {
+private fun Modifier.floatingBar(): Modifier {
     val lift = if (Look.colors.plain) 0.dp else 16.dp
-    Row(
+    return shadow(lift, DockShape).surface(DockShape).blockTouches().padding(5.dp)
+}
+
+/** The floating bar that carries the four places of the app and what is playing. */
+@Composable
+private fun Dock(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    player: (@Composable () -> Unit)?,
+) {
+    Column(
         Modifier.navigationBarsPadding()
             .padding(bottom = 12.dp)
-            .shadow(lift, CircleShape)
-            .surface(CircleShape)
-            .blockTouches()
-            .padding(5.dp)
-            .selectableGroup(),
+            .floatingBar()
+            .width(IntrinsicSize.Min),
+    ) {
+        player?.invoke()
+        DockTabs(selected, onSelect)
+    }
+}
+
+@Composable
+private fun DockTabs(selected: Int, onSelect: (Int) -> Unit) {
+    Row(
+        Modifier.selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         tabs.forEachIndexed { index, tab ->
@@ -515,7 +581,10 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
         screen<ListRoute> { ListScreen(it.toRoute<ListRoute>().name, navigator) }
         screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }
-        screen<ReaderRoute> { ReaderScreen(it.toRoute<ReaderRoute>().work, navigator) }
+        screen<ReaderRoute> {
+            val route = it.toRoute<ReaderRoute>()
+            ReaderScreen(route.work, route.listen, navigator)
+        }
         screen<ScanRoute> { ScanScreen(navigator) }
         screen<StatsRoute> { StatsScreen(navigator) }
         screen<CatalogRoute> { CatalogScreen(it.toRoute<CatalogRoute>(), navigator) }

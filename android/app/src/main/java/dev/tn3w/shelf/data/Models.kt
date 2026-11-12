@@ -15,9 +15,6 @@ import java.security.DigestInputStream
 import java.security.DigestOutputStream
 import java.security.MessageDigest
 
-const val VOICES_RELEASE = "voices-2026-11"
-const val MODELS_URL =
-    "https://github.com/$REPOSITORY/releases/download/$VOICES_RELEASE/voices.json"
 private const val MODELS_FORMAT = 1
 private const val FREE_SPACE_MARGIN = 100L * 1024 * 1024
 private const val PART = ".part"
@@ -159,14 +156,17 @@ private suspend fun openRanged(url: String, offset: Long): Ranged {
 
 class Models(context: Context) {
     private val directory = context.filesDir.resolve("models")
-    private val manifestFile = directory.resolve("voices.json")
-    private val _available = MutableStateFlow(storedModels())
-    val available = _available.asStateFlow()
+    val available = MutableStateFlow(bundledModels(context)).asStateFlow()
     private val _installed = MutableStateFlow(installedFolders())
     val installed = _installed.asStateFlow()
 
-    private fun storedModels() =
-        runCatching { parseModels(manifestFile.readText()) }.getOrDefault(emptyList())
+    private fun bundledModels(context: Context) = runCatching {
+        parseModels(
+            context.assets.open("voices.json").use {
+                it.readBytes().decodeToString()
+            },
+        )
+    }.getOrDefault(emptyList())
 
     private fun installedFolders() = directory.listFiles().orEmpty()
         .filter { it.isDirectory && !it.name.endsWith(PART) }
@@ -175,15 +175,6 @@ class Models(context: Context) {
 
     private fun changed() {
         _installed.value = installedFolders()
-    }
-
-    suspend fun refresh() = withContext(Dispatchers.IO) {
-        val text = fetchText(MODELS_URL, accept = "application/json")
-        val models = parseModels(text)
-        if (models.isEmpty()) return@withContext
-        directory.mkdirs()
-        replaceFile(manifestFile) { it.writeText(text) }
-        _available.value = models
     }
 
     fun folderOf(model: Model) = directory.resolve(model.folder)

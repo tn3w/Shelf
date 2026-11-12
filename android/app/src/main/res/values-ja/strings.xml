@@ -30,8 +30,6 @@
     <string name="contents">目次</string>
     <string name="continue_percent">続きを読む · %d%%</string>
     <string name="continue_reading">続きを読む</string>
-    <string name="core_offline">人気の本はすぐにオフラインで使えます。</string>
-    <string name="core_required">Shelf を使うにはコアカタログが必要です。「ダウンロード」をタップするまで何もダウンロードされません。</string>
     <string name="cover_of">%s の表紙</string>
     <string name="daily_goal">1 日の目標</string>
     <string name="daily_goal_hint">連続記録を保つために毎日読むページ数。0 にするとウィジェットを非表示にします。</string>
@@ -143,7 +141,6 @@
     <string name="want_to_read">読みたい</string>
     <string name="want_to_read_subtitle">次に読みたい本。</string>
     <string name="welcome">Shelf へようこそ</string>
-    <string name="welcome_download">本を探し、記録し、オフラインで読めます。まず、ダウンロードするカタログを選んでください。</string>
     <string name="welcome_text">本を探し、記録し、オフラインで読めます。</string>
     <plurals name="books">
         <item quantity="other">%d 冊</item>

@@ -785,8 +785,8 @@ private fun SummarySlide(recap: Recap, author: Author?, onClose: () -> Unit) {
 
 @Composable
 private fun SummaryCard(recap: Recap, author: Author?, modifier: Modifier) {
-    val books = remember(recap) { recap.books.reversed().map { it.toBook() } }
-    val stats = "${booksCount(recap.books.size)} · ${pages(recap.pages)}"
+    val books = remember(recap) { recap.allBooks.reversed().map { it.toBook() } }
+    val stats = "${booksCount(recap.allBooks.size)} · ${pages(recap.pages)}"
     val favorites = listOfNotNull(
         recap.genres.firstOrNull()?.tag?.label,
         author?.name ?: recap.topAuthor,
@@ -855,7 +855,7 @@ private fun CardFooter() {
 private fun shareText(recap: Recap) = stringResource(
     R.string.share_recap,
     recap.year,
-    booksCount(recap.books.size),
+    booksCount(recap.allBooks.size),
     pages(recap.pages),
 ) + "\nhttps://github.com/$REPOSITORY"
 
@@ -878,7 +878,7 @@ private suspend fun Context.shareImage(image: ImageBitmap, recap: Recap, text: S
 
 @Composable
 fun WrappedBanner(recap: Recap, onPlay: () -> Unit) {
-    val books = remember(recap) { recap.books.reversed().take(3).map { it.toBook() } }
+    val books = remember(recap) { recap.allBooks.reversed().take(3).map { it.toBook() } }
     Box(
         Modifier.fillMaxWidth()
             .padding(horizontal = ScreenPadding)

@@ -29,8 +29,6 @@
     <string name="contents">Sisällys</string>
     <string name="continue_percent">Jatka · %d %%</string>
     <string name="continue_reading">Jatka lukemista</string>
-    <string name="core_offline">Suosituimmat kirjat toimivat heti ilman verkkoa.</string>
-    <string name="core_required">Shelfin käyttö vaatii perusluettelon. Mitään ei ladata ennen kuin napautat Lataa.</string>
     <string name="cover_of">Kansi: %s</string>
     <string name="daily_goal">Päivätavoite</string>
     <string name="daily_goal_hint">Sivut, jotka luet joka päivä pitääksesi putken. 0 piilottaa pienoissovelluksen.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Haluan lukea</string>
     <string name="want_to_read_subtitle">Kirjat, jotka haluat lukea seuraavaksi.</string>
     <string name="welcome">Tervetuloa Shelfiin</string>
-    <string name="welcome_download">Löydä, seuraa ja lue kirjoja ilman verkkoa. Valitse ensin ladattava luettelo.</string>
     <string name="welcome_text">Löydä, seuraa ja lue kirjoja ilman verkkoa.</string>
     <plurals name="books">
         <item quantity="one">%d kirja</item>

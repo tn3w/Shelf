@@ -93,6 +93,20 @@ class SearchTest {
     }
 
     @Test
+    fun findIgnoresSubtitleAfterDash() {
+        val subtitled = searcher.find("Sand Castles – Die Burg am Meer", "Bea Baker")
+        assertEquals(7, subtitled?.work)
+        assertEquals(1, searcher.find("Dune - Deluxe Edition", "Frank Herbert")?.work)
+        assertEquals("Spider-Man", mainTitle("Spider-Man"))
+    }
+
+    @Test
+    fun findMatchesTitleAfterSeriesName() {
+        assertEquals(7, searcher.find("Beach Days – Sand Castles", "Bea Baker")?.work)
+        assertNull(searcher.find("Beach Days – Sand Castles", ""))
+    }
+
+    @Test
     fun garbageFindsNothing() {
         listOf("", "  !!! ", "zzzzzz", "q").forEach { query ->
             assertEquals(emptyList<Int>(), works(query))

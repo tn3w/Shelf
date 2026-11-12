@@ -34,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.geometry.Offset
@@ -84,10 +85,11 @@ sealed interface Opened {
     data object Failed : Opened
 }
 
-class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
+class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
+    ShelfViewModel(app) {
     private val opening = app.scope.async(Dispatchers.IO) {
         runSuspendCatching {
-            val progress = library.progress.first().getValue(work)
+            val progress = checkNotNull(library.progressOf(work))
             Opened.Ready(progress, openDocument(library.bookFile(progress.file)))
         }.getOrDefault(Opened.Failed)
     }
@@ -96,7 +98,8 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
     var chrome by mutableStateOf(false)
     var showChapters by mutableStateOf(false)
     var showSearch by mutableStateOf(false)
-    var showListen by mutableStateOf(false)
+    var showListen by mutableStateOf(listen)
+    private var resumeAudio = listen
     val narrator = app.narrator
     val audiobooks = app.audiobooks
     var query by mutableStateOf("")
@@ -114,6 +117,9 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
 
     val bookmarks = library.bookmarks.map { it[work].orEmpty() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val stored = library.progress.map { it[work] }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun toggleBookmark(onPage: List<Bookmark>, create: () -> Bookmark) = detached {
         library.changeBookmarks(work) { marks ->
@@ -191,8 +197,23 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
         query = ""
     }
 
+    private fun isHeard() = listOf(narrator, audiobooks)
+        .map { it.state.value }
+        .any { it.work == work && (it.active || it.loading) }
+
+    fun shouldResumeAudio(): Boolean {
+        val resume = resumeAudio && !isHeard()
+        resumeAudio = false
+        return resume
+    }
+
     fun save(progress: Progress, pagesRead: Int) {
-        detached { library.saveProgress(work, progress, pagesRead) }
+        val narration = narrator.state.value
+        if (narration.playing && narration.work == work) return
+        detached {
+            library.saveProgress(work, progress, pagesRead)
+            if (pagesRead > 0 && !isHeard()) library.markListening(work, false)
+        }
     }
 
     fun changeFont(change: Float) = updateSettings {
@@ -211,7 +232,8 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
 }
 
 @Composable
-private fun readerViewModel(work: Int) = shelfViewModel { ReaderViewModel(it, work) }
+private fun readerViewModel(work: Int, listen: Boolean) =
+    shelfViewModel { ReaderViewModel(it, work, listen) }
 
 @Immutable
 private data class ReaderState(
@@ -261,8 +283,8 @@ internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
     }
 
 @Composable
-fun ReaderScreen(work: Int, navigator: Navigator) {
-    val viewModel = readerViewModel(work)
+fun ReaderScreen(work: Int, listen: Boolean, navigator: Navigator) {
+    val viewModel = readerViewModel(work, listen)
     val settings = loadedSettings() ?: Settings()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val entry = saved.firstOrNull { it.work == work }
@@ -601,17 +623,21 @@ private fun TextReader(
                 }
             }
             BackHandler(annotator.selection != null) { annotator.selection = null }
+            fun pageProgress(index: Int): Progress {
+                val page = current[index]
+                val start =
+                    Progress(progress.file, page.section, page.start, index, current.size)
+                val next = current.getOrNull(index + 1)
+                    ?.let { Progress(progress.file, it.section, it.start) }
+                return keptPosition(viewModel.stored.value, start, next)
+            }
             Pages(
                 pager,
                 state,
                 chapters,
                 marks,
                 onSearch = { viewModel.showSearch = true },
-                save = { index ->
-                    val page = current[index]
-                    Progress(progress.file, page.section, page.start, index, current.size)
-                        .also { position = it }
-                },
+                save = { index -> pageProgress(index).also { position = it } },
                 notes = { onSelect -> NotesTab(state, current, export, onSelect) },
                 onTap = { index, offset ->
                     annotator.tap(index, offset, highlights) {
@@ -619,6 +645,7 @@ private fun TextReader(
                     }
                 },
                 onListen = {
+                    position = pageProgress(pager.currentPage)
                     viewModel.listen(state.title) {
                         val passages = speechOf(document)
                         Source(passages, document.chapters, position) {
@@ -975,6 +1002,17 @@ private fun chromeExit(reduced: Boolean, offset: (Int) -> Int) = when {
     else -> fadeOut() + slideOutVertically(targetOffsetY = offset)
 }
 
+internal enum class TapAction { Previous, Next, Menu }
+
+private const val TURN_ZONE = 0.25f
+
+internal fun tapAction(x: Float, width: Int, menuShown: Boolean) = when {
+    menuShown -> TapAction.Menu
+    x < width * TURN_ZONE -> TapAction.Previous
+    x > width * (1 - TURN_ZONE) -> TapAction.Next
+    else -> TapAction.Menu
+}
+
 private fun chapterAt(chapters: List<Pair<String, Int>>, page: Int) =
     chapters.lastOrNull { it.second in 0..page }
 
@@ -1010,6 +1048,10 @@ private fun Pages(
         if (!chrome && !showChapters && !viewModel.showSearch) focus.requestFocus()
     }
 
+    LaunchedEffect(Unit) {
+        if (viewModel.shouldResumeAudio()) onListen?.invoke()
+    }
+
     LaunchedEffect(pager.settledPage) {
         val settled = pager.settledPage
         val read = newPagesRead(previous, settled, furthest)
@@ -1036,12 +1078,11 @@ private fun Pages(
             Box(
                 Modifier.fillMaxSize().pointerInput(Unit) {
                     detectTapGestures(onLongPress = {}) { offset ->
-                        val third = size.width / 3
-                        when {
-                            tapped(index, offset) -> Unit
-                            offset.x < third -> turn(index - 1)
-                            offset.x > 2 * third -> turn(index + 1)
-                            else -> chrome = !chrome
+                        if (tapped(index, offset)) return@detectTapGestures
+                        when (tapAction(offset.x, size.width, chrome)) {
+                            TapAction.Previous -> turn(index - 1)
+                            TapAction.Next -> turn(index + 1)
+                            TapAction.Menu -> chrome = !chrome
                         }
                     }
                 },
@@ -1171,14 +1212,21 @@ private fun ReaderTopBar(
             stringResource(R.string.back),
             onClick = state.navigator::back,
         )
-        state.book?.let { BookCover(it, 24.dp, lift = 0.dp) }
-        Text(
-            state.title,
-            Modifier.weight(1f).padding(horizontal = 10.dp),
-            style = Look.type.label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(
+            Modifier.weight(1f)
+                .clickable { state.navigator.bookPage(state.viewModel.work, "reader") }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            state.book?.let { BookCover(it, 24.dp, lift = 0.dp) }
+            Text(
+                state.title,
+                Modifier.padding(horizontal = 10.dp),
+                style = Look.type.label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         onSearch?.let {
             val search = stringResource(R.string.search_book)
             IconAction(Icons.Rounded.Search, search, onClick = it)

@@ -29,8 +29,6 @@
     <string name="contents">Innehåll</string>
     <string name="continue_percent">Fortsätt · %d%%</string>
     <string name="continue_reading">Fortsätt läsa</string>
-    <string name="core_offline">De populäraste böckerna fungerar offline direkt.</string>
-    <string name="core_required">Kärnkatalogen behövs för att använda Shelf. Inget laddas ner förrän du trycker på Ladda ner.</string>
     <string name="cover_of">Omslag till %s</string>
     <string name="daily_goal">Dagligt mål</string>
     <string name="daily_goal_hint">Sidor att läsa varje dag för att behålla din svit. 0 döljer widgeten.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Vill läsa</string>
     <string name="want_to_read_subtitle">Böcker du vill läsa härnäst.</string>
     <string name="welcome">Välkommen till Shelf</string>
-    <string name="welcome_download">Hitta, följ och läs böcker offline. Välj först en katalog att ladda ner.</string>
     <string name="welcome_text">Hitta, följ och läs böcker offline.</string>
     <plurals name="books">
         <item quantity="one">%d bok</item>

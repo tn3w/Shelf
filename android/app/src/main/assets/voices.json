@@ -1,0 +1,2827 @@
+{
+ "format": 1,
+ "models": [
+  {
+   "id": "speaker",
+   "kind": "speaker",
+   "version": "2026-11",
+   "licence": "Apache-2.0",
+   "attribution": "Qwen3-1.7B by Alibaba Qwen, Apache 2.0; fine-tuned by Shelf on PDNC (CC BY 4.0) and public-domain books",
+   "source": "https://github.com/tn3w/Shelf/releases/tag/voices-2026-11",
+   "ram": 1300000000,
+   "files": [
+    {
+     "name": "shelf-speaker-qwen3-1.7b-q4_k_m.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-speaker-qwen3-1.7b-q4_k_m.gguf",
+     "size": 1107408736,
+     "sha256": "b7961e9c284ad0f58a249eee75a7d642a41dbce8ec258d0b7abcf5d64d073a76"
+    }
+   ]
+  },
+  {
+   "id": "tts-de",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "de",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/german",
+   "ram": 328510432,
+   "files": [
+    {
+     "name": "shelf-tts-de-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-de-q8_0.gguf",
+     "size": 178510432,
+     "sha256": "5cd10f01f1d3b38339c4f80c4df3fd623ef7be067f14a00ec6caa16101bcb29b"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-de-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-fr",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "fr",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/french",
+   "ram": 328510912,
+   "files": [
+    {
+     "name": "shelf-tts-fr-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-fr-q8_0.gguf",
+     "size": 178510912,
+     "sha256": "946e1de60e539b4c7b584d030d937460cce8520527963654c5a4f420dae4cb98"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-fr-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-es",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "es",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/spanish",
+   "ram": 328511040,
+   "files": [
+    {
+     "name": "shelf-tts-es-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-es-q8_0.gguf",
+     "size": 178511040,
+     "sha256": "c200455fab93d0223adb4b2da0edbb9f49666f52b9614686fd12dc24fb0a9e62"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-es-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-pt",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "pt",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/portuguese",
+   "ram": 328511456,
+   "files": [
+    {
+     "name": "shelf-tts-pt-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-pt-q8_0.gguf",
+     "size": 178511456,
+     "sha256": "8b4cf4f779b45259686ff560ef55dde42c0408eaef7ce9afe9eea30eb67bf4f5"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-pt-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-it",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "it",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/italian",
+   "ram": 328511008,
+   "files": [
+    {
+     "name": "shelf-tts-it-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-it-q8_0.gguf",
+     "size": 178511008,
+     "sha256": "1f40ca832a7d3991fff722dba43fe43bed4054b531842338329812f17fadc431"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-it-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-nl",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "nl",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/dutch",
+   "ram": 328509632,
+   "files": [
+    {
+     "name": "shelf-tts-nl-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-nl-q8_0.gguf",
+     "size": 178509632,
+     "sha256": "e058457232e9d0018774527b6767bd644ab3932ee7101d1458feedaaff5baf63"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-nl-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-de-24l",
+   "kind": "tts",
+   "version": "2026-11.2",
+   "licence": "CC-BY-4.0",
+   "language": "de",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/4e1e0a3e611c51c0b4ed8174fc10f32a54644303/languages/german_24l",
+   "ram": 774158144,
+   "files": [
+    {
+     "name": "shelf-tts-de-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-de-24l-q8_0.gguf",
+     "size": 624158144,
+     "sha256": "b9169bb73998c4526271e081b45b7462004a648095e522c79ca79350072a71ed"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-de-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-fr-24l",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "fr",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/french_24l",
+   "ram": 774158624,
+   "files": [
+    {
+     "name": "shelf-tts-fr-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-fr-24l-q8_0.gguf",
+     "size": 624158624,
+     "sha256": "7a4eecbfd0ac7cdc831e41cd609f6f4bd475bbc2889576a376ce40cae4fb826a"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-fr-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-es-24l",
+   "kind": "tts",
+   "version": "2026-11.2",
+   "licence": "CC-BY-4.0",
+   "language": "es",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/4e1e0a3e611c51c0b4ed8174fc10f32a54644303/languages/spanish_24l",
+   "ram": 774158784,
+   "files": [
+    {
+     "name": "shelf-tts-es-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-es-24l-q8_0.gguf",
+     "size": 624158784,
+     "sha256": "6de6d1ea4698d47c285ae86ec0c055daf4e9e31ae8b9f60e6dd9ff0ba5caf5cd"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-es-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-pt-24l",
+   "kind": "tts",
+   "version": "2026-11.2",
+   "licence": "CC-BY-4.0",
+   "language": "pt",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/4e1e0a3e611c51c0b4ed8174fc10f32a54644303/languages/portuguese_24l",
+   "ram": 774159168,
+   "files": [
+    {
+     "name": "shelf-tts-pt-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-pt-24l-q8_0.gguf",
+     "size": 624159168,
+     "sha256": "9c238c70c60ffe339d5ceeb67cf3e5ad7663384f8dd5255080413fc6f07be25e"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-pt-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-it-24l",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "it",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/1e08e6a23401048648a9fdcfde2f89348215c2a7/languages/italian_24l",
+   "ram": 774158720,
+   "files": [
+    {
+     "name": "shelf-tts-it-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-it-24l-q8_0.gguf",
+     "size": 624158720,
+     "sha256": "75deb9441e23179da20b2d22eb1a50a872da31dd9907c2dae9ca371050ea28d4"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-it-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-nl-24l",
+   "kind": "tts",
+   "version": "2026-11.2",
+   "licence": "CC-BY-4.0",
+   "language": "nl",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/4e1e0a3e611c51c0b4ed8174fc10f32a54644303/languages/dutch_24l",
+   "ram": 774157344,
+   "files": [
+    {
+     "name": "shelf-tts-nl-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-nl-24l-q8_0.gguf",
+     "size": 624157344,
+     "sha256": "ea7d21f25a630ce69c83c7858e3063074a7a5ebbf982ed4dddc8eb29303569d8"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-nl-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-en-fast",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "en",
+   "quality": "fast",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/a7056f505a4a8ca72d8b5fb1440071d6f1a35739/languages/english_18m_2026-10",
+   "ram": 217806048,
+   "files": [
+    {
+     "name": "shelf-tts-en-fast-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-en-fast-q8_0.gguf",
+     "size": 67806048,
+     "sha256": "9f4ad1f8457de7abe989890c489e8e0a9a26127b9eb4b629190141d8868a611f"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-en-fast-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-en",
+   "kind": "tts",
+   "version": "2026-11",
+   "licence": "CC-BY-4.0",
+   "language": "en",
+   "quality": "standard",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/a7056f505a4a8ca72d8b5fb1440071d6f1a35739/languages/english_2026-10",
+   "ram": 328509728,
+   "files": [
+    {
+     "name": "shelf-tts-en-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-en-q8_0.gguf",
+     "size": 178509728,
+     "sha256": "05df67cd66de5d6f86c6bc22b25993eedfc2306325b85b1927b9e73702bbc6e4"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-en-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "tts-en-24l",
+   "kind": "tts",
+   "version": "2026-11.2",
+   "licence": "CC-BY-4.0",
+   "language": "en",
+   "quality": "high",
+   "attribution": "Pocket TTS by Kyutai, CC BY 4.0 (huggingface.co/kyutai/pocket-tts-without-voice-cloning); converted to GGUF (Q8_0/F16) by Shelf",
+   "source": "https://huggingface.co/kyutai/pocket-tts-without-voice-cloning/tree/e7205b6ee50e654a5ea19f0e9df2b0813b05e921/languages/english_2026-09_24l",
+   "ram": 774157184,
+   "files": [
+    {
+     "name": "shelf-tts-en-24l-q8_0.gguf",
+     "url": "https://github.com/tn3w/Shelf/releases/download/voices-2026-11/shelf-tts-en-24l-q8_0.gguf",
+     "size": 624157184,
+     "sha256": "7fc1e607c6f3f4c095f0a66018d871dbb9d947d117040c95e931540e3b63bef3"
+    }
+   ],
+   "voices": [
+    {
+     "id": "alba",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC-BY-4.0",
+     "attribution": "Alba MacKenna, CC BY 4.0"
+    },
+    {
+     "id": "anna",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p228, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "azelma",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 24,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p303, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "bill_boerst",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Bill Boerst, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "caro_davy",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Caro Davy, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "charles",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p254, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "eponine",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p262, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "estelle",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Kyutai recording, CC0"
+    },
+    {
+     "id": "eve",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p361, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "fantine",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 22,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p244, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "george",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 18,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p315, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "giovanni",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (it), CC0"
+    },
+    {
+     "id": "jane",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 21,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p339, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "javert",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "lola",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "licence": "CC0-1.0",
+     "attribution": "Mozilla Common Voice (es), CC0"
+    },
+    {
+     "id": "marius",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Unmute Voice Donation Project, CC0"
+    },
+    {
+     "id": "mary",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p333, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "michael",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 19,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p360, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "paul",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p259, CSTR, University of Edinburgh, CC BY 4.0"
+    },
+    {
+     "id": "peter_yearsley",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Peter Yearsley, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "stuart_bell",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Male",
+     "licence": "CC0-1.0",
+     "attribution": "Stuart Bell, LibriVox via Voice-Zero, CC0"
+    },
+    {
+     "id": "vera",
+     "file": "shelf-tts-en-24l-q8_0.gguf",
+     "gender": "Female",
+     "years": 23,
+     "licence": "CC-BY-4.0",
+     "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
+    }
+   ]
+  }
+ ]
+}

@@ -106,6 +106,59 @@ fun ListenSheet(
     }
 }
 
+/** What is being read aloud, shown in the dock: tap it to go back into the book. */
+@Composable
+fun NowPlaying(narrator: Narrator, audiobooks: AudiobookPlayer, onOpen: () -> Unit) {
+    val speech by narrator.state.collectAsStateWithLifecycle()
+    val audio by audiobooks.state.collectAsStateWithLifecycle()
+    val isAudio = audio.active || audio.loading
+    val state = if (isAudio) audio else speech
+    if (!state.active && !state.loading) return
+    val playback = if (isAudio) audiobooks else narrator
+    val saved by shelfViewModel().saved.collectAsStateWithLifecycle()
+    val book = remember(saved, state.work) {
+        saved?.firstOrNull { it.work == state.work }?.toBook()
+    }
+    Row(
+        Modifier.fillMaxWidth()
+            .height(48.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onOpen)
+            .padding(start = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        book?.let { BookCover(it, 26.dp, lift = 0.dp) }
+        Column(Modifier.weight(1f)) {
+            Text(
+                state.title,
+                style = Look.type.label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (state.chapter.isNotBlank()) {
+                Text(
+                    state.chapter,
+                    color = Look.colors.soft,
+                    style = Look.type.note,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        val playing = state.playing
+        IconAction(
+            if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            stringResource(if (playing) R.string.pause else R.string.play),
+            tint = Look.colors.soft,
+            onClick = playback::toggle,
+        )
+        val stop = stringResource(R.string.stop)
+        val soft = Look.colors.soft
+        IconAction(Icons.Rounded.Close, stop, tint = soft, onClick = playback::stop)
+    }
+}
+
 @Composable
 private fun Header(work: Int, title: String, state: Narration) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

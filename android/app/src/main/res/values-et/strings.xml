@@ -29,8 +29,6 @@
     <string name="contents">Sisukord</string>
     <string name="continue_percent">Jätka · %d%%</string>
     <string name="continue_reading">Jätka lugemist</string>
-    <string name="core_offline">Populaarseimad raamatud töötavad kohe ka võrguühenduseta.</string>
-    <string name="core_required">Shelfi kasutamiseks on vaja põhikataloogi. Midagi ei laadita alla enne, kui puudutad „Laadi alla“.</string>
     <string name="cover_of">Raamatu kaas: %s</string>
     <string name="daily_goal">Päeva eesmärk</string>
     <string name="daily_goal_hint">Mitu lehekülge päevas lugeda, et seeria jätkuks. 0 peidab vidina.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Tahan lugeda</string>
     <string name="want_to_read_subtitle">Raamatud, mida tahaksid järgmisena lugeda.</string>
     <string name="welcome">Tere tulemast Shelfi</string>
-    <string name="welcome_download">Leia, jälgi ja loe raamatuid võrguühenduseta. Vali kõigepealt kataloog allalaadimiseks.</string>
     <string name="welcome_text">Leia, jälgi ja loe raamatuid võrguühenduseta.</string>
     <plurals name="books">
         <item quantity="one">%d raamat</item>

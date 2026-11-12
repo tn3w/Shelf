@@ -99,12 +99,19 @@ abstract class Playback(protected val app: ShelfApp) {
         }
     }
 
+    protected fun reachedEnd() {
+        val work = current.value.work
+        app.scope.launch { app.library.markListening(work, false) }
+    }
+
     protected fun finish() {
         pause()
         setSleep(Sleep.Off)
     }
 
     protected fun startPlaying() {
+        val work = current.value.work
+        app.scope.launch { app.library.markListening(work, true) }
         idleJob?.cancel()
         audio.requestAudioFocus(focus)
         val service = Intent(app, NarrationService::class.java)

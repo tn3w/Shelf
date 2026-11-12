@@ -369,7 +369,11 @@ data class ReadingState(
     val bookmarks: Map<Int, List<Bookmark>> = emptyMap(),
     val highlights: Map<Int, List<Highlight>> = emptyMap(),
     val audiobooks: Map<Int, Audiobook> = emptyMap(),
+    val listening: Set<Int> = emptySet(),
 )
+
+internal fun ReadingState.listeningTo(work: Int, listening: Boolean) =
+    copy(listening = if (listening) this.listening + work else this.listening - work)
 
 internal class JsonSerializer<T>(
     override val defaultValue: T,
@@ -451,6 +455,35 @@ private suspend fun <T> DataStore<T>.change(transform: (T) -> T) {
 internal fun importedProgress(progress: Map<Int, Progress>, work: Int, name: String) =
     progress + (work to (progress[work]?.copy(file = name) ?: Progress(name)))
 
+private const val MAX_LISTENED_TURN = 3
+
+internal fun listenedPages(before: Progress?, after: Progress): Int {
+    val turned = after.page - (before?.page ?: return 0)
+    return if (turned in 1..MAX_LISTENED_TURN) turned else 0
+}
+
+private fun Progress.isBefore(other: Progress) =
+    compareValuesBy(this, other, Progress::section, Progress::offset) < 0
+
+internal fun keptPosition(stored: Progress?, start: Progress, next: Progress?): Progress {
+    val onPage = stored != null &&
+        stored.file == start.file &&
+        !stored.isBefore(start) &&
+        (next == null || stored.isBefore(next))
+    return if (onPage) stored.copy(page = start.page, pages = start.pages) else start
+}
+
+private fun ReadingState.withProgress(work: Int, progress: Progress, pagesRead: Int) =
+    copy(
+        progress = this.progress + (work to progress),
+        activity = if (pagesRead > 0) activity.addedToday(pagesRead) else activity,
+    )
+
+private fun Map<String, Int>.addedToday(pages: Int): Map<String, Int> {
+    val today = LocalDate.now().toString()
+    return this + (today to (this[today] ?: 0) + pages)
+}
+
 internal fun deleteOtherFormats(directory: File, work: Int, keep: String) = directory
     .listFiles { file -> file.name != keep && file.nameWithoutExtension == "$work" }
     .orEmpty()
@@ -499,6 +532,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             .orEmpty()
             .forEach(File::deleteRecursively)
     }
+
+    suspend fun progressOf(work: Int) = reading.first().progress[work]
 
     suspend fun hasFile(progress: Progress?) = withContext(Dispatchers.IO) {
         progress != null && bookFile(progress.file).exists()
@@ -585,14 +620,15 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val author = metadata?.author ?: fallbackAuthor
         val entries = saved.first()
         val known = entries.firstOrNull { it.work == hashed }
-        val book = known?.let { bookOf(hashed, title, author, it.cover) }
-            ?: find(title, author)
+        val book = find(title, author)
+            ?: known?.let { bookOf(hashed, title, author, it.cover) }
             ?: bookOf(hashed, title, author)
         val name = "${book.work}.$extension"
         if (book.work != hashed && !written.renameTo(bookFile(name))) {
             written.delete()
             return null
         }
+        if (book.work != hashed && known != null) deleteBook(hashed)
         deleteOtherFormats(booksDir, book.work, keep = name)
         readingStore.change {
             it.copy(progress = importedProgress(it.progress, book.work, name))
@@ -723,6 +759,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                     progress = it.progress - work,
                     bookmarks = it.bookmarks - work,
                     highlights = it.highlights - work,
+                    listening = it.listening - work,
                 )
             }
             if (keepShelves) return@withContext
@@ -791,13 +828,20 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     }
 
     suspend fun saveProgress(work: Int, progress: Progress, pagesRead: Int = 0) =
-        readingStore.change { reading ->
-            val today = LocalDate.now().toString()
-            val pages = (reading.activity[today] ?: 0) + pagesRead
-            val activity = reading.activity + (today to pages)
-            val positions = reading.progress + (work to progress)
-            reading.copy(positions, if (pagesRead > 0) activity else reading.activity)
-        }
+        readingStore.change { it.withProgress(work, progress, pagesRead) }
+
+    suspend fun isListening(work: Int) = work in reading.first().listening
+
+    suspend fun markListening(work: Int, listening: Boolean) =
+        readingStore.change { it.listeningTo(work, listening) }
+
+    suspend fun addPagesRead(pages: Int) = readingStore.change {
+        it.copy(activity = it.activity.addedToday(pages))
+    }
+
+    suspend fun saveListened(work: Int, progress: Progress) = readingStore.change {
+        it.withProgress(work, progress, listenedPages(it.progress[work], progress))
+    }
 
     suspend fun changeBookmarks(work: Int, change: (List<Bookmark>) -> List<Bookmark>) =
         readingStore.change { it.copy(bookmarks = it.bookmarks.changed(work, change)) }

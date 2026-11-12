@@ -6,6 +6,9 @@ import androidx.core.net.toUri
 import dev.tn3w.shelf.data.Audiobook
 import dev.tn3w.shelf.data.Sleep
 import dev.tn3w.shelf.data.fadeVolume
+import dev.tn3w.shelf.data.heardSeconds
+import dev.tn3w.shelf.data.pagesHeard
+import dev.tn3w.shelf.data.secondsOfPages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +27,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var player: MediaPlayer? = null
     private var ready = false
     private var ticker: Job? = null
+    private var heard = 0
 
     suspend fun open(work: Int, title: String): Boolean {
         val audiobook = app.library.audiobooks.first()[work] ?: return false
@@ -97,6 +101,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         val next = book.track + 1
         if (next > book.tracks.lastIndex) {
             book = book.copy(millis = book.tracks.last().millis)
+            reachedEnd()
             return finish()
         }
         load(next, 0)
@@ -116,8 +121,10 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         while (true) {
             delay(POSITION_MILLIS)
             val chapter = book.chapterAt(book.second)
+            val before = book.second
             book = book.copy(millis = position())
             moved()
+            countHeard(heardSeconds(before, book.second))
             val ended = book.chapterAt(book.second) != chapter
             if (ended && current.value.sleep == Sleep.ChapterEnd) return finish()
             val sleeping = current.value.sleep is Sleep.After
@@ -125,6 +132,14 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
             player?.setVolume(volume, volume)
             if (++seconds % SAVE_EVERY_SECONDS == 0) save()
         }
+    }
+
+    private fun countHeard(seconds: Int) {
+        heard += seconds
+        val pages = pagesHeard(heard)
+        if (pages == 0) return
+        heard -= secondsOfPages(pages)
+        app.scope.launch { app.library.addPagesRead(pages) }
     }
 
     private fun position() =

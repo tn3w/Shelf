@@ -29,8 +29,6 @@
     <string name="contents">Spis treści</string>
     <string name="continue_percent">Kontynuuj · %d%%</string>
     <string name="continue_reading">Czytaj dalej</string>
-    <string name="core_offline">Najpopularniejsze książki od razu działają offline.</string>
-    <string name="core_required">Do korzystania z Shelf potrzebny jest katalog podstawowy. Nic nie jest pobierane, dopóki nie dotkniesz Pobierz.</string>
     <string name="cover_of">Okładka: %s</string>
     <string name="daily_goal">Cel dzienny</string>
     <string name="daily_goal_hint">Liczba stron do przeczytania każdego dnia, aby utrzymać serię. 0 ukrywa widżet.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Chcę przeczytać</string>
     <string name="want_to_read_subtitle">Książki, które chcesz przeczytać jako następne.</string>
     <string name="welcome">Witaj w Shelf</string>
-    <string name="welcome_download">Znajduj, śledź i czytaj książki offline. Najpierw wybierz katalog do pobrania.</string>
     <string name="welcome_text">Znajduj, śledź i czytaj książki offline.</string>
     <plurals name="books">
         <item quantity="one">%d książka</item>

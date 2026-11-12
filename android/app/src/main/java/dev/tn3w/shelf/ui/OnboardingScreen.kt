@@ -37,14 +37,25 @@ private fun AppIcon(size: Int) {
 }
 
 @Composable
-private fun AboutText(text: String) {
-    Text(
-        text,
+private fun Welcome() {
+    Column(
         Modifier.fillMaxWidth().padding(horizontal = 36.dp),
-        Look.colors.soft,
-        style = Look.type.body,
-        textAlign = TextAlign.Center,
-    )
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        AppIcon(72)
+        Text(
+            stringResource(R.string.welcome),
+            Modifier.padding(top = 18.dp, bottom = 6.dp),
+            style = Look.type.display,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(R.string.welcome_text),
+            color = Look.colors.soft,
+            style = Look.type.body,
+            textAlign = TextAlign.Center,
+        )
+    }
 }
 
 @Composable
@@ -62,8 +73,6 @@ fun OnboardingScreen() {
         ?: !BuildConfig.BUNDLED_CATALOGUE
     val coreDownload = downloads["$language-core"]
     var started by rememberSaveable(language) { mutableStateOf(false) }
-    var showSources by rememberSaveable { mutableStateOf(false) }
-    var showPacks by rememberSaveable { mutableStateOf(false) }
     fun finish(chosen: String = language) {
         if (chosen != language) viewModel.reload(chosen)
         val now = System.currentTimeMillis()
@@ -81,50 +90,28 @@ fun OnboardingScreen() {
         Column(
             Modifier.weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(top = 44.dp, bottom = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(top = 32.dp, bottom = 16.dp),
         ) {
-            AppIcon(84)
-            Text(
-                stringResource(R.string.welcome),
-                Modifier.padding(horizontal = ScreenPadding)
-                    .padding(top = 22.dp, bottom = 8.dp),
-                style = Look.type.display,
-                textAlign = TextAlign.Center,
-            )
-            AboutText(
-                stringResource(
-                    if (required) R.string.welcome_download else R.string.welcome_text,
-                ),
-            )
+            Welcome()
+            Spacer(Modifier.height(20.dp))
             SettingsGroup(stringResource(R.string.catalogue_language)) {
-                CatalogueLanguageChoice(language) {
+                LanguageChips(LANGUAGES, language, installed = installedLanguages()) {
                     language = it
                     viewModel.reload(it)
                 }
             }
-            SettingsGroup { OfflineRow(settings, update) }
             if (!offline) {
-                val hint = if (required) R.string.core_required else R.string.core_offline
-                SettingsGroup(stringResource(R.string.catalogue), stringResource(hint)) {
+                SettingsGroup(stringResource(R.string.catalogue)) {
                     if (required) CoreRow(core, coreDownload)
-                    ExpandRow(R.string.choose_packs, showPacks) { showPacks = !showPacks }
                     val skip = if (required) "core" else null
-                    if (showPacks) {
-                        OnboardingPacks(packs, selected, skip) { pack ->
-                            selected =
-                                if (pack in selected) selected - pack else selected + pack
-                        }
+                    ExtraPacks(packs, selected, skip) { pack ->
+                        selected =
+                            if (pack in selected) selected - pack else selected + pack
                     }
+                    OnboardingVoices(language)
                 }
-                VoiceModels(offline = false, language, showOthers = false)
             }
-            SettingsGroup {
-                ExpandRow(R.string.own_sources, showSources) {
-                    showSources = !showSources
-                }
-                if (showSources) SourceRows(language, settings)
-            }
+            SettingsGroup { OfflineRow(settings, update) }
         }
         Rule()
         if (offline) {
@@ -148,20 +135,43 @@ fun OnboardingScreen() {
 }
 
 @Composable
-private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit) =
-    LanguageChips(
-        LANGUAGES,
-        selected,
-        installed = installedLanguages(),
-        onSelect = onSelect,
-    )
-
-@Composable
 private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) =
     SettingRow(stringResource(title), onClick = onToggle) {
         val icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore
         Icon(icon, null, tint = Look.colors.faint)
     }
+
+@Composable
+private fun ExtraPacks(
+    packs: List<PackInfo>?,
+    selected: List<String>,
+    skip: String?,
+    onToggle: (String) -> Unit,
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    ExpandRow(R.string.choose_packs, expanded) { expanded = !expanded }
+    if (!expanded) return
+    if (packs == null) return LoadingBar()
+    packs
+        .filter { it.state == PackState.Available && it.pack != skip }
+        .forEach { info ->
+            val size = if (info.bytes > 0) bytes(info.bytes) else "–"
+            SettingRow(
+                stringResource(PACKS.getValue(info.pack)),
+                size,
+                onClick = { onToggle(info.pack) },
+            ) { Check(info.pack in selected) }
+        }
+}
+
+@Composable
+private fun OnboardingVoices(language: String) {
+    val usable = usableModels()
+    if (usable.isEmpty()) return
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    ExpandRow(R.string.voice_models, expanded) { expanded = !expanded }
+    if (expanded) VoiceModelRows(usable, language, offline = false, showOthers = false)
+}
 
 @Composable
 private fun OnboardingActions(
@@ -223,24 +233,4 @@ private fun CoreRow(info: PackInfo?, download: Download?) {
             Hint(stringResource(R.string.pack_failed), color = Look.colors.danger)
         }
     }
-}
-
-@Composable
-private fun OnboardingPacks(
-    packs: List<PackInfo>?,
-    selected: List<String>,
-    skip: String?,
-    onToggle: (String) -> Unit,
-) {
-    if (packs == null) return LoadingBar()
-    packs
-        .filter { it.state == PackState.Available && it.pack != skip }
-        .forEach { info ->
-            val size = if (info.bytes > 0) bytes(info.bytes) else "–"
-            SettingRow(
-                stringResource(PACKS.getValue(info.pack)),
-                size,
-                onClick = { onToggle(info.pack) },
-            ) { Check(info.pack in selected) }
-        }
 }

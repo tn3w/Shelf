@@ -29,8 +29,6 @@
     <string name="contents">Inhalt</string>
     <string name="continue_percent">Weiterlesen · %d%%</string>
     <string name="continue_reading">Weiterlesen</string>
-    <string name="core_offline">Die beliebtesten Bücher funktionieren sofort offline.</string>
-    <string name="core_required">Der Kernkatalog wird für Shelf benötigt. Es wird nichts geladen, bis du auf Herunterladen tippst.</string>
     <string name="cover_of">Cover von %s</string>
     <string name="daily_goal">Tagesziel</string>
     <string name="daily_goal_hint">Seiten pro Tag, um die Serie zu halten. 0 blendet das Widget aus.</string>
@@ -137,7 +135,6 @@
     <string name="want_to_read">Merkliste</string>
     <string name="want_to_read_subtitle">Bücher, die du als Nächstes lesen willst.</string>
     <string name="welcome">Willkommen bei Shelf</string>
-    <string name="welcome_download">Bücher offline finden, verfolgen und lesen. Wähle zuerst einen Katalog zum Herunterladen.</string>
     <string name="welcome_text">Bücher offline finden, verfolgen und lesen.</string>
     <plurals name="books">
         <item quantity="one">%d Buch</item>

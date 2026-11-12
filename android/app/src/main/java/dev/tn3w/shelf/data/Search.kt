@@ -36,7 +36,7 @@ private const val MAX_TOKEN_LENGTH = 24
 val ARTICLES =
     setOf("the", "a", "an", "der", "die", "das", "le", "la", "les", "el", "los", "las")
 private val ARTICLE = Regex("^(${ARTICLES.joinToString("|")}) ")
-private val TITLE_BREAK = Regex("[:;(/]")
+private val TITLE_BREAK = Regex("[:;(/]|\\s[-–—]\\s")
 private val HANGUL = '\uac00'..'\ud7a3'
 private val CYRILLIC = '\u0400'..'\u04ff'
 private val KANA = listOf('\u3040'..'\u30ff', '\u31f0'..'\u31ff', '\uff66'..'\uff9f')
@@ -461,7 +461,13 @@ class Searcher(private val catalogue: Catalogue) {
     }
 
     fun find(title: String, author: String): Book? {
-        val wanted = tokenize(mainTitle(title))
+        val parts = title.split(TITLE_BREAK).filter { it.isNotBlank() }
+        val tried = if (surname(author).isEmpty()) parts.take(1) else parts
+        return tried.firstNotNullOfOrNull { findTitle(it, author) }
+    }
+
+    private fun findTitle(title: String, author: String): Book? {
+        val wanted = tokenize(title)
         val surname = surname(author)
         return search("${wanted.joinToString(" ")} $author", 5).firstOrNull { book ->
             val titles = listOf(book.title, book.alternate).map {

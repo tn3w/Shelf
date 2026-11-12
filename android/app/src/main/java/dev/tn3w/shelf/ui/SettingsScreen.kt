@@ -149,8 +149,6 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     val models = app.models
 
-    fun refreshModels() = detached { runSuspendCatching { models.refresh() } }
-
     fun downloadModel(model: Model) = app.downloadModel(model)
 
     fun pauseModel(model: Model) = app.pauseModel(model)

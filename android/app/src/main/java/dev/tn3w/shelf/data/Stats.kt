@@ -11,6 +11,16 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 private const val PAGES_PER_HOUR = 40
+private const val SECONDS_PER_PAGE = 3600 / PAGES_PER_HOUR
+private const val MAX_HEARD_STEP = 5
+
+/** Seconds of audio heard between two positions; seeks and skips count nothing. */
+fun heardSeconds(before: Int, after: Int) =
+    (after - before).takeIf { it in 1..MAX_HEARD_STEP } ?: 0
+
+fun pagesHeard(seconds: Int) = seconds / SECONDS_PER_PAGE
+
+fun secondsOfPages(pages: Int) = pages * SECONDS_PER_PAGE
 private const val MARATHON_DAYS = 21
 private const val EXPLORER_GENRES = 5
 private const val DEVOTED_BOOKS = 3
@@ -29,7 +39,11 @@ data class MonthStats(
     val pages: Int,
     val books: List<Saved>,
     val genres: List<Tag>,
-)
+    val reading: List<Saved> = emptyList(),
+) {
+    val allBooks
+        get() = books + reading
+}
 
 data class GenreStats(val tag: Tag, val books: List<Saved>)
 
@@ -38,13 +52,16 @@ data class Recap(
     val months: List<MonthStats>,
     val genres: List<GenreStats>,
     val days: Map<LocalDate, Int>,
+    val reading: List<Saved> = emptyList(),
 ) {
     val pages
         get() = months.sumOf { it.pages }
     val books
         get() = months.flatMap { it.books }
+    val allBooks
+        get() = books + reading
     val isEmpty
-        get() = pages == 0 && books.isEmpty()
+        get() = pages == 0 && allBooks.isEmpty()
     val readingDays
         get() = days.size
     val longestStreak
@@ -156,6 +173,10 @@ fun recapOf(
     val finished = entries
         .filter { it.finishedOn(zone)?.year == year }
         .sortedBy { it.finishedAt }
+    val reading = entries
+        .filter { it.shelf == Shelf.Reading }
+        .filter { book -> book.startedOn(zone)?.let { it.year <= year } == true }
+        .sortedBy { it.started }
     val days = readingDays(activity).filterKeys { it.year == year }
     val months = Month.entries.map { month ->
         val current = YearMonth.of(year, month)
@@ -165,7 +186,8 @@ fun recapOf(
             days.filterKeys { YearMonth.from(it) == current }.values.sum(),
             books,
             genresOf(books, genresOf).map { it.tag },
+            reading.filter { YearMonth.from(it.startedOn(zone)) == current },
         )
     }
-    return Recap(year, months, genresOf(finished, genresOf), days)
+    return Recap(year, months, genresOf(finished, genresOf), days, reading)
 }

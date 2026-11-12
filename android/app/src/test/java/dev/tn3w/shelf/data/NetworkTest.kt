@@ -1,6 +1,7 @@
 package dev.tn3w.shelf.data
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,5 +28,11 @@ class NetworkTest {
     fun downloadsHaveNoCallTimeout() {
         assertTrue(http.callTimeoutMillis > 0)
         assertEquals(0, downloadClient.callTimeoutMillis)
+    }
+
+    @Test(expected = OfflineException::class)
+    fun offlineModeStopsRequestsBeforeConnecting() {
+        networkAllowed = false
+        runBlocking { downloadClient.fetch("https://example.invalid/voices.json") }
     }
 }

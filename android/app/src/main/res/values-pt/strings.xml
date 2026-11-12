@@ -31,8 +31,6 @@
     <string name="contents">Sumário</string>
     <string name="continue_percent">Continuar · %d%%</string>
     <string name="continue_reading">Continuar lendo</string>
-    <string name="core_offline">Os livros mais populares funcionam offline desde já.</string>
-    <string name="core_required">O catálogo básico é necessário para usar o Shelf. Nada é baixado até você tocar em Baixar.</string>
     <string name="cover_of">Capa de %s</string>
     <string name="daily_goal">Meta diária</string>
     <string name="daily_goal_hint">Páginas por dia para manter a sequência. 0 oculta o widget.</string>
@@ -144,7 +142,6 @@
     <string name="want_to_read">Quero ler</string>
     <string name="want_to_read_subtitle">Livros que você quer ler em breve.</string>
     <string name="welcome">Boas-vindas ao Shelf</string>
-    <string name="welcome_download">Encontre, acompanhe e leia livros offline. Escolha primeiro um catálogo para baixar.</string>
     <string name="welcome_text">Encontre, acompanhe e leia livros offline.</string>
     <plurals name="books">
         <item quantity="one">%d livro</item>

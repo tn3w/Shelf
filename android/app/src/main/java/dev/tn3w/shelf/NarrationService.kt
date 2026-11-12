@@ -61,6 +61,7 @@ class NarrationService : Service() {
                     override fun onStop() = narrator.stop()
                 },
             )
+            setSessionActivity(playerIntent())
             isActive = true
         }
         val noisy = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
@@ -104,6 +105,13 @@ class NarrationService : Service() {
             .build()
     }
 
+    private fun playerIntent(): PendingIntent {
+        val intent = Intent(this, MainActivity::class.java)
+            .setAction(OPEN_PLAYER)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return PendingIntent.getActivity(this, 0, intent, FLAG_IMMUTABLE)
+    }
+
     private fun action(icon: Int, label: Int, name: String): Notification.Action {
         val intent = Intent(this, NarrationService::class.java).setAction(name)
         val pending = PendingIntent.getService(
@@ -121,8 +129,6 @@ class NarrationService : Service() {
             .setName(getString(R.string.listen))
             .build()
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
-        val launch = packageManager.getLaunchIntentForPackage(packageName)
-        val open = PendingIntent.getActivity(this, 0, launch, FLAG_IMMUTABLE)
         val toggle = if (state.playing) {
             action(android.R.drawable.ic_media_pause, R.string.pause, TOGGLE)
         } else {
@@ -132,7 +138,7 @@ class NarrationService : Service() {
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle(state.title)
             .setContentText(state.chapter)
-            .setContentIntent(open)
+            .setContentIntent(playerIntent())
             .setOngoing(state.playing)
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .addAction(action(ICON_PREVIOUS, R.string.previous_chapter, PREVIOUS))

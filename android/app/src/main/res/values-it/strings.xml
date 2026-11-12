@@ -31,8 +31,6 @@
     <string name="contents">Indice</string>
     <string name="continue_percent">Continua · %d%%</string>
     <string name="continue_reading">Continua a leggere</string>
-    <string name="core_offline">I libri più popolari funzionano subito offline.</string>
-    <string name="core_required">Il catalogo di base serve per usare Shelf. Non viene scaricato nulla finché non tocchi Scarica.</string>
     <string name="cover_of">Copertina di %s</string>
     <string name="daily_goal">Obiettivo giornaliero</string>
     <string name="daily_goal_hint">Pagine da leggere ogni giorno per mantenere la serie. 0 nasconde il widget.</string>
@@ -144,7 +142,6 @@
     <string name="want_to_read">Da leggere</string>
     <string name="want_to_read_subtitle">Libri che vorresti leggere presto.</string>
     <string name="welcome">Benvenuto in Shelf</string>
-    <string name="welcome_download">Trova, segui e leggi libri offline. Scegli prima un catalogo da scaricare.</string>
     <string name="welcome_text">Trova, segui e leggi libri offline.</string>
     <plurals name="books">
         <item quantity="one">%d libro</item>

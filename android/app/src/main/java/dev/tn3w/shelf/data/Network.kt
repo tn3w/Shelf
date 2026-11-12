@@ -80,11 +80,16 @@ private fun epochMillis(time: String) =
 
 class HttpException(val code: Int, url: String) : IOException("HTTP $code from $url")
 
+class OfflineException : IOException("offline mode blocks network access")
+
+@Volatile var networkAllowed = false
+
 val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
     .callTimeout(2, TimeUnit.MINUTES)
     .addInterceptor { chain ->
+        if (!networkAllowed) throw OfflineException()
         val request = chain.request().newBuilder().header("User-Agent", USER_AGENT)
         chain.proceed(request.build())
     }

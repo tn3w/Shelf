@@ -151,12 +151,12 @@ private fun YearChips(years: List<Int>, selected: Int, onSelect: (Int) -> Unit) 
 @Composable
 private fun MonthSection(recap: Recap) {
     var byBooks by rememberSaveable { mutableStateOf(false) }
-    val active = recap.months.lastOrNull { it.pages > 0 || it.books.isNotEmpty() }
+    val active = recap.months.lastOrNull { it.pages > 0 || it.allBooks.isNotEmpty() }
     var chosen by rememberSaveable(recap.year) {
         mutableStateOf(active?.month?.monthValue)
     }
     val selected = recap.months.firstOrNull { it.month.monthValue == chosen }
-    val value = { month: MonthStats -> if (byBooks) month.books.size else month.pages }
+    val value = { month: MonthStats -> if (byBooks) month.allBooks.size else month.pages }
     Column(
         Modifier.padding(horizontal = ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -239,7 +239,7 @@ private fun MonthBar(
 private fun MonthDetail(month: MonthStats) {
     val summary = listOf(
         pluralStringResource(R.plurals.pages_count, month.pages, month.pages),
-        pluralStringResource(R.plurals.books, month.books.size, month.books.size),
+        pluralStringResource(R.plurals.books, month.allBooks.size, month.allBooks.size),
     )
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(monthName(month.month), style = Look.type.heading)

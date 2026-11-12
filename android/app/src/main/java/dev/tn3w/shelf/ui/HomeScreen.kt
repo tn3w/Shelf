@@ -66,6 +66,10 @@ class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun dismiss(book: Book) {
         detached { library.dismiss(book.work) }
     }
+
+    fun resumeAudio(entry: Saved) = detached {
+        if (app.audiobooks.open(entry.work, entry.title)) app.audiobooks.play()
+    }
 }
 
 @Composable
@@ -86,8 +90,9 @@ fun HomeScreen(navigator: Navigator) {
     val want = saved.orEmpty().filter { it.shelf == Shelf.Want }.map { it.toBook() }
     fun resume(entry: Saved) = scope.launch {
         if (library.hasFile(progress?.get(entry.work))) {
-            navigator.reader(entry.work)
+            navigator.reader(entry.work, listen = library.isListening(entry.work))
         } else {
+            if (library.isListening(entry.work)) viewModel.resumeAudio(entry)
             navigator.book(entry.toBook(), "continue")
         }
     }
