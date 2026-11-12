@@ -3,16 +3,13 @@ package dev.tn3w.shelf.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.R
@@ -88,14 +85,14 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
         val pending = packs.filter { it.state != PackState.Installed }
         val pendingBytes = pending.sumOf { it.bytes }
         if (!offline || storage > 0) {
-            HorizontalDivider(Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            Rule(Modifier.padding(horizontal = ScreenPadding, vertical = 6.dp))
         }
         if (!offline && pendingBytes > 0) {
             ActionRow(
-                R.string.download_all_short, Icons.Outlined.Download, bytes(pendingBytes),
+                R.string.download_all_short, Icons.Rounded.Download, bytes(pendingBytes),
             ) { pending.forEach { viewModel.downloadPack(language, it.pack) } }
         } else if (storage > 0) {
-            ActionRow(R.string.delete_all, Icons.Outlined.Delete) {
+            ActionRow(R.string.delete_all, Icons.Rounded.Delete) {
                 viewModel.removePacks(language)
             }
         }
@@ -107,7 +104,7 @@ private fun PackList(language: String, packs: List<PackInfo>?, offline: Boolean)
 private fun CatalogueCheck(language: String) {
     val viewModel = settingsViewModel()
     val (busy, status) = actionStatus(SettingsAction.CatalogueCheck)
-    ActionRow(R.string.check_catalogue, Icons.Outlined.Refresh, status, busy) {
+    ActionRow(R.string.check_catalogue, Icons.Rounded.Refresh, status, busy) {
         viewModel.checkCatalogue(language)
     }
 }
@@ -137,49 +134,18 @@ fun SourceRows(language: String, settings: Settings) {
     }
     ActionRow(
         R.string.import_catalogue,
-        Icons.Outlined.FileOpen,
+        Icons.Rounded.FileOpen,
         importStatus,
     ) { picker.launch(arrayOf("*/*")) }
     if (!editing) return
-    SourceDialog(settings.catalogueSource, onDismiss = { editing = false }) {
-        editing = false
-        viewModel.changeCatalogueSource(it)
-    }
-}
-
-@Composable
-private fun SourceDialog(
-    current: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var text by rememberSaveable { mutableStateOf(current) }
-    val valid = isValidSource(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.catalogue_source)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.catalogue_source_hint))
-                OutlinedTextField(
-                    text,
-                    { text = it.trim() },
-                    placeholder = { Text(REPOSITORY) },
-                    singleLine = true,
-                    isError = !valid,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(text) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onSave("") }) { Text(stringResource(R.string.reset)) }
-        },
-    )
+    AddressSheet(
+        R.string.catalogue_source,
+        R.string.catalogue_source_hint,
+        settings.catalogueSource,
+        REPOSITORY,
+        ::isValidSource,
+        onDismiss = { editing = false },
+    ) { viewModel.changeCatalogueSource(it) }
 }
 
 @Composable

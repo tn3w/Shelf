@@ -10,16 +10,16 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
@@ -205,9 +206,10 @@ private fun StoryBar(count: Int, index: Int, progress: Float, onClose: () -> Uni
                 StorySegment(filled, Modifier.weight(1f))
             }
         }
-        IconButton(onClick = onClose) {
-            Icon(Icons.Outlined.Close, stringResource(R.string.close), tint = White)
-        }
+        IconAction(
+            Icons.Rounded.Close, stringResource(R.string.close),
+            tint = White, onClick = onClose,
+        )
     }
 }
 
@@ -275,9 +277,9 @@ private fun Modifier.reveal(order: Int): Modifier {
 }
 
 @Composable
-private fun Eyebrow(text: String, order: Int = 0) = Text(
+private fun Kicker(text: String, order: Int = 0) = Text(
     text,
-    style = MaterialTheme.typography.headlineSmall,
+    style = Look.type.heading,
     color = White.copy(alpha = 0.85f),
     modifier = Modifier.reveal(order),
 )
@@ -286,7 +288,8 @@ private fun Eyebrow(text: String, order: Int = 0) = Text(
 private fun Headline(text: String, order: Int, style: TextStyle = HeroStyle) = Text(
     text,
     style = style,
-    fontWeight = FontWeight.Black,
+    fontWeight = FontWeight.Bold,
+    fontFamily = FontFamily.Serif,
     color = White,
     maxLines = 3,
     overflow = TextOverflow.Ellipsis,
@@ -301,7 +304,7 @@ private val TitleStyle = TextStyle(fontSize = 48.sp, lineHeight = 54.sp)
 @Composable
 private fun Caption(text: String, order: Int, color: Color = White) = Text(
     text,
-    style = MaterialTheme.typography.titleLarge,
+    style = Look.type.heading,
     color = color,
     modifier = Modifier.reveal(order),
 )
@@ -368,7 +371,7 @@ private fun IntroSlide(recap: Recap, books: List<Book>) {
                 ),
         )
         SlideColumn(Arrangement.Bottom) {
-            Eyebrow(stringResource(R.string.year_in_books))
+            Kicker(stringResource(R.string.year_in_books))
             Headline("${recap.year}", 1, YearStyle)
             Caption(stringResource(R.string.wrapped_intro), 2, White.copy(alpha = 0.85f))
         }
@@ -434,8 +437,8 @@ private fun CoverFan(books: List<Book>, width: Dp = 120.dp, order: Int = 2) {
                         translationX = offset * width.toPx() * 0.55f
                         translationY = abs(offset) * 10.dp.toPx()
                         rotationZ = offset * 8f
-                    }
-                    .shadow(16.dp, RoundedCornerShape(6.dp)),
+                    },
+                lift = 16.dp,
             )
         }
     }
@@ -444,7 +447,7 @@ private fun CoverFan(books: List<Book>, width: Dp = 120.dp, order: Int = 2) {
 @Composable
 private fun BooksSlide(books: List<Book>) {
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_books))
+        Kicker(stringResource(R.string.wrapped_books))
         CountUp(books.size, 1)
         Caption(stringResource(R.string.books_metric), 1)
         Spacer(Modifier.height(32.dp))
@@ -456,7 +459,7 @@ private fun BooksSlide(books: List<Book>) {
 private fun PagesSlide(recap: Recap) {
     val best = recap.bestDay
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_pages))
+        Kicker(stringResource(R.string.wrapped_pages))
         CountUp(recap.pages, 1)
         Caption(stringResource(R.string.pages_metric), 1)
         Spacer(Modifier.height(32.dp))
@@ -475,7 +478,7 @@ private fun PagesSlide(recap: Recap) {
 private fun MonthsSlide(recap: Recap) {
     val best = recap.bestMonth ?: return
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_month))
+        Kicker(stringResource(R.string.wrapped_month))
         Headline(monthName(best.month), 1, TitleStyle)
         Caption(pages(best.pages), 2, Gold)
         Spacer(Modifier.height(40.dp))
@@ -508,7 +511,7 @@ private fun GrowingBars(months: List<MonthStats>, best: YearMonth) {
                 }
                 Text(
                     monthName(month.month, DateStyle.NARROW_STANDALONE),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = Look.type.note,
                     color = White.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 6.dp),
                 )
@@ -521,7 +524,7 @@ private fun GrowingBars(months: List<MonthStats>, best: YearMonth) {
 private fun GenreSlide(recap: Recap) {
     val top = recap.genres.first()
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_genre))
+        Kicker(stringResource(R.string.wrapped_genre))
         Headline(top.tag.label, 1, TitleStyle)
         Caption(booksCount(top.books.size), 2, Gold)
         Spacer(Modifier.height(24.dp))
@@ -541,14 +544,15 @@ private fun RankRow(rank: Int, label: String, detail: String, order: Int) {
     ) {
         Text(
             "$rank",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Black,
+            style = Look.type.heading,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Serif,
             color = Gold,
             modifier = Modifier.width(36.dp),
         )
         Text(
             label,
-            style = MaterialTheme.typography.titleMedium,
+            style = Look.type.subhead,
             color = White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -556,7 +560,7 @@ private fun RankRow(rank: Int, label: String, detail: String, order: Int) {
         )
         Text(
             detail,
-            style = MaterialTheme.typography.bodyMedium,
+            style = Look.type.body,
             color = White.copy(alpha = 0.7f),
         )
     }
@@ -566,7 +570,7 @@ private fun RankRow(rank: Int, label: String, detail: String, order: Int) {
 private fun AuthorSlide(recap: Recap, author: Author?) {
     val name = recap.topAuthor ?: return
     SlideColumn(Arrangement.spacedBy(12.dp, Alignment.CenterVertically)) {
-        Eyebrow(stringResource(R.string.wrapped_author))
+        Kicker(stringResource(R.string.wrapped_author))
         AuthorAvatar(
             author ?: Author(0, name),
             128.dp,
@@ -581,7 +585,7 @@ private fun AuthorSlide(recap: Recap, author: Author?) {
 @Composable
 private fun DaysSlide(recap: Recap) {
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_days))
+        Kicker(stringResource(R.string.wrapped_days))
         CountUp(recap.readingDays, 1)
         Caption(stringResource(R.string.reading_days), 1)
         Spacer(Modifier.height(28.dp))
@@ -593,7 +597,7 @@ private fun DaysSlide(recap: Recap) {
             Icon(Icons.Rounded.LocalFireDepartment, null, tint = Gold)
             Text(
                 streak,
-                style = MaterialTheme.typography.titleLarge,
+                style = Look.type.heading,
                 color = White,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -615,7 +619,7 @@ private fun YearHeatmap(recap: Recap) {
             labels.forEach {
                 Text(
                     it,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = Look.type.eyebrow,
                     color = White.copy(alpha = 0.7f),
                     modifier = Modifier.height(16.dp),
                 )
@@ -656,7 +660,7 @@ private fun BookendsSlide(recap: Recap) {
     val first = recap.books.first()
     val last = recap.books.last()
     SlideColumn {
-        Eyebrow(stringResource(R.string.wrapped_bookends))
+        Kicker(stringResource(R.string.wrapped_bookends))
         Spacer(Modifier.height(32.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Bookend(first, R.string.wrapped_first, Modifier.weight(1f).reveal(1))
@@ -676,18 +680,17 @@ private fun Bookend(saved: Saved, label: Int, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             stringResource(label),
-            style = MaterialTheme.typography.labelLarge,
+            style = Look.type.label,
             color = Gold,
         )
         BookCover(
             saved.toBook(),
-            modifier = Modifier.fillMaxWidth()
-                .padding(vertical = 12.dp)
-                .shadow(16.dp, RoundedCornerShape(6.dp)),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            lift = 16.dp,
         )
         Text(
             saved.title,
-            style = MaterialTheme.typography.titleMedium,
+            style = Look.type.subhead,
             color = White,
             textAlign = TextAlign.Center,
             minLines = 2,
@@ -697,7 +700,7 @@ private fun Bookend(saved: Saved, label: Int, modifier: Modifier) {
         saved.finishedOn()?.let {
             Text(
                 dateLabel(it),
-                style = MaterialTheme.typography.bodySmall,
+                style = Look.type.note,
                 color = White.copy(alpha = 0.7f),
             )
         }
@@ -716,7 +719,7 @@ private val ReaderType.icon: ImageVector
 @Composable
 private fun TypeSlide(type: ReaderType) {
     SlideColumn(Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
-        Eyebrow(stringResource(R.string.wrapped_type))
+        Kicker(stringResource(R.string.wrapped_type))
         Box(
             Modifier.reveal(1).size(140.dp).clip(CircleShape).background(Gold),
             contentAlignment = Alignment.Center,
@@ -758,17 +761,24 @@ private fun SummarySlide(recap: Recap, author: Author?, onClose: () -> Unit) {
             Modifier.padding(top = 16.dp).reveal(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedButton(onClick = onClose) {
-                Text(stringResource(R.string.close), color = White)
-            }
-            Button(
-                onClick = {
+            val onSlide = Look.colors.copy(
+                accent = White,
+                onAccent = Color(Slide.Summary.top),
+                ink = White,
+                line = White.copy(alpha = 0.5f),
+            )
+            CompositionLocalProvider(LocalColors provides onSlide) {
+                Pill(
+                    stringResource(R.string.close),
+                    kind = PillKind.Line,
+                    onClick = onClose,
+                )
+                Pill(stringResource(R.string.share), icon = Icons.Rounded.IosShare) {
                     scope.launch {
                         context.shareImage(layer.toImageBitmap(), recap, text)
                     }
-                },
-                colors = ButtonDefaults.buttonColors(White, Color(Slide.Summary.top)),
-            ) { IconLabel(Icons.Outlined.Share, R.string.share) }
+                }
+            }
         }
     }
 }
@@ -787,20 +797,21 @@ private fun SummaryCard(recap: Recap, author: Author?, modifier: Modifier) {
         Column(Modifier.fillMaxSize().padding(24.dp), Arrangement.Bottom) {
             Text(
                 stringResource(R.string.year_in_books),
-                style = MaterialTheme.typography.titleMedium,
+                style = Look.type.subhead,
                 color = White.copy(alpha = 0.85f),
             )
             Text(
                 "${recap.year}",
                 style = CardYearStyle,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif,
                 color = White,
             )
-            Text(stats, style = MaterialTheme.typography.titleMedium, color = Gold)
+            Text(stats, style = Look.type.subhead, color = Gold)
             if (favorites.isNotEmpty()) {
                 Text(
                     favorites.joinToString(" · "),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Look.type.body,
                     color = White.copy(alpha = 0.8f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -826,14 +837,15 @@ private fun CardFooter() {
         )
         Text(
             stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Black,
+            style = Look.type.subhead,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Serif,
             color = White,
             modifier = Modifier.weight(1f),
         )
         Text(
             "github.com/$REPOSITORY",
-            style = MaterialTheme.typography.labelMedium,
+            style = Look.type.note,
             color = White.copy(alpha = 0.7f),
         )
     }
@@ -867,12 +879,12 @@ private suspend fun Context.shareImage(image: ImageBitmap, recap: Recap, text: S
 @Composable
 fun WrappedBanner(recap: Recap, onPlay: () -> Unit) {
     val books = remember(recap) { recap.books.reversed().take(3).map { it.toBook() } }
-    Surface(
-        onClick = onPlay,
-        shape = RoundedCornerShape(24.dp),
-        color = Color.Transparent,
-        modifier = Modifier.fillMaxWidth()
-            .padding(horizontal = ScreenPadding, vertical = 8.dp),
+    Box(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = ScreenPadding)
+            .padding(top = 16.dp)
+            .clip(Corners.card)
+            .clickable(onClick = onPlay),
     ) {
         Row(
             Modifier.background(Slide.Intro.brush).padding(20.dp),
@@ -881,13 +893,14 @@ fun WrappedBanner(recap: Recap, onPlay: () -> Unit) {
             Column(Modifier.weight(1f), Arrangement.spacedBy(4.dp)) {
                 Text(
                     stringResource(R.string.wrapped_banner, recap.year),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
+                    style = Look.type.heading,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Serif,
                     color = White,
                 )
                 Text(
                     stringResource(R.string.wrapped_banner_text),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Look.type.body,
                     color = White.copy(alpha = 0.85f),
                 )
                 Icon(
@@ -913,7 +926,8 @@ private fun BannerCovers(books: List<Book>) {
                 Modifier.graphicsLayer {
                     translationX = offset * 28.dp.toPx()
                     rotationZ = offset * 10f
-                }.shadow(8.dp, RoundedCornerShape(6.dp)),
+                },
+                lift = 8.dp,
             )
         }
     }

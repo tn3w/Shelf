@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.LibraryAdd
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.LibraryAdd
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.platform.LocalContext
@@ -141,7 +143,7 @@ fun ExploreScreen(navigator: Navigator) {
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val missing by viewModel.missing.collectAsStateWithLifecycle()
 
-    LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
+    LazyColumn(contentPadding = screenInsets()) {
         item { LargeTitle(stringResource(R.string.explore)) }
         if (missing == true) {
             item { NoCatalogue { navigator.settings(SettingsPage.Catalogue) } }
@@ -163,7 +165,6 @@ fun ExploreScreen(navigator: Navigator) {
             item { SectionHeader(stringResource(title)) }
             item { TagChips(list, navigator) }
         }
-        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
@@ -175,19 +176,22 @@ private fun StartRow(name: String, author: Boolean, onClick: () -> Unit) {
         Modifier.fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = ScreenPadding, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val icon = if (author) Icons.Rounded.Person else Icons.Rounded.AutoAwesome
+        Icon(icon, null, Modifier.size(20.dp), Look.colors.accent)
         Text(
             stringResource(label, name),
-            style = MaterialTheme.typography.bodyLarge,
+            Modifier.weight(1f),
+            style = Look.type.body,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
         )
         Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            null,
+            tint = Look.colors.faint,
         )
     }
 }
@@ -202,16 +206,14 @@ private fun GenreGrid(genres: List<Tag>, navigator: Navigator) {
         maxItemsInEachRow = 2,
     ) {
         genres.forEach { tag ->
-            Surface(
-                onClick = { navigator.tag(tag.id) },
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.weight(1f).heightIn(min = 72.dp),
-            ) {
-                Box(Modifier.padding(16.dp), contentAlignment = Alignment.BottomStart) {
-                    Text(tag.label, style = MaterialTheme.typography.titleMedium)
-                }
-            }
+            Box(
+                Modifier.weight(1f)
+                    .heightIn(min = 76.dp)
+                    .surface()
+                    .clickable { navigator.tag(tag.id) }
+                    .padding(16.dp),
+                contentAlignment = Alignment.BottomStart,
+            ) { Text(tag.label, style = Look.type.heading) }
         }
     }
 }
@@ -222,12 +224,9 @@ private fun TagChips(tags: List<Tag>, navigator: Navigator) {
     FlowRow(
         Modifier.padding(horizontal = ScreenPadding),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        tags.forEach { tag ->
-            SuggestionChip(
-                onClick = { navigator.tag(tag.id) }, label = { Text(tag.label) },
-            )
-        }
+        tags.forEach { tag -> Tag(tag.label) { navigator.tag(tag.id) } }
     }
 }
 
@@ -240,15 +239,18 @@ fun TagScreen(id: Int, navigator: Navigator) {
     val missingPack by viewModel.missingPack.collectAsStateWithLifecycle()
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
     val offline = loadedSettings()?.isOffline(LocalContext.current) ?: true
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        BackBar(navigator::back, tag?.label.orEmpty())
+    Column(Modifier.padding(top = statusBarHeight())) {
+        BackBar(navigator::back)
+        Text(
+            tag?.label.orEmpty(),
+            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 14.dp),
+            style = Look.type.display,
+        )
         FilterRow {
             TagSort.entries.forEach { order ->
-                FilterChip(
-                    selected = order == sort,
-                    onClick = { viewModel.sortBy(order) },
-                    label = { Text(stringResource(order.label)) },
-                )
+                Tag(stringResource(order.label), selected = order == sort) {
+                    viewModel.sortBy(order)
+                }
             }
         }
         BookGrid(books, "tag-$id", navigator::book, footer = {
@@ -267,17 +269,12 @@ private fun MissingPack(pack: String, download: Download?, onDownload: () -> Uni
     val label = stringResource(PACKS.getValue(pack))
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         val text = stringResource(R.string.pack_suggestion, label)
-        EmptyState(Icons.Outlined.LibraryAdd, text)
+        EmptyState(Icons.Rounded.LibraryAdd, text)
         if (download is Download.Running) {
-            return@Column LinearProgressIndicator(
-                progress = { download.progress },
-                modifier = Modifier.width(160.dp).padding(vertical = 18.dp),
-                drawStopIndicator = {},
-            )
+            return@Column Meter(download.progress, Modifier.width(160.dp))
         }
-        OutlinedButton(onClick = onDownload) {
-            Text(stringResource(R.string.download_item, label))
-        }
+        val action = stringResource(R.string.download_item, label)
+        Pill(action, kind = PillKind.Line, onClick = onDownload)
     }
 }
 
@@ -301,38 +298,41 @@ fun SeriesScreen(work: Int, navigator: Navigator) {
     val viewModel = shelfViewModel { SeriesViewModel(it, work) }
     val series by viewModel.series.collectAsStateWithLifecycle()
     val after by viewModel.after.collectAsStateWithLifecycle()
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        BackBar(navigator::back)
-        BookGrid(
-            series?.second,
-            "series-$work",
-            navigator::book,
-            header = {
-                series?.let { (name, books) ->
-                    fullWidth { SeriesHeader(name, books.size) }
-                }
-            },
-            footer = {
-                val route = SimilarRoute(SimilarKind.Saga, listOf(work))
-                moreRow(R.string.after_series, after, route, navigator)
-            },
-        )
+    CoverTheme(coverTone(series?.second?.firstOrNull())) {
+        Column(Modifier.glow().padding(top = statusBarHeight())) {
+            BackBar(navigator::back)
+            BookGrid(
+                series?.second,
+                "series-$work",
+                navigator::book,
+                header = {
+                    series?.let { (name, books) ->
+                        val count = books.size
+                        fullWidth {
+                            val summary = R.plurals.books_in_series
+                            PageHeader(name, pluralStringResource(summary, count, count))
+                        }
+                    }
+                },
+                footer = {
+                    val route = SimilarRoute(SimilarKind.Saga, listOf(work))
+                    moreRow(R.string.after_series, after, route, navigator)
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun SeriesHeader(name: String, count: Int) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            name,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            pluralStringResource(R.plurals.books_in_series, count, count),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun PageHeader(title: String, summary: String, top: @Composable () -> Unit = {}) {
+    Column(
+        Modifier.fillMaxWidth().padding(bottom = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        top()
+        Text(title, style = Look.type.display, textAlign = TextAlign.Center)
+        Hint(summary)
     }
 }
 
@@ -343,13 +343,23 @@ fun AuthorScreen(author: Author, navigator: Navigator) {
     val born by viewModel.born.collectAsStateWithLifecycle()
     val similar by viewModel.similar.collectAsStateWithLifecycle()
     val count = groups?.sumOf { it.books.size }
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+    val details = listOfNotNull(
+        born?.takeIf { it > 0 }?.let { stringResource(R.string.born, it) },
+        count?.let { pluralStringResource(R.plurals.books, it, it) },
+    )
+    Column(Modifier.padding(top = statusBarHeight())) {
         BackBar(navigator::back)
         GroupedBookGrid(
             groups,
             "author-${author.number}",
             navigator::book,
-            header = { fullWidth { AuthorHeader(author, born ?: 0, count) } },
+            header = {
+                fullWidth {
+                    PageHeader(author.name, details.joinToString(" · ")) {
+                        AuthorAvatar(author, 104.dp, Modifier.padding(bottom = 10.dp))
+                    }
+                }
+            },
             footer = {
                 val route =
                     SimilarRoute(SimilarKind.Writer, listOf(author.number), author.name)
@@ -360,34 +370,12 @@ fun AuthorScreen(author: Author, navigator: Navigator) {
 }
 
 @Composable
-private fun AuthorHeader(author: Author, born: Int, count: Int?) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        AuthorAvatar(author, 96.dp)
-        Text(
-            author.name,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        val details = listOfNotNull(
-            born.takeIf { it > 0 }?.let { stringResource(R.string.born, it) },
-            count?.let { pluralStringResource(R.plurals.books, it, it) },
-        )
-        Text(
-            details.joinToString(" · "),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
 fun SimilarScreen(route: SimilarRoute, navigator: Navigator) {
     val similar by shelfViewModel { SimilarViewModel(it, route) }.similar
         .collectAsStateWithLifecycle()
     val name = similar?.first.orEmpty()
     val title = if (name.isEmpty()) "" else stringResource(R.string.like_title, name)
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+    Column(Modifier.padding(top = statusBarHeight())) {
         BackBar(navigator::back, title)
         BookGrid(similar?.second, "like-${route.ids.joinToString("-")}", navigator::book)
     }

@@ -11,14 +11,15 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.*
@@ -74,9 +75,9 @@ data class PageSelection(
 data class Editing(val created: Long, val writing: Boolean = false)
 
 enum class NotesAction(@StringRes val label: Int, val icon: ImageVector) {
-    Share(R.string.share_markdown, Icons.Outlined.Share),
-    Markdown(R.string.save_markdown, Icons.Outlined.Description),
-    Readwise(R.string.save_readwise, Icons.Outlined.TableChart),
+    Share(R.string.share_markdown, Icons.Rounded.IosShare),
+    Markdown(R.string.save_markdown, Icons.Rounded.Description),
+    Readwise(R.string.save_readwise, Icons.Rounded.TableChart),
 }
 
 fun TextLayoutResult.charAt(position: Offset): Int? {
@@ -151,7 +152,7 @@ fun SelectionHandle(cursor: Rect, onMove: (Offset, settled: Boolean) -> Unit) {
         Box(
             Modifier.size(HANDLE_DOT)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .background(Look.colors.accent),
         )
     }
 }
@@ -165,18 +166,15 @@ fun SelectionBar(
     onShare: () -> Unit,
 ) {
     val gap = with(LocalDensity.current) { BAR_GAP.toPx() }
+    val lift = if (Look.colors.plain) 0.dp else 12.dp
     Box(Modifier.fillMaxSize().floating(anchor, gap)) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            shadowElevation = 6.dp,
-        ) {
-            Row(
-                Modifier.padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) { SelectionButtons(onHighlight, onNote, onCopy, onShare) }
-        }
+        Row(
+            Modifier.shadow(lift, CircleShape)
+                .surface(CircleShape)
+                .blockTouches()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) { SelectionButtons(onHighlight, onNote, onCopy, onShare) }
     }
 }
 
@@ -190,10 +188,18 @@ private fun SelectionButtons(
     HighlightColor.entries.forEach { color ->
         ColorDot(color, selected = false, size = 40) { onHighlight(color) }
     }
-    VerticalDivider(Modifier.height(24.dp).padding(horizontal = 4.dp))
-    IconAction(Icons.Outlined.EditNote, stringResource(R.string.add_note), onNote)
-    IconAction(Icons.Outlined.ContentCopy, stringResource(R.string.copy), onCopy)
-    IconAction(Icons.Outlined.Share, stringResource(R.string.share), onShare)
+    Box(
+        Modifier.padding(horizontal = 4.dp)
+            .size(1.dp, 24.dp)
+            .background(Look.colors.line),
+    )
+    IconAction(
+        Icons.Rounded.EditNote,
+        stringResource(R.string.add_note),
+        onClick = onNote,
+    )
+    IconAction(Icons.Rounded.ContentCopy, stringResource(R.string.copy), onClick = onCopy)
+    IconAction(Icons.Rounded.IosShare, stringResource(R.string.share), onClick = onShare)
 }
 
 @Composable
@@ -203,32 +209,33 @@ private fun ColorDot(
     size: Int,
     onClick: () -> Unit,
 ) {
-    val outline = MaterialTheme.colorScheme.outline
     val label = stringResource(color.label)
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(size.dp).semantics { contentDescription = label },
+    Box(
+        Modifier.size(size.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
     ) {
         Box(
-            Modifier.size(24.dp)
+            Modifier.size(26.dp)
                 .clip(CircleShape)
                 .background(color.swatch)
-                .border(1.dp, outline.copy(alpha = 0.3f), CircleShape),
+                .border(1.dp, Look.colors.line, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (selected) {
                 Icon(
-                    Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = Color.Black.copy(alpha = 0.7f),
-                    modifier = Modifier.size(16.dp),
+                    Icons.Rounded.Check,
+                    null,
+                    Modifier.size(16.dp),
+                    Color.Black.copy(0.7f),
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HighlightSheet(
     highlight: Highlight,
@@ -247,50 +254,35 @@ fun HighlightSheet(
         onDismiss()
     }
     LaunchedEffect(Unit) { if (writing) focus.requestFocus() }
-    ModalBottomSheet(
-        onDismissRequest = ::close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(
-            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Quote(highlight.text, highlight.chapter, color)
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                HighlightColor.entries.forEach {
-                    ColorDot(it, selected = it == color, size = 48) { color = it }
-                }
+    Sheet(::close) {
+        Quote(highlight.text, highlight.chapter, color)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            HighlightColor.entries.forEach {
+                ColorDot(it, selected = it == color, size = 48) { color = it }
             }
-            OutlinedTextField(
-                note,
-                onValueChange = { note = it },
-                label = { Text(stringResource(R.string.note)) },
-                placeholder = { Text(stringResource(R.string.note_hint)) },
-                minLines = 3,
-                maxLines = 8,
-                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+        }
+        Field(
+            note,
+            { note = it },
+            Modifier.focusRequester(focus),
+            label = stringResource(R.string.note),
+            hint = stringResource(R.string.note_hint),
+            lines = 3..8,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Pill(
+                stringResource(R.string.remove),
+                icon = Icons.Rounded.DeleteOutline,
+                kind = PillKind.Bare,
+                danger = true,
+                onClick = onDelete,
             )
-            SheetActions(onDelete, { onShare(draft) }, ::close)
+            Spacer(Modifier.weight(1f))
+            IconAction(Icons.Rounded.IosShare, stringResource(R.string.share)) {
+                onShare(draft)
+            }
+            Pill(stringResource(R.string.done), onClick = ::close)
         }
-    }
-}
-
-@Composable
-private fun SheetActions(onDelete: () -> Unit, onShare: () -> Unit, onDone: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        TextButton(
-            onClick = onDelete,
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = MaterialTheme.colorScheme.error,
-            ),
-        ) {
-            Icon(Icons.Outlined.Delete, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.remove))
-        }
-        Spacer(Modifier.weight(1f))
-        IconAction(Icons.Outlined.Share, stringResource(R.string.share), onShare)
-        Button(onClick = onDone) { Text(stringResource(R.string.done)) }
     }
 }
 
@@ -298,22 +290,14 @@ private fun SheetActions(onDelete: () -> Unit, onShare: () -> Unit, onDone: () -
 private fun Quote(text: String, chapter: String, color: HighlightColor) {
     Row(
         Modifier.height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ColorStrip(color)
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (chapter.isNotBlank()) {
-                Text(
-                    chapter,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (chapter.isNotBlank()) Eyebrow(chapter, color = Look.colors.accent)
             Text(
                 text,
-                style = MaterialTheme.typography.bodyLarge,
+                style = Look.type.heading,
                 fontStyle = FontStyle.Italic,
                 maxLines = 6,
                 overflow = TextOverflow.Ellipsis,
@@ -341,47 +325,35 @@ fun NotesList(
 ) {
     if (notes.isEmpty()) {
         val empty = stringResource(R.string.no_highlights)
-        return EmptyState(Icons.Outlined.BorderColor, empty)
+        return EmptyState(Icons.Rounded.BorderColor, empty)
     }
+    var exporting by remember { mutableStateOf(false) }
     Row(
-        Modifier.fillMaxWidth().padding(start = ScreenPadding, end = 4.dp),
+        Modifier.fillMaxWidth().padding(start = ScreenPadding, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
+        Eyebrow(
             pluralStringResource(R.plurals.highlights, notes.size, notes.size),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
+            Modifier.weight(1f),
         )
-        ExportMenu(onExport)
+        IconAction(Icons.Rounded.IosShare, stringResource(R.string.export_notes)) {
+            exporting = true
+        }
     }
     LazyColumn {
         items(notes, key = { it.first.created }) { (highlight, page) ->
             NoteRow(highlight, page, { onEdit(highlight) }) { onSelect(page) }
         }
     }
-}
-
-@Composable
-private fun ExportMenu(onExport: (NotesAction) -> Unit) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        IconAction(Icons.Outlined.IosShare, stringResource(R.string.export_notes)) {
-            open = true
-        }
-        DropdownMenu(open, onDismissRequest = { open = false }) {
-            NotesAction.entries.forEach { action ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(action.label)) },
-                    leadingIcon = { Icon(action.icon, contentDescription = null) },
-                    onClick = {
-                        open = false
-                        onExport(action)
-                    },
-                )
-            }
-        }
-    }
+    if (!exporting) return
+    OptionSheet(
+        stringResource(R.string.export_notes),
+        NotesAction.entries.map { stringResource(it.label) to it },
+        null,
+        { exporting = false },
+        { it.icon },
+        onExport,
+    )
 }
 
 @Composable
@@ -394,27 +366,20 @@ private fun NoteRow(
     Row(
         Modifier.fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = ScreenPadding, end = 4.dp)
+            .padding(start = ScreenPadding, end = 10.dp)
             .padding(vertical = 12.dp)
             .height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ColorStrip(highlight.color)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    highlight.chapter,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                Eyebrow(highlight.chapter, Modifier.weight(1f), Look.colors.accent)
                 PageNumber(page)
             }
             Text(
                 highlight.text,
-                style = MaterialTheme.typography.bodyMedium,
+                style = Look.type.body,
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -422,7 +387,10 @@ private fun NoteRow(
         }
         val noted = highlight.note.isNotEmpty()
         val label = if (noted) R.string.edit_note else R.string.add_note
-        IconAction(Icons.Outlined.EditNote, stringResource(label), onEdit)
+        IconAction(
+            Icons.Rounded.EditNote, stringResource(label),
+            tint = Look.colors.soft, onClick = onEdit,
+        )
     }
 }
 
@@ -430,15 +398,15 @@ private fun NoteRow(
 private fun NoteLine(note: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Icon(
-            Icons.AutoMirrored.Outlined.Notes,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 2.dp).size(16.dp),
+            Icons.AutoMirrored.Rounded.Notes,
+            null,
+            Modifier.padding(top = 2.dp).size(16.dp),
+            Look.colors.faint,
         )
         Text(
             note,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Look.colors.soft,
+            style = Look.type.note,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )

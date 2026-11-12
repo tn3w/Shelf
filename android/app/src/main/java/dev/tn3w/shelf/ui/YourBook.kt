@@ -5,26 +5,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.rounded.StarOutline
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.Label
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 private const val MAX_STARS = 5
 
@@ -60,22 +56,19 @@ fun YourBookCard(
     var addingList by rememberSaveable { mutableStateOf(false) }
     val reading = entry.shelf != Shelf.Want
 
-    Surface(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+    Column(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = ScreenPadding)
+            .surface()
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Column(
-            Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (reading) RatingRow(entry, onEdit)
-            Writing.entries.filter { it.of(entry).isNotBlank() }.forEach {
-                WrittenText(it, entry) { writing = it }
-            }
-            YourChips(entry, onOpenList, { writing = it }, { picking = it }) {
-                addingList = true
-            }
+        if (reading) RatingRow(entry, onEdit)
+        Writing.entries.filter { it.of(entry).isNotBlank() }.forEach {
+            WrittenText(it, entry) { writing = it }
+        }
+        YourChips(entry, onOpenList, { writing = it }, { picking = it }) {
+            addingList = true
         }
     }
     writing?.let { open ->
@@ -128,48 +121,40 @@ private fun YourChips(
             ReadingDate.Finished to entry.finishedOn(),
         )
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         dates.forEach { (date, day) ->
             val label = day?.let { "${stringResource(date.label)} · ${dateLabel(it)}" }
                 ?: stringResource(date.empty)
-            SmallChip(label, Icons.Outlined.Event) { onPick(date) }
+            Tag(label, icon = Icons.Rounded.Event) { onPick(date) }
         }
         entry.lists.forEach { name ->
-            SmallChip(name, Icons.AutoMirrored.Outlined.Label) { onOpenList(name) }
+            Tag(name, icon = Icons.AutoMirrored.Rounded.Label) { onOpenList(name) }
         }
         Writing.entries.filter { it.of(entry).isBlank() }.forEach {
-            SmallChip(stringResource(it.empty), Icons.Outlined.EditNote) { onWrite(it) }
+            Tag(stringResource(it.empty), icon = Icons.Rounded.EditNote) { onWrite(it) }
         }
         val list = R.string.edit_lists.takeIf { entry.lists.isNotEmpty() }
             ?: R.string.add_to_list
-        val icon = Icons.AutoMirrored.Outlined.PlaylistAdd
-        SmallChip(stringResource(list), icon, onAddList)
+        Tag(stringResource(list), icon = Icons.AutoMirrored.Rounded.PlaylistAdd) {
+            onAddList()
+        }
     }
 }
 
 @Composable
-private fun SmallChip(label: String, icon: ImageVector, onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
-    )
-}
-
-@Composable
 private fun StarRating(rating: Int, modifier: Modifier, onRate: (Int) -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Row(modifier.offset(x = (-8).dp)) {
+    val colors = Look.colors
+    Row(modifier.offset(x = (-10).dp)) {
         (1..MAX_STARS).forEach { stars ->
             val filled = stars <= rating
-            IconButton(onClick = { onRate(stars) }, Modifier.size(40.dp)) {
-                Icon(
-                    if (filled) Icons.Rounded.Star else Icons.Rounded.StarOutline,
-                    stringResource(R.string.rate_stars, stars),
-                    Modifier.size(28.dp),
-                    tint = if (filled) colors.primary else colors.outline,
-                )
-            }
+            IconAction(
+                if (filled) Icons.Rounded.Star else Icons.Rounded.StarOutline,
+                stringResource(R.string.rate_stars, stars),
+                tint = if (filled) colors.accent else colors.faint,
+            ) { onRate(stars) }
         }
     }
 }
@@ -178,12 +163,12 @@ private fun StarRating(rating: Int, modifier: Modifier, onRate: (Int) -> Unit) {
 private fun WrittenText(writing: Writing, saved: Saved, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clickable(onClick = onClick),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Hint(stringResource(writing.title))
+        Eyebrow(stringResource(writing.title))
         Text(
             writing.of(saved),
-            style = MaterialTheme.typography.bodyMedium,
+            style = Look.type.body,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
@@ -200,59 +185,22 @@ private fun DatePicking(
     val today = LocalDate.now()
     val started = entry.startedOn()
     val finished = entry.finishedOn()
+    val title = stringResource(date.label)
     when (date) {
-        ReadingDate.Started -> ReadingDatePicker(
+        ReadingDate.Started -> DateSheet(
+            title,
             started ?: finished ?: today,
-            LocalDate.MIN..(finished ?: today),
+            LocalDate.of(1900, 1, 1)..(finished ?: today),
             onDismiss,
         ) { day -> onEdit { it.copy(started = millisOf(day)) } }
 
-        ReadingDate.Finished -> ReadingDatePicker(
+        ReadingDate.Finished -> DateSheet(
+            title,
             finished ?: today,
-            (started ?: LocalDate.MIN)..today,
+            (started ?: LocalDate.of(1900, 1, 1))..today,
             onDismiss,
         ) { day -> onEdit { it.copy(finished = millisOf(day)) } }
     }
-}
-
-private fun utcMillis(day: LocalDate) = millisOf(day, ZoneOffset.UTC)
-
-private fun utcDay(millis: Long) =
-    Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ReadingDatePicker(
-    initial: LocalDate,
-    range: ClosedRange<LocalDate>,
-    onDismiss: () -> Unit,
-    onPick: (LocalDate) -> Unit,
-) {
-    val state = rememberDatePickerState(
-        initialSelectedDateMillis = utcMillis(initial.coerceIn(range)),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                utcDay(utcTimeMillis) in range
-
-            override fun isSelectableYear(year: Int) =
-                year in range.start.year..range.endInclusive.year
-        },
-    )
-    fun confirm() {
-        state.selectedDateMillis?.let { onPick(utcDay(it)) }
-        onDismiss()
-    }
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = ::confirm, enabled = state.selectedDateMillis != null) {
-                Text(stringResource(R.string.done))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    ) { DatePicker(state) }
 }
 
 @Composable
@@ -269,51 +217,22 @@ private fun WritingSheet(
         onDismiss()
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
-    TitledSheet(writing.title, ::close) {
-        OutlinedTextField(
+    Sheet(::close, stringResource(writing.title)) {
+        Field(
             draft,
-            onValueChange = { draft = it },
-            placeholder = { Text(stringResource(writing.hint)) },
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-            ),
-            minLines = 5,
-            maxLines = 12,
-            modifier = Modifier.fillMaxWidth().focusRequester(focus),
+            { draft = it },
+            Modifier.focusRequester(focus),
+            hint = stringResource(writing.hint),
+            lines = 5..12,
+            keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Outlined.Lock,
-                null,
-                Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), Look.colors.faint)
+            Hint(
+                stringResource(R.string.private_note),
+                Modifier.weight(1f).padding(horizontal = 8.dp),
             )
-            Hint(stringResource(R.string.private_note), Modifier.padding(start = 8.dp))
-            Spacer(Modifier.weight(1f))
-            Button(onClick = ::close) { Text(stringResource(R.string.done)) }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TitledSheet(
-    @StringRes title: Int,
-    onDismiss: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(
-            Modifier.imePadding()
-                .padding(horizontal = ScreenPadding)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
-            content()
+            Pill(stringResource(R.string.done), onClick = ::close)
         }
     }
 }

@@ -4,15 +4,16 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
-import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -126,79 +127,109 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val details by viewModel.details.collectAsStateWithLifecycle()
     val related by viewModel.related.collectAsStateWithLifecycle()
+    val progress by viewModel.library.progress.collectAsStateWithLifecycle(emptyMap())
     val entry = saved.firstOrNull { it.work == work }
     val book = details?.book ?: entry?.toBook()
+    val position = progress[work]
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
 
-    LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
-        item { BackBar(navigator::back) }
-        if (book == null) return@LazyColumn
-        item { BookHeader(book, entry?.shelf, origin, navigator, viewModel) }
-        val tags = details?.tags.orEmpty()
-        if (tags.isNotEmpty()) item { TagFlow(tags, navigator) }
-        val description = details?.description?.takeIf { it.text.isNotBlank() }
-        if (description != null) {
-            item { SectionHeader(stringResource(R.string.about_book)) }
-            item { DescriptionText(description) }
-        }
-        if (entry != null) {
-            item { SectionHeader(stringResource(R.string.your_book)) }
+    CoverTheme(coverTone(book)) {
+        LazyColumn(Modifier.fillMaxSize().glow(), contentPadding = screenInsets()) {
             item {
-                YourBookCard(entry, saved.listNames(), navigator::list) {
-                    viewModel.edit(work, it)
+                BackBar(navigator::back) {
+                    if (book?.isLocal != true && position == null) return@BackBar
+                    val label = stringResource(R.string.delete_book)
+                    IconAction(
+                        Icons.Rounded.DeleteOutline,
+                        label,
+                        tint = Look.colors.soft,
+                    ) {
+                        confirmDelete = true
+                    }
+                }
+            }
+            if (book == null) return@LazyColumn
+            item {
+                BookHeader(book, entry?.shelf, position, origin, navigator, viewModel)
+            }
+            val tags = details?.tags.orEmpty()
+            if (tags.isNotEmpty()) item { TagFlow(tags, navigator) }
+            val description = details?.description?.takeIf { it.text.isNotBlank() }
+            if (description != null) {
+                item { SectionHeader(stringResource(R.string.about_book)) }
+                item { DescriptionText(description) }
+            }
+            if (entry != null) {
+                item { SectionHeader(stringResource(R.string.your_book)) }
+                item {
+                    YourBookCard(entry, saved.listNames(), navigator::list) {
+                        viewModel.edit(work, it)
+                    }
+                }
+            }
+            val series = related?.series?.takeIf { it.second.size > 1 }
+            if (series != null) {
+                item {
+                    val (name, books) = series
+                    val size = books.size
+                    val count =
+                        pluralStringResource(R.plurals.books_in_series, size, size)
+                    val more = { navigator.series(work) }
+                    BookSection(
+                        name, books, "series", navigator::book,
+                        count, more, shared = false,
+                    )
+                }
+            }
+            val byAuthor = related?.byAuthor.orEmpty()
+            if (byAuthor.isNotEmpty()) {
+                item {
+                    val author = book.authors.first()
+                    val title = stringResource(R.string.more_by, author.name)
+                    val more = { navigator.author(author) }
+                    BookSection(
+                        title, byAuthor, "author", navigator::book,
+                        onMore = more, shared = false,
+                    )
+                }
+            }
+            val similar = related?.similar.orEmpty()
+            if (similar.isNotEmpty()) {
+                item {
+                    val title = stringResource(R.string.similar)
+                    val more = {
+                        navigator.similar(SimilarRoute(SimilarKind.Books, listOf(work)))
+                    }
+                    BookSection(
+                        title, similar, "similar", navigator::book,
+                        onMore = more, shared = false,
+                    )
                 }
             }
         }
-        val series = related?.series?.takeIf { it.second.size > 1 }
-        if (series != null) {
-            item {
-                val (name, books) = series
-                val size = books.size
-                val count = pluralStringResource(R.plurals.books_in_series, size, size)
-                val more = { navigator.series(work) }
-                BookSection(
-                    name, books, "series", navigator::book, count, more, shared = false,
-                )
-            }
+        if (!confirmDelete || book == null) return@CoverTheme
+        ConfirmSheet(
+            stringResource(R.string.delete_book),
+            stringResource(R.string.delete_book_confirm, book.title),
+            stringResource(R.string.remove),
+            onDismiss = { confirmDelete = false },
+        ) {
+            viewModel.delete(book)
+            navigator.back()
         }
-        val byAuthor = related?.byAuthor.orEmpty()
-        if (byAuthor.isNotEmpty()) {
-            item {
-                val author = book.authors.first()
-                val title = stringResource(R.string.more_by, author.name)
-                val more = { navigator.author(author) }
-                BookSection(
-                    title, byAuthor, "author", navigator::book,
-                    onMore = more, shared = false,
-                )
-            }
-        }
-        val similar = related?.similar.orEmpty()
-        if (similar.isNotEmpty()) {
-            item {
-                val title = stringResource(R.string.similar)
-                val more = {
-                    navigator.similar(SimilarRoute(SimilarKind.Books, listOf(work)))
-                }
-                BookSection(
-                    title, similar, "similar", navigator::book,
-                    onMore = more, shared = false,
-                )
-            }
-        }
-        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BookHeader(
     book: Book,
     shelf: Shelf?,
+    position: Progress?,
     origin: String,
     navigator: Navigator,
     viewModel: BookViewModel,
 ) {
-    val progress by viewModel.library.progress.collectAsStateWithLifecycle(emptyMap())
-    val position = progress[book.work]
     val hasFile by produceState(true, position) {
         value = viewModel.library.hasFile(position)
     }
@@ -216,7 +247,6 @@ private fun BookHeader(
         viewModel.listen(book)
         listening = true
     }
-    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var findFree by rememberSaveable { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null
     fun place(target: Shelf) =
@@ -228,71 +258,51 @@ private fun BookHeader(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         val sharedKey = "$origin-${book.work}"
+        val space = Modifier.padding(top = 4.dp, bottom = 26.dp)
         if (book.isLocal) {
-            EditableCover(::changeCover, Modifier.padding(vertical = 16.dp)) {
-                BookCover(book, 180.dp, sharedKey = sharedKey)
+            EditableCover(::changeCover, space) {
+                BookCover(book, 190.dp, sharedKey = sharedKey, lift = 22.dp)
             }
         } else {
-            BookCover(book, 180.dp, Modifier.padding(vertical = 16.dp), sharedKey)
+            BookCover(book, 190.dp, space, sharedKey, lift = 22.dp)
         }
-        Text(
-            book.title,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-        )
+        Text(book.title, style = Look.type.title, textAlign = TextAlign.Center)
         if (book.subtitle.isNotBlank()) {
             Text(
                 book.subtitle,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Modifier.padding(top = 4.dp),
+                Look.colors.soft,
+                style = Look.type.body,
                 textAlign = TextAlign.Center,
             )
         }
         FlowRow(horizontalArrangement = Arrangement.Center) {
             book.authors.filter { it.number > 0 }.forEach { author ->
-                TextButton(onClick = { navigator.author(author) }) {
-                    Text(author.name, style = MaterialTheme.typography.titleMedium)
-                }
+                Pill(author.name, kind = PillKind.Bare) { navigator.author(author) }
             }
         }
         if (book.isLocal && book.author.isNotBlank()) {
             Text(
                 book.author,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp),
+                Modifier.padding(vertical = 8.dp),
+                style = Look.type.subhead,
             )
         }
         Hint(facts(book), textAlign = TextAlign.Center)
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 16.dp),
-            horizontalArrangement =
-            Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ReadButton(
-                book, position, hasFile, navigator, viewModel,
-                Modifier.weight(1f, fill = false),
-            )
-            ShelfToggle(
-                shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
-            ) {
-                if (it) Icons.Outlined.BookmarkAdded else Icons.Outlined.BookmarkAdd
-            }
-            FilledTonalIconButton(onClick = ::listen) {
-                Icon(Icons.Outlined.Headphones, stringResource(R.string.listen))
-            }
+            ReadButton(book, position, hasFile, navigator, viewModel, Modifier.weight(1f))
+            RoundAction(Icons.Rounded.Headphones, R.string.listen, ::listen)
             if (online && !hasFile) {
-                FilledTonalIconButton(onClick = { findFree = true }) {
-                    val label = stringResource(R.string.free_ebook)
-                    Icon(Icons.Outlined.CloudDownload, label)
-                }
-            }
-            if (book.isLocal || position != null) {
-                FilledTonalIconButton(onClick = { confirmDelete = true }) {
-                    Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
+                RoundAction(Icons.Rounded.CloudDownload, R.string.free_ebook) {
+                    findFree = true
                 }
             }
         }
+        ShelfPicker(shelf, onSelect = ::place)
     }
     if (findFree && !hasFile) FreeBookSheet(book, viewModel) { findFree = false }
     if (listening && hasAudio) {
@@ -304,13 +314,15 @@ private fun BookHeader(
             onSettings = { navigator.settings(SettingsPage.Listening) },
         ) { listening = false }
     }
-    if (confirmDelete) {
-        DeleteDialog(book, onDismiss = { confirmDelete = false }) {
-            viewModel.delete(book)
-            navigator.back()
-        }
-    }
 }
+
+@Composable
+private fun RoundAction(icon: ImageVector, label: Int, onClick: () -> Unit) = IconAction(
+    icon,
+    stringResource(label),
+    Modifier.surface(CircleShape, Look.colors.wash).padding(2.dp),
+    onClick = onClick,
+)
 
 @Composable
 private fun ReadButton(
@@ -324,47 +336,11 @@ private fun ReadButton(
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let { viewModel.import(book, it) }
     }
-    fun open() =
+    val label = position?.fraction?.let {
+        stringResource(R.string.continue_percent, (it * 100).toInt())
+    } ?: stringResource(if (position != null) R.string.resume else R.string.start)
+    Pill(label, modifier, Icons.AutoMirrored.Rounded.MenuBook) {
         if (hasFile) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
-
-    Button(onClick = ::open, modifier) {
-        Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
-        val label = position?.fraction?.let {
-            stringResource(R.string.continue_percent, (it * 100).toInt())
-        } ?: stringResource(if (position != null) R.string.resume else R.string.start)
-        Text(
-            label,
-            Modifier.padding(start = 8.dp),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun DeleteDialog(book: Book, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.delete_book)) },
-        text = { Text(stringResource(R.string.delete_book_confirm, book.title)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(R.string.remove)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
-}
-
-@Composable
-private fun ShelfToggle(
-    checked: Boolean,
-    @StringRes label: Int,
-    onToggle: () -> Unit,
-    icon: (Boolean) -> ImageVector,
-) {
-    FilledTonalIconToggleButton(checked = checked, onCheckedChange = { onToggle() }) {
-        Icon(icon(checked), contentDescription = stringResource(label))
     }
 }
 
@@ -392,7 +368,7 @@ private fun DescriptionText(description: Description) {
     Column(Modifier.padding(horizontal = ScreenPadding)) {
         Text(
             description.text,
-            style = MaterialTheme.typography.bodyLarge,
+            style = Look.type.body,
             maxLines = if (expanded) Int.MAX_VALUE else 6,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.animateContentSize().clickable { expanded = !expanded },
@@ -408,11 +384,10 @@ private fun DescriptionText(description: Description) {
 @Composable
 private fun TagFlow(tags: List<Pair<Int, String>>, navigator: Navigator) {
     FlowRow(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).padding(top = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        tags.forEach { (id, label) ->
-            SuggestionChip(onClick = { navigator.tag(id) }, label = { Text(label) })
-        }
+        tags.forEach { (id, label) -> Tag(label) { navigator.tag(id) } }
     }
 }

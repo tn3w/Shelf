@@ -15,13 +15,13 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.TrendingUp
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -121,7 +121,7 @@ fun SearchScreen(navigator: Navigator) {
         .takeIf { query.isNotBlank() }
         .orEmpty()
 
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars).imePadding()) {
+    Column(Modifier.padding(top = statusBarHeight()).imePadding()) {
         SelectableTitle(stringResource(R.string.search), selection, navigator)
         SearchField(
             query = query,
@@ -140,7 +140,7 @@ fun SearchScreen(navigator: Navigator) {
                 onSort = { sort = it },
             )
         }
-        LazyColumn {
+        LazyColumn(contentPadding = PaddingValues(bottom = bottomSpace())) {
             if (current == null) {
                 suggestions(recent.orEmpty(), trending.orEmpty(), { query = it }) {
                     viewModel.clearSearches()
@@ -154,7 +154,7 @@ fun SearchScreen(navigator: Navigator) {
             val completions =
                 current.completions.filter { it != query.trim().lowercase() }
             items(completions, key = { "completion-$it" }) {
-                IconSuggestionRow(Icons.Outlined.Search, it, Modifier.animateItem()) {
+                IconSuggestionRow(Icons.Rounded.Search, it, Modifier.animateItem()) {
                     query = "$it "
                 }
             }
@@ -180,7 +180,7 @@ fun SearchScreen(navigator: Navigator) {
             books(catalogue, found, "search", selection, openBook)
             item(key = "own") {
                 IconSuggestionRow(
-                    Icons.Outlined.LibraryAdd,
+                    Icons.Rounded.LibraryAdd,
                     stringResource(R.string.add_own_book, query.trim()),
                     Modifier.animateItem(),
                 ) { addingOwn = true }
@@ -237,14 +237,11 @@ private fun ResultFilters(
 
 @Composable
 private fun NoResults(filtered: Boolean, onClear: () -> Unit) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        EmptyState(Icons.Outlined.SearchOff, stringResource(R.string.no_results))
-        if (filtered) {
-            OutlinedButton(onClick = onClear) {
-                Text(stringResource(R.string.clear_filters))
-            }
-        }
-    }
+    val text = stringResource(R.string.no_results)
+    if (!filtered) return EmptyState(Icons.Rounded.SearchOff, text)
+    EmptyAction(
+        Icons.Rounded.SearchOff, text, stringResource(R.string.clear_filters), onClear,
+    )
 }
 
 @Composable
@@ -270,27 +267,20 @@ private fun scan(navigator: Navigator): (() -> Unit)? {
 @Composable
 private fun CameraDenied(onDismiss: () -> Unit) {
     val context = LocalContext.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.scan)) },
-        text = { Text(stringResource(R.string.camera_denied)) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onDismiss()
-                    context.startActivity(
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", context.packageName, null),
-                        ),
-                    )
-                },
-            ) { Text(stringResource(R.string.open_settings)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+    ConfirmSheet(
+        stringResource(R.string.scan),
+        stringResource(R.string.camera_denied),
+        stringResource(R.string.open_settings),
+        onDismiss,
+        danger = false,
+    ) {
+        context.startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null),
+            ),
+        )
+    }
 }
 
 @Composable
@@ -301,35 +291,28 @@ fun SearchField(
     modifier: Modifier = Modifier,
     onSubmit: () -> Unit = {},
     onScan: (() -> Unit)? = null,
-) {
-    TextField(
-        value = query,
-        onValueChange = onChange,
-        placeholder = { Text(hint) },
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconAction(Icons.Outlined.Close, stringResource(R.string.clear)) {
-                    onChange("")
-                }
-            } else if (onScan != null) {
-                val label = stringResource(R.string.scan)
-                IconAction(Icons.Outlined.DocumentScanner, label, onScan)
+) = Field(
+    query,
+    onChange,
+    modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+    hint = hint,
+    keyboard = KeyboardOptions(imeAction = ImeAction.Search),
+    onDone = onSubmit,
+    leading = {
+        Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), Look.colors.faint)
+    },
+    trailing = {
+        val soft = Look.colors.soft
+        if (query.isNotEmpty()) {
+            IconAction(Icons.Rounded.Close, stringResource(R.string.clear), tint = soft) {
+                onChange("")
             }
-        },
-        singleLine = true,
-        shape = CircleShape,
-        colors =
-        TextFieldDefaults.colors(
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-        ),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
-        modifier =
-        modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
-    )
-}
+        } else if (onScan != null) {
+            val label = stringResource(R.string.scan)
+            IconAction(Icons.Rounded.CenterFocusWeak, label, onClick = onScan)
+        }
+    },
+)
 
 private fun LazyListScope.suggestions(
     recent: List<String>,
@@ -339,23 +322,26 @@ private fun LazyListScope.suggestions(
 ) {
     if (recent.isNotEmpty()) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(1f)) {
                     SectionHeader(stringResource(R.string.recent))
                 }
-                TextButton(onClick = onClear, Modifier.padding(end = 8.dp, top = 20.dp)) {
-                    Text(stringResource(R.string.clear))
-                }
+                Pill(
+                    stringResource(R.string.clear),
+                    Modifier.padding(end = 10.dp, bottom = 4.dp),
+                    kind = PillKind.Bare,
+                    onClick = onClear,
+                )
             }
         }
         items(recent, key = { "recent-$it" }) {
-            IconSuggestionRow(Icons.Outlined.History, it) { onQuery(it) }
+            IconSuggestionRow(Icons.Rounded.History, it) { onQuery(it) }
         }
     }
     if (trending.isEmpty()) return
     item { SectionHeader(stringResource(R.string.trending)) }
     items(trending, key = { it.work }) {
-        IconSuggestionRow(Icons.AutoMirrored.Outlined.TrendingUp, it.title) {
+        IconSuggestionRow(Icons.AutoMirrored.Rounded.TrendingUp, it.title) {
             onQuery(it.title)
         }
     }
@@ -369,17 +355,8 @@ private fun IconSuggestionRow(
     onClick: () -> Unit,
 ) {
     SuggestionRow(text, modifier, onClick) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.size(36.dp),
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(8.dp),
-            )
+        Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+            Icon(icon, null, Modifier.size(20.dp), Look.colors.faint)
         }
     }
 }
@@ -395,15 +372,15 @@ private fun SuggestionRow(
         modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 12.dp),
+            .padding(horizontal = ScreenPadding, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leading()
         Text(
             text,
-            style = MaterialTheme.typography.bodyLarge,
+            Modifier.padding(start = 14.dp),
+            style = Look.type.body,
             maxLines = 1,
-            modifier = Modifier.padding(start = 16.dp),
         )
     }
 }

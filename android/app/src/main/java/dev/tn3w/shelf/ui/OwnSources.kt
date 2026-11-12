@@ -5,16 +5,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -117,8 +117,8 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
     recipes.forEach { recipe ->
         ProviderSwitch(Provider(recipe), settings, update, enabled) { editing = recipe }
     }
-    ActionRow(R.string.free_books_add, Icons.Outlined.Add) { editing = STARTER_RECIPE }
-    ActionRow(R.string.free_books_import, Icons.Outlined.FileOpen, status) {
+    ActionRow(R.string.free_books_add, Icons.Rounded.Add) { editing = STARTER_RECIPE }
+    ActionRow(R.string.free_books_import, Icons.Rounded.FileOpen, status) {
         importer.launch(SOURCE_TYPES)
     }
     if (recipes.isNotEmpty()) {
@@ -128,7 +128,7 @@ fun OwnSourceRows(settings: Settings, update: SettingsUpdate, enabled: Boolean) 
             secrets -> stringResource(R.string.free_books_export_headers)
             else -> null
         }
-        ActionRow(R.string.free_books_export, Icons.Outlined.Upload, exportStatus) {
+        ActionRow(R.string.free_books_export, Icons.Rounded.Upload, exportStatus) {
             exporter.launch(SOURCES_FILE)
         }
     }
@@ -163,7 +163,7 @@ private fun RecipeEditor(initial: Recipe, onClose: () -> Unit) {
         asFile = file
     }
     Dialog(onClose, DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Look.colors.paper)) {
             Column(Modifier.imePadding()) {
                 EditorBar(initial, problems.isEmpty(), onClose, ::save)
                 Column(
@@ -173,7 +173,7 @@ private fun RecipeEditor(initial: Recipe, onClose: () -> Unit) {
                         .padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Choice(EDITOR_MODES.keys.toList(), asFile, ::showFile) {
+                    Segments(EDITOR_MODES.keys.toList(), asFile, onSelect = ::showFile) {
                         stringResource(EDITOR_MODES.getValue(it))
                     }
                     if (asFile) {
@@ -191,8 +191,7 @@ private fun RecipeEditor(initial: Recipe, onClose: () -> Unit) {
 }
 
 @Composable
-private fun codeStyle() =
-    MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+private fun codeStyle() = Look.type.note.copy(fontFamily = FontFamily.Monospace)
 
 @Composable
 private fun EditorBar(
@@ -202,31 +201,30 @@ private fun EditorBar(
     onSave: () -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp),
+        Modifier.fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconAction(Icons.Outlined.Close, stringResource(R.string.cancel), onClose)
+        IconAction(
+            Icons.Rounded.Close,
+            stringResource(R.string.cancel),
+            onClick = onClose,
+        )
         val isNew = recipe.id.isEmpty()
         val title = if (isNew) R.string.free_books_add else R.string.provider_own
         Text(
             stringResource(title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.weight(1f),
+            Modifier.weight(1f).padding(horizontal = 6.dp),
+            style = Look.type.heading,
         )
-        TextButton(onClick = onSave, enabled = valid) {
-            Text(stringResource(R.string.save))
-        }
+        Pill(stringResource(R.string.save), enabled = valid, onClick = onSave)
     }
 }
 
 @Composable
-private fun RecipeText(text: String, onChange: (String) -> Unit) = OutlinedTextField(
-    text,
-    onChange,
-    Modifier.fillMaxWidth(),
-    textStyle = codeStyle(),
-    minLines = 12,
-)
+private fun RecipeText(text: String, onChange: (String) -> Unit) =
+    Field(text, onChange, Modifier.fillMaxWidth(), lines = 12..60, mono = true)
 
 @Composable
 private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
@@ -250,7 +248,9 @@ private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
     TextInput(R.string.free_books_url, recipe.download, monospace = true) {
         onChange(recipe.copy(download = it))
     }
-    Choice(BOOK_FORMATS, recipe.format, { onChange(recipe.copy(format = it)) }) {
+    Segments(BOOK_FORMATS, recipe.format, onSelect = {
+        onChange(recipe.copy(format = it))
+    }) {
         it.uppercase()
     }
     RecipeLanguages(recipe.languages) { onChange(recipe.copy(languages = it)) }
@@ -304,13 +304,15 @@ private fun RuleInput(
     fun clean(value: String) = value.ifEmpty { null }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                name,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
+            Text(name, Modifier.weight(1f), style = Look.type.subhead)
             onRemove?.let {
-                IconAction(Icons.Outlined.Close, stringResource(R.string.remove), it)
+                val remove = stringResource(R.string.remove)
+                IconAction(
+                    Icons.Rounded.Close,
+                    remove,
+                    tint = Look.colors.soft,
+                    onClick = it,
+                )
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -331,14 +333,7 @@ private fun RowScope.RuleField(
     label: String,
     value: String?,
     onChange: (String) -> Unit,
-) = OutlinedTextField(
-    value.orEmpty(),
-    onChange,
-    Modifier.weight(1f),
-    label = { Text(label) },
-    singleLine = true,
-    textStyle = codeStyle(),
-)
+) = Field(value.orEmpty(), onChange, Modifier.weight(1f), label, mono = true)
 
 @Composable
 private fun TextInput(
@@ -346,38 +341,41 @@ private fun TextInput(
     value: String,
     monospace: Boolean = false,
     onChange: (String) -> Unit,
-) {
-    val style = MaterialTheme.typography.bodyMedium
-    OutlinedTextField(
-        value,
-        onChange,
-        Modifier.fillMaxWidth(),
-        label = { Text(stringResource(label)) },
-        textStyle = if (monospace) codeStyle() else style,
-    )
-}
+) = Field(
+    value,
+    onChange,
+    Modifier.fillMaxWidth(),
+    stringResource(label),
+    lines = 1..6,
+    mono = monospace,
+)
 
 @Composable
 private fun Heading(@StringRes title: Int) = Heading(stringResource(title))
 
 @Composable
 private fun Heading(title: String, onRemove: (() -> Unit)? = null) {
-    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f),
-        )
+    Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, Modifier.weight(1f), style = Look.type.heading)
         onRemove?.let {
-            IconAction(Icons.Outlined.Delete, stringResource(R.string.remove), it)
+            val remove = stringResource(R.string.remove)
+            IconAction(
+                Icons.Rounded.DeleteOutline,
+                remove,
+                tint = Look.colors.soft,
+                onClick = it,
+            )
         }
     }
 }
 
 @Composable
-private fun AddButton(@StringRes label: Int, onClick: () -> Unit) =
-    TextButton(onClick = onClick) { IconLabel(Icons.Outlined.Add, label) }
+private fun AddButton(@StringRes label: Int, onClick: () -> Unit) = Pill(
+    stringResource(label),
+    icon = Icons.Rounded.Add,
+    kind = PillKind.Bare,
+    onClick = onClick,
+)
 
 @Composable
 private fun VariableAdder(taken: Set<String>, onAdd: (String) -> Unit) {
@@ -415,39 +413,21 @@ private fun NameDialog(
     var value by rememberSaveable { mutableStateOf("") }
     val trimmed = name.trim()
     val error = problem(trimmed).takeIf { trimmed.isNotEmpty() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    name,
-                    { name = it },
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.free_books_name)) },
-                    isError = error != null,
-                    supportingText = error?.let { { Text(it) } },
-                )
-                valueLabel?.let { label ->
-                    OutlinedTextField(
-                        value,
-                        { value = it },
-                        singleLine = true,
-                        label = { Text(stringResource(label)) },
-                    )
-                }
+    val valid = trimmed.isNotEmpty() && error == null
+    Sheet(onDismiss, stringResource(title)) {
+        Field(
+            name, { name = it },
+            label = stringResource(R.string.free_books_name), error = error,
+        )
+        valueLabel?.let { Field(value, { value = it }, label = stringResource(it)) }
+        SheetButtons {
+            val cancel = stringResource(R.string.cancel)
+            Pill(cancel, Modifier.weight(1f), kind = PillKind.Line, onClick = onDismiss)
+            Pill(stringResource(R.string.save), Modifier.weight(1f), enabled = valid) {
+                onConfirm(trimmed, value)
             }
-        },
-        confirmButton = {
-            val valid = trimmed.isNotEmpty() && error == null
-            TextButton(onClick = { onConfirm(trimmed, value) }, enabled = valid) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -457,8 +437,13 @@ private fun HeaderRows(
 ) {
     var adding by rememberSaveable { mutableStateOf(false) }
     headers.forEach { (name, value) ->
-        SettingRow(name, value) {
-            IconAction(Icons.Outlined.Close, stringResource(R.string.remove)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(name, style = Look.type.subhead)
+                Hint(value)
+            }
+            val remove = stringResource(R.string.remove)
+            IconAction(Icons.Rounded.Close, remove, tint = Look.colors.soft) {
                 onChange(headers - name)
             }
         }
@@ -478,26 +463,22 @@ private fun HeaderRows(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun RecipeLanguages(selected: Set<String>, onChange: (Set<String>) -> Unit) {
-    Text(
-        stringResource(R.string.free_books_languages),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Eyebrow(stringResource(R.string.free_books_languages), Modifier.padding(top = 6.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         LANGUAGES.forEach { language ->
             val on = language in selected
-            FilterChip(
-                selected = on,
-                onClick = {
-                    onChange(if (on) selected - language else selected + language)
-                },
-                label = { Text(nativeName(language)) },
-            )
+            Tag(nativeName(language), selected = on) {
+                onChange(if (on) selected - language else selected + language)
+            }
         }
     }
 }
 
 @Composable
-private fun Problem(text: String) = Hint(text, color = MaterialTheme.colorScheme.error)
+private fun Problem(text: String) = Hint(text, color = Look.colors.danger)
 
 @Composable
 private fun TestPanel(recipe: Recipe?) {
@@ -527,10 +508,13 @@ private fun TestPanel(recipe: Recipe?) {
     val ready = recipe?.takeIf {
         !offline && !running && (title.isNotBlank() || isbn.isNotBlank())
     }
-    Button({ ready?.let(::run) }, enabled = ready != null) {
-        IconLabel(Icons.Outlined.PlayArrow, R.string.free_books_test)
-    }
-    if (running) LinearProgressIndicator(Modifier.fillMaxWidth())
+    Pill(
+        stringResource(R.string.free_books_test),
+        icon = Icons.Rounded.PlayArrow,
+        kind = PillKind.Soft,
+        enabled = ready != null,
+    ) { ready?.let(::run) }
+    if (running) Meter(null)
     lines.forEach { Text(it.take(TRACE_LINE_CHARACTERS), style = codeStyle()) }
 }
 
@@ -543,9 +527,11 @@ private fun trace(recipe: Recipe, query: Query) = channelFlow {
 }.buffer(Channel.UNLIMITED).flowOn(Dispatchers.IO)
 
 @Composable
-private fun RemoveButton(onClick: () -> Unit) = OutlinedButton(
+private fun RemoveButton(onClick: () -> Unit) = Pill(
+    stringResource(R.string.remove),
+    Modifier.padding(top = 12.dp),
+    Icons.Rounded.DeleteOutline,
+    PillKind.Line,
+    danger = true,
     onClick = onClick,
-    modifier = Modifier.padding(top = 12.dp),
-) {
-    IconLabel(Icons.Outlined.Delete, R.string.remove)
-}
+)

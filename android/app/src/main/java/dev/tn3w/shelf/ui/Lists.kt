@@ -1,23 +1,20 @@
 package dev.tn3w.shelf.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.Label
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.focus.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.*
@@ -50,36 +47,53 @@ fun ListScreen(initialName: String, navigator: Navigator) {
     var renaming by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    val soft = Look.colors.soft
 
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        BackBar(navigator::back)
-        BookGrid(
-            entries?.map(Saved::toBook),
-            "list",
-            navigator::book,
-            header = {
-                fullWidth {
-                    ListHeader(
-                        name,
-                        entries.orEmpty(),
-                        onRename = { renaming = true },
-                        onShare = {
-                            context.shareText(listText(name, entries.orEmpty()), name)
-                        },
-                        onDelete = { deleting = true },
-                    )
-                }
-            },
-        )
+    CoverTheme(coverTone(entries?.firstOrNull()?.toBook())) {
+        Column(Modifier.glow().padding(top = statusBarHeight())) {
+            BackBar(navigator::back) {
+                IconAction(
+                    Icons.Rounded.Edit, stringResource(R.string.rename_list), tint = soft,
+                ) { renaming = true }
+                IconAction(
+                    Icons.Rounded.IosShare,
+                    stringResource(R.string.share_list),
+                    tint = soft,
+                    enabled = !entries.isNullOrEmpty(),
+                ) { context.shareText(listText(name, entries.orEmpty()), name) }
+                IconAction(
+                    Icons.Rounded.DeleteOutline,
+                    stringResource(R.string.delete_list),
+                    tint = soft,
+                ) { deleting = true }
+            }
+            BookGrid(
+                entries?.map(Saved::toBook),
+                "list",
+                navigator::book,
+                header = { fullWidth { ListHeader(name, entries.orEmpty()) } },
+            )
+        }
     }
     if (renaming) {
-        RenameListDialog(name, onDismiss = { renaming = false }) {
-            viewModel.renameList(name, it)
-            name = it
+        PromptSheet(
+            stringResource(R.string.rename_list),
+            name,
+            onDismiss = { renaming = false },
+            valid = { listName(it).isNotEmpty() },
+        ) {
+            val renamed = listName(it)
+            viewModel.renameList(name, renamed)
+            name = renamed
         }
     }
     if (deleting) {
-        DeleteListDialog(name, onDismiss = { deleting = false }) {
+        ConfirmSheet(
+            stringResource(R.string.delete_list),
+            stringResource(R.string.delete_list_confirm, name),
+            stringResource(R.string.remove),
+            onDismiss = { deleting = false },
+        ) {
             viewModel.renameList(name, null)
             navigator.back()
         }
@@ -87,46 +101,15 @@ fun ListScreen(initialName: String, navigator: Navigator) {
 }
 
 @Composable
-private fun ListHeader(
-    name: String,
-    entries: List<Saved>,
-    onRename: () -> Unit,
-    onShare: () -> Unit,
-    onDelete: () -> Unit,
-) {
+private fun ListHeader(name: String, entries: List<Saved>) {
     Column(
-        Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        Modifier.fillMaxWidth().padding(bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         ListCollage(entries, 220.dp, Modifier.padding(bottom = 12.dp))
-        Text(
-            name,
-            style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-        )
+        Text(name, style = Look.type.display, textAlign = TextAlign.Center)
         Hint(listSummary(entries))
-        Row(
-            Modifier.padding(top = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ListAction(Icons.Outlined.Edit, R.string.rename_list, onRename)
-            val shareable = entries.isNotEmpty()
-            ListAction(Icons.Outlined.Share, R.string.share_list, onShare, shareable)
-            ListAction(Icons.Outlined.Delete, R.string.delete_list, onDelete)
-        }
-    }
-}
-
-@Composable
-private fun ListAction(
-    icon: ImageVector,
-    @StringRes label: Int,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-) {
-    FilledTonalIconButton(onClick = onClick, enabled = enabled) {
-        Icon(icon, stringResource(label))
     }
 }
 
@@ -148,10 +131,10 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
     ) {
         if (covers.isEmpty()) {
             Icon(
-                Icons.AutoMirrored.Outlined.Label,
+                Icons.AutoMirrored.Rounded.Label,
                 null,
                 Modifier.size(width / 4),
-                tint = MaterialTheme.colorScheme.outline,
+                Look.colors.faint,
             )
         }
         covers.withIndex().reversed().forEach { (index, book) ->
@@ -159,10 +142,8 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
             BookCover(
                 book,
                 width * 0.46f,
-                Modifier.offset(x = width * fan.shift)
-                    .rotate(fan.angle)
-                    .scale(fan.scale)
-                    .shadow(if (index == 0) 6.dp else 2.dp, RoundedCornerShape(6.dp)),
+                Modifier.offset(x = width * fan.shift).rotate(fan.angle).scale(fan.scale),
+                lift = if (index == 0) 10.dp else 4.dp,
             )
         }
     }
@@ -170,13 +151,10 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
 
 @Composable
 fun ListsRow(lists: List<BookList>, onOpen: (String) -> Unit) {
-    Column(Modifier.padding(bottom = 8.dp)) {
-        Text(
+    Column(Modifier.padding(bottom = 10.dp)) {
+        Eyebrow(
             stringResource(R.string.lists),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .padding(horizontal = ScreenPadding)
-                .padding(bottom = 8.dp),
+            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 10.dp),
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = ScreenPadding),
@@ -193,26 +171,21 @@ fun ListsRow(lists: List<BookList>, onOpen: (String) -> Unit) {
 private fun ListCard(list: BookList, modifier: Modifier, onClick: () -> Unit) {
     val count = list.books.size
     Column(
-        modifier.width(ListCardWidth)
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick),
+        modifier.width(ListCardWidth).clip(Corners.card).clickable(onClick = onClick),
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ) {
+        Box(Modifier.surface()) {
             ListCollage(list.books, ListCardWidth, Modifier.padding(vertical = 12.dp))
         }
         Text(
             list.name,
-            style = MaterialTheme.typography.titleSmall,
+            Modifier.padding(start = 6.dp, top = 10.dp),
+            style = Look.type.label,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
         )
         Hint(
             pluralStringResource(R.plurals.books, count, count),
-            Modifier.padding(start = 4.dp, bottom = 4.dp),
+            Modifier.padding(start = 6.dp, bottom = 6.dp),
         )
     }
 }
@@ -225,108 +198,44 @@ fun ListSheet(
     onToggle: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val name = rememberTextFieldState()
+    var name by rememberSaveable { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     val shown = (allLists + current).distinctBy(String::lowercase)
     fun create() {
-        val created = listName(name.text.toString())
+        val created = listName(name)
         if (created.isEmpty()) return
         if (!current.hasList(created)) onToggle(created)
-        name.clearText()
+        name = ""
     }
     LaunchedEffect(Unit) { if (allLists.isEmpty()) focus.requestFocus() }
-    TitledSheet(R.string.add_to_list, onDismiss) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Sheet(onDismiss, stringResource(R.string.add_to_list)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             shown.forEach { list ->
                 val selected = current.hasList(list)
-                FilterChip(
-                    selected = selected,
-                    onClick = { onToggle(list) },
-                    label = { Text(list) },
-                    leadingIcon = {
-                        if (selected) {
-                            Icon(Icons.Outlined.Check, null, Modifier.size(18.dp))
-                        }
-                    },
-                )
+                val icon = Icons.Rounded.Check.takeIf { selected }
+                Tag(list, selected = selected, icon = icon) { onToggle(list) }
             }
         }
-        ListNameField(name, Modifier.focusRequester(focus), ::create)
+        Field(
+            name,
+            { name = it },
+            Modifier.focusRequester(focus),
+            label = stringResource(R.string.new_list),
+            hint = stringResource(R.string.list_hint),
+            keyboard = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done,
+            ),
+            onDone = ::create,
+            trailing = {
+                IconAction(
+                    Icons.Rounded.Add, stringResource(R.string.add),
+                    enabled = name.isNotBlank(), onClick = ::create,
+                )
+            },
+        )
     }
-}
-
-@Composable
-private fun ListNameField(state: TextFieldState, modifier: Modifier, onDone: () -> Unit) {
-    OutlinedTextField(
-        state = state,
-        label = { Text(stringResource(R.string.new_list)) },
-        placeholder = { Text(stringResource(R.string.list_hint)) },
-        lineLimits = TextFieldLineLimits.SingleLine,
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences,
-            imeAction = ImeAction.Done,
-        ),
-        onKeyboardAction = { onDone() },
-        trailingIcon = {
-            IconButton(onClick = onDone, enabled = state.text.isNotBlank()) {
-                Icon(Icons.Outlined.Add, stringResource(R.string.add))
-            }
-        },
-        modifier = modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun RenameListDialog(
-    name: String,
-    onDismiss: () -> Unit,
-    onRename: (String) -> Unit,
-) {
-    val state = rememberTextFieldState(name)
-    val renamed = listName(state.text.toString())
-    fun confirm() {
-        if (renamed.isEmpty()) return
-        onRename(renamed)
-        onDismiss()
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.rename_list)) },
-        text = {
-            OutlinedTextField(
-                state = state,
-                lineLimits = TextFieldLineLimits.SingleLine,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                onKeyboardAction = { confirm() },
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = ::confirm, enabled = renamed.isNotEmpty()) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
-}
-
-@Composable
-private fun DeleteListDialog(name: String, onDismiss: () -> Unit, onDelete: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.delete_list)) },
-        text = { Text(stringResource(R.string.delete_list_confirm, name)) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onDelete()
-                    onDismiss()
-                },
-            ) { Text(stringResource(R.string.remove)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
 }

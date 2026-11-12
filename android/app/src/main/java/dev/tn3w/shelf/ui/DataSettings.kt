@@ -6,11 +6,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts.*
 import androidx.annotation.StringRes
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,7 +52,7 @@ private fun NotesRow(@StringRes title: Int, action: SettingsAction, format: Note
     FileRow(
         title,
         action,
-        Icons.Outlined.Upload,
+        Icons.Rounded.Upload,
         CreateDocument(format.mimeType),
         notesFileName("shelf", format),
         R.string.notes_exported,
@@ -67,7 +66,7 @@ private fun BackupRows() {
     FileRow(
         R.string.backup_export,
         SettingsAction.BackupExport,
-        Icons.Outlined.Upload,
+        Icons.Rounded.Upload,
         CreateDocument("application/zip"),
         BACKUP_FILE,
         R.string.backup_exported,
@@ -77,7 +76,7 @@ private fun BackupRows() {
     FileRow(
         R.string.backup_import,
         SettingsAction.BackupImport,
-        Icons.Outlined.Download,
+        Icons.Rounded.Download,
         OpenDocument(),
         BACKUP_TYPES,
         R.string.backup_done,
@@ -100,12 +99,9 @@ private fun AutomaticBackupRow() {
         summary,
         onClick = { picker.launch(null) },
     ) {
-        Switch(
-            checked = folder.isNotEmpty(),
-            onCheckedChange = { on ->
-                if (on) picker.launch(null) else viewModel.chooseBackupFolder(null)
-            },
-        )
+        Toggle(folder.isNotEmpty(), { on ->
+            if (on) picker.launch(null) else viewModel.chooseBackupFolder(null)
+        })
     }
 }
 
@@ -149,12 +145,12 @@ private fun CsvRows() {
         progress?.let { stringResource(R.string.csv_progress, (it * 100).toInt()) }
             ?: csvStatus
     ActionRow(
-        R.string.csv_import, Icons.Outlined.Download, importStatus, progress != null,
+        R.string.csv_import, Icons.Rounded.Download, importStatus, progress != null,
     ) { import.launch(arrayOf("*/*")) }
     FileRow(
         R.string.csv_export,
         SettingsAction.CsvExport,
-        Icons.Outlined.Upload,
+        Icons.Rounded.Upload,
         CreateDocument("text/csv"),
         CSV_FILE,
         R.string.csv_exported,
@@ -167,25 +163,17 @@ private fun CsvRows() {
 @Composable
 private fun CsvReportDialog(report: CsvReport, onDismiss: () -> Unit) {
     val found = report.total - report.missing.size
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.csv_imported)) },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(stringResource(R.string.csv_found, found, report.total))
-                if (report.missing.isEmpty()) return@Column
-                Text(
-                    stringResource(R.string.csv_missing),
-                    Modifier.padding(top = 8.dp, bottom = 4.dp),
-                )
+    Sheet(onDismiss, stringResource(R.string.csv_imported)) {
+        Text(
+            stringResource(R.string.csv_found, found, report.total),
+            style = Look.type.body,
+        )
+        if (report.missing.isNotEmpty()) {
+            Eyebrow(stringResource(R.string.csv_missing), Modifier.padding(top = 6.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 report.missing.forEach { Hint(it) }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.done)) }
-        },
-    )
+        }
+        Pill(stringResource(R.string.done), Modifier.fillMaxWidth(), onClick = onDismiss)
+    }
 }

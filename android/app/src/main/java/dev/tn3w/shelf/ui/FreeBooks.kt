@@ -5,19 +5,15 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.material3.SheetValue.Hidden
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -79,10 +75,9 @@ fun ProviderSwitch(
         about.filter { it.isNotEmpty() }.joinToString(" · "),
         enabled = enabled || onOpen != null,
         onClick = onOpen ?: { toggle(!on) },
-    ) { Switch(checked = on, onCheckedChange = ::toggle, enabled = enabled) }
+    ) { Toggle(on, ::toggle, enabled) }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
     val (settings, update) = rememberSettings() ?: return
@@ -96,37 +91,47 @@ fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
     val isbns = bookIsbns(book, enabled.any { it.usesIsbn })
     val query = Query(book.title, book.author, language, isbns.orEmpty())
     val offers by viewModel.offers.collectAsStateWithLifecycle()
-    val downloading by rememberUpdatedState(offers.values.any { it is Download.Running })
-    // Stable lambda: the sheet state is keyed on it and a new one re-opens the sheet.
-    val confirm = remember { { value: SheetValue -> value != Hidden || !downloading } }
-    val sheet = rememberModalBottomSheetState(true, confirm)
-    ModalBottomSheet({ if (!downloading) onDismiss() }, sheetState = sheet) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            SheetTitle(book) { if (!choosing) SourcesButton { choosing = true } }
-            if (!choosing) {
-                if (isbns == null) {
-                    LoadingBar()
-                } else {
-                    if (enabled.isEmpty() && chosenCatalogs.isEmpty()) {
-                        Note(R.string.free_books_no_source)
-                    }
-                    Offers(book, query, enabled, settings.onlineCovers, viewModel)
-                    val covers = settings.onlineCovers
-                    CatalogOffers(book, query, chosenCatalogs, covers, viewModel)
-                    Note(R.string.free_books_rights)
-                }
-                return@Column
+    val downloading = offers.values.any { it is Download.Running }
+    Sheet(
+        onDismiss,
+        stringResource(R.string.free_ebook),
+        book.title,
+        locked = downloading,
+        padded = false,
+        action = {
+            if (choosing) return@Sheet
+            val sources = stringResource(R.string.free_books_sources)
+            Pill(sources, icon = Icons.Rounded.Tune, kind = PillKind.Bare) {
+                choosing =
+                    true
             }
-            SettingsGroup(hint = stringResource(R.string.free_books_choose)) {
-                catalogs.forEach { catalog ->
-                    CatalogSwitch(catalog, settings, update)
-                }
-                recipes.forEach {
-                    ProviderSwitch(Provider(it), settings, update, enabled = true)
-                }
+        },
+    ) {
+        if (!choosing) {
+            if (isbns == null) return@Sheet LoadingBar()
+            if (enabled.isEmpty() && chosenCatalogs.isEmpty()) {
+                Note(R.string.free_books_no_source)
             }
-            SearchButton(settings.providers.isNotEmpty()) { choosing = false }
+            Offers(book, query, enabled, settings.onlineCovers, viewModel)
+            val covers = settings.onlineCovers
+            CatalogOffers(book, query, chosenCatalogs, covers, viewModel)
+            Note(R.string.free_books_rights)
+            return@Sheet
         }
+        SettingsGroup(hint = stringResource(R.string.free_books_choose)) {
+            catalogs.forEach { catalog ->
+                CatalogSwitch(catalog, settings, update)
+            }
+            recipes.forEach {
+                ProviderSwitch(Provider(it), settings, update, enabled = true)
+            }
+        }
+        Pill(
+            stringResource(R.string.search),
+            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
+            Icons.Rounded.Search,
+            enabled = settings.providers.isNotEmpty(),
+        ) { choosing = false }
     }
 }
 
@@ -143,42 +148,6 @@ private fun bookIsbns(book: Book, catalogue: Boolean): List<String>? {
     return produceState<List<String>?>(null, book.work, catalogue) {
         value = viewModel.isbnsOf(book, catalogue)
     }.value
-}
-
-@Composable
-private fun SheetTitle(book: Book, action: @Composable () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(start = ScreenPadding, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                stringResource(R.string.free_ebook),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                book.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
-        }
-        action()
-    }
-}
-
-@Composable
-private fun SourcesButton(onClick: () -> Unit) = TextButton(onClick = onClick) {
-    IconLabel(Icons.Outlined.Tune, R.string.free_books_sources)
-}
-
-@Composable
-private fun SearchButton(enabled: Boolean, onClick: () -> Unit) = Button(
-    onClick = onClick,
-    enabled = enabled,
-    modifier = Modifier.fillMaxWidth().padding(ScreenPadding, 16.dp),
-) {
-    IconLabel(Icons.Outlined.Search, R.string.search)
 }
 
 @Composable
@@ -226,7 +195,7 @@ private fun CatalogSwitch(catalog: Catalog, settings: Settings, update: Settings
         it.copy(providers = if (value) others + catalog.id else others)
     }
     SettingRow(catalog.name, catalog.host, onClick = { toggle(!on) }) {
-        Switch(checked = on, onCheckedChange = ::toggle)
+        Toggle(on, ::toggle)
     }
 }
 
@@ -299,7 +268,8 @@ private fun ProviderResult(
 @Composable
 private fun RetryRow(onRetry: () -> Unit) =
     SettingRow(stringResource(R.string.free_books_unreachable), onClick = onRetry) {
-        Icon(Icons.Outlined.Refresh, stringResource(R.string.free_books_retry))
+        val retry = stringResource(R.string.free_books_retry)
+        Icon(Icons.Rounded.Refresh, retry, tint = Look.colors.accent)
     }
 
 @Composable
@@ -327,51 +297,76 @@ private fun DownloadRow(
     onClick: () -> Unit,
 ) {
     val failed = download is Download.Failed
-    val failure = stringResource(R.string.free_books_failed)
-    val icon = if (failed) Icons.Outlined.ErrorOutline else Icons.Outlined.Download
+    val icon = if (failed) Icons.Rounded.ErrorOutline else Icons.Rounded.Download
     val action = if (failed) R.string.retry_item else R.string.download_item
-    val label = stringResource(action, title)
-    ListItem(
-        headlineContent = {
-            Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        },
-        supportingContent = {
-            val summary = if (failed) {
-                failure
-            } else {
-                details.filter { it.isNotBlank() }
-                    .joinToString(" · ")
+    val summary = if (failed) {
+        stringResource(R.string.free_books_failed)
+    } else {
+        details.filter { it.isNotBlank() }.joinToString(" · ")
+    }
+    MediaRow(title, summary, onClick, { RemoteCover(cover, authorization) }) {
+        when (download) {
+            is Download.Running -> DownloadProgress(download.progress)
+            else -> Icon(icon, stringResource(action, title), tint = Look.colors.accent)
+        }
+    }
+}
+
+/** A row led by a cover or symbol: one found book, file or folder. */
+@Composable
+fun MediaRow(
+    title: String,
+    summary: String,
+    onClick: () -> Unit,
+    leading: @Composable () -> Unit,
+    trailing: @Composable () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = ScreenPadding, end = 10.dp)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        leading()
+        Column(Modifier.weight(1f)) {
+            Text(
+                title,
+                style = Look.type.subhead,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (summary.isNotEmpty()) {
+                Text(
+                    summary,
+                    color = Look.colors.soft,
+                    style = Look.type.note,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            Text(summary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
-        leadingContent = { RemoteCover(cover, authorization) },
-        trailingContent = {
-            when (download) {
-                is Download.Running -> DownloadProgress(download.progress)
-                else -> Icon(icon, label)
-            }
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable(onClick = onClick),
-    )
+        }
+        Box(Modifier.widthIn(min = 48.dp), contentAlignment = Alignment.Center) {
+            trailing()
+        }
+    }
 }
 
 @Composable
 fun RemoteCover(
     url: String?,
     authorization: String? = null,
-    size: DpSize = DpSize(36.dp, 54.dp),
+    size: DpSize = DpSize(40.dp, 60.dp),
 ) = Box(
-    Modifier.size(size)
-        .clip(RoundedCornerShape(4.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+    Modifier.size(size).clip(Corners.cover).background(Look.colors.sunken),
     contentAlignment = Alignment.Center,
 ) {
     Icon(
-        Icons.AutoMirrored.Outlined.MenuBook,
-        contentDescription = null,
-        modifier = Modifier.size(18.dp),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Icons.AutoMirrored.Rounded.MenuBook,
+        null,
+        Modifier.size(18.dp),
+        Look.colors.faint,
     )
     url?.let {
         val request = ImageRequest.Builder(LocalPlatformContext.current).data(it)
@@ -387,16 +382,11 @@ fun RemoteCover(
 @Composable
 fun DownloadProgress(value: Float) {
     val progress by animateFloatAsState(value)
-    val modifier = Modifier.size(24.dp)
-    if (value > 0f) {
-        CircularProgressIndicator(progress = { progress }, modifier, strokeWidth = 3.dp)
-    } else {
-        CircularProgressIndicator(modifier, strokeWidth = 3.dp)
-    }
+    Ring(progress.takeIf { value > 0f })
 }
 
 @Composable
 private fun Note(@StringRes text: Int) = Hint(
     stringResource(text),
-    Modifier.padding(horizontal = ScreenPadding + 16.dp).padding(top = 16.dp),
+    Modifier.padding(horizontal = ScreenPadding).padding(top = 12.dp),
 )

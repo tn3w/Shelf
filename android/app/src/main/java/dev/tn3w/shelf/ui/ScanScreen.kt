@@ -28,9 +28,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DocumentScanner
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.CenterFocusWeak
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.geometry.Offset
@@ -144,18 +146,20 @@ fun ScanScreen(navigator: Navigator) {
             }
         }
         viewModel.frozen?.let { Frozen(it) }
-        Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-            BackBar(navigator::back)
+        CompositionLocalProvider(LocalContentColor provides Color.White) {
+            Box(Modifier.padding(top = statusBarHeight())) { BackBar(navigator::back) }
         }
         if (found == null && !viewModel.paused) {
             Text(
                 stringResource(viewModel.failure ?: R.string.scan_hint),
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                Modifier.align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(32.dp),
+                    .padding(32.dp)
+                    .background(Color.Black.copy(alpha = 0.55f), CircleShape)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                Color.White,
+                style = Look.type.label,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -177,7 +181,7 @@ private fun Frozen(found: Found) {
             contentScale = ContentScale.Crop,
         )
     }
-    val color = MaterialTheme.colorScheme.primary
+    val color = Look.colors.accent
     val marks = found.marks
     Canvas(Modifier.fillMaxSize()) {
         val scale = max(size.width / marks.width, size.height / marks.height)
@@ -230,23 +234,23 @@ private fun CameraPreview(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ScanSheet(book: Book, onAgain: () -> Unit, onOpen: (Book, String) -> Unit) {
     val viewModel = shelfViewModel()
     val saved by viewModel.library.saved.collectAsStateWithLifecycle(emptyList())
     val shelf = saved.firstOrNull { it.work == book.work }?.shelf
-    ModalBottomSheet(onAgain, sheetState = rememberModalBottomSheetState(true)) {
-        Column(Modifier.padding(bottom = 24.dp), Arrangement.spacedBy(12.dp)) {
+    val side = Modifier.padding(horizontal = ScreenPadding)
+    CoverTheme(coverTone(book)) {
+        Sheet(onAgain, padded = false) {
             BookListItem(book, "scan", shared = false, onOpen = onOpen)
-            Box(Modifier.padding(horizontal = ScreenPadding)) {
-                ShelfPicker(shelf) { viewModel.place(book, it) }
-            }
-            OutlinedButton(
-                onAgain, Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
-            ) {
-                IconLabel(Icons.Outlined.DocumentScanner, R.string.scan_again)
-            }
+            ShelfPicker(shelf, side) { viewModel.place(book, it) }
+            Pill(
+                stringResource(R.string.scan_again),
+                side.fillMaxWidth(),
+                Icons.Rounded.CenterFocusWeak,
+                PillKind.Line,
+                onClick = onAgain,
+            )
         }
     }
 }

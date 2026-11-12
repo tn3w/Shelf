@@ -26,14 +26,15 @@ import androidx.compose.foundation.pager.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Toc
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
@@ -217,24 +218,11 @@ private data class ReaderState(
     val viewModel: ReaderViewModel,
     val title: String,
     val author: String,
+    val book: Book?,
     val navigator: Navigator,
     val onFontScale: ((Float) -> Unit)?,
     val volumeKeys: Boolean,
 )
-
-data class PagePalette(val background: Color, val text: Color)
-
-@Composable
-fun pagePalette(settings: Settings) = when (settings.pageColor) {
-    PageColor.Theme ->
-        PagePalette(
-            MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface,
-        )
-
-    PageColor.Paper -> PagePalette(Color(0xFFF4ECD8), Color(0xFF3B2F22))
-
-    PageColor.Night -> PagePalette(Color.Black, Color(0xFFC8C8C8))
-}
 
 fun readerStyle(settings: Settings, color: Color) = TextStyle(
     fontFamily = if (settings.serif) FontFamily.Serif else FontFamily.SansSerif,
@@ -287,38 +275,40 @@ fun ReaderScreen(work: Int, navigator: Navigator) {
         onDispose { view.keepScreenOn = false }
     }
 
-    val state = remember(viewModel, title, author, navigator, settings.volumeKeys) {
+    val book = remember(entry) { entry?.toBook() }
+    val state = remember(viewModel, book, navigator, settings.volumeKeys) {
         ReaderState(
             viewModel,
             title,
             author,
+            book,
             navigator,
             viewModel::changeFont,
             settings.volumeKeys,
         )
     }
-    val palette = pagePalette(settings)
-    Surface(
-        Modifier.fillMaxSize(), color = palette.background, contentColor = palette.text,
-    ) {
-        BrightnessSwipe(
-            settings.brightnessSwipe,
-            settings.readerBrightness,
-            viewModel::saveBrightness,
-        ) {
-            when (val current = opened) {
-                null -> Loading()
+    val page = Look.colors.page(settings.pageColor)
+    Palette(page) {
+        Box(Modifier.fillMaxSize().background(page.paper)) {
+            BrightnessSwipe(
+                settings.brightnessSwipe,
+                settings.readerBrightness,
+                viewModel::saveBrightness,
+            ) {
+                when (val current = opened) {
+                    null -> Loading()
 
-                Opened.Failed -> OpenFailed(navigator)
+                    Opened.Failed -> OpenFailed(navigator)
 
-                is Opened.Ready ->
-                    when (val document = current.document) {
-                        is TextDocument ->
-                            TextReader(state, document, current.progress, settings)
+                    is Opened.Ready ->
+                        when (val document = current.document) {
+                            is TextDocument ->
+                                TextReader(state, document, current.progress, settings)
 
-                        is PagedDocument ->
-                            PagedReader(state, document, current.progress)
-                    }
+                            is PagedDocument ->
+                                PagedReader(state, document, current.progress)
+                        }
+                }
             }
         }
     }
@@ -376,19 +366,20 @@ private fun BrightnessSwipe(
 
 @Composable
 private fun BoxScope.BrightnessBadge(brightness: Float) {
-    Surface(
-        Modifier.align(Alignment.Center),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.inverseSurface,
+    val colors = Look.colors
+    Row(
+        Modifier.align(Alignment.Center)
+            .background(colors.ink, CircleShape)
+            .padding(horizontal = 18.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Outlined.BrightnessMedium, contentDescription = null)
-            Text("${(brightness * 100).roundToInt()} %")
-        }
+        Icon(Icons.Rounded.BrightnessMedium, null, tint = colors.paper)
+        Text(
+            "${(brightness * 100).roundToInt()} %",
+            color = colors.paper,
+            style = Look.type.label,
+        )
     }
 }
 
@@ -396,14 +387,7 @@ private fun BoxScope.BrightnessBadge(brightness: Float) {
 private fun OpenFailed(navigator: Navigator) {
     Column(Modifier.windowInsetsPadding(WindowInsets.systemBars)) {
         BackBar(navigator::back)
-        EmptyState(Icons.Outlined.ErrorOutline, stringResource(R.string.open_failed))
-    }
-}
-
-@Composable
-private fun Loading() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+        EmptyState(Icons.Rounded.ErrorOutline, stringResource(R.string.open_failed))
     }
 }
 
@@ -561,7 +545,7 @@ private fun TextReader(
 ) {
     val viewModel = state.viewModel
     val measurer = rememberTextMeasurer(cacheSize = 0)
-    val style = readerStyle(settings, pagePalette(settings).text)
+    val style = readerStyle(settings, Look.colors.ink)
     val margin = settings.margin.dp
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val highlights by viewModel.highlights.collectAsStateWithLifecycle()
@@ -678,16 +662,13 @@ private fun TextReader(
 
 @Composable
 private fun UndoRemove(viewModel: ReaderViewModel, modifier: Modifier) {
-    val host = remember { SnackbarHostState() }
-    val message = stringResource(R.string.highlight_removed)
-    val undo = stringResource(R.string.undo)
-    LaunchedEffect(viewModel.removed) {
-        if (viewModel.removed == null) return@LaunchedEffect
-        val result = host.showSnackbar(message, undo, duration = SnackbarDuration.Short)
-        if (result == SnackbarResult.ActionPerformed) viewModel.restoreHighlight()
-        viewModel.removed = null
-    }
-    SnackbarHost(host, modifier)
+    if (viewModel.removed == null) return
+    Notice(
+        stringResource(R.string.highlight_removed),
+        stringResource(R.string.undo),
+        modifier.navigationBarsPadding(),
+        onAction = viewModel::restoreHighlight,
+    ) { viewModel.removed = null }
 }
 
 @Stable
@@ -773,7 +754,7 @@ private fun AnnotatedPage(
     val selected = annotator.selection?.takeIf { it.page == index }?.range
     val narration by viewModel.narrator.state.collectAsStateWithLifecycle()
     val spoken = spokenRange(page, narration, viewModel.work)
-    val spokenColor = MaterialTheme.colorScheme.primary.copy(alpha = SPOKEN_ALPHA)
+    val spokenColor = Look.colors.accent.copy(alpha = SPOKEN_ALPHA)
     val text = remember(page, highlights, hits.query, selected, selectionColor, spoken) {
         page.marked(highlights, hits.query, selected, selectionColor)
             .withSpoken(spoken, spokenColor)
@@ -966,10 +947,10 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             var failed by remember(page) { mutableStateOf(false) }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val image = page?.getOrNull()
-                if (page == null) return@Box CircularProgressIndicator()
+                if (page == null) return@Box Ring(null, size = 32.dp)
                 if (image == null || failed) {
                     return@Box EmptyState(
-                        Icons.Outlined.BrokenImage, stringResource(R.string.page_failed),
+                        Icons.Rounded.BrokenImage, stringResource(R.string.page_failed),
                     )
                 }
                 AsyncImage(
@@ -1069,40 +1050,59 @@ private fun Pages(
                 if (marks.on(index).isNotEmpty()) BookmarkRibbon()
             }
         }
-        AnimatedVisibility(
-            chrome,
-            enter = chromeEnter(reduced) { -it / 2 },
-            exit = chromeExit(reduced) { -it / 2 },
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            val onPage = marks.on(pager.currentPage)
-            val contents =
-                if (chapters.isEmpty()) SheetTab.Bookmarks else SheetTab.Contents
-            ReaderTopBar(
-                state,
-                bookmarked = onPage.isNotEmpty(),
-                onBookmark = {
-                    viewModel.toggleBookmark(onPage) { marks.create(pager.currentPage) }
-                },
-                onSearch = onSearch,
-                contents = contents,
-                onContents = { showChapters = true },
-                onListen = onListen?.let { start ->
-                    {
-                        askNotifications()
-                        start()
-                    }
-                },
-            )
-        }
-        AnimatedVisibility(
-            chrome,
-            enter = chromeEnter(reduced) { it },
-            exit = chromeExit(reduced) { it },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            ReaderBottomBar(pager, chapter?.first, state.onFontScale) {
-                scope.launch { pager.scrollToPage(it) }
+        Chrome(state.book) {
+            AnimatedVisibility(
+                chrome,
+                enter = chromeEnter(reduced) { -it / 2 },
+                exit = chromeExit(reduced) { -it / 2 },
+                modifier = Modifier.align(Alignment.TopCenter),
+            ) {
+                val onPage = marks.on(pager.currentPage)
+                val contents =
+                    if (chapters.isEmpty()) SheetTab.Bookmarks else SheetTab.Contents
+                ReaderTopBar(
+                    state,
+                    bookmarked = onPage.isNotEmpty(),
+                    onBookmark = {
+                        viewModel.toggleBookmark(onPage) {
+                            marks.create(pager.currentPage)
+                        }
+                    },
+                    onSearch = onSearch,
+                    contents = contents,
+                    onContents = { showChapters = true },
+                    onListen = onListen?.let { start ->
+                        {
+                            askNotifications()
+                            start()
+                        }
+                    },
+                )
+            }
+            AnimatedVisibility(
+                chrome,
+                enter = chromeEnter(reduced) { it },
+                exit = chromeExit(reduced) { it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                ReaderBottomBar(pager, chapter?.first, state.onFontScale) {
+                    scope.launch { pager.scrollToPage(it) }
+                }
+            }
+            if (showChapters) {
+                ContentsSheet(
+                    chapters,
+                    chapter,
+                    marks.placed,
+                    pager.pageCount,
+                    notes,
+                    onDismiss = { showChapters = false },
+                    onRemove = viewModel::removeBookmark,
+                ) { target ->
+                    showChapters = false
+                    chrome = false
+                    scope.launch { pager.scrollToPage(target) }
+                }
             }
         }
         if (viewModel.showListen) {
@@ -1114,22 +1114,18 @@ private fun Pages(
                 onSettings = { state.navigator.settings(SettingsPage.Listening) },
             ) { viewModel.showListen = false }
         }
-        if (showChapters) {
-            ContentsSheet(
-                chapters,
-                chapter,
-                marks.placed,
-                pager.pageCount,
-                notes,
-                onDismiss = { showChapters = false },
-                onRemove = viewModel::removeBookmark,
-            ) { target ->
-                showChapters = false
-                chrome = false
-                scope.launch { pager.scrollToPage(target) }
-            }
-        }
     }
+}
+
+/** Everything laid over the page takes the colours of the book's cover. */
+@Composable
+private fun Chrome(book: Book?, content: @Composable () -> Unit) =
+    CoverTheme(coverTone(book), content)
+
+@Composable
+private fun Modifier.floating(shape: Shape): Modifier {
+    val lift = if (Look.colors.plain) 0.dp else 14.dp
+    return shadow(lift, shape).surface(shape).blockTouches()
 }
 
 @Composable
@@ -1146,10 +1142,10 @@ private fun rememberNotificationRequest(): () -> Unit {
 @Composable
 private fun BoxScope.BookmarkRibbon() {
     Icon(
-        Icons.Filled.Bookmark,
-        contentDescription = stringResource(R.string.bookmarks),
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp).size(24.dp),
+        Icons.Rounded.Bookmark,
+        stringResource(R.string.bookmarks),
+        Modifier.align(Alignment.TopEnd).padding(end = 14.dp).size(26.dp),
+        Look.colors.accent,
     )
 }
 
@@ -1163,47 +1159,43 @@ private fun ReaderTopBar(
     onContents: () -> Unit,
     onListen: (() -> Unit)?,
 ) {
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 2.dp) {
-        Row(
-            Modifier.fillMaxWidth().padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconAction(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                stringResource(R.string.back),
-                state.navigator::back,
-            )
-            Text(
-                state.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            onSearch?.let {
-                val search = stringResource(R.string.search_book)
-                IconAction(Icons.Outlined.Search, search, it)
-            }
-            onListen?.let {
-                IconAction(Icons.Outlined.Headphones, stringResource(R.string.listen), it)
-            }
-            BookmarkToggle(bookmarked, onBookmark)
-            val list = Icons.AutoMirrored.Outlined.List
-            IconAction(list, stringResource(contents.label), onContents)
-        }
-    }
-}
-
-@Composable
-private fun BookmarkToggle(bookmarked: Boolean, onToggle: () -> Unit) {
-    val label = if (bookmarked) R.string.remove_bookmark else R.string.add_bookmark
-    val colors = MaterialTheme.colorScheme
-    IconToggleButton(bookmarked, onCheckedChange = { onToggle() }) {
-        Icon(
-            if (bookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkAdd,
-            contentDescription = stringResource(label),
-            tint = if (bookmarked) colors.primary else LocalContentColor.current,
+    Row(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .floating(CircleShape)
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconAction(
+            Icons.AutoMirrored.Rounded.ArrowBack,
+            stringResource(R.string.back),
+            onClick = state.navigator::back,
         )
+        state.book?.let { BookCover(it, 24.dp, lift = 0.dp) }
+        Text(
+            state.title,
+            Modifier.weight(1f).padding(horizontal = 10.dp),
+            style = Look.type.label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        onSearch?.let {
+            val search = stringResource(R.string.search_book)
+            IconAction(Icons.Rounded.Search, search, onClick = it)
+        }
+        onListen?.let {
+            val listen = stringResource(R.string.listen)
+            IconAction(Icons.Rounded.Headphones, listen, onClick = it)
+        }
+        val mark = if (bookmarked) R.string.remove_bookmark else R.string.add_bookmark
+        IconAction(
+            if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
+            stringResource(mark),
+            tint = if (bookmarked) Look.colors.accent else Look.colors.ink,
+            onClick = onBookmark,
+        )
+        val list = Icons.AutoMirrored.Rounded.Toc
+        IconAction(list, stringResource(contents.label), onClick = onContents)
     }
 }
 
@@ -1215,46 +1207,37 @@ private fun ReaderBottomBar(
     onJump: (Int) -> Unit,
 ) {
     var dragging by rememberSaveable { mutableStateOf<Float?>(null) }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            chapter?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
+    Column(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .floating(Corners.card)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        chapter?.let { Eyebrow(it, color = Look.colors.accent) }
+        Scrubber(
+            value = dragging ?: pager.currentPage.toFloat(),
+            onChange = { dragging = it },
+            range = 0f..maxOf(1, pager.pageCount - 1).toFloat(),
+            onFinished = {
+                dragging?.let { onJump(it.roundToInt()) }
+                dragging = null
+            },
+        )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            val smaller = stringResource(R.string.smaller_text)
+            onFontScale?.let {
+                IconAction(Icons.Rounded.TextDecrease, smaller) { it(-0.1f) }
             }
-            Slider(
-                value = dragging ?: pager.currentPage.toFloat(),
-                onValueChange = { dragging = it },
-                onValueChangeFinished = {
-                    dragging?.let { onJump(it.roundToInt()) }
-                    dragging = null
-                },
-                valueRange = 0f..maxOf(1, pager.pageCount - 1).toFloat(),
+            val shown = (dragging?.roundToInt() ?: pager.currentPage) + 1
+            Hint(
+                stringResource(R.string.page_of, shown, pager.pageCount),
+                Modifier.weight(1f),
+                textAlign = TextAlign.Center,
             )
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                val smaller = stringResource(R.string.smaller_text)
-                onFontScale?.let {
-                    IconAction(Icons.Outlined.TextDecrease, smaller) { it(-0.1f) }
-                }
-                val shown = (dragging?.roundToInt() ?: pager.currentPage) + 1
-                Text(
-                    stringResource(R.string.page_of, shown, pager.pageCount),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-                val larger = stringResource(R.string.larger_text)
-                onFontScale?.let {
-                    IconAction(Icons.Outlined.TextIncrease, larger) { it(0.1f) }
-                }
+            val larger = stringResource(R.string.larger_text)
+            onFontScale?.let {
+                IconAction(Icons.Rounded.TextIncrease, larger) { it(0.1f) }
             }
         }
     }
@@ -1266,7 +1249,6 @@ private enum class SheetTab(@StringRes val label: Int) {
     Notes(R.string.notes),
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContentsSheet(
     chapters: List<Pair<String, Int>>,
@@ -1287,26 +1269,11 @@ private fun ContentsSheet(
         }
     }
     var selected by rememberSaveable { mutableStateOf(tabs.first()) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val title = stringResource(selected.label).takeIf { tabs.size == 1 }
+    Sheet(onDismiss, title, padded = false, scroll = false) {
         if (tabs.size > 1) {
-            PrimaryTabRow(
-                selectedTabIndex = tabs.indexOf(selected),
-                containerColor = Color.Transparent,
-            ) {
-                tabs.forEach { tab ->
-                    Tab(
-                        selected = tab == selected,
-                        onClick = { selected = tab },
-                        text = { Text(stringResource(tab.label)) },
-                    )
-                }
-            }
-        } else {
-            Text(
-                stringResource(selected.label),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
-            )
+            val side = Modifier.padding(horizontal = ScreenPadding)
+            Segments(tabs, selected, side, { selected = it }) { stringResource(it.label) }
         }
         when (selected) {
             SheetTab.Contents -> ChapterList(listed, current, onSelect)
@@ -1325,20 +1292,21 @@ private fun ChapterList(
     current: Pair<String, Int>?,
     onSelect: (Int) -> Unit,
 ) {
-    LazyColumn {
+    val start = chapters.indexOf(current).coerceAtLeast(0)
+    LazyColumn(state = rememberLazyListState(start)) {
         items(chapters) { chapter ->
-            val colors = MaterialTheme.colorScheme
-            val color = if (chapter == current) colors.primary else colors.onSurface
+            val here = chapter == current
             Row(
                 Modifier.fillMaxWidth()
                     .clickable { onSelect(chapter.second) }
                     .padding(horizontal = ScreenPadding, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
                     chapter.first,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = color,
-                    modifier = Modifier.weight(1f),
+                    Modifier.weight(1f),
+                    if (here) Look.colors.accent else Look.colors.ink,
+                    style = if (here) Look.type.subhead else Look.type.body,
                 )
                 PageNumber(chapter.second)
             }
@@ -1347,13 +1315,7 @@ private fun ChapterList(
 }
 
 @Composable
-fun PageNumber(index: Int) {
-    Text(
-        "${index + 1}",
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
+fun PageNumber(index: Int) = Hint("${index + 1}", color = Look.colors.faint)
 
 private val Bookmark.key
     get() = "$section:$offset:$page"
@@ -1368,7 +1330,7 @@ private fun BookmarkList(
 ) {
     if (bookmarks.isEmpty()) {
         val empty = stringResource(R.string.no_bookmarks)
-        return EmptyState(Icons.Outlined.BookmarkBorder, empty)
+        return EmptyState(Icons.Rounded.BookmarkBorder, empty)
     }
     val sorted = remember(bookmarks) {
         bookmarks.sortedWith(compareBy({ it.second }, { it.first.offset }))
@@ -1393,29 +1355,24 @@ private fun BookmarkRow(
     Row(
         Modifier.fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = ScreenPadding, end = 4.dp)
+            .padding(start = ScreenPadding, end = 10.dp)
             .padding(vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            Icons.Filled.Bookmark,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
+        Icon(Icons.Rounded.Bookmark, null, Modifier.size(20.dp), Look.colors.accent)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 title,
-                style = MaterialTheme.typography.titleSmall,
+                style = Look.type.subhead,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (mark.excerpt.isNotBlank()) {
                 Text(
                     mark.excerpt,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Look.colors.soft,
+                    style = Look.type.note,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1423,7 +1380,12 @@ private fun BookmarkRow(
         }
         PageNumber(page)
         val remove = stringResource(R.string.remove_bookmark)
-        IconAction(Icons.Outlined.Close, remove, onRemove)
+        IconAction(
+            Icons.Rounded.Close,
+            remove,
+            tint = Look.colors.soft,
+            onClick = onRemove,
+        )
     }
 }
 
@@ -1441,20 +1403,16 @@ private fun SearchPanel(
     val searching = needle.length >= MIN_QUERY && hits.query != needle
     BackHandler(onBack = viewModel::closeSearch)
     LaunchedEffect(Unit) { if (viewModel.query.isEmpty()) focus.requestFocus() }
-    Surface(
-        Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-    ) {
+    Box(Modifier.fillMaxSize().background(Look.colors.paper).blockTouches()) {
         Column(Modifier.imePadding()) {
             Row(
-                Modifier.padding(start = 4.dp),
+                Modifier.padding(start = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconAction(
-                    Icons.AutoMirrored.Filled.ArrowBack,
+                    Icons.AutoMirrored.Rounded.ArrowBack,
                     stringResource(R.string.back),
-                    viewModel::closeSearch,
+                    onClick = viewModel::closeSearch,
                 )
                 SearchField(
                     viewModel.query,
@@ -1465,17 +1423,17 @@ private fun SearchPanel(
                 )
             }
             Box(Modifier.fillMaxWidth().height(4.dp)) {
-                if (searching) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (searching) Meter(null)
             }
             when {
                 needle.length < MIN_QUERY -> {
                     val hint = stringResource(R.string.search_book_hint)
-                    EmptyState(Icons.Outlined.Search, hint)
+                    EmptyState(Icons.Rounded.Search, hint)
                 }
 
                 hits.query == needle && hits.matches.isEmpty() -> {
                     val none = stringResource(R.string.no_matches)
-                    EmptyState(Icons.Outlined.SearchOff, none)
+                    EmptyState(Icons.Rounded.SearchOff, none)
                 }
 
                 else -> SearchResults(hits, chapters, pageOf, onSelect)
@@ -1501,15 +1459,13 @@ private fun SearchResults(
 ) {
     val results = remember(hits) { hits.matches.map { it to pageOf(it) } }
     val count = hits.matches.size
-    Text(
+    Eyebrow(
         if (count >= MAX_MATCHES) {
             stringResource(R.string.many_matches, MAX_MATCHES)
         } else {
             pluralStringResource(R.plurals.matches, count, count)
         },
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+        Modifier.padding(horizontal = ScreenPadding, vertical = 10.dp),
     )
     LazyColumn {
         items(results) { (match, page) ->
@@ -1520,19 +1476,16 @@ private fun SearchResults(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
+                    Eyebrow(
                         chapterAt(chapters, page)?.first.orEmpty(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                        Modifier.weight(1f),
+                        Look.colors.accent,
                     )
                     PageNumber(page)
                 }
                 Text(
                     snippet(match),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Look.type.body,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -9,8 +9,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Insights
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -68,8 +68,9 @@ fun StatsScreen(navigator: Navigator) {
     val recap by viewModel.recap.collectAsStateWithLifecycle()
     val current = recap?.takeIf { it.year == year }
 
-    LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
-        item { BackBar(navigator::back, stringResource(R.string.stats)) }
+    LazyColumn(contentPadding = screenInsets()) {
+        item { BackBar(navigator::back) }
+        item { LargeTitle(stringResource(R.string.stats)) }
         if (years.orEmpty().size > 1) {
             item { YearChips(years.orEmpty(), year, viewModel::choose) }
         }
@@ -77,7 +78,7 @@ fun StatsScreen(navigator: Navigator) {
         if (current.isEmpty) {
             item {
                 val text = stringResource(R.string.stats_empty)
-                EmptyState(Icons.Outlined.Insights, text)
+                EmptyState(Icons.Rounded.Insights, text)
             }
             return@LazyColumn
         }
@@ -113,11 +114,11 @@ private fun LazyListScope.readingLog(recap: Recap, navigator: Navigator) {
     }
     recap.months.reversed().filter { it.books.isNotEmpty() }.forEach { month ->
         item(key = "month-${month.month}") {
-            Text(
+            Eyebrow(
                 monthName(month.month),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = ScreenPadding, vertical = 8.dp),
+                Modifier.padding(horizontal = ScreenPadding)
+                    .padding(top = 16.dp, bottom = 6.dp),
+                Look.colors.accent,
             )
         }
         items(month.books.reversed(), key = { it.work }) { saved ->
@@ -142,11 +143,7 @@ private fun logDetail(saved: Saved) = listOfNotNull(
 private fun YearChips(years: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
     FilterRow {
         years.forEach { year ->
-            FilterChip(
-                selected = year == selected,
-                onClick = { onSelect(year) },
-                label = { Text("$year") },
-            )
+            Tag("$year", selected = year == selected) { onSelect(year) }
         }
     }
 }
@@ -172,16 +169,8 @@ private fun MonthSection(recap: Recap) {
 
 @Composable
 private fun MetricPicker(byBooks: Boolean, onSelect: (Boolean) -> Unit) {
-    val options = listOf(R.string.pages_metric to false, R.string.books_metric to true)
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        options.forEachIndexed { index, (label, books) ->
-            SegmentedButton(
-                selected = books == byBooks,
-                onClick = { onSelect(books) },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                label = { Text(stringResource(label)) },
-            )
-        }
+    Segments(listOf(false, true), byBooks, onSelect = onSelect) {
+        stringResource(if (it) R.string.books_metric else R.string.pages_metric)
     }
 }
 
@@ -217,15 +206,16 @@ private fun MonthBar(
     onClick: () -> Unit,
 ) {
     val height by animateFloatAsState(fraction.coerceAtLeast(0.03f))
-    val colors = MaterialTheme.colorScheme
+    val colors = Look.colors
     val color = when {
-        selected -> colors.primary
-        fraction > 0 -> colors.primary.copy(alpha = 0.35f)
-        else -> colors.surfaceContainerHigh
+        selected -> colors.accent
+        fraction > 0 && colors.plain -> colors.soft
+        fraction > 0 -> colors.accent.copy(alpha = 0.32f)
+        else -> colors.sunken
     }
     Column(
         modifier.fillMaxHeight()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(Corners.well)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -237,11 +227,10 @@ private fun MonthBar(
                     .background(color),
             )
         }
-        Text(
+        Eyebrow(
             label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) colors.primary else colors.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp),
+            Modifier.padding(top = 8.dp),
+            if (selected) colors.accent else colors.faint,
         )
     }
 }
@@ -253,18 +242,10 @@ private fun MonthDetail(month: MonthStats) {
         pluralStringResource(R.plurals.books, month.books.size, month.books.size),
     )
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(monthName(month.month), style = MaterialTheme.typography.titleMedium)
-        Text(
-            summary.joinToString(" · "),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(monthName(month.month), style = Look.type.heading)
+        Hint(summary.joinToString(" · "))
         if (month.genres.isEmpty()) return@Column
-        Text(
-            month.genres.joinToString(" · ") { it.label },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        Hint(month.genres.joinToString(" · ") { it.label }, color = Look.colors.accent)
     }
 }
 
@@ -277,24 +258,12 @@ private fun GenreBars(genres: List<GenreStats>) {
     ) {
         genres.take(TOP_GENRES).forEach { (tag, books) ->
             val count = books.size
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row {
-                    Text(
-                        tag.label,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        pluralStringResource(R.plurals.books, count, count),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(tag.label, Modifier.weight(1f), style = Look.type.subhead)
+                    Hint(pluralStringResource(R.plurals.books, count, count))
                 }
-                LinearProgressIndicator(
-                    progress = { count.toFloat() / highest },
-                    modifier = Modifier.fillMaxWidth().height(8.dp),
-                    drawStopIndicator = {},
-                )
+                Meter(count.toFloat() / highest, height = 8.dp)
             }
         }
     }

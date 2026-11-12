@@ -3,19 +3,25 @@ package dev.tn3w.shelf.ui
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.*
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
@@ -26,11 +32,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.format.TextStyle
 
 private val HOME_TAGS =
     listOf("fantasy", "mystery", "classics", "science-fiction", "romance")
-private val Flame = Color(0xFFFF9600)
+private val Flame = Color(0xFFF08A1C)
+private val HeroHeight = 196.dp
 
 class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val rows = combine(loaded.filterNotNull(), library.saved, library.dismissed, ::Triple)
@@ -76,42 +84,24 @@ fun HomeScreen(navigator: Navigator) {
     val wrapped by viewModel.wrapped.collectAsStateWithLifecycle()
     val reading = saved.orEmpty().filter { it.shelf == Shelf.Reading }
     val want = saved.orEmpty().filter { it.shelf == Shelf.Want }.map { it.toBook() }
+    fun resume(entry: Saved) = scope.launch {
+        if (library.hasFile(progress?.get(entry.work))) {
+            navigator.reader(entry.work)
+        } else {
+            navigator.book(entry.toBook(), "continue")
+        }
+    }
 
-    LazyColumn(contentPadding = WindowInsets.statusBars.asPaddingValues()) {
-        item {
-            LargeTitle(stringResource(R.string.home)) {
-                val label = stringResource(R.string.settings)
-                IconAction(Icons.Outlined.Settings, label, navigator::settings)
-            }
+    LazyColumn(contentPadding = screenInsets()) {
+        item { HomeTitle(navigator) }
+        if (reading.isNotEmpty()) {
+            item { ContinueReading(reading, progress.orEmpty(), ::resume) }
         }
         habit?.takeIf { settings.dailyGoal > 0 }?.let {
             item { HabitCard(it, navigator::stats) }
         }
         wrapped?.let { recap ->
             item { WrappedBanner(recap) { navigator.wrapped(recap.year) } }
-        }
-        if (reading.isNotEmpty()) {
-            item { SectionHeader(stringResource(R.string.continue_reading)) }
-            item {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = ScreenPadding),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(reading, key = { it.work }) { entry ->
-                        val book = entry.toBook()
-                        val position = progress?.get(entry.work)
-                        ContinueCard(book, position?.fraction) {
-                            scope.launch {
-                                if (library.hasFile(position)) {
-                                    navigator.reader(entry.work)
-                                } else {
-                                    navigator.book(book, "continue")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
         if (want.isNotEmpty()) {
             item {
@@ -152,7 +142,99 @@ fun HomeScreen(navigator: Navigator) {
                 )
             }
         }
-        item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+@Composable
+private fun HomeTitle(navigator: Navigator) {
+    Row(
+        Modifier.fillMaxWidth()
+            .padding(start = ScreenPadding, end = 10.dp, top = 28.dp, bottom = 18.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Eyebrow(dateLabel(LocalDate.now()))
+            Text(stringResource(R.string.home), style = Look.type.display)
+        }
+        IconAction(
+            Icons.Rounded.Insights, stringResource(R.string.stats),
+            tint = Look.colors.soft, onClick = navigator::stats,
+        )
+        IconAction(
+            Icons.Rounded.Tune, stringResource(R.string.settings),
+            tint = Look.colors.soft,
+        ) { navigator.settings() }
+    }
+}
+
+@Composable
+private fun ContinueReading(
+    reading: List<Saved>,
+    progress: Map<Int, Progress>,
+    onOpen: (Saved) -> Unit,
+) {
+    val pager = rememberPagerState { reading.size }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        HorizontalPager(
+            pager,
+            contentPadding = PaddingValues(horizontal = ScreenPadding),
+            pageSpacing = 12.dp,
+            key = { reading[it].work },
+        ) { page ->
+            val entry = reading[page]
+            ContinueCard(entry.toBook(), progress[entry.work]?.fraction) { onOpen(entry) }
+        }
+        if (reading.size > 1) PageDots(reading.size, pager.currentPage)
+    }
+}
+
+@Composable
+private fun PageDots(count: Int, current: Int) {
+    Row(
+        Modifier.padding(top = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        repeat(count) { index ->
+            val color = if (index == current) Look.colors.ink else Look.colors.line
+            Box(Modifier.size(6.dp).background(color, CircleShape))
+        }
+    }
+}
+
+/** The book being read, in its own colours: tap anywhere to pick it up again. */
+@Composable
+private fun ContinueCard(book: Book, progress: Float?, onOpen: () -> Unit) {
+    CoverTheme(coverTone(book)) {
+        val colors = Look.colors
+        val backdrop = Brush.linearGradient(listOf(colors.glow, colors.raised))
+        Row(
+            Modifier.fillMaxWidth()
+                .height(HeroHeight)
+                .surface()
+                .background(backdrop)
+                .clickable(onClick = onOpen)
+                .padding(18.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            BookCover(book, modifier = Modifier.fillMaxHeight(), lift = 14.dp)
+            Column(Modifier.fillMaxHeight()) {
+                Eyebrow(stringResource(R.string.continue_reading), color = colors.accent)
+                Text(
+                    book.title,
+                    Modifier.padding(top = 8.dp),
+                    style = Look.type.heading,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Hint(book.author, Modifier.padding(top = 2.dp))
+                Spacer(Modifier.weight(1f))
+                val label = progress?.let {
+                    stringResource(R.string.percent_read, (it * 100).toInt())
+                } ?: stringResource(R.string.import_to_start)
+                Text(label, Modifier.padding(bottom = 8.dp), style = Look.type.label)
+                Meter(progress ?: 0f)
+            }
+        }
     }
 }
 
@@ -191,34 +273,32 @@ private fun HabitCard(habit: Habit, onOpen: () -> Unit) {
             stiffness = Spring.StiffnessLow,
         ),
     )
-    Surface(
-        onClick = onOpen,
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier =
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 8.dp),
+    Column(
+        Modifier.fillMaxWidth()
+            .padding(horizontal = ScreenPadding)
+            .padding(top = 16.dp)
+            .surface()
+            .clickable(onClick = onOpen)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(
-            Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StreakFlame(habit)
-                Column(Modifier.padding(start = 14.dp).weight(1f)) {
-                    StreakCount(habit.streak)
-                    Text(
-                        habitMessage(habit),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StreakFlame(habit)
+            Column(Modifier.padding(start = 12.dp).weight(1f)) {
+                StreakCount(habit.streak)
+                Hint(habitMessage(habit))
             }
-            GoalBar(
-                fraction, stringResource(R.string.pages_of_goal, habit.today, habit.goal),
-            )
-            WeekRow(habit)
+            Box(contentAlignment = Alignment.Center) {
+                Ring(fraction, size = 46.dp, color = flame())
+                Text("${habit.today}", style = Look.type.label)
+            }
         }
+        WeekRow(habit)
     }
 }
+
+@Composable
+private fun flame() = if (Look.colors.plain) Look.colors.ink else Flame
 
 @Composable
 private fun habitMessage(habit: Habit) = when {
@@ -240,8 +320,8 @@ private fun rememberFlamePulse(): Float {
     val pulse by rememberInfiniteTransition()
         .animateFloat(
             initialValue = 1f,
-            targetValue = 1.15f,
-            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
         )
     return pulse
 }
@@ -251,13 +331,12 @@ private fun StreakFlame(habit: Habit) {
     val pulsing = habit.done && !LocalReducedMotion.current
     val pulse = if (pulsing) rememberFlamePulse() else 1f
     val lit = habit.done || habit.streak > 0
-    val tint by
-        animateColorAsState(if (lit) Flame else MaterialTheme.colorScheme.outlineVariant)
+    val tint by animateColorAsState(if (lit) flame() else Look.colors.faint)
     Icon(
         Icons.Rounded.LocalFireDepartment,
         contentDescription = null,
         tint = tint,
-        modifier = Modifier.size(52.dp).scale(pulse),
+        modifier = Modifier.size(40.dp).scale(pulse),
     )
 }
 
@@ -271,31 +350,7 @@ private fun StreakCount(streak: Int) {
     ) { value ->
         Text(
             pluralStringResource(R.plurals.day_streak, value, value),
-            style = MaterialTheme.typography.headlineSmall,
-        )
-    }
-}
-
-@Composable
-private fun GoalBar(fraction: Float, label: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(
-            Modifier.fillMaxWidth()
-                .height(14.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ) {
-            Box(
-                Modifier.fillMaxHeight()
-                    .fillMaxWidth(fraction)
-                    .clip(CircleShape)
-                    .background(Flame),
-            )
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Look.type.heading,
         )
     }
 }
@@ -317,37 +372,25 @@ private fun WeekRow(habit: Habit) {
 
 @Composable
 private fun DayDot(label: String, done: Boolean, isToday: Boolean) {
-    val ring = if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent
+    val colors = Look.colors
     val scale by animateFloatAsState(
         if (done) 1f else 0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy),
     )
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (isToday) ring else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Eyebrow(label, color = if (isToday) colors.ink else colors.faint)
         Box(
-            Modifier.padding(top = 6.dp)
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(ring)
-                .padding(2.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            Modifier.size(28.dp)
+                .background(colors.sunken, CircleShape)
+                .border(1.5.dp, if (isToday) colors.ink else colors.line, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Box(
-                Modifier.size(30.dp).scale(scale).clip(CircleShape).background(Flame),
+                Modifier.fillMaxSize().scale(scale).background(flame(), CircleShape),
                 contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Rounded.Check,
-                    null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
+            ) { Icon(Icons.Rounded.Check, null, Modifier.size(16.dp), colors.paper) }
         }
     }
 }

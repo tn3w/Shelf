@@ -1,29 +1,23 @@
 package dev.tn3w.shelf.ui
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -192,7 +186,7 @@ fun CatalogRows(
             catalog.host,
             enabled = enabled,
             onClick = { navigator.catalog(catalog.id) },
-        ) { Switch(checked = on, onCheckedChange = ::toggle, enabled = enabled) }
+        ) { Toggle(on, ::toggle, enabled) }
     }
 }
 
@@ -200,7 +194,7 @@ fun CatalogRows(
 fun AddCatalogRow() {
     val viewModel = shelfViewModel(create = ::LibrariesViewModel)
     var adding by rememberSaveable { mutableStateOf(false) }
-    ActionRow(R.string.online_library_add, Icons.Outlined.Add) { adding = true }
+    ActionRow(R.string.online_library_add, Icons.Rounded.Add) { adding = true }
     if (!adding) return
     CatalogDialog(
         Catalog("", ""),
@@ -218,11 +212,12 @@ private fun Presets(
     presets: List<Pair<String, String>>,
     onPick: (String, String) -> Unit,
 ) {
-    Text(stringResource(title), style = MaterialTheme.typography.titleSmall)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        presets.forEach { (name, url) ->
-            SuggestionChip(onClick = { onPick(name, url) }, label = { Text(name) })
-        }
+    Eyebrow(stringResource(title))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        presets.forEach { (name, url) -> Tag(name) { onPick(name, url) } }
     }
 }
 
@@ -261,79 +256,61 @@ private fun CatalogDialog(
         onDismiss()
     }
     val heading = if (isNew) R.string.online_library_add else R.string.online_library_edit
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(heading)) },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+    Sheet(onDismiss, stringResource(heading)) {
+        if (isNew) {
+            Presets(R.string.online_library_servers, SERVER_PRESETS, ::pick)
+            Presets(R.string.online_library_free, FREE_PRESETS, ::pick)
+        }
+        Input(R.string.free_books_name, name) { name = it }
+        Input(
+            R.string.online_library_url,
+            url,
+            KeyboardType.Uri,
+            error = R.string.online_library_url_invalid.takeIf {
+                url.isNotBlank() && !validUrl
+            },
+        ) { url = it }
+        Input(R.string.online_library_username, username) { username = it }
+        Input(R.string.online_library_password, password, KeyboardType.Password) {
+            password = it
+        }
+        if (cleartext) {
+            Hint(
+                stringResource(R.string.online_library_cleartext),
+                color = Look.colors.danger,
+            )
+        }
+        SheetButtons {
+            val quiet = if (isNew) R.string.cancel else R.string.remove
+            Pill(
+                stringResource(quiet), Modifier.weight(1f),
+                kind = PillKind.Line, danger = !isNew,
             ) {
-                if (isNew) {
-                    Presets(R.string.online_library_servers, SERVER_PRESETS, ::pick)
-                    Presets(R.string.online_library_free, FREE_PRESETS, ::pick)
-                }
-                Field(R.string.free_books_name, name) { name = it }
-                Field(
-                    R.string.online_library_url,
-                    url,
-                    KeyboardType.Uri,
-                    error = R.string.online_library_url_invalid.takeIf {
-                        url.isNotBlank() && !validUrl
-                    },
-                ) { url = it }
-                Field(R.string.online_library_username, username) { username = it }
-                Field(R.string.online_library_password, password, KeyboardType.Password) {
-                    password = it
-                }
-                if (cleartext) {
-                    Hint(
-                        stringResource(R.string.online_library_cleartext),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
+                if (!isNew) onRemove()
+                onDismiss()
             }
-        },
-        confirmButton = {
-            TextButton(onClick = ::save, enabled = name.isNotBlank() && validUrl) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            Row {
-                if (!isNew) {
-                    TextButton(onClick = {
-                        onRemove()
-                        onDismiss()
-                    }) { Text(stringResource(R.string.remove)) }
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-            }
-        },
-    )
+            Pill(
+                stringResource(R.string.save), Modifier.weight(1f),
+                enabled = name.isNotBlank() && validUrl, onClick = ::save,
+            )
+        }
+    }
 }
 
 @Composable
-private fun Field(
+private fun Input(
     @StringRes label: Int,
     value: String,
     type: KeyboardType = KeyboardType.Text,
     @StringRes error: Int? = null,
     onChange: (String) -> Unit,
-) = OutlinedTextField(
+) = Field(
     value,
     onChange,
-    Modifier.fillMaxWidth(),
-    label = { Text(stringResource(label)) },
-    singleLine = true,
-    isError = error != null,
-    supportingText = error?.let { { Text(stringResource(it)) } },
-    keyboardOptions = KeyboardOptions(keyboardType = type),
-    visualTransformation = if (type == KeyboardType.Password) {
-        PasswordVisualTransformation()
-    } else {
-        VisualTransformation.None
-    },
+    label = stringResource(label),
+    error = error?.let { stringResource(it) },
+    secret = type == KeyboardType.Password,
+    keyboard = KeyboardOptions(keyboardType = type),
 )
 
 @Composable
@@ -370,13 +347,19 @@ fun CatalogScreen(route: CatalogRoute, navigator: Navigator) {
         navigator.catalog(route.id, searchUrl(template, query.trim()), query.trim())
     }
 
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-        CatalogBar(
-            title,
-            navigator::back,
-            onEdit = editable?.let { { editing = true } },
-            onSearch = searchTemplate?.let { { searching = !searching } },
-        )
+    Column(Modifier.padding(top = statusBarHeight())) {
+        BackBar(navigator::back, title) {
+            val soft = Look.colors.soft
+            if (editable != null) {
+                val edit = stringResource(R.string.online_library_edit)
+                IconAction(Icons.Rounded.Edit, edit, tint = soft) { editing = true }
+            }
+            if (searchTemplate != null) {
+                IconAction(Icons.Rounded.Search, stringResource(R.string.search)) {
+                    searching = !searching
+                }
+            }
+        }
         if (searching) {
             SearchField(
                 query = query,
@@ -389,7 +372,7 @@ fun CatalogScreen(route: CatalogRoute, navigator: Navigator) {
         val current = feed
         when {
             offline -> EmptyState(
-                Icons.Outlined.CloudOff,
+                Icons.Rounded.CloudOff,
                 stringResource(R.string.online_library_offline),
             )
 
@@ -400,7 +383,7 @@ fun CatalogScreen(route: CatalogRoute, navigator: Navigator) {
             current == null -> LoadingBar()
 
             current.entries.isEmpty() -> EmptyState(
-                Icons.Outlined.LocalLibrary,
+                Icons.Rounded.LocalLibrary,
                 stringResource(R.string.no_results),
             )
 
@@ -431,33 +414,6 @@ fun CatalogScreen(route: CatalogRoute, navigator: Navigator) {
 }
 
 @Composable
-private fun CatalogBar(
-    title: String,
-    onBack: () -> Unit,
-    onEdit: (() -> Unit)?,
-    onSearch: (() -> Unit)?,
-) = Row(
-    Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-    verticalAlignment = Alignment.CenterVertically,
-) {
-    val back = stringResource(R.string.back)
-    IconAction(Icons.AutoMirrored.Outlined.ArrowBack, back, onBack)
-    Text(
-        title,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f),
-    )
-    onEdit?.let {
-        IconAction(Icons.Outlined.Edit, stringResource(R.string.online_library_edit), it)
-    }
-    onSearch?.let {
-        IconAction(Icons.Outlined.Search, stringResource(R.string.search), it)
-    }
-}
-
-@Composable
 private fun Entries(
     feed: Feed,
     loading: Boolean,
@@ -468,7 +424,7 @@ private fun Entries(
     onOpen: (Int) -> Unit,
 ) {
     val covers = loadedSettings()?.onlineCovers == true
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = bottomSpace())) {
         itemsIndexed(feed.entries) { index, entry ->
             val cover = entry.cover?.takeIf { covers }
             EntryRow(entry, cover, viewModel.authorization(cover)) {
@@ -496,61 +452,57 @@ private fun EntryRow(
     onClick: () -> Unit,
 ) {
     val details = entry.author.ifEmpty { entry.summary }
-    ListItem(
-        headlineContent = {
-            Text(entry.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        },
-        supportingContent = details.takeIf { it.isNotEmpty() }?.let {
-            { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
-        },
-        leadingContent = {
+    val faint = Look.colors.faint
+    MediaRow(
+        entry.title,
+        details,
+        onClick,
+        leading = {
             if (cover != null || entry.files.isNotEmpty()) {
                 RemoteCover(cover, authorization)
             } else {
-                Icon(Icons.Outlined.Folder, null)
+                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Folder, null, tint = faint)
+                }
             }
         },
-        trailingContent = {
-            val icon = if (entry.files.isEmpty()) {
-                Icons.AutoMirrored.Filled.KeyboardArrowRight
-            } else {
-                Icons.Outlined.Download
-            }
-            Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable(onClick = onClick),
-    )
+    ) {
+        val icon = if (entry.files.isEmpty()) {
+            Icons.AutoMirrored.Rounded.KeyboardArrowRight
+        } else {
+            Icons.Rounded.Download
+        }
+        Icon(icon, null, tint = faint)
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EntrySheet(entry: Entry, viewModel: CatalogViewModel, onDismiss: () -> Unit) {
     val files by viewModel.files.collectAsStateWithLifecycle()
     val covers = loadedSettings()?.onlineCovers == true
     val cover = entry.cover?.takeIf { covers }
-    ModalBottomSheet(onDismiss) {
-        Column(
-            Modifier.verticalScroll(rememberScrollState())
-                .padding(horizontal = ScreenPadding)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                RemoteCover(cover, viewModel.authorization(cover), DpSize(96.dp, 144.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(entry.title, style = MaterialTheme.typography.titleLarge)
-                    Hint(entry.author)
-                }
+    val side = Modifier.padding(horizontal = ScreenPadding)
+    Sheet(onDismiss, padded = false) {
+        Row(side, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            RemoteCover(cover, viewModel.authorization(cover), DpSize(96.dp, 144.dp))
+            Column(Modifier.weight(1f)) {
+                Text(entry.title, style = Look.type.heading)
+                Hint(entry.author, Modifier.padding(top = 4.dp))
             }
-            if (entry.summary.isNotEmpty()) {
-                val style = MaterialTheme.typography.bodyMedium
-                Text(entry.summary, style = style, maxLines = 12)
-            }
-            SettingsGroup {
-                entry.files.forEach { file ->
-                    FileRow(file, files[file.url]) { viewModel.download(entry, file) }
-                }
+        }
+        if (entry.summary.isNotEmpty()) {
+            Text(
+                entry.summary,
+                side,
+                Look.colors.soft,
+                style = Look.type.body,
+                maxLines = 12,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Column {
+            entry.files.forEach { file ->
+                FileRow(file, files[file.url]) { viewModel.download(entry, file) }
             }
         }
     }
@@ -572,30 +524,29 @@ private fun FileRow(file: Acquisition, download: Download?, onClick: () -> Unit)
             is Download.Running -> DownloadProgress(download.progress)
 
             else -> Icon(
-                if (failed) Icons.Outlined.ErrorOutline else Icons.Outlined.Download,
+                if (failed) Icons.Rounded.ErrorOutline else Icons.Rounded.Download,
                 stringResource(R.string.download_item, file.format.uppercase()),
+                tint = Look.colors.accent,
             )
         }
     }
 }
 
 @Composable
-private fun Unreachable(onRetry: () -> Unit) = Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.CenterHorizontally,
-) {
-    EmptyState(Icons.Outlined.CloudOff, stringResource(R.string.free_books_unreachable))
-    OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.free_books_retry)) }
-}
+private fun Unreachable(onRetry: () -> Unit) = EmptyAction(
+    Icons.Rounded.CloudOff,
+    stringResource(R.string.free_books_unreachable),
+    stringResource(R.string.free_books_retry),
+    onRetry,
+)
 
 @Composable
-private fun SignInPrompt(realm: String, onSignIn: () -> Unit) = Column(
-    Modifier.fillMaxWidth(),
-    horizontalAlignment = Alignment.CenterHorizontally,
-) {
-    EmptyState(Icons.Outlined.Lock, stringResource(R.string.sign_in_to, realm))
-    Button(onClick = onSignIn) { Text(stringResource(R.string.sign_in)) }
-}
+private fun SignInPrompt(realm: String, onSignIn: () -> Unit) = EmptyAction(
+    Icons.Rounded.Lock,
+    stringResource(R.string.sign_in_to, realm),
+    stringResource(R.string.sign_in),
+    onSignIn,
+)
 
 @Composable
 private fun SignInDialog(
@@ -605,31 +556,21 @@ private fun SignInDialog(
 ) {
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.sign_in_to, needed.realm)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (needed.failed) {
-                    Hint(
-                        stringResource(R.string.sign_in_failed),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                Field(R.string.online_library_username, username) { username = it }
-                Field(R.string.online_library_password, password, KeyboardType.Password) {
-                    password = it
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSignIn(username.trim(), password) },
+    Sheet(onDismiss, stringResource(R.string.sign_in_to, needed.realm)) {
+        if (needed.failed) {
+            Hint(stringResource(R.string.sign_in_failed), color = Look.colors.danger)
+        }
+        Input(R.string.online_library_username, username) { username = it }
+        Input(R.string.online_library_password, password, KeyboardType.Password) {
+            password = it
+        }
+        SheetButtons {
+            val cancel = stringResource(R.string.cancel)
+            Pill(cancel, Modifier.weight(1f), kind = PillKind.Line, onClick = onDismiss)
+            Pill(
+                stringResource(R.string.sign_in), Modifier.weight(1f),
                 enabled = username.isNotBlank(),
-            ) { Text(stringResource(R.string.sign_in)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+            ) { onSignIn(username.trim(), password) }
+        }
+    }
 }

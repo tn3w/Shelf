@@ -14,18 +14,25 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigationsuite.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -41,11 +48,13 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
+import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import dev.tn3w.shelf.data.*
 import dev.tn3w.shelf.ui.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import androidx.compose.ui.graphics.Color as Tint
 
 @Serializable object HomeRoute
 
@@ -92,11 +101,13 @@ private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 private data class Tab(@StringRes val label: Int, val icon: ImageVector, val route: Any)
 
 private val tabs = listOf(
-    Tab(R.string.home, Icons.Outlined.Home, HomeRoute),
-    Tab(R.string.library, Icons.AutoMirrored.Outlined.LibraryBooks, LibraryRoute),
-    Tab(R.string.explore, Icons.Outlined.Explore, ExploreRoute),
-    Tab(R.string.search, Icons.Outlined.Search, SearchRoute),
+    Tab(R.string.home, Icons.AutoMirrored.Rounded.MenuBook, HomeRoute),
+    Tab(R.string.library, Icons.Rounded.CollectionsBookmark, LibraryRoute),
+    Tab(R.string.explore, Icons.Rounded.Explore, ExploreRoute),
+    Tab(R.string.search, Icons.Rounded.Search, SearchRoute),
 )
+private val DockSpace = 70.dp
+private val RailWidth = 84.dp
 
 class Navigator(
     private val controller: NavHostController,
@@ -232,10 +243,7 @@ class MainActivity : AppCompatActivity() {
             }
             CompositionLocalProvider(LocalSettings provides current) {
                 ShelfTheme(current) {
-                    Surface(
-                        Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background,
-                    ) {
+                    Box(Modifier.fillMaxSize().background(Look.colors.paper)) {
                         if (current.onboarded) {
                             ShelfNavigation(current, viewModel)
                         } else {
@@ -327,7 +335,8 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
     val paneEntry by pane.currentBackStackEntryAsState()
     val reading = entry?.isReading() == true
     val bookOpen = wide && paneEntry?.destination?.hasRoute(BookRoute::class) == true
-    val adaptive = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(window)
+    val rail = window.windowSizeClass
+        .isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
     val hidden = reading || WindowInsets.isImeVisible
     val language = viewModel.bookLanguage(settings)
     LaunchedEffect(language) { viewModel.showLanguage(language) }
@@ -343,35 +352,117 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
         pane.popBackStack(NoBookRoute, inclusive = false)
         controller.navigate(book)
     }
+    fun open(index: Int) =
+        navigator.tab(tabs[index].route, reselected = index == selected)
 
     UpdatePrompt(viewModel)
     OpenFile(viewModel, navigator)
     ConfirmInstall(viewModel)
-    NavigationSuiteScaffold(
-        layoutType = if (hidden) NavigationSuiteType.None else adaptive,
-        navigationSuiteItems = {
-            tabs.forEachIndexed { index, tab ->
-                item(
-                    selected = index == selected,
-                    onClick = {
-                        navigator.tab(tab.route, reselected = index == selected)
-                    },
-                    icon = { Icon(tab.icon, contentDescription = null) },
-                    label = { Text(stringResource(tab.label)) },
+    val sides = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+    Box(Modifier.fillMaxSize().windowInsetsPadding(sides)) {
+        val dock = if (rail || hidden) 0.dp else DockSpace
+        CompositionLocalProvider(LocalDock provides dock) {
+            Row {
+                if (rail && !hidden) Rail(selected, ::open)
+                SharedTransitionLayout(Modifier.weight(1f)) {
+                    CompositionLocalProvider(LocalSharedScope provides this) {
+                        Routes(controller, navigator)
+                    }
+                }
+                if (reading) return@Row
+                if (bookOpen) {
+                    Box(Modifier.fillMaxHeight().width(1.dp).background(Look.colors.line))
+                }
+                val width = if (bookOpen) Modifier.weight(1f) else Modifier.width(0.dp)
+                BookPane(controller, pane, width)
+            }
+        }
+        if (rail) return@Box
+        AnimatedVisibility(
+            !hidden,
+            Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+        ) { Dock(selected, ::open) }
+    }
+}
+
+@Composable
+private fun tabColors(selected: Boolean): Pair<Tint, Tint> {
+    val colors = Look.colors
+    return when {
+        !selected -> Tint.Transparent to colors.soft
+        colors.plain -> colors.ink to colors.paper
+        else -> colors.wash to colors.ink
+    }
+}
+
+/** The floating bar that carries the four places of the app. */
+@Composable
+private fun Dock(selected: Int, onSelect: (Int) -> Unit) {
+    val lift = if (Look.colors.plain) 0.dp else 16.dp
+    Row(
+        Modifier.navigationBarsPadding()
+            .padding(bottom = 12.dp)
+            .shadow(lift, CircleShape)
+            .surface(CircleShape)
+            .blockTouches()
+            .padding(5.dp)
+            .selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        tabs.forEachIndexed { index, tab ->
+            val chosen = index == selected
+            val (fill, content) = tabColors(chosen)
+            val label = stringResource(tab.label)
+            Row(
+                Modifier.height(48.dp)
+                    .clip(CircleShape)
+                    .background(fill)
+                    .selectable(chosen, role = Role.Tab) { onSelect(index) }
+                    .padding(horizontal = 16.dp)
+                    .animateContentSize(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(tab.icon, label.takeUnless { chosen }, Modifier.size(22.dp), content)
+                if (chosen) Text(label, color = content, style = Look.type.label)
+            }
+        }
+    }
+}
+
+@Composable
+private fun Rail(selected: Int, onSelect: (Int) -> Unit) {
+    Column(
+        Modifier.fillMaxHeight()
+            .width(RailWidth)
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .selectableGroup(),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        tabs.forEachIndexed { index, tab ->
+            val chosen = index == selected
+            val (fill, content) = tabColors(chosen)
+            Column(
+                Modifier.clip(Corners.well)
+                    .selectable(chosen, role = Role.Tab) { onSelect(index) }
+                    .padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Box(
+                    Modifier.size(56.dp, 34.dp).background(fill, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(tab.icon, null, Modifier.size(22.dp), content) }
+                Text(
+                    stringResource(tab.label),
+                    color = if (chosen) Look.colors.ink else Look.colors.soft,
+                    style = Look.type.note,
+                    maxLines = 1,
                 )
             }
-        },
-    ) {
-        Row {
-            SharedTransitionLayout(Modifier.weight(1f)) {
-                CompositionLocalProvider(LocalSharedScope provides this) {
-                    Routes(controller, navigator)
-                }
-            }
-            if (reading) return@Row
-            if (bookOpen) VerticalDivider()
-            val width = if (bookOpen) Modifier.weight(1f) else Modifier.width(0.dp)
-            BookPane(controller, pane, width)
         }
     }
 }
@@ -439,7 +530,7 @@ private inline fun <reified T : Any> NavGraphBuilder.screen(
     noinline content: @Composable (NavBackStackEntry) -> Unit,
 ) = composable<T> { entry ->
     CompositionLocalProvider(LocalAnimatedScope provides this) {
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Box(Modifier.fillMaxSize().background(Look.colors.paper)) {
             content(entry)
         }
     }

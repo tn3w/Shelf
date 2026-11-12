@@ -13,10 +13,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -66,19 +67,19 @@ enum class SettingsPage(
     @StringRes val title: Int,
     @StringRes val summary: Int? = null,
 ) {
-    Main(Icons.Outlined.Settings, R.string.settings),
-    General(Icons.Outlined.Palette, R.string.general, R.string.general_hint),
-    Catalogue(Icons.Outlined.AutoStories, R.string.catalogue, R.string.catalogue_hint),
+    Main(Icons.Rounded.Settings, R.string.settings),
+    General(Icons.Rounded.Palette, R.string.general, R.string.general_hint),
+    Catalogue(Icons.Rounded.AutoStories, R.string.catalogue, R.string.catalogue_hint),
     Reading(
-        Icons.AutoMirrored.Outlined.MenuBook,
+        Icons.AutoMirrored.Rounded.MenuBook,
         R.string.reading_settings,
         R.string.reading_hint,
     ),
-    Listening(Icons.Outlined.Headphones, R.string.listening, R.string.listening_hint),
-    Privacy(Icons.Outlined.Shield, R.string.privacy, R.string.privacy_hint),
-    Data(Icons.Outlined.Inventory2, R.string.your_data, R.string.your_data_hint),
+    Listening(Icons.Rounded.Headphones, R.string.listening, R.string.listening_hint),
+    Privacy(Icons.Rounded.Shield, R.string.privacy, R.string.privacy_hint),
+    Data(Icons.Rounded.Inventory2, R.string.your_data, R.string.your_data_hint),
     FreeBooks(
-        Icons.Outlined.LocalLibrary,
+        Icons.Rounded.LocalLibrary,
         R.string.online_libraries,
         R.string.online_libraries_summary,
     ),
@@ -283,9 +284,8 @@ fun rememberSettings(): Pair<Settings, SettingsUpdate>? {
 @Composable
 fun SettingsScreen(page: SettingsPage, navigator: Navigator) {
     Column(
-        Modifier.windowInsetsPadding(WindowInsets.systemBars)
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 24.dp),
+        Modifier.verticalScroll(rememberScrollState())
+            .padding(top = statusBarHeight(), bottom = bottomSpace()),
     ) {
         BackBar(navigator::back)
         LargeTitle(stringResource(page.title))
@@ -366,27 +366,25 @@ private fun ReadingSettings() {
     SettingsGroup(stringResource(R.string.reader), stringResource(R.string.reader_hint)) {
         ReaderPreview(settings.copy(fontScale = scale))
         Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
+            Modifier.fillMaxWidth()
+                .padding(horizontal = ScreenPadding)
+                .padding(top = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 stringResource(R.string.text_size),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
+                Modifier.weight(1f),
+                style = Look.type.subhead,
             )
-            Text(
-                "${(scale * 100).roundToInt()} %",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Hint("${(scale * 100).roundToInt()} %")
         }
-        Slider(
+        Scrubber(
             scale,
             { scale = it },
-            Modifier.padding(horizontal = 16.dp),
-            valueRange = FONT_SCALES,
+            Modifier.padding(horizontal = ScreenPadding - 9.dp),
+            range = FONT_SCALES,
             steps = 10,
-            onValueChangeFinished = { update { it.copy(fontScale = scale) } },
+            onFinished = { update { it.copy(fontScale = scale) } },
         )
         OptionChoice(SPACINGS, settings.lineSpacing, R.string.line_spacing) { value ->
             update { it.copy(lineSpacing = value) }
@@ -453,56 +451,30 @@ private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
         if (option == null || option == custom) editing = true else onChange(option)
     }
     Choice(GOALS + custom, goal, ::select) { it?.toString() ?: "…" }
-    if (editing) {
-        GoalDialog(goal, onDismiss = { editing = false }) {
-            editing = false
-            onChange(it)
-        }
-    }
-}
-
-@Composable
-private fun GoalDialog(current: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
-    var text by rememberSaveable { mutableStateOf(current.toString()) }
-    val goal = text.toIntOrNull()?.takeIf { it in 0..MAX_DAILY_GOAL }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.daily_goal)) },
-        text = {
-            OutlinedTextField(
-                text,
-                { text = it.filter(Char::isDigit).take(3) },
-                suffix = { Text(stringResource(R.string.pages_suffix)) },
-                singleLine = true,
-                isError = goal == null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-        },
-        confirmButton = {
-            TextButton(enabled = goal != null, onClick = { goal?.let(onSave) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
+    if (!editing) return
+    PromptSheet(
+        stringResource(R.string.daily_goal),
+        goal.toString(),
+        onDismiss = { editing = false },
+        hint = stringResource(R.string.pages_suffix),
+        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
+        clean = { it.filter(Char::isDigit).take(3) },
+        valid = { it.toIntOrNull() in 0..MAX_DAILY_GOAL },
+    ) { onChange(it.toInt()) }
 }
 
 @Composable
 private fun ReaderPreview(settings: Settings) {
-    val palette = pagePalette(settings)
-    val shape = RoundedCornerShape(16.dp)
+    val page = Look.colors.page(settings.pageColor)
     Text(
         stringResource(R.string.reader_sample),
-        style = readerStyle(settings, palette.text),
+        style = readerStyle(settings, page.ink),
         maxLines = 4,
         overflow = TextOverflow.Ellipsis,
         modifier =
         Modifier.fillMaxWidth()
-            .padding(12.dp)
-            .background(palette.background, shape)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .padding(horizontal = ScreenPadding, vertical = 10.dp)
+            .surface(Corners.well, page.paper)
             .padding(horizontal = (settings.margin * 0.6f).dp, vertical = 16.dp),
     )
 }
@@ -567,46 +539,40 @@ private fun CoverProxyRows(settings: Settings, update: SettingsUpdate, enabled: 
         editing = true
     }
     if (!editing) return
-    CoverProxyDialog(settings.coverProxyUrl, onDismiss = { editing = false }) { url ->
-        editing = false
-        update { it.copy(coverProxyUrl = url.trimEnd('/')) }
-    }
-}
-
-@Composable
-private fun CoverProxyDialog(
-    current: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var text by rememberSaveable { mutableStateOf(current) }
-    val valid = isValidProxy(text)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.cover_proxy_url)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.cover_proxy_url_hint))
-                OutlinedTextField(
-                    text,
-                    { text = it.trim() },
-                    placeholder = { Text(COVER_PROXY) },
-                    singleLine = true,
-                    isError = !valid,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = valid, onClick = { onSave(text) }) {
-                Text(stringResource(R.string.save))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onSave("") }) { Text(stringResource(R.string.reset)) }
-        },
+    fun save(url: String) = update { it.copy(coverProxyUrl = url.trimEnd('/')) }
+    AddressSheet(
+        R.string.cover_proxy_url,
+        R.string.cover_proxy_url_hint,
+        settings.coverProxyUrl,
+        COVER_PROXY,
+        ::isValidProxy,
+        onDismiss = { editing = false },
+        onSave = ::save,
     )
 }
+
+/** Edits a web address that falls back to [default] when reset. */
+@Composable
+fun AddressSheet(
+    @StringRes title: Int,
+    @StringRes hint: Int,
+    current: String,
+    default: String,
+    valid: (String) -> Boolean,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) = PromptSheet(
+    stringResource(title),
+    current,
+    onDismiss,
+    text = stringResource(hint),
+    hint = default,
+    keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri),
+    clean = String::trim,
+    valid = valid,
+    onReset = { onSave("") },
+    onSave = onSave,
+)
 
 @Composable
 fun SettingsGroup(
@@ -614,22 +580,11 @@ fun SettingsGroup(
     hint: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).padding(top = 20.dp),
-    ) {
-        title?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-            )
-        }
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-        ) { Column(Modifier.padding(vertical = 4.dp), content = content) }
-        hint?.let { Hint(it, Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)) }
+    val side = Modifier.padding(horizontal = ScreenPadding)
+    Column(Modifier.fillMaxWidth().padding(top = 22.dp)) {
+        title?.let { Eyebrow(it, side.padding(bottom = 6.dp), Look.colors.accent) }
+        content()
+        hint?.let { Hint(it, side.padding(top = 8.dp)) }
     }
 }
 
@@ -646,15 +601,15 @@ fun SettingRow(
     Row(
         clickable
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            .heightIn(min = 60.dp)
+            .padding(start = ScreenPadding, end = 10.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         icon?.let { IconBadge(it) }
-        Column(Modifier.weight(1f).alpha(if (enabled) 1f else 0.5f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            summary?.let { Hint(it) }
+        Column(Modifier.weight(1f).alpha(if (enabled) 1f else 0.45f)) {
+            Text(title, style = Look.type.subhead)
+            summary?.let { Hint(it, Modifier.padding(top = 2.dp)) }
         }
         Box(Modifier.widthIn(min = 48.dp), contentAlignment = Alignment.Center) {
             trailing()
@@ -665,19 +620,9 @@ fun SettingRow(
 @Composable
 private fun IconBadge(icon: ImageVector) {
     Box(
-        Modifier.size(40.dp)
-            .background(
-                MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp),
-            ),
+        Modifier.size(40.dp).surface(CircleShape, Look.colors.wash),
         contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-    }
+    ) { Icon(icon, null, Modifier.size(20.dp), Look.colors.accent) }
 }
 
 @Composable
@@ -687,11 +632,7 @@ fun LinkRow(
     icon: ImageVector? = null,
     onClick: () -> Unit,
 ) = SettingRow(title, summary, icon, onClick = onClick) {
-    Icon(
-        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Look.colors.faint)
 }
 
 @Composable
@@ -702,11 +643,7 @@ fun ActionRow(
     busy: Boolean = false,
     onClick: () -> Unit,
 ) = SettingRow(stringResource(title), status, onClick = { if (!busy) onClick() }) {
-    if (busy) {
-        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-    } else {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+    if (busy) Ring(null) else Icon(icon, null, Modifier.size(22.dp), Look.colors.soft)
 }
 
 @Composable
@@ -721,13 +658,13 @@ fun SwitchRow(
     stringResource(hint),
     enabled = enabled,
     onClick = { onChange(!checked) },
-) { Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) }
+) { Toggle(checked, onChange, enabled) }
 
 @Composable
 private fun ChoiceTitle(@StringRes title: Int) = Text(
     stringResource(title),
-    style = MaterialTheme.typography.bodyLarge,
-    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+    Modifier.padding(horizontal = ScreenPadding).padding(top = 12.dp),
+    style = Look.type.subhead,
 )
 
 @Composable
@@ -739,18 +676,8 @@ fun <T> Choice(
     label: @Composable (T) -> String,
 ) {
     title?.let { ChoiceTitle(it) }
-    SingleChoiceSegmentedButtonRow(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        options.forEachIndexed { index, option ->
-            SegmentedButton(
-                selected = selected == option,
-                onClick = { onSelect(option) },
-                shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                icon = {},
-            ) { Text(label(option), maxLines = 1) }
-        }
-    }
+    val space = Modifier.padding(horizontal = ScreenPadding, vertical = 10.dp)
+    Segments(options, selected, space, onSelect, label)
 }
 
 @Composable
@@ -768,10 +695,7 @@ private fun AppLanguageChoice() {
     }
 }
 
-@Composable
-private fun ChipIcon(icon: ImageVector) =
-    Icon(icon, contentDescription = null, Modifier.size(FilterChipDefaults.IconSize))
-
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LanguageChips(
     options: List<String>,
@@ -790,33 +714,19 @@ fun LanguageChips(
     val collapsed = options.filter(main)
     val shown = if (expanded) options else collapsed
     FlowRow(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         shown.forEach { option ->
-            val chosen = option == selected
-            val icon = when {
-                option in installed -> Icons.Outlined.DownloadDone
-                chosen -> Icons.Outlined.Check
-                else -> null
-            }
-            FilterChip(
-                selected = chosen,
-                onClick = { onSelect(option) },
-                label = {
-                    Text(if (option.isEmpty()) auto else nativeName(option), maxLines = 1)
-                },
-                leadingIcon = icon?.let { { ChipIcon(it) } },
-            )
+            val icon = Icons.Rounded.DownloadDone.takeIf { option in installed }
+            val label = if (option.isEmpty()) auto else nativeName(option)
+            Tag(label, selected = option == selected, icon = icon) { onSelect(option) }
         }
         if (collapsed.size == options.size) return@FlowRow
         val label = if (expanded) R.string.show_less else R.string.show_all
-        val icon = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore
-        AssistChip(
-            onClick = { expanded = !expanded },
-            label = { Text(stringResource(label), maxLines = 1) },
-            trailingIcon = { ChipIcon(icon) },
-        )
+        val icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore
+        Tag(stringResource(label), icon = icon) { expanded = !expanded }
     }
 }
 
@@ -857,7 +767,7 @@ private fun AboutRows() {
     if (Updater.supported(context) && !settings.isOffline(context)) {
         ActionRow(
             R.string.app_name,
-            Icons.Outlined.Refresh,
+            Icons.Rounded.Refresh,
             summary.joinToString(" · "),
             checking,
         ) {

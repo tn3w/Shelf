@@ -3,20 +3,17 @@ package dev.tn3w.shelf.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
-import androidx.annotation.StringRes
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.*
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -74,7 +71,6 @@ fun LibraryScreen(navigator: Navigator) {
     val viewModel = libraryViewModel()
     val saved by viewModel.saved.collectAsStateWithLifecycle()
     val settings = loadedSettings()
-    var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf<Shelf?>(null) }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -96,68 +92,50 @@ fun LibraryScreen(navigator: Navigator) {
     var addingOwn by rememberSaveable { mutableStateOf(false) }
     var options by rememberSaveable { mutableStateOf(false) }
     var addingToList by rememberSaveable { mutableStateOf(false) }
-    val focus = remember { FocusRequester() }
     val selection = rememberSelection()
-    LaunchedEffect(searching) { if (searching) focus.requestFocus() }
+    val empty = saved.isNullOrEmpty()
 
     fun change(update: (Settings) -> Settings) = viewModel.updateSettings(update)
 
-    fun toggleSearch() {
-        searching = !searching
-        query = ""
-    }
-
-    Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+    Column(Modifier.padding(top = statusBarHeight())) {
         SelectableTitle(
             stringResource(R.string.library),
             selection,
             navigator,
             selectionActions = {
                 val label = stringResource(R.string.add_to_list)
-                IconAction(Icons.AutoMirrored.Outlined.PlaylistAdd, label) {
+                IconAction(Icons.AutoMirrored.Rounded.PlaylistAdd, label) {
                     addingToList = true
                 }
             },
         ) {
-            if (!saved.isNullOrEmpty()) {
-                val icon = with(Icons.Outlined) { if (searching) SearchOff else Search }
-                IconAction(icon, stringResource(R.string.search_library), ::toggleSearch)
+            val soft = Look.colors.soft
+            val online = stringResource(R.string.online_libraries)
+            IconAction(Icons.Rounded.Public, online, tint = soft) {
+                navigator.onlineLibraries()
             }
-            IconAction(Icons.Outlined.Add, stringResource(R.string.own_book)) {
+            IconAction(
+                Icons.Rounded.FileOpen, stringResource(R.string.import_book), tint = soft,
+            ) { picker.launch(arrayOf("*/*")) }
+            IconAction(Icons.Rounded.Add, stringResource(R.string.own_book)) {
                 addingOwn = true
             }
-            IconAction(Icons.Outlined.FileOpen, stringResource(R.string.import_book)) {
-                picker.launch(arrayOf("*/*"))
-            }
-            val online = stringResource(R.string.online_libraries)
-            IconAction(Icons.Outlined.LocalLibrary, online, navigator::onlineLibraries)
         }
-        if (searching) {
-            SearchField(
-                query = query,
-                onChange = { query = it },
-                hint = stringResource(R.string.search_library),
-                modifier = Modifier.focusRequester(focus),
-            )
-        }
-        if (!saved.isNullOrEmpty()) {
+        if (!empty) {
+            SearchField(query, { query = it }, stringResource(R.string.search_library))
             FilterRow(actions = { OptionsButton(tag != null) { options = true } }) {
                 Shelf.entries.forEach { value ->
-                    FilterChip(
-                        selected = value == shelf,
-                        onClick = { shelf = value.takeIf { it != shelf } },
-                        label = { Text(stringResource(value.label)) },
-                    )
+                    Tag(stringResource(value.label), selected = value == shelf) {
+                        shelf = value.takeIf { it != shelf }
+                    }
                 }
             }
         }
-        val showLists = lists.isNotEmpty() && !searching && shelf == null && tag == null
+        val showLists =
+            lists.isNotEmpty() && query.isBlank() && shelf == null && tag == null
         if (shown?.isEmpty() == true) {
-            val empty = when {
-                saved.isNullOrEmpty() -> R.string.library_empty
-                else -> R.string.no_results
-            }
-            EmptyState(Icons.AutoMirrored.Outlined.LibraryBooks, stringResource(empty))
+            val text = if (empty) R.string.library_empty else R.string.no_results
+            EmptyState(Icons.Rounded.CollectionsBookmark, stringResource(text))
         }
         if (listView) {
             LibraryList(shown.orEmpty(), navigator, selection) {
@@ -199,35 +177,23 @@ fun LibraryScreen(navigator: Navigator) {
 }
 
 @Composable
-fun FilterRow(
-    actions: @Composable RowScope.() -> Unit = {},
-    chips: @Composable RowScope.() -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().padding(end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            Modifier.weight(1f)
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = ScreenPadding),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            content = chips,
-        )
-        actions()
-    }
-}
-
-@Composable
 private fun OptionsButton(active: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
-        BadgedBox(badge = { if (active) Badge() }) {
-            Icon(Icons.Outlined.Tune, stringResource(R.string.sort_filter))
-        }
+    Box {
+        IconAction(
+            Icons.Rounded.Tune,
+            stringResource(R.string.sort_filter),
+            onClick = onClick,
+        )
+        if (!active) return@Box
+        Box(
+            Modifier.align(Alignment.TopEnd)
+                .padding(8.dp)
+                .size(8.dp)
+                .background(Look.colors.accent, CircleShape),
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryOptions(
     sort: LibrarySort,
@@ -238,47 +204,35 @@ private fun LibraryOptions(
     list: Boolean,
     onList: (Boolean) -> Unit,
     onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            val sorts = LibrarySort.entries.map { stringResource(it.label) to it }
-            OptionGroup(stringResource(R.string.sort), sorts, sort, onSort)
-            if (genres.isNotEmpty()) {
-                val labels = genres.map { it.label to it.id }
-                OptionGroup(stringResource(R.string.genre), labels, tag, onTag)
-            }
-            val views = listOf(
-                stringResource(R.string.grid_view) to false,
-                stringResource(R.string.list_view) to true,
-            )
-            OptionGroup(stringResource(R.string.view), views, list, onList)
-        }
+) = Sheet(onDismiss, stringResource(R.string.sort_filter)) {
+    val sorts = LibrarySort.entries.map { stringResource(it.label) to it }
+    TagGroup(stringResource(R.string.sort), sorts, sort, onSort)
+    if (genres.isNotEmpty()) {
+        val labels = genres.map { it.label to it.id }
+        TagGroup(stringResource(R.string.genre), labels, tag, onTag)
     }
+    val views = listOf(
+        stringResource(R.string.grid_view) to false,
+        stringResource(R.string.list_view) to true,
+    )
+    TagGroup(stringResource(R.string.view), views, list, onList)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun <T> OptionGroup(
+private fun <T> TagGroup(
     title: String,
     options: List<Pair<String, T>>,
     current: T?,
     onSelect: (T) -> Unit,
 ) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(top = 8.dp),
-    )
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Eyebrow(title, Modifier.padding(top = 6.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         options.forEach { (label, value) ->
-            FilterChip(
-                selected = value == current,
-                onClick = { onSelect(value) },
-                label = { Text(label) },
-            )
+            Tag(label, selected = value == current) { onSelect(value) }
         }
     }
 }
@@ -301,7 +255,7 @@ private fun LibraryList(
 ) {
     LazyVerticalGrid(
         GridCells.Adaptive(ListColumnWidth),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = bottomSpace()),
     ) {
         header()
         items(entries, key = { it.work }) { saved ->
@@ -324,17 +278,16 @@ private fun LibraryList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
     val viewModel = libraryViewModel()
-    val title = rememberTextFieldState(query.trim())
-    val author = rememberTextFieldState()
+    var title by rememberSaveable { mutableStateOf(query.trim()) }
+    var author by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf(Shelf.Reading) }
     var image by rememberSaveable { mutableStateOf<Uri?>(null) }
     val titleFocus = remember { FocusRequester() }
     val authorFocus = remember { FocusRequester() }
-    val book = ownBook(title.text.trim().toString(), author.text.trim().toString())
+    val book = ownBook(title.trim(), author.trim())
     val shownTitle = book.title.ifEmpty { stringResource(R.string.title) }
     val shownAuthor = book.author.ifEmpty { stringResource(R.string.author) }
     val placeholder =
@@ -343,6 +296,10 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
     var match by remember { mutableStateOf<Book?>(null) }
     var useMatch by rememberSaveable { mutableStateOf(true) }
     val found = match?.takeIf { useMatch }
+    val words = KeyboardOptions(
+        capitalization = KeyboardCapitalization.Words,
+        imeAction = ImeAction.Next,
+    )
     LaunchedEffect(placeholder) {
         delay(300)
         preview = placeholder
@@ -363,48 +320,36 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
         navigator.book(found ?: book, "own")
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(
-            Modifier.imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = ScreenPadding)
-                .padding(bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                stringResource(R.string.own_book),
-                style = MaterialTheme.typography.titleLarge,
-            )
+    Sheet(onDismiss, stringResource(R.string.own_book)) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             if (found != null) {
-                BookCover(found, 112.dp, Modifier.padding(bottom = 8.dp))
+                BookCover(found, 112.dp, lift = 10.dp)
             } else {
                 OwnCover(preview, image) { image = it }
             }
-            OwnBookField(title, R.string.title, Modifier.focusRequester(titleFocus)) {
-                authorFocus.requestFocus()
-            }
-            OwnBookField(author, R.string.author, Modifier.focusRequester(authorFocus)) {
-                add()
-            }
-            match?.let { CatalogueMatch(it, useMatch) { useMatch = it } }
-            ShelfPicker(shelf) { shelf = it }
-            Button(
-                onClick = ::add,
-                enabled = book.title.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            ) { Text(stringResource(R.string.add)) }
         }
+        Field(
+            title, { title = it }, Modifier.focusRequester(titleFocus),
+            hint = stringResource(R.string.title), keyboard = words,
+            onDone = authorFocus::requestFocus,
+        )
+        Field(
+            author, { author = it }, Modifier.focusRequester(authorFocus),
+            hint = stringResource(R.string.author), keyboard = words, onDone = ::add,
+        )
+        match?.let { CatalogueMatch(it, useMatch) { useMatch = it } }
+        ShelfPicker(shelf) { shelf = it }
+        Pill(
+            stringResource(R.string.add), Modifier.fillMaxWidth(),
+            enabled = book.title.isNotEmpty(), onClick = ::add,
+        )
     }
 }
 
 @Composable
 private fun OwnCover(preview: Book, image: Uri?, onImage: (Uri) -> Unit) =
-    EditableCover(onImage, Modifier.padding(bottom = 8.dp)) {
-        if (image == null) return@EditableCover BookCover(preview, 112.dp)
+    EditableCover(onImage) {
+        if (image == null) return@EditableCover BookCover(preview, 112.dp, lift = 10.dp)
         AsyncImage(
             model = image,
             contentDescription = stringResource(R.string.cover_of, preview.title),
@@ -417,61 +362,19 @@ private fun OwnCover(preview: Book, image: Uri?, onImage: (Uri) -> Unit) =
 private fun CatalogueMatch(book: Book, selected: Boolean, onSelect: (Boolean) -> Unit) {
     val year = book.year.takeIf { it > 0 }?.toString()
     val details = listOfNotNull(book.title, book.author.ifEmpty { null }, year)
-    Surface(
-        onClick = { onSelect(!selected) },
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.secondaryContainer,
+    Row(
+        Modifier.fillMaxWidth()
+            .surface(Corners.well, Look.colors.wash)
+            .clickable { onSelect(!selected) }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            Modifier.fillMaxWidth()
-                .padding(start = 16.dp, end = 8.dp)
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(Icons.Outlined.AutoStories, null)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.found_in_catalogue),
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                Hint(details.joinToString(" · "))
-            }
-            Switch(selected, onSelect)
+        Icon(Icons.Rounded.AutoStories, null)
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.found_in_catalogue), style = Look.type.label)
+            Hint(details.joinToString(" · "))
         }
-    }
-}
-
-@Composable
-private fun OwnBookField(
-    state: TextFieldState,
-    @StringRes label: Int,
-    modifier: Modifier,
-    onNext: () -> Unit,
-) {
-    OutlinedTextField(
-        state = state,
-        label = { Text(stringResource(label)) },
-        lineLimits = TextFieldLineLimits.SingleLine,
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Words,
-            imeAction = ImeAction.Next,
-        ),
-        onKeyboardAction = { onNext() },
-        modifier = modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-fun ShelfPicker(selected: Shelf?, onSelect: (Shelf) -> Unit) {
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        Shelf.entries.forEachIndexed { index, shelf ->
-            SegmentedButton(
-                selected = shelf == selected,
-                onClick = { onSelect(shelf) },
-                shape = SegmentedButtonDefaults.itemShape(index, Shelf.entries.size),
-                label = { Text(stringResource(shelf.label), maxLines = 1) },
-            )
-        }
+        Toggle(selected, null)
     }
 }

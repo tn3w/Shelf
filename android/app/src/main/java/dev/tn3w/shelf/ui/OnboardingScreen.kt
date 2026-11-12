@@ -6,8 +6,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -39,10 +40,10 @@ private fun AppIcon(size: Int) {
 private fun AboutText(text: String) {
     Text(
         text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Modifier.fillMaxWidth().padding(horizontal = 36.dp),
+        Look.colors.soft,
+        style = Look.type.body,
         textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
     )
 }
 
@@ -80,15 +81,16 @@ fun OnboardingScreen() {
         Column(
             Modifier.weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(top = 24.dp, bottom = 16.dp),
+                .padding(top = 44.dp, bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AppIcon(72)
+            AppIcon(84)
             Text(
                 stringResource(R.string.welcome),
-                style = MaterialTheme.typography.headlineLarge,
+                Modifier.padding(horizontal = ScreenPadding)
+                    .padding(top = 22.dp, bottom = 8.dp),
+                style = Look.type.display,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
             )
             AboutText(
                 stringResource(
@@ -124,12 +126,12 @@ fun OnboardingScreen() {
                 if (showSources) SourceRows(language, settings)
             }
         }
-        HorizontalDivider()
+        Rule()
         if (offline) {
-            Button(
-                onClick = { finish() },
-                modifier = Modifier.align(Alignment.End).padding(ScreenPadding),
-            ) { Text(stringResource(R.string.start_offline)) }
+            Pill(
+                stringResource(R.string.start_offline),
+                Modifier.fillMaxWidth().padding(ScreenPadding),
+            ) { finish() }
             return@Column
         }
         OnboardingActions(
@@ -157,8 +159,8 @@ private fun CatalogueLanguageChoice(selected: String, onSelect: (String) -> Unit
 @Composable
 private fun ExpandRow(@StringRes title: Int, expanded: Boolean, onToggle: () -> Unit) =
     SettingRow(stringResource(title), onClick = onToggle) {
-        val icon = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore
-        Icon(icon, contentDescription = null)
+        val icon = if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore
+        Icon(icon, null, tint = Look.colors.faint)
     }
 
 @Composable
@@ -174,58 +176,53 @@ private fun OnboardingActions(
     val pending = selected.filter { pack -> available.any { it.pack == pack } }
     Row(
         Modifier.fillMaxWidth().padding(ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (total > 0) {
-            OutlinedButton(
-                enabled = !waiting, onClick = { onDownload(available.map { it.pack }) },
-            ) { Text(stringResource(R.string.download_all, bytes(total))) }
+            Pill(
+                stringResource(R.string.download_all, bytes(total)),
+                Modifier.weight(1f),
+                kind = PillKind.Line,
+                enabled = !waiting,
+            ) { onDownload(available.map { it.pack }) }
         }
         if (pending.isEmpty()) {
-            Button(enabled = canSkip, onClick = onSkip) {
-                Text(stringResource(R.string.next))
-            }
-            return@Row
+            val next = stringResource(R.string.next)
+            return@Row Pill(
+                next,
+                Modifier.weight(1f),
+                enabled = canSkip,
+                onClick = onSkip,
+            )
         }
-        Button(enabled = !waiting, onClick = { onDownload(pending) }) {
-            Text(stringResource(R.string.download))
+        Pill(stringResource(R.string.download), Modifier.weight(1f), enabled = !waiting) {
+            onDownload(pending)
         }
     }
 }
 
 @Composable
 private fun CoreRow(info: PackInfo?, download: Download?) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(PACKS.getValue("core")),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
+                Modifier.weight(1f),
+                style = Look.type.subhead,
             )
-            Text(
-                if (info != null && info.bytes > 0) bytes(info.bytes) else "–",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Hint(if (info != null && info.bytes > 0) bytes(info.bytes) else "–")
         }
-        DownloadBar(download)
+        if (download is Download.Running) {
+            val progress by animateFloatAsState(download.progress)
+            Meter(progress)
+        }
         if (download is Download.Failed) {
-            Hint(
-                stringResource(R.string.pack_failed),
-                color = MaterialTheme.colorScheme.error,
-            )
+            Hint(stringResource(R.string.pack_failed), color = Look.colors.danger)
         }
     }
-}
-
-@Composable
-private fun DownloadBar(download: Download?) {
-    if (download !is Download.Running) return
-    val progress by animateFloatAsState(download.progress)
-    LinearProgressIndicator(
-        progress = { progress },
-        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-        drawStopIndicator = {},
-    )
 }
 
 @Composable
@@ -239,12 +236,11 @@ private fun OnboardingPacks(
     packs
         .filter { it.state == PackState.Available && it.pack != skip }
         .forEach { info ->
-            val checked = info.pack in selected
             val size = if (info.bytes > 0) bytes(info.bytes) else "–"
             SettingRow(
                 stringResource(PACKS.getValue(info.pack)),
                 size,
                 onClick = { onToggle(info.pack) },
-            ) { Checkbox(checked = checked, onCheckedChange = null) }
+            ) { Check(info.pack in selected) }
         }
 }
