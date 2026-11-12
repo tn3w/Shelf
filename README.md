@@ -38,98 +38,124 @@ https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
+
+### 📚 Your books, offline
+The whole catalogue lives on your phone. No account, no ads, nothing sent on first
+launch.
+
+</td>
+<td width="25%" valign="top">
+
+### 🎧 Listen
+Play your own audiobooks with chapters, or let your phone read any ebook aloud.
+
+</td>
+<td width="25%" valign="top">
+
+### 📖 Read your files
+EPUB, Kindle, PDF, comics, Word and more, with highlights, notes and night pages.
+
+</td>
+<td width="25%" valign="top">
 
 ### 🔎 Find any book
-The whole catalogue lives on your phone. Search works in airplane mode, forgives typos
-and finds authors, series and ISBNs.
-
-</td>
-<td width="33%" valign="top">
-
-### 📷 Scan a cover
-Point your camera at a book. Shelf reads the title and series on your phone and
-finds it.
-Barcodes work too.
-
-</td>
-<td width="33%" valign="top">
-
-### 🔥 Keep your streak
-Set a daily page goal and watch the week fill up. Tap the streak for pages, books and
-genres per month, plus your year in books.
+Search forgives typos and finds titles, authors, series and ISBNs in airplane mode.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-### 📖 Read your ebooks
-Open EPUB, Kindle, PDF, comics, Word files and more. Highlight in four colours, add
-notes, export them as Markdown. Paper and night pages, e-ink mode, volume-key turns.
+### 🔥 Your reading year
+Daily goal, streaks, monthly stats and a yearly recap to share.
+
+</td>
+<td valign="top">
+
+### ↪️ Switch from Goodreads
+Import your shelves, ratings and read dates from a CSV.
 
 </td>
 <td valign="top">
 
 ### ✨ Discover
-Browse genres, follow series and authors, get recommendations worked out on your phone.
-Download free classics if you like.
+Recommendations, genres, series and authors, all worked out on your phone.
 
 </td>
 <td valign="top">
 
-### 🔒 Stay private
-No account, no ads, no trackers. One switch turns off all network. Your library never
-leaves your phone.
+### 📷 Scan a cover
+Point your camera at a book. Shelf recognizes it on your phone. Barcodes work too.
 
 </td>
 </tr>
 </table>
 
-## Your year in books
+## Your books, offline
 
-<img src="android/design/wrapped.png" width="100%" alt="Year in books: ten story slides from cover wall to shareable card">
-
-Tap the streak card for monthly pages, books and genres. **Your year in books** replays
-it as stories with your covers and ends on a card to share. All on your phone.
-
-## Highlights and notes
-
-Long-press to highlight, add a note, then export as Markdown or a CSV for Readwise.
+Shelf keeps the whole catalogue on your phone: what you are reading, what you want to
+read and what you have finished. English comes built in, other languages download once.
+After that, everything works without a connection, and one switch turns off all network.
 
 ## Listen to your books
 
-Tap the headphones in the reader. Your phone's own speech engine reads aloud, no AI
-models, no network. Shelf finds where the story starts and ends, skipping covers,
-contents, copyright, dedications, acknowledgements and licence text, in any format
-with text (PDF needs Android 15+). It highlights the spoken sentence and turns the
-pages. Control it from the lock screen or headphones, set speed and voice, and use the
-sleep timer (5-60 minutes with a slow fade-out, or end of chapter).
+**Have the audiobook?** Add its files (MP3, M4B, M4A, OGG, Opus, FLAC, WAV) from the book
+page, import them from your library, or open them with Shelf. Shelf reads the tags, pins
+them to the matching book and shows the chapters, also those inside a single M4B. Picked
+files stay where they are; files another app hands over are copied.
 
-Have the audiobook? Add its files (MP3, M4B, M4A, OGG, Opus, FLAC, WAV) from the
-listen sheet or the book page, import one from your library, or open it with Shelf:
-Shelf reads the tags, pins it to the matching book, and plays it with the same
-controls. Chapters inside a single M4B work like separate files. Picked files stay
-where they are; files another app hands over are copied, since that access ends.
+**Only the ebook?** Tap the headphones in the reader and your phone's own speech engine
+reads aloud. Shelf skips covers, contents, copyright and licence pages, highlights the
+spoken sentence and turns the pages (PDF needs Android 15+).
 
-Optional voice models (Settings → Reading → Voice models) are separate downloads for
-speaker detection and natural voices. Listening works without them. Each model lists
-its size, licence and SHA-256, downloads pause and resume, and models too large for
-the phone's memory are hidden. Only openly licensed models and voices are offered.
+Both play from the dock, the lock screen and your headphones, remember where you
+stopped, count towards your daily goal and have speed control and a sleep timer (5-60
+minutes with a slow fade-out, or end of chapter).
 
-Kotlin: `data/Speech.kt` (extractor, language guess, sleep helpers), `Playback.kt`,
-`Narrator.kt` and `NarrationService.kt` (Android TTS, media session),
-`AudiobookPlayer.kt` and `data/Audiobooks.kt` (audiobook files, tags, MP4 chapters,
-matching), `ui/Listen.kt` (player sheet), `data/Models.kt` and `ui/VoiceModels.kt`
-(voice models), `data/Tokenizer.kt`, `data/SpeakerModel.kt` and
-`android/app/src/main/cpp` (speaker model inference). Model tooling: `tooling/voices`.
-Samples: `android/app/src/test/samples`.
+Optional voice models (Settings → Reading → Voice models) add speaker detection and
+natural voices. Each lists its size, licence and SHA-256, downloads pause and resume,
+and only openly licensed models are offered. Listening works without them.
 
-## Switch from Goodreads or StoryGraph in a minute
+## Read your own files
+
+`EPUB` `MOBI` `AZW3` `PDF` `FB2` `CBZ` `CBR` `CB7` `DOCX` `ODT` `RTF` `HTML` `TXT` `MD`
+
+Open a file from any app or import it into your library. Long-press to highlight in four
+colours and add notes, then export them as Markdown or a CSV for Readwise. Paper and
+night pages, e-ink mode and volume-key page turns. Books missing from the catalogue can
+be added as your own, with your own cover.
+
+## Find any book
+
+Search runs on your phone and forgives typos. It finds titles, authors, series and
+ISBNs, in every catalogue language.
+
+## Relive your reading year
+
+<img src="android/design/wrapped.png" width="100%" alt="Year in books: ten story slides from cover wall to shareable card">
+
+Set a daily page goal and watch the week fill up. Tap the streak for pages, books and
+genres per month. **Your year in books** replays it as stories with your covers and ends
+on a card to share. All on your phone.
+
+## Switch from Goodreads in a minute
 
 | 1. Export | 2. Import | 3. Done |
 |:---:|:---:|:---:|
 | Download your CSV from Goodreads or StoryGraph | Shelf › Settings › Your data › **Import CSV** | Shelves, ratings and read dates carry over |
+
+Imported books are matched to the catalogue, so they get covers, series and genres.
+
+## Discover your next read
+
+Recommendations are worked out on your phone from what you read, never on a server.
+Browse genres, follow series and authors, and download free classics if you like.
+
+## Scan any cover
+
+Point your camera at a book. Shelf reads the title and series on your phone and finds
+it. Barcodes work too. Pictures are never stored or sent.
 
 ## No cover? Shelf draws one
 
@@ -140,12 +166,14 @@ Samples: `android/app/src/test/samples`.
 Every book without a cover gets its own, drawn on your phone in the style of its genre.
 Prefer your own picture? Tap the cover to pick one.
 
-## Reads what you have
+## Private by design
 
-`EPUB` `MOBI` `AZW3` `PDF` `FB2` `CBZ` `CBR` `CB7` `DOCX` `ODT` `RTF` `HTML` `TXT` `MD`
-
-Open a file from any app or import it into your library. Add books missing from the
-catalogue as your own, with your own cover.
+- ✅ No account, no ads, no trackers
+- ✅ Nothing sent on first launch
+- ✅ One switch cuts all network
+- ✅ Search, recommendations, cover scanner and speech all run on your phone
+- ✅ Free ebook sources stay off until you turn them on
+- ✅ Open source: anyone can check the code
 
 ## Books in your language
 
@@ -157,15 +185,6 @@ packs for fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
 [Help translate](https://hosted.weblate.org/engage/shelf/), no coding needed.
 
 <a href="https://hosted.weblate.org/engage/shelf/"><img src="https://hosted.weblate.org/widget/shelf/multi-auto.svg" alt="Translation status"></a>
-
-## Private by design
-
-- ✅ No account, no ads, no trackers
-- ✅ Nothing sent on first launch
-- ✅ One switch cuts all network
-- ✅ Cover scanner runs on your phone, pictures never stored
-- ✅ Free ebook sources stay off until you turn them on
-- ✅ Open source: anyone can check the code
 
 ## Questions
 
@@ -217,7 +236,11 @@ comfortable to read.
 - ☕ [**Buy me a coffee**](https://buymeacoffee.com/tn3w)
 
 Developers: building, architecture and the catalogue pipeline are in
-[CONTRIBUTING.md](.github/CONTRIBUTING.md).
+[CONTRIBUTING.md](.github/CONTRIBUTING.md). Listening lives in `data/Speech.kt`,
+`Playback.kt`, `Narrator.kt`, `NarrationService.kt`, `AudiobookPlayer.kt`,
+`data/Audiobooks.kt` and `ui/Listen.kt`; voice models in `data/Models.kt`,
+`ui/VoiceModels.kt`, `data/SpeakerModel.kt` and `android/app/src/main/cpp`, with tooling
+in `tooling/voices`. Store screenshots: `tooling/screenshots.py`.
 
 ---
 
