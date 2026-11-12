@@ -204,7 +204,7 @@ def subline(canvas, top, text, palette):
                                 fill=palette["muted"], anchor="ma")
 
 
-def header(canvas, index, headline, detail, size, palette):
+def header(canvas, index, headline, detail, size, palette, area):
     draw = ImageDraw.Draw(canvas)
     face = face_for(headline, size, HEADLINE_WEIGHT)
     rows = []
@@ -213,23 +213,25 @@ def header(canvas, index, headline, detail, size, palette):
     for line in balanced(headline, face):
         rows.append((round(size * 1.08), lambda top, line=line: draw.text(
             (CENTER, top), line, font=face, fill=palette["ink"], anchor="ma")))
-    below = {0: (badge, 160), 5: (chips, 134)}.get(index, (subline, 100))
+    below = {0: (badge, 160), 2: (chips, 134)}.get(index, (subline, 100))
     rows += [(50 if index else 64, None),
              (below[1], lambda top: below[0](canvas, top, detail, palette))]
-    top = (PHONE_TOP - sum(height for height, _ in rows)) // 2 + 20
+    top = area + (PHONE_TOP - sum(height for height, _ in rows)) // 2 + 20
     for height, paint in rows:
         if paint:
             paint(top)
         top += height
 
 
-def compose(screen, index, headline, detail, size, dark=False):
+def compose(screen, index, headline, detail, size, dark=False, flipped=False):
     palette = DARK if dark else LIGHT
     canvas = background(palette)
     device = phone(screen)
     left = CENTER - device.width // 2
-    box = (left, PHONE_TOP, left + device.width, PHONE_TOP + device.height)
+    top = CANVAS[1] - PHONE_TOP - device.height if flipped else PHONE_TOP
+    box = (left, top, left + device.width, top + device.height)
     shadow(canvas, box, 132, palette)
-    canvas.paste(device, (left, PHONE_TOP), device)
-    header(canvas, index, headline, detail, size, palette)
+    canvas.paste(device, (left, top), device)
+    area = CANVAS[1] - PHONE_TOP if flipped else 0
+    header(canvas, index, headline, detail, size, palette, area)
     return canvas.resize(SIZE, Image.LANCZOS)

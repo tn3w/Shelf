@@ -13,7 +13,7 @@ SCALE = 2
 CANVAS = (SIZE[0] * SCALE, SIZE[1] * SCALE)
 SCREEN = (178, 645, 902, 1920)
 LEFT = 170
-PHONES = [("2_library", 1500, 470, 500), ("5_explore", 2220, 470, 500),
+PHONES = [("6_library", 1500, 470, 500), ("7_explore", 2220, 470, 500),
           ("1_home", 1860, 300, 580)]
 
 

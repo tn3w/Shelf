@@ -20,14 +20,14 @@ No account. No ads. No tracking. Free and open source.
 
 <p align="center">
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/1_home.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.jpg" width="22%" alt="home"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/2_library.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/2_library.jpg" width="22%" alt="library"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/3_book.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/3_book.jpg" width="22%" alt="book"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/4_series.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/4_series.jpg" width="22%" alt="series"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/2_listen.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/2_listen.jpg" width="22%" alt="listen"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/3_reader.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/3_reader.jpg" width="22%" alt="reader"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/4_book.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/4_book.jpg" width="22%" alt="book"></picture>
 <br>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_explore.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/5_explore.jpg" width="22%" alt="explore"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_reader.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/6_reader.jpg" width="22%" alt="reader"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/7_scan.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/7_scan.jpg" width="22%" alt="scan"></picture>
-<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/8_settings.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/8_settings.jpg" width="22%" alt="settings"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/5_wrapped.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/5_wrapped.jpg" width="22%" alt="wrapped"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/6_library.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/6_library.jpg" width="22%" alt="library"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/7_explore.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/7_explore.jpg" width="22%" alt="explore"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/8_scan.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/8_scan.jpg" width="22%" alt="scan"></picture>
 </p>
 
 https://github.com/user-attachments/assets/5ffe8161-7070-4fbc-8a89-836da15b2b37

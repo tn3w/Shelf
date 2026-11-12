@@ -5,36 +5,48 @@ import io
 import json
 import math
 import os
+import random
 import re
 import shutil
+import string
 import subprocess
 import tempfile
 import time
+import urllib.parse
 import urllib.request
 from functools import cache
 from pathlib import Path
 from xml.etree import ElementTree
 
 import numpy
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 import tiles
 
 PACKAGE = "dev.tn3w.shelf"
 DATA = f"/data/data/{PACKAGE}/files"
 ROOT = Path(__file__).resolve().parent.parent
-FASTLANE = ROOT / "android/app/fastlane/metadata/android"
-DARK = ROOT / "android/design/screenshots/dark"
+ANDROID = ROOT / "android"
+STRINGS = ANDROID / "app/src/main/res"
+FASTLANE = ANDROID / "app/fastlane/metadata/android"
+DARK = ANDROID / "design/screenshots/dark"
 CACHE = Path(tempfile.gettempdir()) / "shelf-screenshots"
-DAY = 86_400_000
-STATUS_BAR = 137
-TOUCH_SLOP = 21
-SCREENS = ("1_home", "2_library", "3_book", "4_series", "5_explore", "6_reader",
-           "7_scan", "8_settings")
+SERIAL = os.environ.get("SHELF_SERIAL", "emulator-5554")
+AVD = os.environ.get("SHELF_AVD", "shelf-screenshots")
+EMULATOR = Path(os.environ.get("ANDROID_HOME", Path.home() / "Android/Sdk")) / "emulator"
+CAMERA = CACHE / "camera.mp4"
+SCREENS = ("1_home", "2_listen", "3_reader", "4_book", "5_wrapped", "6_library",
+           "7_explore", "8_scan")
+BOTTOM_HEAVY = {"2_listen", "5_wrapped"}
 FORMATS = "EPUB · PDF · FB2 · CBZ · TXT"
 DEMO = ["am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command"]
-EMULATOR = Path(os.environ.get("ANDROID_HOME", Path.home() / "Android/Sdk")) / "emulator"
-AVD = os.environ.get("SHELF_AVD", "shelf-screenshots")
+DAY = 86_400_000
+MINUTE = 60_000
+DAILY_GOAL = 20
+STREAK = 13
+HISTORY = 24
+CHAPTER = 2
+STATUS_BAR = 137
 SCENE_SIZE = (1440, 1920)
 BOOK_HEIGHT = 700
 BOOK_CENTER = 580
@@ -43,454 +55,435 @@ SHEET_MARGIN = 130
 SHEET_TITLE_TARGET = 1550
 VIDEO_FRAMES = 40
 PAGES = 24
-COVER_LOAD = 15
+SMALL_WORDS = {"a", "an", "and", "at", "for", "in", "of", "on", "the", "to", "with"}
+NUMBERING = re.compile(r"^\s*(?:\w+\s+)?(?:[IVXLC]+|\d+)\s*[.:)]\s+", re.IGNORECASE)
 
-LOCALES = {
-    "en": dict(
-        folder="en-US",
-        copy=[("Your books, offline", "No account · No ads"),
-              ("Switch from Goodreads", "Import shelves via CSV"),
-              ("Find any book", "Fast offline search"),
-              ("Never lose a series", "Series and authors"),
-              ("Discover your next read", "Picks made on your phone"),
-              ("Read your own files", FORMATS),
-              ("Scan any cover", "Recognized on your phone"),
-              ("Private by design", "No account · Offline switch")],
-        scan=8535565,
-        reader=(138052, "Alice's Adventures in Wonderland", "Lewis Carroll",
-                10527843, 11),
-        reading=[(82563, "Harry Potter and the Philosopher's Stone", "J. K. Rowling",
-                  15155833),
-                 (21745884, "Project Hail Mary", "Andy Weir", 11200092)],
-        want=[(8479867, "The Name of the Wind", "Patrick Rothfuss", 11480483),
-              (18012166, "Circe", "Madeline Miller", 8739376),
-              (893414, "Dune", "Frank Herbert", 11481354),
-              (20965973, "The Midnight Library", "Matt Haig", 10313767)],
-        finished=[(27482, "The Hobbit", "J.R.R. Tolkien", 14627509),
-                  (1168083, "1984", "George Orwell", 9267242),
-                  (10263, "Little Prince", "Antoine de Saint-Exupéry", 10708272)],
-        searches=["dune", "tolkien", "circe"],
-    ),
-    "de": dict(
-        folder="de",
-        copy=[("Deine Bücher, offline", "Kein Konto · Keine Werbung"),
-              ("Wechsel von Goodreads", "Regale per CSV importieren"),
-              ("Finde jedes Buch", "Schnelle Offline-Suche"),
-              ("Keine Reihe verpassen", "Reihen und Autoren"),
-              ("Entdecke neue Bücher", "Tipps direkt auf dem Handy"),
-              ("Lies deine eigenen Dateien", FORMATS),
-              ("Scanne jedes Cover", "Erkannt auf dem Handy"),
-              ("Privat von Grund auf", "Kein Konto · Offline-Schalter")],
-        scan=15157620,
-        reader=(151411, "Alice im Wunderland", "Lewis Carroll", 8595966, 19778),
-        reading=[(82563, "Harry Potter und der Stein der Weisen", "J. K. Rowling",
-                  15155833),
-                 (941669, "Tintenherz", "Cornelia Funke", 3330314)],
-        want=[(2271589, "Die unendliche Geschichte", "Michael Ende", 7383413),
-              (276211, "Der Schwarm", "Frank Schätzing", 1011136),
-              (498463, "Der Prozess", "Franz Kafka", 997423)],
-        finished=[(2271626, "Momo", "Michael Ende", 8574580),
-                  (27482, "Der kleine Hobbit", "J.R.R. Tolkien", 14627509),
-                  (498556, "Die Verwandlung", "Franz Kafka", 12820198),
-                  (10263, "Der kleine Prinz", "Antoine de Saint-Exupéry", 10708272)],
-        searches=["momo", "kafka", "funke"],
-    ),
-    "fr": dict(
-        folder="fr",
-        copy=[("Vos livres, hors ligne", "Sans compte · Sans pub"),
-              ("Quittez Goodreads", "Import CSV de vos étagères"),
-              ("Trouvez vos livres", "Recherche rapide hors ligne"),
-              ("Suivez vos séries", "Séries et auteurs"),
-              ("Votre prochaine lecture", "Suggestions sur l’appareil"),
-              ("Lisez vos fichiers", FORMATS),
-              ("Scannez une couverture", "Reconnue sur l’appareil"),
-              ("Privé par conception", "Sans compte · Mode hors ligne")],
-        scan=14320086,
-        reader=(138052, "Alice Au Pays des Merveilles", "Lewis Carroll",
-                10527843, 55456),
-        reading=[(82563, "Harry Potter à l'école des sorciers", "J. K. Rowling",
-                  15155833),
-                 (36287, "Le comte de Monte-Cristo", "Alexandre Dumas", 14566393)],
-        want=[(1063588, "Les Misérables", "Victor Hugo", 12721865),
-              (1230613, "L’étranger", "Albert Camus", 13151269),
-              (893707, "Madame Bovary", "Gustave Flaubert", 12993424)],
-        finished=[(10263, "Le petit prince", "Antoine de Saint-Exupéry", 10708272),
-                  (1099280, "Vingt mille lieues sous les mers", "Jules Verne", 6573517),
-                  (1168083, "1984", "George Orwell", 9267242),
-                  (893414, "Dune", "Frank Herbert", 11481354)],
-        searches=["camus", "jules verne", "hugo"],
-    ),
-    "es": dict(
-        folder="es",
-        copy=[("Tus libros, sin conexión", "Sin cuenta · Sin anuncios"),
-              ("Ven desde Goodreads", "Importa estantes en CSV"),
-              ("Encuentra cualquier libro", "Búsqueda rápida sin red"),
-              ("Sigue tus sagas", "Sagas y autores"),
-              ("Tu próxima lectura", "Sugerencias en tu móvil"),
-              ("Lee tus archivos", FORMATS),
-              ("Escanea una portada", "Reconocida en tu móvil"),
-              ("Privado por diseño", "Sin cuenta · Modo sin conexión")],
-        scan=15091493,
-        reader=(503666, "Don Quijote de la Mancha", "Miguel de Cervantes Saavedra",
-                14428305, 2000),
-        reading=[(82563, "Harry Potter y la piedra filosofal", "J. K. Rowling",
-                  15155833),
-                 (278437, "La sombra del viento", "Carlos Ruiz Zafón", 10107644)],
-        want=[(274505, "Cien años de soledad", "Gabriel García Márquez", 12627383),
-              (1905255, "La casa de los espíritus", "Isabel Allende", 3205226),
-              (14860424, "Rayuela", "Julio Cortázar", 1047466)],
-        finished=[(34766796, "El Principito", "Antoine de Saint-Exupéry",
-                   13499066),
-                  (138052, "Alicia En El Pais de Las Maravillas", "Lewis Carroll",
-                   10527843),
-                  (1168083, "1984", "George Orwell", 9267242),
-                  (893414, "Dune", "Frank Herbert", 11481354)],
-        searches=["allende", "borges", "zafón"],
-    ),
-}
-TRANSLATED = {
-    "cs": ("cs", ["Alenka v říši divů", "Harry Potter a Kámen mudrců",
-                  "Projekt Hail Mary", "Jméno větru", "Kirké", "Duna",
-                  "Půlnoční knihovna", "Hobit", "1984", "Malý princ"],
-           [("Vaše knihy, offline", "Bez účtu · Bez reklam"),
-            ("Přejděte z Goodreads", "Import polic přes CSV"),
-            ("Najděte jakoukoli knihu", "Rychlé offline hledání"),
-            ("Neztraťte žádnou sérii", "Série a autoři"),
-            ("Objevte další četbu", "Tipy přímo v telefonu"),
-            ("Čtěte vlastní soubory", FORMATS),
-            ("Naskenujte jakoukoli obálku", "Rozpoznáno v telefonu"),
-            ("Soukromí z principu", "Bez účtu · Offline přepínač")],
-           (7924103, "Kolo času", "Robert Jordan", 980232)),
-    "et": ("et", ["Alice imedemaal", "Harry Potter ja tarkade kivi", "Projekt Hail Mary",
-                  "Tuule nimi", "Kirke", "Düün", "Südaööraamatukogu", "Hobit", "1984",
-                  "Väike prints"],
-           [("Sinu raamatud, offline", "Ilma konto ja reklaamita"),
-            ("Tule üle Goodreadsist", "Riiulite import CSV-ga"),
-            ("Leia iga raamat", "Kiire offline-otsing"),
-            ("Ära kaota sarju", "Sarjad ja autorid"),
-            ("Leia järgmine lugemine", "Soovitused sinu telefonis"),
-            ("Loe oma faile", FORMATS),
-            ("Skaneeri iga kaant", "Tuvastatakse telefonis"),
-            ("Privaatne algusest peale", "Ilma kontota · Offline-lüliti")]),
-    "fi": ("fi", ["Liisan seikkailut ihmemaassa", "Harry Potter ja viisasten kivi",
-                  "Project Hail Mary", "Tuulen nimi", "Kirke", "Dyyni",
-                  "Keskiyön kirjasto", "Hobitti", "1984", "Pikku prinssi"],
-           [("Kirjasi, offline", "Ei tiliä · Ei mainoksia"),
-            ("Vaihda Goodreadsista", "Tuo hyllyt CSV:llä"),
-            ("Löydä mikä tahansa kirja", "Nopea offline-haku"),
-            ("Älä hukkaa sarjaa", "Sarjat ja kirjailijat"),
-            ("Löydä seuraava luettava", "Suositukset puhelimessasi"),
-            ("Lue omia tiedostoja", FORMATS),
-            ("Skannaa mikä tahansa kansi", "Tunnistus puhelimessa"),
-            ("Yksityinen suunnittelusta", "Ei tiliä · Offline-kytkin")],
-           (492658, "Salamavaras", "Rick Riordan", 8966702)),
-    "ko": ("ko", ["이상한 나라의 앨리스", "해리 포터와 마법사의 돌", "프로젝트 헤일메리",
-                  "바람의 이름", "키르케", "듄", "미드나잇 라이브러리", "호빗", "1984",
-                  "어린 왕자"],
-           [("내 책, 오프라인으로", "계정 없음 · 광고 없음"),
-            ("Goodreads에서 옮기기", "CSV로 서재 가져오기"),
-            ("어떤 책이든 찾기", "빠른 오프라인 검색"),
-            ("시리즈를 놓치지 마세요", "시리즈와 저자"),
-            ("다음 책 발견하기", "내 폰에서 만든 추천"),
-            ("내 파일 읽기", FORMATS),
-            ("표지를 스캔하세요", "내 폰에서 인식"),
-            ("처음부터 프라이빗", "계정 없음 · 오프라인 스위치")],
-           (16817120, "우리들의 일그러진 영웅", "이문열", 12635092)),
-    "pl": ("pl", ["Alicja w Krainie Czarów", "Harry Potter i Kamień Filozoficzny",
-                  "Projekt Hail Mary", "Imię wiatru", "Kirke", "Diuna",
-                  "Biblioteka O Północy", "Hobbit", "1984", "Mały Książę"],
-           [("Twoje książki, offline", "Bez konta · Bez reklam"),
-            ("Przejdź z Goodreads", "Import półek z CSV"),
-            ("Znajdź każdą książkę", "Szybkie wyszukiwanie offline"),
-            ("Nie gub serii", "Serie i autorzy"),
-            ("Odkryj następną lekturę", "Propozycje na Twoim telefonie"),
-            ("Czytaj własne pliki", FORMATS),
-            ("Zeskanuj każdą okładkę", "Rozpoznawana na telefonie"),
-            ("Prywatność z założenia", "Bez konta · Przełącznik offline")],
-           (262421, "Przygody Sherlocka Holmesa", "Arthur Conan Doyle", 13379276)),
-    "sv": ("sv", ["Alice i Underlandet", "Harry Potter och De Vises Sten",
-                  "Project Hail Mary", "Vindens namn", "Circe", "Dune",
-                  "Midnattsbiblioteket", "Hobbiten", "1984", "Lille prinsen"],
-           [("Dina böcker, offline", "Inget konto · Inga annonser"),
-            ("Byt från Goodreads", "Importera hyllor via CSV"),
-            ("Hitta vilken bok som helst", "Snabb offlinesökning"),
-            ("Tappa aldrig en serie", "Serier och författare"),
-            ("Hitta nästa läsning", "Tips på din telefon"),
-            ("Läs dina egna filer", FORMATS),
-            ("Skanna vilket omslag som helst", "Känns igen på din telefon"),
-            ("Privat från grunden", "Inget konto · Offlinereglage")],
-           (492658, "Född till hjälte", "Rick Riordan", 8966702)),
-    "ja": ("ja", ["ふしぎの国のアリス", "ハリー・ポッターと賢者の石",
-                  "プロジェクト・ヘイル・メアリー", "風の名前", "キルケ", "デューン 砂の惑星",
-                  "ミッドナイト・ライブラリー", "ホビットの冒険", "1984年", "星の王子さま"],
-           [("あなたの本を、 オフラインで", "アカウントなし · 広告なし"),
-            ("Goodreads から乗り換え", "CSV で本棚をインポート"),
-            ("どんな本も すぐ見つかる", "高速オフライン検索"),
-            ("シリーズを 見逃さない", "シリーズと著者"),
-            ("次に読む本を 見つけよう", "スマホ上で作るおすすめ"),
-            ("自分のファイルを 読む", FORMATS),
-            ("どんな表紙も スキャン", "スマホ上で認識"),
-            ("設計から プライベート", "アカウントなし · オフラインスイッチ")],
-           (71069, "カスピアン王子のつのぶえ", "C. S. Lewis", 15034833)),
-    "lv": ("lv", ["Alises piedzīvojumi Brīnumzemē", "Harijs Poters un filozofu akmens",
-                  "Projekts “Hail Mary”", "Vēja vārds", "Kirke", "Kāpa",
-                  "Pusnakts bibliotēka", "Hobits", "1984", "Mazais princis"],
-           [("Jūsu grāmatas, bezsaistē", "Bez konta · Bez reklāmām"),
-            ("Pārejiet no Goodreads", "Plauktu imports ar CSV"),
-            ("Atrodiet jebkuru grāmatu", "Ātra bezsaistes meklēšana"),
-            ("Nepazaudējiet nevienu sēriju", "Sērijas un autori"),
-            ("Atklājiet nākamo grāmatu", "Ieteikumi jūsu tālrunī"),
-            ("Lasiet savus failus", FORMATS),
-            ("Skenējiet jebkuru vāku", "Atpazīts jūsu tālrunī"),
-            ("Privāts pēc būtības", "Bez konta · Bezsaistes slēdzis")]),
-    "ru": ("ru-RU", ["Алиса в Стране чудес", "Гарри Поттер и философский камень",
-                     "Проект «Аве Мария»", "Имя ветра", "Цирцея", "Дюна",
-                     "Библиотека полуночи", "Хоббит", "1984", "Маленький принц"],
-           [("Ваши книги, офлайн", "Без аккаунта · Без рекламы"),
-            ("Уходите из Goodreads", "Импорт полок через CSV"),
-            ("Найдите любую книгу", "Быстрый офлайн-поиск"),
-            ("Не теряйте серии", "Серии и авторы"),
-            ("Найдите что почитать", "Подборки на вашем телефоне"),
-            ("Читайте свои файлы", FORMATS),
-            ("Сканируйте любую обложку", "Распознаётся на телефоне"),
-            ("Приватность по умолчанию", "Без аккаунта · Офлайн-режим")]),
-    "pt": ("pt-BR", ["Alice no País das Maravilhas", "Harry Potter e a Pedra Filosofal",
-                     "Projeto Ave Maria", "O Nome do Vento", "Circe", "Duna",
-                     "A Biblioteca da Meia-Noite", "O Hobbit", "1984",
-                     "O Pequeno Príncipe"],
-           [("Seus livros, offline", "Sem conta · Sem anúncios"),
-            ("Saia do Goodreads", "Importe estantes via CSV"),
-            ("Encontre qualquer livro", "Busca offline rápida"),
-            ("Acompanhe suas séries", "Séries e autores"),
-            ("Descubra sua próxima leitura", "Sugestões feitas no celular"),
-            ("Leia seus arquivos", FORMATS),
-            ("Escaneie qualquer capa", "Reconhecida no seu celular"),
-            ("Privado por design", "Sem conta · Modo offline")]),
-    "it": ("it-IT", ["Alice nel Paese delle Meraviglie",
-                     "Harry Potter e la pietra filosofale", "L’ultimo uomo",
-                     "Il nome del vento", "Circe", "Dune", "La biblioteca di mezzanotte",
-                     "Lo Hobbit", "1984", "Il Piccolo Principe"],
-           [("I tuoi libri, offline", "Niente account · Niente pubblicità"),
-            ("Lascia Goodreads", "Importa gli scaffali da CSV"),
-            ("Trova ogni libro", "Ricerca offline veloce"),
-            ("Segui le tue saghe", "Saghe e autori"),
-            ("Scopri la prossima lettura", "Consigli creati sul telefono"),
-            ("Leggi i tuoi file", FORMATS),
-            ("Scansiona ogni copertina", "Riconosciuta sul telefono"),
-            ("Privato per scelta", "Niente account · Modalità offline")]),
-}
-
-
-IN_LANGUAGE = {
-    "cs": {21745884: ("Spasitel", 11200092), 8479867: ("Jméno větru", 11480483),
-           18012166: ("Kirke", 8739376), 893414: ("Duna", 12375564),
-           20965973: ("Půlnoční knihovna", 10313767), 1168083: ("1984", 14416004)},
-    "et": {21745884: ("Ave Maria", 11200092), 8479867: ("Tuule nimi", 11480483),
-           18012166: ("Kirke", 8739376), 893414: ("Düün", 12375564),
-           20965973: ("Kesköö raamatukogu", 10313767),
-           27482: ("Kääbik, ehk, Sinna ja tagasi", 14627509),
-           1168083: ("Loomade farm", 14416004), 10263: ("Väike prints", 10708272),
-           138052: ("Alice Imedemaal", 10870770)},
-    "fi": {21745884: ("Operaatio Ave Maria", 11200092),
-           8479867: ("Tuulen nimi", 11480483), 18012166: ("Kirke", 8739376),
-           893414: ("Dyyni", 12375564), 20965973: ("Keskiyön kirjasto", 10313767),
-           27482: ("Hobitti", 14627509), 1168083: ("Vuonna 1984", 14416004),
-           10263: ("Pikku Prinssi", 10708272),
-           138052: ("Liisan seikkailut ihmemaassa", 10870770)},
-    "ja": {82563: (None, 15155757), 27482: (None, 10291172), 1168083: (None, 14416004),
-           10263: (None, 3284444), 138052: (None, 14546101)},
-    "lv": {82563: (None, 8267741), 18012166: (None, 8739376),
-           20965973: (None, 10313767), 893414: (None, 12375564),
-           10263: (None, 10708272), 1168083: (None, 14416004)},
-    "ko": {21745884: ("프로젝트 해일메리", 15216589),
-           138052: ("이상한 나라의 앨리스", 12797926)},
-    "pl": {21745884: ("Projekt Hail Mary", 13442034), 8479867: (None, 11218173),
-           18012166: ("Kirke", 8349106), 893414: ("Diuna", 10488703),
-           20965973: ("Biblioteka o północy", 10313767),
-           1168083: ("Rok 1984", 9374398)},
-    "sv": {82563: ("Harry Potter och de vises sten", 15155833),
-           21745884: ("Uppdrag Hail Mary", 11200092),
-           8479867: ("Vindens namn", 11480483), 18012166: ("Kirke", 14353785),
-           20965973: ("Midnattsbiblioteket", 12241903), 27482: ("Bilbo", 14625950),
-           1168083: ("1984", 14585290), 10263: ("Lille prinsen", 10708272),
-           138052: ("Alice i Underlandet", 10870770)},
-}
-
-
-def in_language(book, local):
-    if book[0] not in local:
-        return book
-    title, cover = local[book[0]]
-    return (book[0], title or book[1], book[2], cover, *book[4:])
-
-
-def translated(folder, titles, copy, series=None, scan=None, local=None):
-    english = LOCALES["en"]
-    alice, potter, hail, wind, circe, dune, midnight, hobbit, nineteen, prince = titles
-
-    def retitle(books, names):
-        return [(book[0], name, *book[2:]) for book, name in zip(books, names)]
-
-    local = local or {}
-    reading = retitle(english["reading"], [potter, hail])
-    shelves = dict(
-        reading=reading if series is None else [series, reading[1]],
-        want=retitle(english["want"], [wind, circe, dune, midnight]),
-        finished=retitle(english["finished"], [hobbit, nineteen, prince]),
-    )
-    return english | dict(
-        folder=folder,
-        copy=copy,
-        scan=scan or english["scan"],
-        reader=in_language((english["reader"][0], alice, *english["reader"][2:]), local),
-        **{name: [in_language(book, local) for book in books]
-           for name, books in shelves.items()},
-    )
-
-
-LOCALES |= {
-    language: translated(*values, local=IN_LANGUAGE.get(language))
-    for language, values in TRANSLATED.items()
-}
-for language in ("ru", "pt", "it"):
-    LOCALES[language]["catalogue"] = "en"
-LOCALES["pt"]["reader"] = (1003040, "Dom Casmurro", "Machado de Assis", 14625893, 55752)
-LOCALES["it"] |= dict(reader=(*LOCALES["it"]["reader"][:4], 28371), section=18)
-
-
-STRINGS = ROOT / "android/app/src/main/res"
-
-
-@cache
-def strings(language):
-    folder = "values" if language == "en" else f"values-{language}"
-    tree = ElementTree.parse(STRINGS / folder / "strings.xml")
-    return {item.get("name"): item.text for item in tree.getroot().iter("string")}
-
-
-def label(language, name):
-    translated = strings(language).get(name) or strings("en")[name]
-    return translated.replace("\\'", "'")
-
-
-def prefix(language, name):
-    return label(language, name).split("%")[0].strip()
-
-
-def fragment(language, name):
-    return max(re.split(r"%\d\$s", label(language, name)), key=len).strip()
-
-
-def series_label(language):
-    folder = "values" if language == "en" else f"values-{language}"
-    tree = ElementTree.parse(STRINGS / folder / "strings.xml")
-    plural = tree.getroot().find("plurals[@name='books_in_series']")
-    texts = [max(re.split(r"%\d?\$?d", item.text), key=len) for item in plural]
-    return os.path.commonprefix([text[::-1] for text in texts])[::-1].strip()
-
-
-def with_labels(language):
-    return LOCALES[language] | dict(
-        language=language,
-        tabs=tuple(label(language, name) for name in ("home", "library", "explore")),
-        settings=(label(language, "settings"), label(language, "download_all_short")),
-        cover=prefix(language, "cover_of"),
-        picks=fragment(language, "because_you_read"),
-        about=label(language, "about_book"),
-        series=series_label(language),
-        scan=(label(language, "search"), label(language, "scan"),
-              label(language, "scan_again"), LOCALES[language]["scan"]),
-    )
-
-
-NODE = re.compile(
-    r'text="([^"]*)"[^>]*content-desc="([^"]*)"[^>]*'
-    r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"'
+SHELVES = dict(
+    reading=[17091839, 16509148, 18203673, 24178205, 17370186],
+    want=[46881, 2163649, 5819456, 46125, 49488, 7924103, 52114, 17370186],
+    finished=[468431, 679358, 19096402, 103123, 471576, 63073, 85892],
+)
+SKIPPED = {82563, 82536, 82537, 82548, 82560, 82565, 82586, 244537, 17732}
+ASIAN_SHELVES = dict(
+    ja=dict(reading=[77746, 63073], want=[468431, 471576, 29983, 471565],
+            finished=[166894, 262421, 1095427, 21177]),
+    ko=dict(reading=[17091839, 5781992], want=[77746, 32466, 675783, 15992072],
+            finished=[63073, 796465, 66554, 21177]),
+    lv=dict(reading=[17091839, 24178205], want=[18766691, 18203673, 17332479, 7924103],
+            finished=[19096402, 1230613, 103123, 274505]),
 )
 
 
-def adb(*arguments, timeout=60):
-    result = subprocess.run(["adb", *arguments], capture_output=True, timeout=timeout)
-    return result.stdout
+def wikisource(language, page):
+    return f"https://ws-export.wmcloud.org/?lang={language}&format=epub-3&page={page}"
+
+
+LOCALES = {
+    "en": dict(chapter=6, folder="en-US", reader=(262421, 1661), copy=[
+        ("Your books, offline", "No account · No ads"),
+        ("Listen to audiobooks", "Your own files, with chapters"),
+        ("Read your own files", FORMATS),
+        ("Find any book", "Fast offline search"),
+        ("Relive your reading year", "Stats, streaks and a yearly recap"),
+        ("Switch from Goodreads", "Import shelves via CSV"),
+        ("Discover your next read", "Picks made on your phone"),
+        ("Scan any cover", "Recognized on your phone")]),
+    "de": dict(chapter=2, folder="de", reader=(25397, 50965), copy=[
+        ("Deine Bücher, offline", "Kein Konto · Keine Werbung"),
+        ("Hör deine Hörbücher", "Eigene Dateien, mit Kapiteln"),
+        ("Lies deine eigenen Dateien", FORMATS),
+        ("Finde jedes Buch", "Schnelle Offline-Suche"),
+        ("Dein Lesejahr im Rückblick", "Statistiken, Lesesträhnen, Jahresrückblick"),
+        ("Wechsel von Goodreads", "Regale per CSV importieren"),
+        ("Entdecke neue Bücher", "Tipps direkt auf dem Handy"),
+        ("Scanne jedes Cover", "Erkannt auf dem Handy")]),
+    "fr": dict(chapter=5, folder="fr", reader=(1064277, 32854), copy=[
+        ("Vos livres, hors ligne", "Sans compte · Sans pub"),
+        ("Écoutez vos livres audio", "Vos fichiers, avec chapitres"),
+        ("Lisez vos fichiers", FORMATS),
+        ("Trouvez vos livres", "Recherche rapide hors ligne"),
+        ("Revivez votre année de lecture", "Stats, séries et bilan annuel"),
+        ("Quittez Goodreads", "Import CSV de vos étagères"),
+        ("Votre prochaine lecture", "Suggestions sur l’appareil"),
+        ("Scannez une couverture", "Reconnue sur l’appareil")]),
+    "es": dict(chapter=8, folder="es", reader=(503503, 44512), copy=[
+        ("Tus libros, sin conexión", "Sin cuenta · Sin anuncios"),
+        ("Escucha audiolibros", "Tus archivos, con capítulos"),
+        ("Lee tus archivos", FORMATS),
+        ("Encuentra cualquier libro", "Búsqueda rápida sin red"),
+        ("Revive tu año lector", "Estadísticas, rachas y resumen anual"),
+        ("Ven desde Goodreads", "Importa estantes en CSV"),
+        ("Tu próxima lectura", "Sugerencias en tu móvil"),
+        ("Escanea una portada", "Reconocida en tu móvil")]),
+    "cs": dict(chapter=6, folder="cs", reader=(575625, 13083), copy=[
+        ("Vaše knihy, offline", "Bez účtu · Bez reklam"),
+        ("Poslouchejte audioknihy", "Vlastní soubory, s kapitolami"),
+        ("Čtěte vlastní soubory", FORMATS),
+        ("Najděte jakoukoli knihu", "Rychlé offline hledání"),
+        ("Váš čtenářský rok", "Statistiky, série a roční souhrn"),
+        ("Přejděte z Goodreads", "Import polic přes CSV"),
+        ("Objevte další četbu", "Tipy přímo v telefonu"),
+        ("Naskenujte jakoukoli obálku", "Rozpoznáno v telefonu")]),
+    "et": dict(chapter=5, folder="et", reader=(24156, 43), scan=5819456, copy=[
+        ("Sinu raamatud, offline", "Ilma konto ja reklaamita"),
+        ("Kuula audioraamatuid", "Sinu failid, peatükkidega"),
+        ("Loe oma faile", FORMATS),
+        ("Leia iga raamat", "Kiire offline-otsing"),
+        ("Sinu lugemisaasta", "Statistika, seeriad ja aastakokkuvõte"),
+        ("Tule üle Goodreadsist", "Riiulite import CSV-ga"),
+        ("Leia järgmine lugemine", "Soovitused sinu telefonis"),
+        ("Skaneeri iga kaant", "Tuvastatakse telefonis")]),
+    "fi": dict(chapter=6, folder="fi", reader=(262454, 32536), copy=[
+        ("Kirjasi, offline", "Ei tiliä · Ei mainoksia"),
+        ("Kuuntele äänikirjoja", "Omat tiedostot, lukuineen"),
+        ("Lue omia tiedostoja", FORMATS),
+        ("Löydä mikä tahansa kirja", "Nopea offline-haku"),
+        ("Lukuvuotesi koosteena", "Tilastot, putket ja vuosikooste"),
+        ("Vaihda Goodreadsista", "Tuo hyllyt CSV:llä"),
+        ("Löydä seuraava luettava", "Suositukset puhelimessasi"),
+        ("Skannaa mikä tahansa kansi", "Tunnistus puhelimessa")]),
+    "ja": dict(chapter=1, folder="ja", scan=24034,
+               reader=(1174972, wikisource("ja", "こゝろ")), titles={1174972: "こころ"}, copy=[
+        ("あなたの本を、 オフラインで", "アカウントなし · 広告なし"),
+        ("オーディオブックを 聴く", "自分のファイルを章ごとに"),
+        ("自分のファイルを 読む", FORMATS),
+        ("どんな本も すぐ見つかる", "高速オフライン検索"),
+        ("あなたの 読書の一年", "統計・連続記録・年間まとめ"),
+        ("Goodreads から乗り換え", "CSV で本棚をインポート"),
+        ("次に読む本を 見つけよう", "スマホ上で作るおすすめ"),
+        ("どんな表紙も スキャン", "スマホ上で認識")]),
+    "ko": dict(chapter=6, folder="ko", reader=(468431, 64317), scan=102749, copy=[
+        ("내 책, 오프라인으로", "계정 없음 · 광고 없음"),
+        ("오디오북 듣기", "내 파일을 챕터별로"),
+        ("내 파일 읽기", FORMATS),
+        ("어떤 책이든 찾기", "빠른 오프라인 검색"),
+        ("나의 독서 한 해", "통계 · 연속 기록 · 연말 결산"),
+        ("Goodreads에서 옮기기", "CSV로 서재 가져오기"),
+        ("다음 책 발견하기", "내 폰에서 만든 추천"),
+        ("표지를 스캔하세요", "내 폰에서 인식")]),
+    "lv": dict(chapter=6, folder="lv", reader=(85892, 345), copy=[
+        ("Jūsu grāmatas, bezsaistē", "Bez konta · Bez reklāmām"),
+        ("Klausieties audiogrāmatas", "Jūsu faili, ar nodaļām"),
+        ("Lasiet savus failus", FORMATS),
+        ("Atrodiet jebkuru grāmatu", "Ātra bezsaistes meklēšana"),
+        ("Jūsu lasīšanas gads", "Statistika, sērijas un gada kopsavilkums"),
+        ("Pārejiet no Goodreads", "Plauktu imports ar CSV"),
+        ("Atklājiet nākamo grāmatu", "Ieteikumi jūsu tālrunī"),
+        ("Skenējiet jebkuru vāku", "Atpazīts jūsu tālrunī")]),
+    "pl": dict(chapter=6, folder="pl", reader=(262454, 34079), scan=49488, copy=[
+        ("Twoje książki, offline", "Bez konta · Bez reklam"),
+        ("Słuchaj audiobooków", "Własne pliki, z rozdziałami"),
+        ("Czytaj własne pliki", FORMATS),
+        ("Znajdź każdą książkę", "Szybkie wyszukiwanie offline"),
+        ("Twój rok z książkami", "Statystyki, serie i podsumowanie roku"),
+        ("Przejdź z Goodreads", "Import półek z CSV"),
+        ("Odkryj następną lekturę", "Propozycje na Twoim telefonie"),
+        ("Zeskanuj każdą okładkę", "Rozpoznawana na telefonie")]),
+    "sv": dict(chapter=6, folder="sv",
+               reader=(53919, wikisource("sv", "Tom_Sawyers_äventyr")), copy=[
+        ("Dina böcker, offline", "Inget konto · Inga annonser"),
+        ("Lyssna på ljudböcker", "Egna filer, med kapitel"),
+        ("Läs dina egna filer", FORMATS),
+        ("Hitta vilken bok som helst", "Snabb offlinesökning"),
+        ("Ditt läsår i backspegeln", "Statistik, sviter och årssammanfattning"),
+        ("Byt från Goodreads", "Importera hyllor via CSV"),
+        ("Hitta nästa läsning", "Tips på din telefon"),
+        ("Skanna vilket omslag som helst", "Känns igen på din telefon")]),
+    "ru": dict(chapter=1, folder="ru-RU", catalogue="en",
+               reader=(166952, wikisource("ru", "Белые_ночи_(Достоевский)")), titles={
+        166952: "Белые ночи", 17091839: "Марсианин", 16509148: "Песнь Ахилла",
+        46881: "Парк юрского периода", 2163649: "Автостопом по галактике",
+        5819456: "Книжный вор", 46125: "Основание", 468431: "Великий Гэтсби",
+        679358: "Коралина", 19096402: "Безмолвный пациент",
+        103123: "451° по Фаренгейту"}, copy=[
+        ("Ваши книги, офлайн", "Без аккаунта · Без рекламы"),
+        ("Слушайте аудиокниги", "Свои файлы, с главами"),
+        ("Читайте свои файлы", FORMATS),
+        ("Найдите любую книгу", "Быстрый офлайн-поиск"),
+        ("Ваш год в книгах", "Статистика, серии и итоги года"),
+        ("Уходите из Goodreads", "Импорт полок через CSV"),
+        ("Найдите что почитать", "Подборки на вашем телефоне"),
+        ("Сканируйте любую обложку", "Распознаётся на телефоне")]),
+    "pt-BR": dict(chapter=7, folder="pt-BR", catalogue="en",
+                  reader=(1003017, 54829), titles={
+        1003017: "Memórias Póstumas de Brás Cubas", 17091839: "Perdido em Marte",
+        16509148: "A Canção de Aquiles", 2163649: "O Guia do Mochileiro das Galáxias",
+        5819456: "A Menina que Roubava Livros", 46125: "Fundação",
+        468431: "O Grande Gatsby", 19096402: "A Paciente Silenciosa"}, copy=[
+        ("Seus livros, offline", "Sem conta · Sem anúncios"),
+        ("Ouça audiolivros", "Seus arquivos, com capítulos"),
+        ("Leia seus arquivos", FORMATS),
+        ("Encontre qualquer livro", "Busca offline rápida"),
+        ("Reviva seu ano de leitura", "Estatísticas, sequências e retrospectiva"),
+        ("Saia do Goodreads", "Importe estantes via CSV"),
+        ("Descubra sua próxima leitura", "Sugestões feitas no celular"),
+        ("Escaneie qualquer capa", "Reconhecida no seu celular")]),
+    "pt-PT": dict(chapter=8, folder="pt-PT", catalogue="en",
+                  reader=(846513, 40409), titles={
+        846513: "Os Maias", 17091839: "O Marciano", 16509148: "A Canção de Aquiles",
+        46881: "Parque Jurássico", 2163649: "À Boleia pela Galáxia",
+        5819456: "A Rapariga que Roubava Livros", 46125: "Fundação",
+        468431: "O Grande Gatsby", 19096402: "A Paciente Silenciosa"}, copy=[
+        ("Os seus livros, offline", "Sem conta · Sem anúncios"),
+        ("Ouça audiolivros", "Os seus ficheiros, com capítulos"),
+        ("Leia os seus ficheiros", FORMATS),
+        ("Encontre qualquer livro", "Pesquisa rápida offline"),
+        ("Reviva o seu ano de leitura", "Estatísticas, sequências e resumo anual"),
+        ("Deixe o Goodreads", "Importe estantes via CSV"),
+        ("Descubra a próxima leitura", "Sugestões feitas no telemóvel"),
+        ("Digitalize qualquer capa", "Reconhecida no seu telemóvel")]),
+    "it": dict(chapter=4, folder="it-IT", catalogue="en",
+               reader=(1527356, 52484), titles={
+        1527356: "Le avventure di Pinocchio", 17091839: "L’uomo di Marte",
+        16509148: "La canzone di Achille",
+        2163649: "Guida galattica per gli autostoppisti",
+        5819456: "La bambina che salvava i libri", 46125: "Fondazione",
+        468431: "Il grande Gatsby", 19096402: "La paziente silenziosa"}, copy=[
+        ("I tuoi libri, offline", "Niente account · Niente pubblicità"),
+        ("Ascolta audiolibri", "I tuoi file, con capitoli"),
+        ("Leggi i tuoi file", FORMATS),
+        ("Trova ogni libro", "Ricerca offline veloce"),
+        ("Rivivi il tuo anno di lettura", "Statistiche, serie e riepilogo annuale"),
+        ("Lascia Goodreads", "Importa gli scaffali da CSV"),
+        ("Scopri la prossima lettura", "Consigli creati sul telefono"),
+        ("Scansiona ogni copertina", "Riconosciuta sul telefono")]),
+}
+
+
+def log(message):
+    print(time.strftime("%H:%M:%S"), message, flush=True)
+
+
+def download(url, path):
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        address = urllib.parse.quote(url, safe=":/?&=%")
+        headers = {"User-Agent": "shelf-screenshots"}
+        request = urllib.request.Request(address, headers=headers)
+        with urllib.request.urlopen(request, timeout=300) as response:
+            path.write_bytes(response.read())
+    return path
+
+
+def catalogue_of(language):
+    return LOCALES[language].get("catalogue", language)
+
+
+def catalogue_packs(languages):
+    gradle = (ANDROID / "app/build.gradle.kts").read_text()
+    release = re.search(r'catalogueRelease = "([^"]+)"', gradle)[1]
+    base = f"https://github.com/tn3w/Shelf/releases/download/{release}"
+    folder = CACHE / release
+    manifest = json.loads(download(f"{base}/manifest.json", folder / "manifest.json")
+                          .read_text())
+    wanted = {catalogue_of(language) for language in languages}
+    for segment in manifest["segments"]:
+        if segment["language"] in wanted and segment["pack"] in ("core", "ranks"):
+            download(segment["url"], folder / f"{segment['id']}.bin")
+    return folder
+
+
+def epub(source):
+    if isinstance(source, int):
+        source = f"https://www.gutenberg.org/ebooks/{source}.epub3.images"
+    name = re.sub(r"\W+", "-", source.split("//")[1])
+    return download(source, CACHE / "books" / f"{name}.epub")
+
+
+def silence():
+    path = CACHE / "silence.m4a"
+    if not path.exists():
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "anullsrc=r=8000:cl=mono", "-t", "900",
+                        "-c:a", "aac", "-b:a", "8k", path], check=True)
+    return path
+
+
+def wanted_works(language):
+    locale = LOCALES[language]
+    shelves = ASIAN_SHELVES.get(language, SHELVES)
+    return [locale["reader"][0], locale.get("scan", 0), *sum(shelves.values(), [])]
+
+
+def catalogue_books(languages, packs):
+    requests = {language: dict(catalogue=catalogue_of(language),
+                               works=wanted_works(language),
+                               epub=str(epub(LOCALES[language]["reader"][1])))
+                for language in languages}
+    request, answer = CACHE / "books-request.json", CACHE / "books.json"
+    request.write_text(json.dumps(requests))
+    arguments = f"{packs} {request} {answer}"
+    subprocess.run(["./gradlew", "-q", "screenshotBooks", f"--args={arguments}"],
+                   cwd=ANDROID, check=True)
+    return json.loads(answer.read_text())
+
+
+def chapter_title(title):
+    title = NUMBERING.sub("", title).strip() or title
+    if not title.isupper() or re.fullmatch(r"[IVXLC]+\.?", title):
+        return title
+    words = string.capwords(title.lower()).split()
+    return " ".join(word.lower() if index and word.lower() in SMALL_WORDS else word
+                    for index, word in enumerate(words))
+
+
+def is_native(title, language):
+    return language not in ("ja", "ko") or any(char >= "\u3000" for char in title)
+
+
+def shelves(language, found):
+    locale = LOCALES[language]
+    titles = locale.get("titles", {})
+    books = {work: (work, titles.get(work, title.split(" ; ")[0]), author, cover)
+             for work, title, author, cover in found["books"]}
+    work, _, *own = locale["reader"]
+    reader = books.get(work) or (work, *own, 0)
+    used = {work}
+
+    def take(works, count):
+        chosen = [books[work] for work in works
+                  if work in books and books[work][3] and work not in used][:count]
+        used.update(book[0] for book in chosen)
+        return chosen
+
+    pools = ASIAN_SHELVES.get(language, SHELVES)
+    popular = [tuple(book) for book in found["popular"]
+               if book[0] not in SKIPPED and is_native(book[1], language)]
+    books |= {book[0]: book for book in popular}
+    reading, want = take(pools["reading"], 2), take(pools["want"], 4)
+    finished = take(pools["finished"], 4)
+    finished += take([book[0] for book in popular], HISTORY - len(finished))
+    return dict(reader=reader, reading=reading, want=want, finished=finished,
+                scan=books.get(locale.get("scan")) or want[0])
+
+
+def finished_dates(count, today):
+    start = datetime.date(today.year, 1, 4)
+    span = (today - start).days - 6
+    return [start + datetime.timedelta(days=span * (index + 1) // count)
+            for index in range(count)]
+
+
+def millis(day, hour=21):
+    moment = datetime.datetime.combine(day, datetime.time(hour))
+    return int(moment.timestamp() * 1000)
+
+
+def entries(books, today):
+    now = millis(today, 9)
+    rated = random.Random(7)
+    rows = [dict(work=book[0], shelf="Reading", title=book[1], author=book[2],
+                 cover=book[3], updated=now - index * DAY, added=now - (index + 8) * DAY,
+                 started=now - (index + 2) * 6 * DAY)
+            for index, book in enumerate([books["reader"], *books["reading"]])]
+    rows += [dict(work=book[0], shelf="Want", title=book[1], author=book[2],
+                  cover=book[3], updated=now - (index + 3) * DAY,
+                  added=now - (index + 3) * DAY)
+             for index, book in enumerate(books["want"])]
+    days = finished_dates(len(books["finished"]), today)
+    rows += [dict(work=book[0], shelf="Read", title=book[1], author=book[2],
+                  cover=book[3], rating=rated.choice([4, 5, 5, 5, 3, 4]),
+                  updated=millis(day), finished=millis(day),
+                  added=millis(day) - 30 * DAY,
+                  started=millis(day) - rated.randint(4, 18) * DAY)
+             for book, day in zip(reversed(books["finished"]), days)]
+    return rows
+
+
+def activity(today):
+    pages = random.Random(today.year)
+    start = datetime.date(today.year, 1, 1)
+    count = (today - start).days + 1
+    days = (start + datetime.timedelta(index) for index in range(count))
+    choices = [0, 0, 12, 18, 24, 31, 38, 45, 52, 66]
+    counts = {str(day): pages.choice(choices) for day in days}
+    for index in range(STREAK):
+        counts[str(today - datetime.timedelta(index))] = pages.randint(DAILY_GOAL + 2, 48)
+    return {day: count for day, count in counts.items() if count}
+
+
+def audiobook(reader, chapters, chapter):
+    uri = f"file://{DATA}/audio/screenshots/silence.m4a"
+    tracks = [dict(uri=uri, title=chapter_title(title),
+                   millis=(14 + (index * 7 + len(title)) % 23) * MINUTE)
+              for index, (title, _) in enumerate(chapters)]
+    position = dict(tracks=tracks, track=chapter, millis=4 * MINUTE + 12_000)
+    return {str(reader[0]): position}
+
+
+def library_state(language, books, theme, today):
+    now = millis(today, 9)
+    settings = dict(onboarded=True, language=catalogue_of(language), theme=theme,
+                    wallpaperColors=False, dailyGoal=DAILY_GOAL, checkUpdates=False,
+                    catalogueUpdates=False, lastCatalogueCheck=now, lastAppCheck=now)
+    return dict(entries=entries(books, today), settings=settings)
+
+
+def reading_state(books, chapters, chapter, today):
+    reader = books["reader"]
+    section = chapters[chapter][1]
+    pages = 240
+    page = pages * chapter // max(1, len(chapters))
+    progress = dict(file=f"{reader[0]}.epub", section=section, page=page, pages=pages)
+    return dict(progress={str(reader[0]): progress}, activity=activity(today),
+                audiobooks=audiobook(reader, chapters, chapter), listening=[reader[0]])
+
+
+def adb(*arguments, timeout=120):
+    command = ["adb", "-s", SERIAL, *map(str, arguments)]
+    return subprocess.run(command, capture_output=True, timeout=timeout).stdout
 
 
 def shell(*arguments):
     return adb("shell", *arguments).decode()
 
 
-def protobuf_field(number, payload):
-    length, size = b"", len(payload)
-    while True:
-        byte, size = size & 0x7F, size >> 7
-        length += bytes([byte | (0x80 if size else 0)])
-        if not size:
-            break
-    return bytes([number << 3 | 2]) + length + payload
+def push(source, target):
+    adb("push", source, target)
 
 
-def preferences(values):
-    return b"".join(
-        protobuf_field(1, protobuf_field(1, key.encode())
-                       + protobuf_field(2, protobuf_field(5, text.encode())))
-        for key, text in values.items()
-    )
-
-
-def epub(gutenberg):
-    path = CACHE / f"{gutenberg}.epub"
-    if not path.exists():
-        url = f"https://www.gutenberg.org/ebooks/{gutenberg}.epub3.images"
-        urllib.request.urlretrieve(url, path)
+def write_json(name, value):
+    path = CACHE / name
+    path.write_text(json.dumps(value, ensure_ascii=False))
     return path
 
 
-def library(locale, theme):
-    now = int(time.time() * 1000)
-    reader = locale["reader"]
-    shelves = [(reader, "Reading")]
-    shelves += [(book, "Reading") for book in locale["reading"]]
-    shelves += [(book, "Want") for book in locale["want"]]
-    shelves += [(book, "Read") for book in locale["finished"]]
-    entries = [
-        dict(work=book[0], shelf=shelf, updated=now - index * DAY,
-             title=book[1], author=book[2], cover=book[3])
-        for index, (book, shelf) in enumerate(shelves)
-    ]
-    file = f"{reader[0]}.epub"
-    section = locale.get("section", 3)
-    progress = {reader[0]: dict(file=file, section=section, page=14, pages=96)}
+def push_packs(language, packs):
+    present = shell("ls", f"{DATA}/catalogue").split()
+    for pack in packs.glob(f"{catalogue_of(language)}-*.bin"):
+        if pack.name not in present:
+            push(pack, f"{DATA}/catalogue/{pack.name}")
+
+
+def seed(language, books, chapters, theme, packs):
     today = datetime.date.today()
-    pages = [34, 22, 41, 27, 30, 25, 38, 21, 29, 45, 23, 31, 26, 18]
-    activity = {str(today - datetime.timedelta(days)): count
-                for days, count in enumerate(pages)}
-    settings = dict(onboarded=True, language=locale.get("catalogue", locale["language"]),
-                    theme=theme,
-                    wallpaperColors=False, dailyGoal=20, onlineCovers=True,
-                    checkUpdates=False, lastCatalogueCheck=now, lastAppCheck=now)
-    values = dict(entries=entries, progress=progress, activity=activity,
-                  settings=settings, recent=locale["searches"])
-    return preferences({key: json.dumps(value) for key, value in values.items()})
-
-
-def seed(locale, theme):
+    reader = books["reader"]
     shell("am", "force-stop", PACKAGE)
     owner = shell("stat", "-c", "%U", f"/data/data/{PACKAGE}").strip()
-    store = CACHE / "library.preferences_pb"
-    store.write_bytes(library(locale, theme))
-    shell("rm", "-rf", f"{DATA}/datastore", f"{DATA}/books")
-    shell("mkdir", "-p", f"{DATA}/datastore", f"{DATA}/books")
-    adb("push", str(store), f"{DATA}/datastore/library.preferences_pb")
-    reader = locale["reader"]
-    adb("push", str(epub(reader[4])), f"{DATA}/books/{reader[0]}.epub", timeout=120)
+    shell("rm", "-rf", f"{DATA}/datastore", f"{DATA}/books", f"{DATA}/audio")
+    shell("mkdir", "-p", f"{DATA}/datastore", f"{DATA}/books", f"{DATA}/catalogue",
+          f"{DATA}/audio/screenshots")
+    library = write_json("library.json", library_state(language, books, theme, today))
+    chapter = LOCALES[language].get("chapter", CHAPTER)
+    reading = write_json("reading.json", reading_state(books, chapters, chapter, today))
+    push(library, f"{DATA}/datastore/library.json")
+    push(reading, f"{DATA}/datastore/reading.json")
+    push(epub(LOCALES[language]["reader"][1]), f"{DATA}/books/{reader[0]}.epub")
+    push(silence(), f"{DATA}/audio/screenshots/silence.m4a")
+    push_packs(language, packs)
     shell("chown", "-R", f"{owner}:{owner}", DATA)
     shell("restorecon", "-R", DATA)
-    shell("cmd", "locale", "set-app-locales", PACKAGE, "--locales", locale["language"])
+    shell("cmd", "locale", "set-app-locales", PACKAGE, "--locales", language)
     shell("pm", "grant", PACKAGE, "android.permission.CAMERA")
 
 
 def launch():
     shell("am", "force-stop", PACKAGE)
     shell("monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
+
+
+NODE = re.compile(r'text="([^"]*)"[^>]*content-desc="([^"]*)"[^>]*'
+                  r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"')
 
 
 def nodes():
@@ -505,7 +498,7 @@ def wait(condition, timeout=30):
         if found:
             return found
         time.sleep(0.3)
-    raise TimeoutError(condition.__doc__ or "screen")
+    raise TimeoutError(condition.__doc__)
 
 
 def find(label, exact=True):
@@ -518,223 +511,148 @@ def find(label, exact=True):
 
 def center(node):
     _, _, left, top, right, bottom = node
-    return str((int(left) + int(right)) // 2), str((int(top) + int(bottom)) // 2)
+    return (int(left) + int(right)) // 2, (int(top) + int(bottom)) // 2
 
 
 def tap(label, exact=True, timeout=30):
     shell("input", "tap", *center(wait(find(label, exact), timeout)[0]))
 
 
-def covers(locale, minimum):
-    def condition(current):
-        found = [node for node in current if node[1].startswith(locale["cover"])]
-        return found if len(found) >= minimum else []
-    condition.__doc__ = f"{minimum} covers"
-    return condition
+def open_until(label, target, attempts=3):
+    for _ in range(attempts):
+        tap(label)
+        try:
+            return wait(find(target), timeout=10)
+        except TimeoutError:
+            continue
+    raise TimeoutError(target)
 
 
-def ready():
-    time.sleep(COVER_LOAD)
-    return settled()
+def back():
+    shell("input", "keyevent", "BACK")
 
 
 def screencap():
-    return adb("exec-out", "screencap", "-p")
+    return Image.open(io.BytesIO(adb("exec-out", "screencap", "-p"))).convert("RGB")
 
 
-def settled(timeout=20):
-    previous = screencap()
+def changed(before, after):
+    difference = ImageChops.difference(before, after).convert("L").point(
+        lambda value: 255 if value > 24 else 0)
+    return numpy.count_nonzero(numpy.asarray(difference)) / (after.width * after.height)
+
+
+def settled(calm=3, timeout=30):
+    time.sleep(1)
+    previous, still = screencap(), 0
     deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
+    while still < calm and time.monotonic() < deadline:
         time.sleep(0.4)
         current = screencap()
-        if current == previous:
-            return current
+        still = still + 1 if changed(previous, current) < 0.002 else 0
         previous = current
     return previous
 
 
-def log(message):
-    print(time.strftime("%H:%M:%S"), message, flush=True)
-
-
-def swipe(distance, duration=900):
-    shell("input", "swipe", "540", "1600", "540", str(1600 - distance), str(duration))
-
-
-def scroll_to(label):
-    previous = None
-    for _ in range(12):
-        current = nodes()
-        found = find(label)(current)
-        if not found:
-            swipe(800)
-            continue
-        top = int(found[0][3])
-        above = [int(node[5]) for node in current if STATUS_BAR < int(node[5]) <= top]
-        distance = max(above, default=STATUS_BAR) - STATUS_BAR
-        if distance <= 12 or distance == previous:
-            return
-        previous = distance
-        swipe(min(1000, distance) + TOUCH_SLOP, 1500)
-    raise TimeoutError(label)
-
-
-def text_height(capture):
-    image = Image.open(io.BytesIO(capture)).convert("L").crop((0, 200, 1080, 2200))
-    paper = image.getpixel((0, 0))
-    ink = image.point(lambda value: 255 if abs(value - paper) > 50 else 0)
-    box = ink.getbbox()
+def ink_height(image):
+    gray = image.convert("L").crop((0, 300, image.width, image.height - 200))
+    paper = gray.getpixel((0, 0))
+    box = gray.point(lambda value: 255 if abs(value - paper) > 50 else 0).getbbox()
     return box[3] - box[1] if box else 0
 
 
-def with_status_bar(capture, source):
-    image = Image.open(io.BytesIO(capture))
-    image.paste(Image.open(io.BytesIO(source)).crop((0, 0, image.width, STATUS_BAR)))
-    output = io.BytesIO()
-    image.save(output, "PNG")
-    return output.getvalue()
-
-
 def full_page():
-    for _ in range(20):
-        capture = settled()
-        if text_height(capture) > 1600:
-            return capture
+    for _ in range(6):
+        page = settled(calm=2)
+        if ink_height(page) > 1500:
+            return page
         shell("input", "tap", "1000", "1200")
-    raise TimeoutError("full reader page")
+    return page
 
 
-def scroll_into_view(label):
-    for _ in range(12):
-        if find(label)(nodes()):
-            return
-        swipe(800)
-    raise TimeoutError(label)
+@cache
+def strings(language):
+    folder = "values" if language == "en" else f"values-{android_folder(language)}"
+    tree = ElementTree.parse(STRINGS / folder / "strings.xml")
+    return {item.get("name"): item.text for item in tree.getroot().iter("string")}
 
 
-def download_packs(locale):
-    language = locale["language"]
-    title, button = locale["settings"]
-    tap(title)
-    tap(label(language, "catalogue"))
-    scroll_into_view(label(language, "check_catalogue"))
-    tap(label(language, "check_catalogue"))
-    try:
-        wait(find(button), timeout=60)
-    except TimeoutError:
-        return
-    tap(button)
-    wait(lambda current: not find(button)(current), timeout=900)
+def android_folder(language):
+    code, _, region = language.partition("-")
+    return f"{code}-r{region}" if region and region != "BR" else code
 
 
-def series_heading(locale):
-    try:
-        count = wait(find(locale["series"], exact=False), timeout=6)[0]
-    except TimeoutError:
-        return None
-    above = [node for node in nodes() if node[0] and int(node[5]) <= int(count[3])]
-    return max(above, key=lambda node: int(node[5]))[0]
+def label(language, name):
+    return (strings(language).get(name) or strings("en")[name]).replace("\\'", "'")
 
 
-def series_book(locale, current):
-    shelved = [*locale["reading"], *locale["want"], *locale["finished"]]
-    pages = [current, *[book for book in shelved if book is not current]]
-    for index, book in enumerate(pages):
-        try:
-            if index:
-                tap(locale["tabs"][1], timeout=8)
-                tap(book[1], timeout=8)
-                wait(find(book[2]))
-            scroll_to(locale["about"])
-            heading = series_heading(locale)
-            if heading:
-                scroll_to(heading)
-                return
-        except TimeoutError:
-            continue
-    log(f"{locale['language']}: no book with a series in this catalogue")
+def fragment(language, name):
+    return max(re.split(r"%(?:\d\$)?[sd]", label(language, name)), key=len).strip()
 
 
-def capture(locale, folder):
-    home, library_tab, explore = locale["tabs"]
-    reader = locale["reader"]
-    book = locale["reading"][0]
+def capture(language, books, folder):
+    tabs = [label(language, name) for name in ("home", "library", "explore", "search")]
+    reader = books["reader"]
     folder.mkdir(parents=True, exist_ok=True)
 
     def save(name, image):
-        (folder / f"{name}.png").write_bytes(image)
-        log(f"{locale['language']}: {name}")
+        image.save(folder / f"{name}.png")
+        log(f"{language}: {name}")
 
-    wait(find(reader[1]))
-    wait(covers(locale, 3))
-    save("1_home", ready())
-
-    tap(library_tab)
-    total = 1 + sum(len(locale[shelf]) for shelf in ("reading", "want", "finished"))
-    wait(covers(locale, min(9, total)))
-    save("2_library", ready())
-
-    tap(book[1])
-    wait(find(book[2]))
-    details = ready()
-    save("3_book", details)
-
-    series_book(locale, book)
-    save("4_series", with_status_bar(ready(), details))
-
-    tap(explore)
-    tap(locale["picks"], exact=False)
-    wait(covers(locale, 3))
-    save("5_explore", ready())
-
-    tap(home)
-    tap(reader[1])
-    wait(lambda current: not find(home)(current))
-    save("6_reader", full_page())
-
-    shell("input", "keyevent", "BACK")
-    capture_scan(locale, folder)
     launch()
-    capture_settings(locale, folder)
+    open_until(reader[1], label(language, "remove_audiobook"))
+    save("2_listen", settled())
+    back()
+    save("3_reader", full_page())
+    back()
+    wait(find(tabs[0]))
+    save("1_home", settled())
 
+    open_until(tabs[1], books["want"][0][1])
+    save("6_library", settled())
 
-def capture_settings(locale, folder):
-    folder.mkdir(parents=True, exist_ok=True)
-    tap(locale["settings"][0])
+    open_until(books["reading"][0][1], books["reading"][0][2])
+    save("4_book", settled())
+
+    tap(tabs[2])
+    tap(fragment(language, "because_you_read"), exact=False)
     time.sleep(1)
-    (folder / "8_settings.png").write_bytes(settled())
-    log(f"{locale['language']}: 8_settings")
+    save("7_explore", settled())
+
+    tap(tabs[0])
+    tap(label(language, "stats"))
+    tap(fragment(language, "wrapped_banner"), exact=False)
+    time.sleep(2)
+    save("5_wrapped", settled(calm=2))
+    launch()
+    capture_scan(language, folder, tabs[3])
 
 
-def sheet_title_top():
-    lower = [int(node[3]) for node in nodes() if node[0] and int(node[3]) > 1200]
-    return min(lower)
-
-
-def capture_scan(locale, folder):
-    search, scan, again, _ = locale["scan"]
-    folder.mkdir(parents=True, exist_ok=True)
-    demo_mode()
+def capture_scan(language, folder, search):
+    again = label(language, "scan_again")
     tap(search)
-    tap(scan)
+    tap(label(language, "scan"))
     started = time.monotonic()
     while not find(again)(nodes()):
-        if time.monotonic() - started > 180:
-            raise TimeoutError(again)
+        if time.monotonic() - started > 120:
+            return log(f"{language}: cover not recognized")
         if time.monotonic() - started > 15:
             shell("input", "tap", "540", "800")
         time.sleep(2)
-    time.sleep(2)
-    (folder / "7_scan.png").write_bytes(settled())
-    (folder / "7_scan.txt").write_text(str(sheet_title_top()))
-    log(f"{locale['language']}: 7_scan")
+    screen = settled()
+    lower = [int(node[3]) for node in nodes() if node[0] and int(node[3]) > 1200]
+    save_scan = folder / "8_scan.png"
+    screen.save(save_scan)
+    (folder / "8_scan.txt").write_text(str(min(lower)))
+    log(f"{language}: 8_scan")
 
 
 def demo_mode():
     shell("settings", "put", "global", "sysui_demo_allowed", "1")
+    shell(*DEMO, "exit")
+    time.sleep(1)
     shell(*DEMO, "enter")
-    shell(*DEMO, "clock", "-e", "hhmm", "1230")
+    shell(*DEMO, "clock", "-e", "hhmm", "0941")
     shell(*DEMO, "battery", "-e", "level", "100", "-e", "plugged", "false")
     shell(*DEMO, "network", "-e", "wifi", "show", "-e", "level", "4",
           "-e", "fully", "true")
@@ -743,21 +661,18 @@ def demo_mode():
 
 
 def cover_image(cover):
-    path = CACHE / f"cover-{cover}.jpg"
-    if not path.exists():
-        url = f"https://covers.openlibrary.org/b/id/{cover}-L.jpg"
-        urllib.request.urlretrieve(url, path)
-    return Image.open(path).convert("RGB")
+    url = f"https://covers.openlibrary.org/b/id/{cover}-L.jpg"
+    return Image.open(download(url, CACHE / "covers" / f"{cover}.jpg")).convert("RGB")
 
 
 def wood():
     width, height = SCENE_SIZE
-    random = numpy.random.default_rng(7)
-    streaks = Image.fromarray(random.normal(128, 40, (height // 60, width)).clip(0, 255)
+    noise = numpy.random.default_rng(7)
+    streaks = Image.fromarray(noise.normal(128, 40, (height // 60, width)).clip(0, 255)
                               .astype("uint8")).resize(SCENE_SIZE, Image.BICUBIC)
     grain = numpy.asarray(streaks) / 255 - 0.5
     plank = numpy.arange(width) // 360
-    tint = random.uniform(-0.06, 0.06, plank.max() + 1)[plank]
+    tint = noise.uniform(-0.06, 0.06, plank.max() + 1)[plank]
     y, x = numpy.mgrid[0:height, 0:width] / height
     light = 1.12 - 0.3 * ((x - 0.37) ** 2 + (y - 0.3) ** 2)
     seam = numpy.where(numpy.arange(width) % 360 < 3, 0.55, 1.0)
@@ -766,7 +681,7 @@ def wood():
     return Image.fromarray(color.clip(0, 255).astype("uint8"))
 
 
-def book(cover):
+def volume(cover):
     image = cover_image(cover)
     width = round(BOOK_HEIGHT * image.width / image.height)
     front = image.resize((width, BOOK_HEIGHT), Image.LANCZOS)
@@ -782,21 +697,21 @@ def book(cover):
     return sheet
 
 
-def shadow_of(volume):
-    shadow = Image.new("RGBA", (volume.width + 160, volume.height + 160), (25, 12, 0, 0))
+def shadow_of(book):
+    shadow = Image.new("RGBA", (book.width + 160, book.height + 160), (25, 12, 0, 0))
     mask = Image.new("L", shadow.size)
-    mask.paste(volume.getchannel("A").point(lambda alpha: alpha * 0.6), (80, 80))
+    mask.paste(book.getchannel("A").point(lambda alpha: alpha * 0.6), (80, 80))
     shadow.putalpha(mask)
     return shadow
 
 
-def scene_frame(table, volume, shadow, step):
+def scene_frame(table, book, shadow, step):
     phase = 2 * math.pi * step / VIDEO_FRAMES
     angle = 4 + 2 * math.sin(phase)
     scale = 1 + 0.03 * math.sin(2 * phase)
     drift = (round(12 * math.cos(phase)), round(12 * math.sin(phase)))
     scene = table.copy()
-    for layer, offset in ((shadow, (30, 40)), (volume, (0, 0))):
+    for layer, offset in ((shadow, (30, 40)), (book, (0, 0))):
         size = (round(layer.width * scale), round(layer.height * scale))
         turned = layer.resize(size, Image.LANCZOS)
         turned = turned.rotate(angle, Image.BICUBIC, expand=True)
@@ -811,110 +726,69 @@ def scene_frame(table, volume, shadow, step):
     return camera
 
 
-def render_scene(cover):
-    path = CACHE / f"scene-{cover}.mp4"
+def scene(cover):
+    path = CACHE / "scenes" / f"{cover}.mp4"
     if path.exists():
         return path
-    folder = CACHE / "scene"
-    shutil.rmtree(folder, ignore_errors=True)
-    folder.mkdir()
-    table = wood().convert("RGBA")
-    volume = book(cover)
-    shadow = shadow_of(volume)
+    frames = CACHE / "frames"
+    shutil.rmtree(frames, ignore_errors=True)
+    frames.mkdir(parents=True)
+    table, book = wood().convert("RGBA"), volume(cover)
+    shadow = shadow_of(book)
     for step in range(VIDEO_FRAMES):
-        frame = scene_frame(table, volume, shadow, step)
-        frame.save(folder / f"{step:03d}.jpg", quality=92)
+        frame = scene_frame(table, book, shadow, step)
+        frame.save(frames / f"{step:03d}.jpg", quality=92)
+    path.parent.mkdir(exist_ok=True)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "10", "-i",
-                    folder / "%03d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", path],
+                    frames / "%03d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", path],
                    check=True)
     return path
 
 
-def restart_emulator(camera):
-    if adb("get-state").strip() == b"device":
-        shell("sync")
-        adb("emu", "kill")
-    while adb("get-state").strip() == b"device":
-        time.sleep(1)
-    command = [EMULATOR / "emulator", "-avd", AVD, "-no-snapshot", "-no-audio",
-               "-camera-back", f"videofile:{camera}"]
-    subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                     start_new_session=True)
-    adb("wait-for-device", timeout=300)
-    while shell("getprop", "init.svc.bootanim").strip() != "stopped":
-        time.sleep(1)
-    prepare_device()
-
-
-def prepare_device():
+def start_emulator():
+    if adb("get-state", timeout=10).strip() != b"device":
+        command = [EMULATOR / "emulator", "-avd", AVD, "-no-snapshot", "-no-audio",
+                   "-camera-back", f"videofile:{CAMERA}"]
+        subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+        adb("wait-for-device", timeout=300)
+        while shell("getprop", "sys.boot_completed").strip() != "1":
+            time.sleep(1)
+        time.sleep(5)
     adb("root")
     adb("wait-for-device")
     for scale in ("window_animation_scale", "transition_animation_scale",
                   "animator_duration_scale"):
         shell("settings", "put", "global", scale, "0")
     demo_mode()
-    wait_for_network()
-
-
-def wait_for_network(timeout=120):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if shell("ping", "-c1", "-W2", "covers.openlibrary.org").startswith("PING"):
-            time.sleep(5)
-            return
-        time.sleep(2)
-    raise TimeoutError("network")
 
 
 def raw_folder(language, theme):
     return CACHE / "raw" / f"{language}-{theme}"
 
 
-ONLY = {"7_scan": capture_scan, "8_settings": capture_settings}
-
-
-def night(theme):
-    shell("cmd", "uimode", "night", "yes" if theme == "Dark" else "no")
-
-
-def capture_language(locale, themes, only):
-    seed(locale, "System")
-    launch()
-    if "catalogue" not in locale:
-        download_packs(locale)
-    for theme in themes:
-        log(f"{locale['language']}: {theme}")
-        night(theme)
-        demo_mode()
-        launch()
-        ONLY.get(only, capture)(locale, raw_folder(locale["language"], theme))
-
-
-def by_scan_cover(plan):
-    groups = {}
-    for language, themes in plan:
-        groups.setdefault(LOCALES[language]["scan"], []).append((language, themes))
-    return groups
-
-
-def capture_all(plan, only):
-    if adb("get-state", timeout=10).strip() == b"device":
-        prepare_device()
+def capture_all(plan, found, packs):
+    shutil.copy(scene(shelves(plan[0][0], found[plan[0][0]])["scan"][3]), CAMERA)
+    start_emulator()
     try:
-        for cover, group in by_scan_cover(plan).items():
-            if only in (None, "7_scan"):
-                restart_emulator(render_scene(cover))
-            for language, themes in group:
-                capture_language(with_labels(language), themes, only)
+        for language, themes in plan:
+            books = shelves(language, found[language])
+            shutil.copy(scene(books["scan"][3]), CAMERA)
+            chapters = found[language]["chapters"]
+            for theme in themes:
+                log(f"{language}: {theme}")
+                seed(language, books, chapters, theme, packs)
+                demo_mode()
+                capture(language, books, raw_folder(language, theme))
     finally:
         shell("am", "force-stop", PACKAGE)
         shell(*DEMO, "exit")
 
 
-def output_folder(locale, theme):
+def output_folder(language, theme):
     if theme == "Dark":
         return DARK
-    return FASTLANE / locale["folder"] / "images/phoneScreenshots"
+    return FASTLANE / LOCALES[language]["folder"] / "images/phoneScreenshots"
 
 
 def without_band(screen, title_top):
@@ -929,22 +803,23 @@ def without_band(screen, title_top):
     return joined
 
 
-def compose_all(plan, only):
+def compose_all(plan):
     for language, themes in plan:
-        locale = LOCALES[language]
-        size = tiles.headline_size([headline for headline, _ in locale["copy"]])
+        copy = LOCALES[language]["copy"]
+        size = tiles.headline_size([headline for headline, _ in copy])
         for theme in themes:
-            target = output_folder(locale, theme)
+            source, target = raw_folder(language, theme), output_folder(language, theme)
             target.mkdir(parents=True, exist_ok=True)
-            screens = list(enumerate(zip(SCREENS, locale["copy"])))
-            screens = [screen for screen in screens if only in (None, screen[1][0])]
-            for index, (name, (headline, detail)) in screens:
-                screen = Image.open(raw_folder(language, theme) / f"{name}.png")
-                if name == "7_scan":
-                    title_top = (raw_folder(language, theme) / "7_scan.txt").read_text()
-                    screen = without_band(screen, int(title_top))
+            for index, (name, (headline, detail)) in enumerate(zip(SCREENS, copy)):
+                if not (source / f"{name}.png").exists():
+                    continue
+                screen = Image.open(source / f"{name}.png")
+                if name == "8_scan":
+                    title_top = int((source / "8_scan.txt").read_text())
+                    screen = without_band(screen, title_top)
                 dark = theme == "Dark"
-                tile = tiles.compose(screen, index, headline, detail, size, dark)
+                flipped = name in BOTTOM_HEAVY
+                tile = tiles.compose(screen, index, headline, detail, size, dark, flipped)
                 tile.save(target / f"{name}.jpg", quality=90, optimize=True)
             log(f"{language}: {theme} → {target.relative_to(ROOT)}")
 
@@ -962,13 +837,13 @@ def main():
     parser.add_argument("--dark", action="store_true", help="only the dark English set")
     parser.add_argument("--compose-only", action="store_true",
                         help="reuse cached captures without the emulator")
-    parser.add_argument("--only", choices=ONLY, help="just this screen")
     arguments = parser.parse_args()
-    CACHE.mkdir(exist_ok=True)
     plan = variants(arguments.locales, arguments.dark)
     if not arguments.compose_only:
-        capture_all(plan, arguments.only)
-    compose_all(plan, arguments.only)
+        languages = [language for language, _ in plan]
+        packs = catalogue_packs(languages)
+        capture_all(plan, catalogue_books(languages, packs), packs)
+    compose_all(plan)
 
 
 if __name__ == "__main__":

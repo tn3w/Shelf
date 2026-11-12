@@ -8,11 +8,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import screenshots as app
 
 CLIPS = Path(__file__).resolve().parent / "out" / "clips"
-LOCALE = app.LOCALES["en"] | dict(language="en")
+PACKS = app.catalogue_packs(["en"])
+FOUND = app.catalogue_books(["en"], PACKS)["en"]
+BOOKS = app.shelves("en", FOUND)
 PHONE = ("1080x2424", "420")
 TABLET = ("1264x1680", "340")
 DEMO = ["am", "broadcast", "-a", "com.android.systemui.demo", "-e", "command"]
-READER = LOCALE["reader"][1]
+READER = BOOKS["reader"][1]
+
+
+def seed(theme):
+    app.seed("en", BOOKS, FOUND["chapters"], theme, PACKS)
 
 
 def status_bar():
@@ -42,8 +48,9 @@ def swipe(direction, length=900, duration=900):
 
 
 def record(name, seconds, actions, size=PHONE[0]):
-    command = ["adb", "shell", "screenrecord", "--time-limit", str(seconds),
-               "--size", size, "--bit-rate", "30000000", "/sdcard/clip.mp4"]
+    command = ["adb", "-s", app.SERIAL, "shell", "screenrecord",
+               "--time-limit", str(seconds), "--size", size,
+               "--bit-rate", "30000000", "/sdcard/clip.mp4"]
     process = subprocess.Popen(command)
     time.sleep(1.2)
     actions()
@@ -56,7 +63,7 @@ def record(name, seconds, actions, size=PHONE[0]):
 def home():
     app.launch()
     app.wait(app.find(READER))
-    app.wait(app.covers(LOCALE, 3))
+    app.settled()
 
 
 def scroll_home():
@@ -79,7 +86,7 @@ def search():
 
 def book():
     app.tap("Library")
-    title, author = LOCALE["reading"][0][1:3]
+    title, author = BOOKS["reading"][0][1:3]
     app.wait(app.find(title))
     app.tap(title)
     app.wait(app.find(author))
@@ -118,12 +125,12 @@ def read_and_dim():
 
 def phone_clips():
     screen(PHONE)
-    app.seed(LOCALE, "Light")
+    seed("Light")
     for name, seconds, actions in (("home", 11, scroll_home), ("search", 9, search),
                                    ("book", 9, book), ("explore", 10, explore)):
         home()
         record(name, seconds, actions)
-    app.seed(LOCALE, "Dark")
+    seed("Dark")
     home()
     record("dark_home_scroll", 9, scroll_home)
 
@@ -131,7 +138,7 @@ def phone_clips():
 def tablet_clip():
     screen(TABLET)
     app.shell("cmd", "uimode", "night", "no")
-    app.seed(LOCALE, "System")
+    seed("System")
     app.launch()
     time.sleep(4)
     record("tablet_take", 16, read_and_dim(), TABLET[0])
@@ -141,7 +148,7 @@ def tablet_clip():
 
 if __name__ == "__main__":
     CLIPS.mkdir(parents=True, exist_ok=True)
-    app.prepare_device()
+    app.start_emulator()
     phone_clips()
     tablet_clip()
     app.shell("am", "force-stop", app.PACKAGE)

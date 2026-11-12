@@ -454,19 +454,21 @@ Size: only app locales and compressed native libs ship. `inter.ttf` is Inter at 
 
 Format with `ktlint -F "android/app/src/**/*.kt"`.
 
-Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, app installed, `ffmpeg`):
-`python3 tooling/screenshots.py [--only 7_scan|8_settings]`.
-Scan shot: emulator camera plays a rendered book-on-table loop; taps to capture after 30 s.
-`scroll_to(label)` scrolls until nothing visible sits above that section header, so use it
-for any section shot. Tab, settings, cover and scan labels come from
-`values-<lang>/strings.xml`, so Weblate translations reach the screenshots. Only headlines
-and demo books live in the script.
-Each language downloads its packs via Settings › Catalogue (Russian, Portuguese and Italian
-use the English catalogue until their packs ship; drop `catalogue` in `screenshots.py`). Demo books are picked per catalogue: titles and covers from that
-catalogue, a series book for the series shot. The scan shot needs a Latin-script cover:
-the recognizer reads Latin text only. Demo mode is re-applied after each theme switch;
-Hangul headlines use Noto Sans CJK KR, kana and kanji Noto Sans CJK JP (`fc-match`); a
-space in a CJK headline marks its line break.
+Store screenshots (root AVD `shelf-screenshots` or `SHELF_AVD`, serial `emulator-5554` or
+`SHELF_SERIAL`, current build installed, `ffmpeg`):
+`python3 tooling/screenshots.py [--locales en de] [--dark] [--compose-only]`.
+The script keeps only work ids: `./gradlew screenshotBooks` (`ScreenshotBooks.kt`) reads
+titles and covers from each catalogue pack, a reading history from its popular fiction and
+the reader book's chapters with the app's own EPUB parser. Packs, Gutenberg EPUBs and covers
+are cached in the temp folder and pushed with the seeded `library.json` and `reading.json`,
+so no screen downloads anything. One pass per language: audiobook player, reader, home with
+the dock player, library, book page, recommendations, Wrapped, then the scan. The audiobook
+is a silent track per chapter. Scan shot: the emulator camera plays a rendered
+book-on-table loop (`camera.mp4`, swapped per language); the recognizer reads Latin text
+only. Russian, Portuguese and Italian use the English catalogue until their packs ship
+(drop `catalogue` in `screenshots.py`). Labels come from `values-<lang>/strings.xml`, so
+Weblate translations reach the screenshots. Hangul headlines use Noto Sans CJK KR, kana and
+kanji Noto Sans CJK JP (`fc-match`); a space in a CJK headline marks its line break.
 
 GitHub social preview: `python3 tooling/thumbnail.py [out]` → `android/design/thumbnail.jpg`
 (1280×640, phones cut from en-US store screenshots). Upload it in repo Settings › Social

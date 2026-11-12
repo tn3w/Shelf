@@ -224,6 +224,13 @@ tasks.withType<Test>().configureEach {
     systemProperty("shelf.packs", providers.gradleProperty("shelf.packs").getOrElse(""))
 }
 
+tasks.register<JavaExec>("screenshotBooks") {
+    val unitTest = tasks.named<Test>("testGithubDebugUnitTest")
+    dependsOn(unitTest.map { it.taskDependencies })
+    classpath = files(unitTest.map { it.classpath })
+    mainClass = "dev.tn3w.shelf.data.ScreenshotBooksKt"
+}
+
 tasks.register<JavaExec>("scanBench") {
     val unitTest = tasks.named<Test>("testGithubDebugUnitTest")
     dependsOn("downloadCatalogue", unitTest.map { it.taskDependencies })

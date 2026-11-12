@@ -492,7 +492,10 @@ private fun DockTabs(selected: Int, onSelect: (Int) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(tab.icon, label.takeUnless { chosen }, Modifier.size(22.dp), content)
-                if (chosen) Text(label, color = content, style = Look.type.label)
+                if (chosen) {
+                    val whole = Modifier.width(IntrinsicSize.Max)
+                    Text(label, whole, content, style = Look.type.label, maxLines = 1)
+                }
             }
         }
     }
