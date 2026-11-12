@@ -106,8 +106,9 @@ class Navigator(
 ) {
     fun book(book: Book, origin: String) = books.navigate(BookRoute(book.work, origin))
 
-    fun bookPage(book: Book, origin: String) =
-        controller.navigate(BookRoute(book.work, origin))
+    fun bookPage(book: Book, origin: String) = bookPage(book.work, origin)
+
+    fun bookPage(work: Int, origin: String) = controller.navigate(BookRoute(work, origin))
 
     fun author(author: Author) =
         controller.navigate(AuthorRoute(author.number, author.name))
@@ -183,6 +184,8 @@ class MainViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun openFile(uri: Uri) = app.openFile(uri)
 
     fun consumeOpenedWork() = app.consumeOpenedWork()
+
+    suspend fun hasText(work: Int) = library.hasFile(library.progress.first()[work])
 
     fun consumeInstallConfirmation() = app.confirmInstall(null)
 
@@ -269,7 +272,11 @@ private fun OpenFile(viewModel: MainViewModel, navigator: Navigator) {
     LaunchedEffect(opened) {
         val work = opened ?: return@LaunchedEffect
         viewModel.consumeOpenedWork()
-        navigator.reader(work)
+        if (viewModel.hasText(work)) {
+            navigator.reader(work)
+        } else {
+            navigator.bookPage(work, "opened")
+        }
     }
 }
 

@@ -499,6 +499,25 @@
     <string name="voice">Voix</string>
     <string name="voice_missing">Aucune voix installée pour la langue de ce livre.</string>
     <string name="voice_settings">Réglages de la voix</string>
+    <string name="add_audiobook">Ajouter un livre audio</string>
+    <string name="remove_audiobook">Retirer le livre audio</string>
+    <string name="rewind">Reculer de 10 secondes</string>
+    <string name="fast_forward">Avancer de 10 secondes</string>
+    <string name="no_audio">Aucun audio lisible trouvé.</string>
+    <string name="voice_models">Modèles vocaux</string>
+    <string name="voice_models_hint">Téléchargements facultatifs pour des voix naturelles et la détection des locuteurs. Chaque fichier est vérifié par SHA-256 avant utilisation.</string>
+    <string name="model_speaker">Détection des locuteurs</string>
+    <string name="model_voices">Voix : %1$s</string>
+    <string name="not_enough_space">Espace de stockage insuffisant.</string>
     <string name="listen_failed">Synthèse vocale indisponible</string>
     <string name="no_text">Ce livre ne contient aucun texte lisible</string>
+    <string name="pause_item">Mettre en pause %s</string>
+    <string name="resume_item">Reprendre %s</string>
+    <string name="download_paused">En pause à %1$d %%</string>
+    <string name="more_options">Plus d’options</string>
+    <string name="character_voices">Voix des personnages</string>
+    <string name="character_voices_hint">Chaque personnage parle avec sa propre voix</string>
+    <string name="finding_speakers">Recherche des locuteurs…</string>
+    <string name="speakers_found">Locuteurs trouvés : %1$d</string>
+    <string name="high_quality">%1$s (haute qualité)</string>
 </resources>

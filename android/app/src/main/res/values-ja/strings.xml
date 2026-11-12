@@ -468,6 +468,25 @@
     <string name="voice">音声</string>
     <string name="voice_missing">この本の言語の音声がインストールされていません。</string>
     <string name="voice_settings">音声設定</string>
+    <string name="add_audiobook">オーディオブックを追加</string>
+    <string name="remove_audiobook">オーディオブックを削除</string>
+    <string name="rewind">10秒戻る</string>
+    <string name="fast_forward">10秒進む</string>
+    <string name="no_audio">再生できる音声が見つかりません。</string>
+    <string name="voice_models">音声モデル</string>
+    <string name="voice_models_hint">自然な音声と話者判定のための任意のダウンロードです。各ファイルは使用前に SHA-256 で検証されます。</string>
+    <string name="model_speaker">話者判定</string>
+    <string name="model_voices">音声: %1$s</string>
+    <string name="not_enough_space">ストレージの空き容量が足りません。</string>
     <string name="listen_failed">音声合成エンジンを利用できません</string>
     <string name="no_text">この本には読み上げ可能なテキストがありません</string>
+    <string name="pause_item">%s を一時停止</string>
+    <string name="resume_item">%s を再開</string>
+    <string name="download_paused">%1$d %% で一時停止中</string>
+    <string name="more_options">その他のオプション</string>
+    <string name="character_voices">登場人物の声</string>
+    <string name="character_voices_hint">登場人物ごとに別の声で読み上げます</string>
+    <string name="finding_speakers">話者を探しています…</string>
+    <string name="speakers_found">見つかった話者: %1$d</string>
+    <string name="high_quality">%1$s（高品質）</string>
 </resources>

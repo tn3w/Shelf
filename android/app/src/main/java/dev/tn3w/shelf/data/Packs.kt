@@ -113,6 +113,8 @@ const val DOWNLOAD_SETTLE_MILLIS = 600L
 sealed interface Download {
     data class Running(val progress: Float) : Download
 
+    data class Paused(val progress: Float) : Download
+
     data object Failed : Download
 }
 

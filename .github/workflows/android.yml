@@ -26,6 +26,11 @@ jobs:
         with:
           cache-disabled: true
 
+      - name: NDK and CMake
+        run: >
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "ndk;30.0.16248370" "cmake;3.31.6" > /dev/null
+
       - name: Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}

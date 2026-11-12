@@ -36,7 +36,14 @@ class ShelfApp :
     val session = Random.nextLong()
     val library by lazy { Library(this, scope) }
     val narrator by lazy { Narrator(this) }
+    val audiobooks by lazy { AudiobookPlayer(this) }
+    val playback: Playback
+        get() = audiobooks.takeIf {
+            it.state.value.let { now -> now.active || now.loading }
+        }
+            ?: narrator
     val packs by lazy { Packs(this) }
+    val models by lazy { Models(this) }
     val sources by lazy { Sources(this) }
     val catalogs by lazy { Catalogs(this) }
     private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }
@@ -135,7 +142,7 @@ class ShelfApp :
 
     fun <T> transfer(work: suspend CoroutineScope.() -> T) = scope.async(Dispatchers.IO) {
         val first = _activeTransfers.getAndUpdate { it + 1 } == 0
-        if (first && BuildConfig.UPDATER) TransferService.start(this@ShelfApp)
+        if (first) TransferService.start(this@ShelfApp)
         try {
             work()
         } finally {
@@ -160,6 +167,34 @@ class ShelfApp :
                 }
                 .onFailure { _downloads.update { it + (key to Download.Failed) } }
         }
+    }
+
+    fun downloadModel(model: Model) {
+        val key = modelKey(model)
+        if (!_downloads.claim(key)) return
+        downloadJobs[key] = transfer {
+            runSuspendCatching {
+                models.download(model) { progress ->
+                    _downloads.update { it + (key to Download.Running(progress)) }
+                }
+            }
+                .onSuccess { _downloads.update { it - key } }
+                .onFailure { error ->
+                    _downloads.update { it + (key to Download.Failed) }
+                    if (error is NoSpaceException) show(R.string.not_enough_space)
+                }
+        }
+    }
+
+    fun pauseModel(model: Model) = scope.launch(Dispatchers.IO) {
+        val key = modelKey(model)
+        downloadJobs.remove(key)?.cancelAndJoin()
+        _downloads.update { it - key }
+    }
+
+    fun removeModel(model: Model) = scope.launch(Dispatchers.IO) {
+        pauseModel(model).join()
+        models.remove(model)
     }
 
     fun removePacks(language: String, pack: String? = null) =
@@ -188,6 +223,10 @@ class ShelfApp :
     fun open(work: Int?) {
         if (work != null) _openedWork.value = work else show(R.string.unsupported_file)
     }
+
+    fun stopOthers(keep: Playback) = listOf(narrator, audiobooks)
+        .filter { it !== keep && (it.state.value.active || it.state.value.loading) }
+        .forEach(Playback::stop)
 
     fun consumeOpenedWork() {
         _openedWork.value = null

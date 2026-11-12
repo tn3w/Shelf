@@ -3,6 +3,7 @@ package dev.tn3w.shelf.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
+import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -77,6 +78,18 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
 
     fun delete(book: Book) {
         detached { library.deleteBook(book.work, keepShelves = !book.isLocal) }
+    }
+
+    val narrator = app.narrator
+    val audiobooks = app.audiobooks
+
+    fun listen(book: Book) = viewModelScope.launch {
+        if (audiobooks.open(book.work, book.title)) audiobooks.play()
+    }
+
+    fun attachAudio(book: Book, shelf: Shelf?, uris: List<Uri>) {
+        if (shelf == null) place(book, Shelf.Reading)
+        audiobooks.attach(book.work, book.title, uris)
     }
 
     fun import(book: Book, uri: Uri) {
@@ -190,6 +203,19 @@ private fun BookHeader(
         value = viewModel.library.hasFile(position)
     }
     val online = loadedSettings()?.isOffline(LocalContext.current) == false
+    val audiobooks by viewModel.library.audiobooks.collectAsStateWithLifecycle(emptyMap())
+    val hasAudio = book.work in audiobooks
+    var listening by rememberSaveable { mutableStateOf(false) }
+    val audioPicker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        viewModel.attachAudio(book, shelf, uris)
+        listening = true
+    }
+    fun listen() {
+        if (!hasAudio) return audioPicker.launch(arrayOf("audio/*"))
+        viewModel.listen(book)
+        listening = true
+    }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var findFree by rememberSaveable { mutableStateOf(false) }
     val unplaced = if (book.isLocal) Shelf.Reading else null
@@ -237,11 +263,16 @@ private fun BookHeader(
             )
         }
         Hint(facts(book), textAlign = TextAlign.Center)
-        FlowRow(
-            Modifier.padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = ScreenPadding, vertical = 16.dp),
+            horizontalArrangement =
+            Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            ReadButton(book, position, hasFile, navigator, viewModel)
+            ReadButton(
+                book, position, hasFile, navigator, viewModel,
+                Modifier.weight(1f, fill = false),
+            )
             ShelfToggle(
                 shelf == Shelf.Want, R.string.want_to_read, { place(Shelf.Want) },
             ) {
@@ -252,20 +283,22 @@ private fun BookHeader(
             ) {
                 if (it) Icons.Outlined.CheckCircle else Icons.Outlined.TaskAlt
             }
-            if (online && !hasFile) {
-                FilledTonalIconButton(onClick = { findFree = true }) {
-                    val label = stringResource(R.string.free_ebook)
-                    Icon(Icons.Outlined.CloudDownload, label)
-                }
+            FilledTonalIconButton(onClick = ::listen) {
+                Icon(Icons.Outlined.Headphones, stringResource(R.string.listen))
             }
-            if (book.isLocal || position != null) {
-                FilledTonalIconButton(onClick = { confirmDelete = true }) {
-                    Icon(Icons.Outlined.Delete, stringResource(R.string.delete_book))
-                }
-            }
+            MoreMenu(
+                onFindFree = { findFree = true }.takeIf { online && !hasFile },
+                onDelete = { confirmDelete = true }
+                    .takeIf { book.isLocal || position != null },
+            )
         }
     }
     if (findFree && !hasFile) FreeBookSheet(book, viewModel) { findFree = false }
+    if (listening && hasAudio) {
+        ListenSheet(book.work, book.title, viewModel.narrator, viewModel.audiobooks) {
+            listening = false
+        }
+    }
     if (confirmDelete) {
         DeleteDialog(book, onDismiss = { confirmDelete = false }) {
             viewModel.delete(book)
@@ -281,6 +314,7 @@ private fun ReadButton(
     hasFile: Boolean,
     navigator: Navigator,
     viewModel: BookViewModel,
+    modifier: Modifier = Modifier,
 ) {
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let { viewModel.import(book, it) }
@@ -288,12 +322,43 @@ private fun ReadButton(
     fun open() =
         if (hasFile) navigator.reader(book.work) else picker.launch(arrayOf("*/*"))
 
-    Button(onClick = ::open) {
+    Button(onClick = ::open, modifier) {
         Icon(Icons.AutoMirrored.Outlined.MenuBook, null, Modifier.size(18.dp))
         val label = position?.fraction?.let {
             stringResource(R.string.continue_percent, (it * 100).toInt())
         } ?: stringResource(if (position != null) R.string.resume else R.string.start)
-        Text(label, Modifier.padding(start = 8.dp))
+        Text(
+            label,
+            Modifier.padding(start = 8.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun MoreMenu(onFindFree: (() -> Unit)?, onDelete: (() -> Unit)?) {
+    if (onFindFree == null && onDelete == null) return
+    var open by remember { mutableStateOf(false) }
+    Box {
+        FilledTonalIconButton(onClick = { open = true }) {
+            Icon(Icons.Outlined.MoreVert, stringResource(R.string.more_options))
+        }
+        DropdownMenu(open, onDismissRequest = { open = false }) {
+            @Composable
+            fun entry(icon: ImageVector, @StringRes label: Int, action: () -> Unit) =
+                DropdownMenuItem(
+                    text = { Text(stringResource(label)) },
+                    leadingIcon = { Icon(icon, null) },
+                    onClick = {
+                        open = false
+                        action()
+                    },
+                )
+            val cloud = Icons.Outlined.CloudDownload
+            onFindFree?.let { entry(cloud, R.string.free_ebook, it) }
+            onDelete?.let { entry(Icons.Outlined.Delete, R.string.delete_book, it) }
+        }
     }
 }
 

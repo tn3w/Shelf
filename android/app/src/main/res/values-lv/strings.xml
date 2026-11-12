@@ -498,6 +498,25 @@
     <string name="voice">Balss</string>
     <string name="voice_missing">Šīs grāmatas valodai nav instalēta balss.</string>
     <string name="voice_settings">Balss iestatījumi</string>
+    <string name="add_audiobook">Pievienot audiogrāmatu</string>
+    <string name="remove_audiobook">Noņemt audiogrāmatu</string>
+    <string name="rewind">Atpakaļ 10 sekundes</string>
+    <string name="fast_forward">Uz priekšu 10 sekundes</string>
+    <string name="no_audio">Netika atrasts atskaņojams audio.</string>
+    <string name="voice_models">Balss modeļi</string>
+    <string name="voice_models_hint">Neobligātas lejupielādes dabiskām balsīm un runātāja noteikšanai. Katrs fails pirms lietošanas tiek pārbaudīts ar SHA-256.</string>
+    <string name="model_speaker">Runātāja noteikšana</string>
+    <string name="model_voices">Balsis: %1$s</string>
+    <string name="not_enough_space">Nepietiek krātuves vietas.</string>
     <string name="listen_failed">Runas dzinējs nav pieejams</string>
     <string name="no_text">Šajā grāmatā nav lasāma teksta</string>
+    <string name="pause_item">Pauzēt %s</string>
+    <string name="resume_item">Turpināt %s</string>
+    <string name="download_paused">Pauzēts pie %1$d %%</string>
+    <string name="more_options">Citas iespējas</string>
+    <string name="character_voices">Tēlu balsis</string>
+    <string name="character_voices_hint">Katrs tēls runā savā balsī</string>
+    <string name="finding_speakers">Meklē runātājus…</string>
+    <string name="speakers_found">Atrasti runātāji: %1$d</string>
+    <string name="high_quality">%1$s (augsta kvalitāte)</string>
 </resources>

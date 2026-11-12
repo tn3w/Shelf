@@ -39,6 +39,15 @@ android {
         version = release(37)
     }
 
+    ndkVersion = "30.0.16248370"
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.31.6"
+        }
+    }
+
     defaultConfig {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
@@ -46,6 +55,11 @@ android {
         versionCode = 16
         versionName = "1.5.0"
         buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
+        externalNativeBuild {
+            cmake {
+                abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            }
+        }
     }
 
     flavorDimensions += "distribution"

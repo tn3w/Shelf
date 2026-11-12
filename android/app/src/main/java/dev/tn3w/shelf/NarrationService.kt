@@ -36,7 +36,7 @@ private const val ICON_CLOSE = android.R.drawable.ic_menu_close_clear_cancel
 private const val CLOSE = "dev.tn3w.shelf.narration.CLOSE"
 
 class NarrationService : Service() {
-    private val narrator get() = (application as ShelfApp).narrator
+    private val narrator get() = (application as ShelfApp).playback
     private lateinit var session: MediaSession
     private var watching: Job? = null
     private val unplugged = object : BroadcastReceiver() {

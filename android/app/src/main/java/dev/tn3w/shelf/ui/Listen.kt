@@ -2,6 +2,8 @@ package dev.tn3w.shelf.ui
 
 import android.content.Intent
 import android.text.format.DateUtils
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +20,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,8 +50,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.tn3w.shelf.AudiobookPlayer
 import dev.tn3w.shelf.Narration
 import dev.tn3w.shelf.Narrator
+import dev.tn3w.shelf.Playback
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.SLEEP_MINUTES
 import dev.tn3w.shelf.data.SPEECH_RATES
@@ -57,8 +64,21 @@ private const val TTS_SETTINGS = "com.android.settings.TTS_SETTINGS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListenSheet(work: Int, narrator: Narrator, onDismiss: () -> Unit) {
-    val state by narrator.state.collectAsStateWithLifecycle()
+fun ListenSheet(
+    work: Int,
+    title: String,
+    narrator: Narrator,
+    audiobooks: AudiobookPlayer,
+    onDismiss: () -> Unit,
+) {
+    val speech by narrator.state.collectAsStateWithLifecycle()
+    val audio by audiobooks.state.collectAsStateWithLifecycle()
+    val isAudio = audio.work == work && (audio.active || audio.loading || audio.failed)
+    val state = if (isAudio) audio else speech
+    val playback = if (isAudio) audiobooks else narrator
+    val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) audiobooks.attach(work, title, uris)
+    }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier.verticalScroll(rememberScrollState())
@@ -66,10 +86,21 @@ fun ListenSheet(work: Int, narrator: Narrator, onDismiss: () -> Unit) {
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            val failure = if (isAudio) R.string.no_audio else R.string.listen_failed
             when {
-                state.failed -> Text(stringResource(R.string.listen_failed))
+                state.failed -> Text(stringResource(failure))
                 state.work != work || !state.active -> Loader()
-                else -> Player(state, narrator)
+                else -> Player(state, playback, isAudio)
+            }
+            if (isAudio) {
+                TextButton({
+                    audiobooks.detach(work)
+                    onDismiss()
+                }) { Text(stringResource(R.string.remove_audiobook)) }
+            } else {
+                TextButton({ picker.launch(arrayOf("audio/*")) }) {
+                    Text(stringResource(R.string.add_audiobook))
+                }
             }
         }
     }
@@ -83,8 +114,8 @@ private fun Loader() {
 }
 
 @Composable
-private fun Player(state: Narration, narrator: Narrator) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun Player(state: Narration, playback: Playback, isAudio: Boolean) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             state.chapter.ifBlank { state.title },
             style = MaterialTheme.typography.titleLarge,
@@ -101,35 +132,37 @@ private fun Player(state: Narration, narrator: Narrator) {
             )
         }
     }
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier.fillMaxWidth().animateContentSize(),
-    ) {
-        Text(
-            state.text,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 5,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(16.dp),
-        )
+    if (state.text.isNotBlank()) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = Modifier.fillMaxWidth().animateContentSize(),
+        ) {
+            Text(
+                state.text,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(16.dp),
+            )
+        }
     }
-    Progress(state, narrator)
-    Transport(state, narrator)
-    Rates(state, narrator)
-    SleepTimer(state, narrator)
-    Voices(state, narrator)
+    Progress(state, playback)
+    Transport(state, playback, isAudio)
+    Rates(state, playback)
+    SleepTimer(state, playback)
+    if (playback is Narrator) Voices(state, playback)
 }
 
 @Composable
-private fun Progress(state: Narration, narrator: Narrator) {
+private fun Progress(state: Narration, playback: Playback) {
     var dragging by remember { mutableStateOf<Float?>(null) }
     Column {
         Slider(
             value = dragging ?: state.index.toFloat(),
             onValueChange = { dragging = it },
             onValueChangeFinished = {
-                dragging?.let { narrator.seek(it.roundToInt()) }
+                dragging?.let { playback.seek(it.roundToInt()) }
                 dragging = null
             },
             valueRange = 0f..maxOf(1, state.count - 1).toFloat(),
@@ -146,8 +179,18 @@ private fun Progress(state: Narration, narrator: Narrator) {
     }
 }
 
+private val SPEECH_STEPS = listOf(
+    Icons.AutoMirrored.Filled.KeyboardArrowLeft to R.string.previous_sentence,
+    Icons.AutoMirrored.Filled.KeyboardArrowRight to R.string.next_sentence,
+)
+private val AUDIO_STEPS = listOf(
+    Icons.Filled.Replay10 to R.string.rewind,
+    Icons.Filled.Forward10 to R.string.fast_forward,
+)
+
 @Composable
-private fun Transport(state: Narration, narrator: Narrator) {
+private fun Transport(state: Narration, playback: Playback, isAudio: Boolean) {
+    val (back, forward) = if (isAudio) AUDIO_STEPS else SPEECH_STEPS
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -155,23 +198,17 @@ private fun Transport(state: Narration, narrator: Narrator) {
     ) {
         IconAction(
             Icons.Filled.SkipPrevious, stringResource(R.string.previous_chapter),
-        ) { narrator.skipChapter(-1) }
-        IconAction(
-            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-            stringResource(R.string.previous_sentence),
-        ) { narrator.skip(-1) }
+        ) { playback.skipChapter(-1) }
+        IconAction(back.first, stringResource(back.second)) { playback.skip(-1) }
         val label = if (state.playing) R.string.pause else R.string.play
-        FilledIconButton(narrator::toggle, Modifier.size(64.dp)) {
+        FilledIconButton(playback::toggle, Modifier.size(64.dp)) {
             val icon = if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow
             Icon(icon, stringResource(label), Modifier.size(36.dp))
         }
-        IconAction(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            stringResource(R.string.next_sentence),
-        ) { narrator.skip(1) }
+        IconAction(forward.first, stringResource(forward.second)) { playback.skip(1) }
         IconAction(
             Icons.Filled.SkipNext, stringResource(R.string.next_chapter),
-        ) { narrator.skipChapter(1) }
+        ) { playback.skipChapter(1) }
     }
 }
 
@@ -188,7 +225,7 @@ private fun Section(label: Int, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Rates(state: Narration, narrator: Narrator) {
+private fun Rates(state: Narration, playback: Playback) {
     Section(R.string.speech_speed) {
         Row(
             Modifier.horizontalScroll(rememberScrollState()),
@@ -197,7 +234,7 @@ private fun Rates(state: Narration, narrator: Narrator) {
             SPEECH_RATES.forEach { rate ->
                 FilterChip(
                     selected = state.rate == rate,
-                    onClick = { narrator.setRate(rate) },
+                    onClick = { playback.setRate(rate) },
                     label = { Text("${rate.toString().removeSuffix(".0")}×") },
                 )
             }
@@ -207,7 +244,7 @@ private fun Rates(state: Narration, narrator: Narrator) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SleepTimer(state: Narration, narrator: Narrator) {
+private fun SleepTimer(state: Narration, playback: Playback) {
     Section(R.string.sleep_timer) {
         val left = DateUtils.formatElapsedTime(state.sleepLeftSeconds)
         if (state.sleep is Sleep.After) {
@@ -228,7 +265,7 @@ private fun SleepTimer(state: Narration, narrator: Narrator) {
                 }
                 FilterChip(
                     selected = selected,
-                    onClick = { narrator.setSleep(option) },
+                    onClick = { playback.setSleep(option) },
                     label = { Text(sleepLabel(option)) },
                 )
             }
@@ -253,6 +290,7 @@ private fun Voices(state: Narration, narrator: Narrator) {
             color = MaterialTheme.colorScheme.error,
         )
     }
+    if (state.canVoiceCharacters) CharacterVoices(state, narrator)
     if (state.voices.size > 1) {
         Section(R.string.voice) {
             Row(
@@ -269,7 +307,31 @@ private fun Voices(state: Narration, narrator: Narrator) {
             }
         }
     }
+    if (state.natural) return
     TextButton({ runCatching { context.startActivity(Intent(TTS_SETTINGS)) } }) {
         Text(stringResource(R.string.voice_settings))
+    }
+}
+
+@Composable
+private fun CharacterVoices(state: Narration, narrator: Narrator) {
+    val status = when {
+        !state.characterVoices -> stringResource(R.string.character_voices_hint)
+        state.preparing -> stringResource(R.string.finding_speakers)
+        else -> stringResource(R.string.speakers_found, state.speakers)
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.character_voices),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                status,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(state.characterVoices, narrator::setCharacterVoices)
     }
 }

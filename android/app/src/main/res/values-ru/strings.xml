@@ -514,6 +514,25 @@
     <string name="voice">Голос</string>
     <string name="voice_missing">Для языка этой книги не установлен голос.</string>
     <string name="voice_settings">Настройки голоса</string>
+    <string name="add_audiobook">Добавить аудиокнигу</string>
+    <string name="remove_audiobook">Удалить аудиокнигу</string>
+    <string name="rewind">Назад на 10 секунд</string>
+    <string name="fast_forward">Вперёд на 10 секунд</string>
+    <string name="no_audio">Воспроизводимый звук не найден.</string>
+    <string name="voice_models">Голосовые модели</string>
+    <string name="voice_models_hint">Необязательные загрузки для естественных голосов и определения говорящих. Каждый файл проверяется по SHA-256 перед использованием.</string>
+    <string name="model_speaker">Определение говорящих</string>
+    <string name="model_voices">Голоса: %1$s</string>
+    <string name="not_enough_space">Недостаточно места в хранилище.</string>
     <string name="listen_failed">Синтез речи недоступен</string>
     <string name="no_text">В этой книге нет читаемого текста</string>
+    <string name="pause_item">Приостановить: %s</string>
+    <string name="resume_item">Продолжить: %s</string>
+    <string name="download_paused">Приостановлено на %1$d %%</string>
+    <string name="more_options">Другие параметры</string>
+    <string name="character_voices">Голоса персонажей</string>
+    <string name="character_voices_hint">Каждый персонаж говорит своим голосом</string>
+    <string name="finding_speakers">Поиск говорящих…</string>
+    <string name="speakers_found">Найдено говорящих: %1$d</string>
+    <string name="high_quality">%1$s (высокое качество)</string>
 </resources>

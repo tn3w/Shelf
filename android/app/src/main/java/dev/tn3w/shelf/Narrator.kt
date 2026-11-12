@@ -1,62 +1,34 @@
 package dev.tn3w.shelf
 
-import android.content.Context
-import android.content.Intent
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
-import android.media.AudioManager
-import android.os.Bundle
-import android.os.SystemClock
 import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
-import android.speech.tts.Voice
-import androidx.core.content.ContextCompat
+import android.util.Log
 import dev.tn3w.shelf.data.Chapter
 import dev.tn3w.shelf.data.Passage
+import dev.tn3w.shelf.data.PocketModel
+import dev.tn3w.shelf.data.PocketText
 import dev.tn3w.shelf.data.Progress
+import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.Sleep
+import dev.tn3w.shelf.data.Spoken
 import dev.tn3w.shelf.data.chapterStarts
 import dev.tn3w.shelf.data.fadeVolume
+import dev.tn3w.shelf.data.ggufMetadata
 import dev.tn3w.shelf.data.languageOf
+import dev.tn3w.shelf.data.pocketVoices
 import dev.tn3w.shelf.data.secondsLeft
+import dev.tn3w.shelf.data.voicePool
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 private const val AHEAD = 3
 private const val SAVE_EVERY = 20
-private const val TICK_MILLIS = 1000L
-private const val IDLE_MILLIS = 10 * 60 * 1000L
-
-data class SpeechVoice(val name: String, val label: String)
-
-data class Narration(
-    val work: Int = 0,
-    val title: String = "",
-    val chapter: String = "",
-    val text: String = "",
-    val section: Int = 0,
-    val offset: Int = 0,
-    val index: Int = 0,
-    val count: Int = 0,
-    val playing: Boolean = false,
-    val loading: Boolean = false,
-    val failed: Boolean = false,
-    val missingVoice: Boolean = false,
-    val rate: Float = 1f,
-    val voice: String = "",
-    val voices: List<SpeechVoice> = emptyList(),
-    val sleep: Sleep = Sleep.Off,
-    val sleepLeftSeconds: Long = 0,
-    val secondsLeft: Long = 0,
-) {
-    val active get() = count > 0
-}
+private const val POCKET_THREADS = 4
+private const val LOG_TAG = "Narrator"
 
 class Source(
     val passages: List<Passage>,
@@ -65,47 +37,53 @@ class Source(
     val progressAt: (Passage, Float) -> Progress,
 )
 
-class Narrator(private val app: ShelfApp) {
-    private val _state = MutableStateFlow(Narration())
-    val state = _state.asStateFlow()
+class Narrator(app: ShelfApp) :
+    Playback(app),
+    SpeechEvents {
     private var source: Source? = null
     private var passages = emptyList<Passage>()
     private var chapters = emptyList<Pair<Chapter, Int>>()
-    private var engine: TextToSpeech? = null
-    private var ready = false
+    private var output: SpeechOutput? = null
+    private var voicing: Voicing? = null
+    private var casting: Job? = null
+    private var language = ""
 
     @Volatile private var generation = 0
     private var anchor = 0
-    private var sleepEndsAt = 0L
-    private var sleepJob: Job? = null
-    private var idleJob: Job? = null
     private var pending = false
-    private val audio = app.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build(),
-        )
-        .setOnAudioFocusChangeListener { if (it < 0) pause() }
-        .build()
 
     fun open(work: Int, title: String, loaded: Source) {
-        val current = _state.value
-        if (current.work == work && (current.active || current.loading)) return
+        val now = current.value
+        if (now.work == work && (now.active || now.loading)) return
         stop()
+        app.stopOthers(this)
         source = loaded
         passages = loaded.passages
         chapters = chapterStarts(passages, loaded.chapters)
-        val start = passages.indexOfFirst { isAtOrAfter(it, loaded.progress) }
-        _state.value = Narration(work = work, title = title, loading = true)
+        language = languageOf(passages) ?: Locale.getDefault().language
+        val start = passages.indexOfFirst {
+            isAtOrAfter(it, loaded.progress)
+        }.coerceAtLeast(0)
+        current.value = Narration(work = work, title = title, loading = true)
         app.scope.launch {
             val settings = app.library.settings.first()
-            _state.update {
-                it.copy(rate = settings.speechRate, voice = settings.speechVoice)
+            current.update {
+                it.copy(
+                    rate = settings.speechRate,
+                    voice = settings.speechVoice,
+                    characterVoices = settings.characterVoices,
+                    canVoiceCharacters = app.models.installed("speaker") != null,
+                )
             }
-            create(start.coerceAtLeast(0))
+            if (settings.characterVoices) startVoicing(work)
+            val pocket = withContext(Dispatchers.IO) { pocketOutput(settings) }
+            if (pocket ==
+                null
+            ) {
+                createTts(work, settings, start)
+            } else {
+                ready(work, pocket, start)
+            }
         }
     }
 
@@ -113,71 +91,86 @@ class Narrator(private val app: ShelfApp) {
         passage.section > progress.section ||
             (passage.section == progress.section && passage.offset >= progress.offset)
 
-    private fun create(start: Int) {
+    private fun pocketOutput(settings: Settings): SpeechOutput? {
+        val model = app.models.installed("tts", language) ?: return null
+        return runCatching {
+            val file = app.models.fileOf(model)
+            val metadata = ggufMetadata(file)
+            val text = checkNotNull(PocketText.from(metadata)) { "unsupported tokenizer" }
+            val names = pocketVoices(metadata).toSet()
+            val pool = voicePool(model).filter { it.id in names }
+            check(pool.isNotEmpty()) { "no voices in ${file.name}" }
+            val engine = checkNotNull(PocketModel.open(file, POCKET_THREADS)) {
+                "cannot load ${file.name}"
+            }
+            PocketOutput(engine, text, this, pool, settings.speechVoice)
+        }.onFailure { Log.w(LOG_TAG, "natural voices unavailable", it) }.getOrNull()
+    }
+
+    private fun createTts(work: Int, settings: Settings, start: Int) {
+        var engine: TextToSpeech? = null
         engine = TextToSpeech(app) { status ->
-            if (status != TextToSpeech.SUCCESS) {
-                _state.update { it.copy(loading = false, failed = true) }
+            val tts = engine
+            if (status != TextToSpeech.SUCCESS || tts == null) {
+                current.update { it.copy(loading = false, failed = true) }
                 return@TextToSpeech
             }
-            configure()
-            ready = true
-            moveTo(start)
-            _state.update { it.copy(loading = false, count = passages.size) }
-            if (pending) play()
-        }
-    }
-
-    private fun configure() {
-        val tts = engine ?: return
-        tts.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .build(),
-        )
-        tts.setOnUtteranceProgressListener(listener)
-        val tag = languageOf(passages) ?: Locale.getDefault().language
-        val locale = Locale.forLanguageTag(tag)
-        val result = tts.setLanguage(locale)
-        val missing = result == TextToSpeech.LANG_MISSING_DATA ||
-            result == TextToSpeech.LANG_NOT_SUPPORTED
-        val voices = tts.voices.orEmpty().filter { it.locale.language == locale.language }
-        val chosen = voices.firstOrNull { it.name == _state.value.voice }
-        chosen?.let { tts.voice = it }
-        tts.setSpeechRate(_state.value.rate)
-        _state.update { it.copy(missingVoice = missing, voices = labelled(voices)) }
-    }
-
-    private fun labelled(voices: List<Voice>) = voices
-        .sortedWith(
-            compareBy({
-                it.isNetworkConnectionRequired
-            }, { -it.quality }, { it.name }),
-        )
-        .mapIndexed { index, voice ->
-            val place = voice.locale.displayCountry.ifBlank {
-                voice.locale.displayLanguage
+            val locale = Locale.forLanguageTag(language)
+            val result = tts.setLanguage(locale)
+            val missing = result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED
+            val voices = tts.voices.orEmpty().filter {
+                it.locale.language ==
+                    locale.language
             }
-            SpeechVoice(voice.name, "${index + 1} · $place")
+            current.update { it.copy(missingVoice = missing) }
+            ready(work, TtsOutput(tts, this, voices, settings.speechVoice), start)
         }
-
-    private val listener = object : UtteranceProgressListener() {
-        override fun onStart(utteranceId: String) {
-            val (owner, index) = parse(utteranceId) ?: return
-            if (owner == generation) app.scope.launch { started(index) }
-        }
-
-        override fun onDone(utteranceId: String) {
-            val (owner, index) = parse(utteranceId) ?: return
-            if (owner == generation) app.scope.launch { finished(index) }
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onError(utteranceId: String) = onDone(utteranceId)
     }
 
-    private fun parse(id: String) = id.split(':').takeIf { it.size == 2 }
-        ?.let { it[0].toInt() to it[1].toInt() }
+    private fun ready(work: Int, created: SpeechOutput, start: Int) {
+        if (!current.value.loading || current.value.work != work) return created.close()
+        output = created
+        created.setRate(current.value.rate)
+        moveTo(start)
+        current.update {
+            it.copy(
+                loading = false,
+                count = passages.size,
+                voices = created.voices,
+                voice = created.narrator,
+                natural = created is PocketOutput,
+            )
+        }
+        watchCast()
+        if (pending) play()
+    }
+
+    private fun startVoicing(work: Int) {
+        val model = app.models.installed("speaker") ?: return
+        voicing = Voicing(app, work, passages, app.models.fileOf(model))
+        watchCast()
+    }
+
+    private fun watchCast() {
+        val voices = voicing ?: return
+        val speech = output ?: return
+        casting?.cancel()
+        casting = app.scope.launch(Dispatchers.Main) {
+            voices.characters.collect { characters ->
+                speech.recast(characters)
+                current.update { it.copy(speakers = characters.size - 1) }
+            }
+        }
+    }
+
+    override fun started(tag: Int, index: Int) {
+        if (tag == generation) app.scope.launch(Dispatchers.Main) { started(index) }
+    }
+
+    override fun done(tag: Int, index: Int) {
+        if (tag == generation) app.scope.launch(Dispatchers.Main) { finished(index) }
+    }
 
     private fun started(index: Int) {
         moveTo(index)
@@ -186,16 +179,15 @@ class Narrator(private val app: ShelfApp) {
     }
 
     private fun finished(index: Int) {
-        if (index + 1 >= passages.size) return finish(passages.lastIndex)
-        if (_state.value.sleep == Sleep.ChapterEnd && atChapterStart(index + 1, true)) {
-            finish(index + 1)
+        if (index + 1 >= passages.size) return finishAt(passages.lastIndex)
+        if (current.value.sleep == Sleep.ChapterEnd && atChapterStart(index + 1, true)) {
+            finishAt(index + 1)
         }
     }
 
-    private fun finish(next: Int) {
+    private fun finishAt(next: Int) {
         moveTo(next)
-        pause()
-        setSleep(Sleep.Off)
+        finish()
     }
 
     private fun atChapterStart(index: Int, past: Boolean) =
@@ -204,8 +196,9 @@ class Narrator(private val app: ShelfApp) {
     private fun moveTo(index: Int) {
         val passage = passages.getOrNull(index) ?: return
         val chapter = chapters.lastOrNull { it.second <= index }?.first?.title.orEmpty()
-        val rate = _state.value.rate
-        _state.update {
+        val rate = current.value.rate
+        voicing?.follow(index)
+        current.update {
             it.copy(
                 index = index,
                 text = passage.text,
@@ -217,49 +210,48 @@ class Narrator(private val app: ShelfApp) {
         }
     }
 
+    private fun segments(index: Int) =
+        voicing?.segments(index) ?: listOf(Spoken(passages[index].text, null))
+
     private fun enqueue(index: Int, flush: Boolean = false) {
-        val tts = engine ?: return
+        val speech = output ?: return
         if (index >= passages.size) return
-        val capped = _state.value.sleep == Sleep.ChapterEnd && atChapterStart(index, true)
+        val capped =
+            current.value.sleep == Sleep.ChapterEnd && atChapterStart(index, true)
         if (capped) return
-        val left = sleepEndsAt - SystemClock.elapsedRealtime()
-        val volume = if (_state.value.sleep is Sleep.After) fadeVolume(left) else 1f
-        val params = Bundle().apply {
-            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
-        }
-        val mode = if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-        tts.speak(passages[index].text, mode, params, "$generation:$index")
+        val sleeping = current.value.sleep is Sleep.After
+        val volume = if (sleeping) fadeVolume(sleepLeftMillis) else 1f
+        speech.speak(generation, index, segments(index), flush, volume)
     }
 
-    fun play() {
-        if (!ready) {
+    override fun play() {
+        if (output == null) {
             pending = true
             return
         }
         pending = false
-        idleJob?.cancel()
-        audio.requestAudioFocus(focus)
-        val service = Intent(app, NarrationService::class.java)
-        ContextCompat.startForegroundService(app, service)
-        _state.update { it.copy(playing = true) }
-        speakFrom(_state.value.index)
-    }
-
-    fun pause() {
-        pending = false
-        generation++
-        engine?.stop()
-        audio.abandonAudioFocusRequest(focus)
-        _state.update { it.copy(playing = false) }
-        save()
-        idleJob?.cancel()
-        idleJob = app.scope.launch {
-            delay(IDLE_MILLIS)
-            stop()
+        startPlaying()
+        val owner = ++generation
+        val index = current.value.index
+        app.scope.launch(Dispatchers.Main) {
+            current.update { it.copy(preparing = true) }
+            voicing?.awaitReady(index)
+            current.update { it.copy(preparing = false) }
+            if (owner == generation &&
+                current.value.playing
+            ) {
+                speakFrom(current.value.index)
+            }
         }
     }
 
-    fun toggle() = if (_state.value.playing) pause() else play()
+    override fun pause() {
+        pending = false
+        generation++
+        output?.stop()
+        stopPlaying()
+        save()
+    }
 
     private fun speakFrom(index: Int) {
         generation++
@@ -267,16 +259,16 @@ class Narrator(private val app: ShelfApp) {
         for (offset in 0 until AHEAD) enqueue(index + offset, flush = offset == 0)
     }
 
-    fun seek(index: Int) {
+    override fun seek(index: Int) {
         val target = index.coerceIn(0, passages.lastIndex.coerceAtLeast(0))
         moveTo(target)
-        if (_state.value.playing) speakFrom(target) else save()
+        if (current.value.playing) speakFrom(target) else save()
     }
 
-    fun skip(delta: Int) = seek(_state.value.index + delta)
+    override fun skip(delta: Int) = seek(current.value.index + delta)
 
-    fun skipChapter(delta: Int) {
-        val index = _state.value.index
+    override fun skipChapter(delta: Int) {
+        val index = current.value.index
         val starts = chapters.map { it.second }
         val target = if (delta > 0) {
             starts.firstOrNull { it > index }
@@ -286,43 +278,44 @@ class Narrator(private val app: ShelfApp) {
         seek(target ?: passages.lastIndex)
     }
 
-    fun setRate(rate: Float) {
-        engine?.setSpeechRate(rate)
-        _state.update { it.copy(rate = rate) }
-        moveTo(_state.value.index)
+    override fun setRate(rate: Float) {
+        output?.setRate(rate)
+        current.update { it.copy(rate = rate) }
+        moveTo(current.value.index)
         app.scope.launch { app.library.updateSettings { it.copy(speechRate = rate) } }
-        if (_state.value.playing) speakFrom(_state.value.index)
+        if (current.value.playing && output is TtsOutput) speakFrom(current.value.index)
     }
 
     fun setVoice(name: String) {
-        val voice = engine?.voices.orEmpty().firstOrNull { it.name == name } ?: return
-        engine?.voice = voice
-        _state.update { it.copy(voice = name) }
+        val speech = output ?: return
+        speech.setNarrator(name)
+        current.update { it.copy(voice = speech.narrator) }
         app.scope.launch { app.library.updateSettings { it.copy(speechVoice = name) } }
-        if (_state.value.playing) speakFrom(_state.value.index)
+        if (current.value.playing) speakFrom(current.value.index)
     }
 
-    fun setSleep(sleep: Sleep) {
-        sleepJob?.cancel()
-        anchor = _state.value.index
-        _state.update { it.copy(sleep = sleep, sleepLeftSeconds = 0) }
-        val minutes = (sleep as? Sleep.After)?.minutes ?: return
-        sleepEndsAt = SystemClock.elapsedRealtime() + minutes * 60_000L
-        sleepJob = app.scope.launch { countDown() }
-    }
-
-    private suspend fun countDown() {
-        while (true) {
-            val left = sleepEndsAt - SystemClock.elapsedRealtime()
-            if (left <= 0) return finish(_state.value.index)
-            _state.update { it.copy(sleepLeftSeconds = (left + 999) / 1000) }
-            delay(TICK_MILLIS)
+    fun setCharacterVoices(enabled: Boolean) {
+        current.update { it.copy(characterVoices = enabled) }
+        app.scope.launch {
+            app.library.updateSettings { it.copy(characterVoices = enabled) }
         }
+        casting?.cancel()
+        voicing?.close()
+        voicing = null
+        output?.recast(emptyList())
+        current.update { it.copy(speakers = 0) }
+        if (enabled) startVoicing(current.value.work)
+        if (current.value.playing) speakFrom(current.value.index)
+    }
+
+    override fun setSleep(sleep: Sleep) {
+        anchor = current.value.index
+        super.setSleep(sleep)
     }
 
     private fun save() {
         val loaded = source ?: return
-        val now = _state.value
+        val now = current.value
         val passage = passages.getOrNull(now.index) ?: return
         val fraction = now.index.toFloat() / passages.size
         app.scope.launch {
@@ -330,17 +323,15 @@ class Narrator(private val app: ShelfApp) {
         }
     }
 
-    fun stop() {
+    override fun stop() {
         pending = false
         generation++
-        sleepJob?.cancel()
-        idleJob?.cancel()
-        audio.abandonAudioFocusRequest(focus)
-        if (_state.value.active) save()
-        engine?.shutdown()
-        engine = null
-        ready = false
-        _state.value = Narration()
-        app.stopService(Intent(app, NarrationService::class.java))
+        if (current.value.active) save()
+        casting?.cancel()
+        voicing?.close()
+        voicing = null
+        output?.close()
+        output = null
+        release()
     }
 }

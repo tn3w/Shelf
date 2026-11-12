@@ -106,10 +106,24 @@ with text (PDF needs Android 15+). It highlights the spoken sentence and turns t
 pages. Control it from the lock screen or headphones, set speed and voice, and use the
 sleep timer (5-60 minutes with a slow fade-out, or end of chapter).
 
-Extractor prototype and checks: `testing/tts` (`check.py`). Kotlin: `data/Speech.kt`
-(extractor, language guess, sleep helpers), `Narrator.kt` and `NarrationService.kt`
-(Android TTS, media session), `ui/Listen.kt` (player sheet). Samples:
-`android/app/src/test/samples`.
+Have the audiobook? Add its files (MP3, M4B, M4A, OGG, Opus, FLAC, WAV) from the
+listen sheet or the book page, import one from your library, or open it with Shelf:
+Shelf reads the tags, pins it to the matching book, and plays it with the same
+controls. Chapters inside a single M4B work like separate files. Picked files stay
+where they are; files another app hands over are copied, since that access ends.
+
+Optional voice models (Settings → Reading → Voice models) are separate downloads for
+speaker detection and natural voices. Listening works without them. Each model lists
+its size, licence and SHA-256, downloads pause and resume, and models too large for
+the phone's memory are hidden. Only openly licensed models and voices are offered.
+
+Kotlin: `data/Speech.kt` (extractor, language guess, sleep helpers), `Playback.kt`,
+`Narrator.kt` and `NarrationService.kt` (Android TTS, media session),
+`AudiobookPlayer.kt` and `data/Audiobooks.kt` (audiobook files, tags, MP4 chapters,
+matching), `ui/Listen.kt` (player sheet), `data/Models.kt` and `ui/VoiceModels.kt`
+(voice models), `data/Tokenizer.kt`, `data/SpeakerModel.kt` and
+`android/app/src/main/cpp` (speaker model inference). Model tooling: `tooling/voices`.
+Samples: `android/app/src/test/samples`.
 
 ## Switch from Goodreads or StoryGraph in a minute
 

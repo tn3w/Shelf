@@ -2,8 +2,6 @@ package dev.tn3w.shelf.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.*
-import androidx.annotation.StringRes
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -12,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.KeyboardType
@@ -196,50 +193,6 @@ private fun PackRow(
     val label = stringResource(PACKS.getValue(info.pack))
     val size = if (info.bytes > 0) " · ${bytes(info.bytes)}" else ""
     SettingRow(label, stringResource(info.state.label) + size) {
-        PackAction(label, download, info, offline, onDownload, onRemove)
+        PackAction(label, download, info.state, offline, onDownload, onRemove)
     }
 }
-
-@Composable
-private fun PackAction(
-    label: String,
-    download: Download?,
-    info: PackInfo,
-    offline: Boolean,
-    onDownload: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    if (download is Download.Running) {
-        val progress by animateFloatAsState(download.progress)
-        return Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.size(24.dp),
-                strokeWidth = 3.dp,
-            )
-        }
-    }
-    val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
-        .takeIf { info.state != PackState.Available }
-    val action = when {
-        offline -> remove
-
-        download is Download.Failed ->
-            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_item, onDownload)
-
-        info.state == PackState.Available ->
-            PackButton(Icons.Outlined.Download, R.string.download_item, onDownload)
-
-        info.state == PackState.Update ->
-            PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
-
-        else -> remove
-    } ?: return Box(Modifier.size(48.dp))
-    IconAction(action.icon, stringResource(action.label, label), action.onClick)
-}
-
-private class PackButton(
-    val icon: ImageVector,
-    @StringRes val label: Int,
-    val onClick: () -> Unit,
-)

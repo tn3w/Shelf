@@ -143,6 +143,16 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     fun downloadPack(language: String, pack: String) = app.download(language, pack)
 
+    val models = app.models
+
+    fun refreshModels() = detached { runSuspendCatching { models.refresh() } }
+
+    fun downloadModel(model: Model) = app.downloadModel(model)
+
+    fun pauseModel(model: Model) = app.pauseModel(model)
+
+    fun removeModel(model: Model) = app.removeModel(model)
+
     fun removePacks(language: String, pack: String? = null) {
         app.removePacks(language, pack)
     }
@@ -400,6 +410,7 @@ private fun ReadingSettings() {
             settings.brightnessSwipe,
         ) { on -> update { it.copy(brightnessSwipe = on, readerBrightness = null) } }
     }
+    VoiceModels(settings.isOffline(LocalContext.current))
 }
 
 @Composable

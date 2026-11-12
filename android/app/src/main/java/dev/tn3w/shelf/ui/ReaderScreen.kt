@@ -97,6 +97,7 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
     var showSearch by mutableStateOf(false)
     var showListen by mutableStateOf(false)
     val narrator = app.narrator
+    val audiobooks = app.audiobooks
     var query by mutableStateOf("")
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -171,6 +172,7 @@ class ReaderViewModel(app: ShelfApp, val work: Int) : ShelfViewModel(app) {
     fun listen(title: String, build: suspend () -> Source) {
         showListen = true
         viewModelScope.launch {
+            if (audiobooks.open(work, title)) return@launch audiobooks.play()
             val current = narrator.state.value
             if (current.work == work && (current.active || current.loading)) return@launch
             val source = withContext(Dispatchers.Default) { build() }
@@ -1104,9 +1106,12 @@ private fun Pages(
             }
         }
         if (viewModel.showListen) {
-            ListenSheet(viewModel.work, viewModel.narrator) {
-                viewModel.showListen = false
-            }
+            ListenSheet(
+                viewModel.work,
+                state.title,
+                viewModel.narrator,
+                viewModel.audiobooks,
+            ) { viewModel.showListen = false }
         }
         if (showChapters) {
             ContentsSheet(

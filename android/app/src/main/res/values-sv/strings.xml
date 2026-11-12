@@ -484,6 +484,25 @@
     <string name="voice">Röst</string>
     <string name="voice_missing">Ingen röst är installerad för bokens språk.</string>
     <string name="voice_settings">Röstinställningar</string>
+    <string name="add_audiobook">Lägg till ljudbok</string>
+    <string name="remove_audiobook">Ta bort ljudbok</string>
+    <string name="rewind">10 sekunder bakåt</string>
+    <string name="fast_forward">10 sekunder framåt</string>
+    <string name="no_audio">Inget spelbart ljud hittades.</string>
+    <string name="voice_models">Röstmodeller</string>
+    <string name="voice_models_hint">Valfria nedladdningar för naturliga röster och talaridentifiering. Varje fil kontrolleras med SHA-256 före användning.</string>
+    <string name="model_speaker">Talaridentifiering</string>
+    <string name="model_voices">Röster: %1$s</string>
+    <string name="not_enough_space">Inte tillräckligt med lagringsutrymme.</string>
     <string name="listen_failed">Talsyntes otillgänglig</string>
     <string name="no_text">Boken har ingen läsbar text</string>
+    <string name="pause_item">Pausa %s</string>
+    <string name="resume_item">Återuppta %s</string>
+    <string name="download_paused">Pausad vid %1$d %%</string>
+    <string name="more_options">Fler alternativ</string>
+    <string name="character_voices">Röster för figurer</string>
+    <string name="character_voices_hint">Varje figur talar med sin egen röst</string>
+    <string name="finding_speakers">Letar efter talare…</string>
+    <string name="speakers_found">Hittade talare: %1$d</string>
+    <string name="high_quality">%1$s (hög kvalitet)</string>
 </resources>

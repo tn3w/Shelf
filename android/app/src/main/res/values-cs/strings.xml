@@ -514,6 +514,25 @@
     <string name="voice">Hlas</string>
     <string name="voice_missing">Pro jazyk této knihy není nainstalován žádný hlas.</string>
     <string name="voice_settings">Nastavení hlasu</string>
+    <string name="add_audiobook">Přidat audioknihu</string>
+    <string name="remove_audiobook">Odebrat audioknihu</string>
+    <string name="rewind">Zpět o 10 sekund</string>
+    <string name="fast_forward">Vpřed o 10 sekund</string>
+    <string name="no_audio">Nenalezen žádný přehratelný zvuk.</string>
+    <string name="voice_models">Hlasové modely</string>
+    <string name="voice_models_hint">Volitelná stahování pro přirozené hlasy a rozpoznání mluvčích. Každý soubor se před použitím ověří pomocí SHA-256.</string>
+    <string name="model_speaker">Rozpoznání mluvčích</string>
+    <string name="model_voices">Hlasy: %1$s</string>
+    <string name="not_enough_space">Nedostatek úložného prostoru.</string>
     <string name="listen_failed">Syntéza řeči není dostupná</string>
     <string name="no_text">Tato kniha neobsahuje čitelný text</string>
+    <string name="pause_item">Pozastavit: %s</string>
+    <string name="resume_item">Pokračovat: %s</string>
+    <string name="download_paused">Pozastaveno na %1$d %%</string>
+    <string name="more_options">Další možnosti</string>
+    <string name="character_voices">Hlasy postav</string>
+    <string name="character_voices_hint">Každá postava mluví vlastním hlasem</string>
+    <string name="finding_speakers">Hledám mluvčí…</string>
+    <string name="speakers_found">Nalezení mluvčí: %1$d</string>
+    <string name="high_quality">%1$s (vysoká kvalita)</string>
 </resources>

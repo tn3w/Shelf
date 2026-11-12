@@ -469,6 +469,25 @@
     <string name="voice">음성</string>
     <string name="voice_missing">이 책의 언어에 설치된 음성이 없습니다.</string>
     <string name="voice_settings">음성 설정</string>
+    <string name="add_audiobook">오디오북 추가</string>
+    <string name="remove_audiobook">오디오북 제거</string>
+    <string name="rewind">10초 뒤로</string>
+    <string name="fast_forward">10초 앞으로</string>
+    <string name="no_audio">재생할 수 있는 오디오가 없습니다.</string>
+    <string name="voice_models">음성 모델</string>
+    <string name="voice_models_hint">자연스러운 음성과 화자 인식을 위한 선택 다운로드입니다. 각 파일은 사용 전에 SHA-256으로 확인됩니다.</string>
+    <string name="model_speaker">화자 인식</string>
+    <string name="model_voices">음성: %1$s</string>
+    <string name="not_enough_space">저장 공간이 부족합니다.</string>
     <string name="listen_failed">음성 엔진을 사용할 수 없음</string>
     <string name="no_text">이 책에는 읽을 수 있는 텍스트가 없습니다</string>
+    <string name="pause_item">%s 일시 중지</string>
+    <string name="resume_item">%s 재개</string>
+    <string name="download_paused">%1$d %%에서 일시 중지됨</string>
+    <string name="more_options">옵션 더보기</string>
+    <string name="character_voices">등장인물 목소리</string>
+    <string name="character_voices_hint">등장인물마다 다른 목소리로 읽습니다</string>
+    <string name="finding_speakers">화자를 찾는 중…</string>
+    <string name="speakers_found">찾은 화자: %1$d</string>
+    <string name="high_quality">%1$s (고품질)</string>
 </resources>

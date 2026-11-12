@@ -22,6 +22,11 @@ import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -707,6 +712,70 @@ fun <T> SortMenu(options: List<Pair<String, T>>, current: T, onSelect: (T) -> Un
 fun IconAction(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick) { Icon(icon, contentDescription = description) }
 }
+
+@Composable
+fun PackAction(
+    label: String,
+    download: Download?,
+    state: PackState,
+    offline: Boolean,
+    onDownload: () -> Unit,
+    onRemove: () -> Unit,
+    onPause: (() -> Unit)? = null,
+) {
+    if (download is Download.Running) {
+        return DownloadRing(download.progress, label, onPause)
+    }
+    val remove = PackButton(Icons.Outlined.Delete, R.string.remove_pack, onRemove)
+        .takeIf { state != PackState.Available }
+    val action = when {
+        offline -> remove
+
+        download is Download.Failed ->
+            PackButton(Icons.Outlined.ErrorOutline, R.string.retry_item, onDownload)
+
+        download is Download.Paused ->
+            PackButton(Icons.Outlined.Download, R.string.resume_item, onDownload)
+
+        state == PackState.Available ->
+            PackButton(Icons.Outlined.Download, R.string.download_item, onDownload)
+
+        state == PackState.Update ->
+            PackButton(Icons.Outlined.Update, R.string.update_pack, onDownload)
+
+        else -> remove
+    } ?: return Box(Modifier.size(48.dp))
+    IconAction(action.icon, stringResource(action.label, label), action.onClick)
+}
+
+@Composable
+private fun DownloadRing(value: Float, label: String, onPause: (() -> Unit)?) {
+    val progress by animateFloatAsState(value)
+    val ring = @Composable {
+        CircularProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.size(24.dp),
+            strokeWidth = 3.dp,
+        )
+    }
+    if (onPause == null) {
+        return Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { ring() }
+    }
+    IconButton(onPause) {
+        ring()
+        Icon(
+            Icons.Outlined.Pause,
+            stringResource(R.string.pause_item, label),
+            Modifier.size(14.dp),
+        )
+    }
+}
+
+private class PackButton(
+    val icon: ImageVector,
+    @StringRes val label: Int,
+    val onClick: () -> Unit,
+)
 
 @Composable
 fun BackBar(onBack: () -> Unit, title: String = "") {

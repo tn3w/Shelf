@@ -1,6 +1,6 @@
 package dev.tn3w.shelf.data
 
-class Passage(val text: String, val section: Int, val offset: Int)
+class Passage(val text: String, val section: Int, val offset: Int, val paragraph: Int = 0)
 
 private class Piece(
     val text: String,
@@ -85,7 +85,7 @@ private val NOISE = pattern(
         "\\*+|[-–—_=~. ]{3,}|(the )?end\\.?|finis\\.?|ende\\.?|fin\\.?)$",
 )
 private val INLINE_NOTE =
-    pattern("\\[(\\d{1,3}|[a-z])]|\\[Illustration[^\\]]*]|\\{[\\divxlc]+}")
+    pattern("\\[(\\d{1,3}|[a-z])]|\\[Illustration[^\\]]*]|\\{[\\divxlc]+\\}")
 private val BOILERPLATE = pattern(
     "all rights reserved|alle rechte vorbehalten|\\bisbn\\b|©|\\(c\\)\\s*\\d{4}|" +
         "printed in|erschienen bei|published by|project gutenberg|first published|" +
@@ -266,13 +266,29 @@ internal fun sentences(text: String): List<String> {
     return merged.flatMap { it.chunked(MAX_SPEECH_CHARACTERS) }
 }
 
-private fun passagesOf(pieces: List<Piece>) = pieces.flatMap { piece ->
+private fun passagesOf(pieces: List<Piece>) = pieces.flatMapIndexed { index, piece ->
     var searchFrom = 0
     sentences(piece.text).map { sentence ->
         val at = piece.text.indexOf(sentence, searchFrom).coerceAtLeast(searchFrom)
         searchFrom = at + sentence.length
-        Passage(sentence, piece.section, piece.offset + at)
+        Passage(sentence, piece.section, piece.offset + at, index)
     }
+}
+
+fun paragraphsOf(passages: List<Passage>): List<String> {
+    val paragraphs = mutableListOf<StringBuilder>()
+    var start = 0
+    for (passage in passages) {
+        while (paragraphs.size <= passage.paragraph) {
+            paragraphs += StringBuilder()
+            start = passage.offset
+        }
+        val text = paragraphs[passage.paragraph]
+        val at = passage.offset - start
+        while (text.length < at) text.append(' ')
+        text.append(passage.text)
+    }
+    return paragraphs.map(StringBuilder::toString)
 }
 
 private fun pagePieces(pages: List<String>): List<Piece> {

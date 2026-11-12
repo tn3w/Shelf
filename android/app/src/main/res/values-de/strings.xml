@@ -484,6 +484,25 @@
     <string name="voice">Stimme</string>
     <string name="voice_missing">Für die Sprache dieses Buchs ist keine Stimme installiert.</string>
     <string name="voice_settings">Spracheinstellungen</string>
+    <string name="add_audiobook">Hörbuch hinzufügen</string>
+    <string name="remove_audiobook">Hörbuch entfernen</string>
+    <string name="rewind">10 Sekunden zurück</string>
+    <string name="fast_forward">10 Sekunden vor</string>
+    <string name="no_audio">Keine abspielbare Audiodatei gefunden.</string>
+    <string name="voice_models">Sprachmodelle</string>
+    <string name="voice_models_hint">Optionale Downloads für natürliche Stimmen und Sprechererkennung. Jede Datei wird vor der Nutzung per SHA-256 geprüft.</string>
+    <string name="model_speaker">Sprechererkennung</string>
+    <string name="model_voices">Stimmen: %1$s</string>
+    <string name="not_enough_space">Nicht genug Speicherplatz.</string>
     <string name="listen_failed">Sprachausgabe nicht verfügbar</string>
     <string name="no_text">Dieses Buch enthält keinen lesbaren Text</string>
+    <string name="pause_item">%s pausieren</string>
+    <string name="resume_item">%s fortsetzen</string>
+    <string name="download_paused">Pausiert bei %1$d %%</string>
+    <string name="more_options">Weitere Optionen</string>
+    <string name="character_voices">Stimmen der Figuren</string>
+    <string name="character_voices_hint">Jede Figur spricht mit eigener Stimme</string>
+    <string name="finding_speakers">Sprecher werden gesucht …</string>
+    <string name="speakers_found">Gefundene Sprecher: %1$d</string>
+    <string name="high_quality">%1$s (hohe Qualität)</string>
 </resources>

@@ -2,6 +2,7 @@ package dev.tn3w.shelf.data
 
 import android.Manifest.permission.INTERNET
 import android.content.Context
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.DocumentsContract.Document
@@ -37,6 +38,7 @@ import java.nio.ByteBuffer
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.time.LocalDate
+import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -218,6 +220,7 @@ data class Settings(
     val brightnessSwipe: Boolean = true,
     val speechRate: Float = 1f,
     val speechVoice: String = "",
+    val characterVoices: Boolean = true,
     val readerBrightness: Float? = null,
     val offline: Boolean = false,
     val onlineCovers: Boolean = true,
@@ -363,6 +366,7 @@ data class ReadingState(
     val activity: Map<String, Int> = emptyMap(),
     val bookmarks: Map<Int, List<Bookmark>> = emptyMap(),
     val highlights: Map<Int, List<Highlight>> = emptyMap(),
+    val audiobooks: Map<Int, Audiobook> = emptyMap(),
 )
 
 internal class JsonSerializer<T>(
@@ -472,6 +476,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     val highlights = reading.map { it.highlights }.shared()
 
+    val audiobooks = reading.map { it.audiobooks }.shared()
+
     val activity = reading.map { it.activity }.shared()
 
     val settings = state.map { it.settings }.shared()
@@ -537,6 +543,9 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun importFile(uri: Uri): Int? = withContext(Dispatchers.IO) {
         val fileName = runSuspendCatching { context.displayName(uri) }.getOrNull()
+        if (fileName != null && extensionOf(fileName) in AUDIO_EXTENSIONS) {
+            return@withContext importAudio(uri)
+        }
         if (fileName == null || !isReadable(fileName)) return@withContext null
         importBook(fileName) { output ->
             context.readFrom(uri) { input -> contentWork(input, output) }
@@ -575,6 +584,88 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         return work
     }
 
+    private suspend fun importAudio(uri: Uri): Int? {
+        val files = listOfNotNull(keptAudio(uri)).ifEmpty { return null }
+        val title = titleOf(files)
+        val author = authorOf(files)
+        val match = matchingBook(saved.first(), title, author)
+        val book = match?.toBook() ?: ownBook(title, author)
+        if (match == null) place(book, Shelf.Reading)
+        storeAudio(book.work, files)
+        return book.work
+    }
+
+    suspend fun attachAudio(work: Int, uris: List<Uri>): Boolean {
+        val files = withContext(Dispatchers.IO) { uris.mapNotNull(::keptAudio) }
+        if (files.isEmpty()) return false
+        storeAudio(work, files)
+        return true
+    }
+
+    private suspend fun storeAudio(work: Int, files: List<AudioFile>) {
+        val previous = audiobooks.first()[work]?.tracks.orEmpty().map { it.uri }
+        release(previous - files.map { it.uri }.toSet())
+        readingStore.change {
+            it.copy(audiobooks = it.audiobooks + (work to audiobookOf(files)))
+        }
+    }
+
+    suspend fun detachAudio(work: Int) {
+        release(audiobooks.first()[work]?.tracks.orEmpty().map { it.uri })
+        readingStore.change { it.copy(audiobooks = it.audiobooks - work) }
+    }
+
+    suspend fun saveAudioPosition(work: Int, track: Int, millis: Long) =
+        readingStore.change { state ->
+            val book = state.audiobooks[work] ?: return@change state
+            val moved = book.copy(track = track, millis = millis)
+            state.copy(audiobooks = state.audiobooks + (work to moved))
+        }
+
+    private val audioDir get() = context.filesDir.resolve("audio")
+
+    private fun keptAudio(uri: Uri): AudioFile? {
+        val kept = runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }.isSuccess
+        val playable = if (kept) uri else copiedAudio(uri) ?: return null
+        val file = context.audioFile(playable)
+        if (file == null) release(listOf(playable.toString()))
+        return file
+    }
+
+    private fun copiedAudio(uri: Uri): Uri? {
+        val name = context.displayName(uri).replace('/', '_')
+        val target = audioDir.resolve(UUID.randomUUID().toString()).resolve(name)
+        target.parentFile?.mkdirs()
+        val copied = runCatching {
+            context.contentResolver.openInputStream(uri)!!.use { input ->
+                target.outputStream().use(input::copyTo)
+            }
+        }
+        if (copied.isSuccess) return Uri.fromFile(target)
+        target.parentFile?.deleteRecursively()
+        return null
+    }
+
+    private fun release(uris: Collection<String>) =
+        uris.map(String::toUri).forEach { uri ->
+            val copy = uri.path?.let(::File)?.takeIf { uri.scheme == "file" }
+            if (copy != null && copy.startsWith(audioDir)) {
+                copy.parentFile?.deleteRecursively()
+                return@forEach
+            }
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    uri,
+                    FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+        }
+
     private fun extensionOf(fileName: String) = File(fileName).extension.lowercase()
 
     private fun isReadable(fileName: String) =
@@ -602,9 +693,13 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     private suspend fun copy(uri: Uri, target: File) =
         context.readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
 
+    fun voiceCache(work: Int) = context.filesDir.resolve("voices/$work.json")
+
     suspend fun deleteBook(work: Int, keepShelves: Boolean = false) =
         withContext(Dispatchers.IO) {
             progress.first()[work]?.let { bookFile(it.file).delete() }
+            detachAudio(work)
+            voiceCache(work).delete()
             readingStore.change {
                 it.copy(
                     progress = it.progress - work,
@@ -908,6 +1003,7 @@ internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(
     },
     bookmarks = bookmarks.moved(alias),
     highlights = highlights.moved(alias),
+    audiobooks = audiobooks.mapKeys { it.key.moved(alias) },
 )
 
 private fun <T> Map<Int, List<T>>.moved(alias: (Int) -> Int?) = entries

@@ -23,6 +23,9 @@ keystore.properties
 play-service-account*.json
 *.apk
 *.aab
+*.m4b
+*.epub
+!android/app/src/test/samples/*.epub
 
 target/
 

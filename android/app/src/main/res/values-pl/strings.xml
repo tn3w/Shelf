@@ -514,6 +514,25 @@
     <string name="voice">Głos</string>
     <string name="voice_missing">Brak zainstalowanego głosu dla języka tej książki.</string>
     <string name="voice_settings">Ustawienia głosu</string>
+    <string name="add_audiobook">Dodaj audiobook</string>
+    <string name="remove_audiobook">Usuń audiobook</string>
+    <string name="rewind">Cofnij o 10 sekund</string>
+    <string name="fast_forward">Do przodu o 10 sekund</string>
+    <string name="no_audio">Nie znaleziono odtwarzalnego dźwięku.</string>
+    <string name="voice_models">Modele głosowe</string>
+    <string name="voice_models_hint">Opcjonalne pobrania naturalnych głosów i rozpoznawania mówiących. Każdy plik jest sprawdzany SHA-256 przed użyciem.</string>
+    <string name="model_speaker">Rozpoznawanie mówiących</string>
+    <string name="model_voices">Głosy: %1$s</string>
+    <string name="not_enough_space">Za mało miejsca na dysku.</string>
     <string name="listen_failed">Silnik mowy niedostępny</string>
     <string name="no_text">Ta książka nie zawiera tekstu do odczytu</string>
+    <string name="pause_item">Wstrzymaj: %s</string>
+    <string name="resume_item">Wznów: %s</string>
+    <string name="download_paused">Wstrzymano przy %1$d %%</string>
+    <string name="more_options">Więcej opcji</string>
+    <string name="character_voices">Głosy postaci</string>
+    <string name="character_voices_hint">Każda postać mówi własnym głosem</string>
+    <string name="finding_speakers">Szukanie mówiących…</string>
+    <string name="speakers_found">Znalezieni mówiący: %1$d</string>
+    <string name="high_quality">%1$s (wysoka jakość)</string>
 </resources>
