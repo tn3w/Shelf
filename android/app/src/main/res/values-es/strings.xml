@@ -510,7 +510,7 @@
     <string name="character_voices_hint">Cada personaje habla con su propia voz</string>
     <string name="finding_speakers">Buscando hablantes…</string>
     <string name="speakers_found">Hablantes encontrados: %1$d</string>
-    <string name="listening">Escuchar</string>
+    <string name="listening">Escucha</string>
     <string name="listening_hint">Voces, lectura y audiolibros</string>
     <string name="narration">Narración</string>
     <string name="character_voices_model">Descarga abajo la detección de hablantes para usarlo</string>

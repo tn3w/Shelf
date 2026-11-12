@@ -495,7 +495,7 @@
     <string name="character_voices_hint">Varje figur talar med sin egen röst</string>
     <string name="finding_speakers">Letar efter talare…</string>
     <string name="speakers_found">Hittade talare: %1$d</string>
-    <string name="listening">Lyssna</string>
+    <string name="listening">Lyssnande</string>
     <string name="listening_hint">Röster, uppläsning och ljudböcker</string>
     <string name="narration">Uppläsning</string>
     <string name="character_voices_model">Ladda ner talarigenkänning nedan för att använda detta</string>

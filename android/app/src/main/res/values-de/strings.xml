@@ -497,7 +497,7 @@
     <string name="speakers_found">Gefundene Sprecher: %1$d</string>
     <string name="listening">Hören</string>
     <string name="listening_hint">Stimmen, Vorlesen und Hörbücher</string>
-    <string name="narration">Vorlesen</string>
+    <string name="narration">Erzählung</string>
     <string name="character_voices_model">Lade dafür unten die Sprechererkennung herunter</string>
     <string name="system_voices">Systemstimmen</string>
     <string name="system_voices_hint">Sprachausgabe und Stimmdaten von Android</string>

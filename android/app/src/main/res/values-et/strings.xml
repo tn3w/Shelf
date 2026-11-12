@@ -501,7 +501,7 @@
     <string name="character_voices_model">Selle kasutamiseks laadi allpool alla kõneleja tuvastus</string>
     <string name="system_voices">Süsteemi hääled</string>
     <string name="system_voices_hint">Androidi kõnesüntees ja häälteandmed</string>
-    <string name="quality_standard">Tavaline</string>
+    <string name="quality_standard">Standardne</string>
     <string name="quality_high">Kõrge kvaliteet</string>
     <string name="other_languages">Teised keeled</string>
     <string name="found_in_catalogue">Leitud kataloogist</string>

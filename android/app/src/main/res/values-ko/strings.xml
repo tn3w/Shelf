@@ -485,7 +485,7 @@
     <string name="narration">읽어주기</string>
     <string name="character_voices_model">사용하려면 아래에서 화자 인식을 다운로드하세요</string>
     <string name="system_voices">시스템 음성</string>
-    <string name="system_voices_hint">Android의 TTS 엔진과 음성 데이터</string>
+    <string name="system_voices_hint">Android의 텍스트 음성 변환 엔진과 음성 데이터</string>
     <string name="quality_standard">표준</string>
     <string name="quality_high">고품질</string>
     <string name="other_languages">다른 언어</string>
