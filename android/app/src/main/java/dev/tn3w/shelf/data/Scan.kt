@@ -1,12 +1,12 @@
 package dev.tn3w.shelf.data
 
 import androidx.collection.LruCache
-import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.LuminanceSource
-import com.google.zxing.MultiFormatReader
 import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.oned.EAN13Reader
+import com.google.zxing.qrcode.QRCodeReader
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors
 import kotlin.math.PI
@@ -479,11 +479,7 @@ class StopRule(private val settings: ScanSettings) {
     }
 }
 
-private val BARCODE_FORMATS = listOf(BarcodeFormat.EAN_13, BarcodeFormat.QR_CODE)
-private val BARCODE_HINTS = mapOf(
-    DecodeHintType.POSSIBLE_FORMATS to BARCODE_FORMATS,
-    DecodeHintType.TRY_HARDER to true,
-)
+private val BARCODE_HINTS = mapOf(DecodeHintType.TRY_HARDER to true)
 private val ISBN_IN_TEXT = Regex("97[89](-?\\d){10}")
 
 private class GraySource(private val frame: Gray, private val quarterTurns: Int = 0) :
@@ -520,11 +516,13 @@ private class GraySource(private val frame: Gray, private val quarterTurns: Int 
 }
 
 class BarcodeReader {
-    private val reader = MultiFormatReader().apply { setHints(BARCODE_HINTS) }
+    private val readers = listOf(EAN13Reader(), QRCodeReader())
 
     fun isbn(frame: Gray): String? {
         val bitmap = BinaryBitmap(HybridBinarizer(GraySource(frame)))
-        val text = runCatching { reader.decodeWithState(bitmap).text }.getOrNull()
+        val text = readers.firstNotNullOfOrNull {
+            runCatching { it.decode(bitmap, BARCODE_HINTS).text }.getOrNull()
+        }
         return text?.let(ISBN_IN_TEXT::find)?.value?.let(::normalizedIsbn)
     }
 }

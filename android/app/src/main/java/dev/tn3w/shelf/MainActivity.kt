@@ -1,5 +1,6 @@
 package dev.tn3w.shelf
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -9,7 +10,6 @@ import androidx.activity.*
 import androidx.activity.compose.setContent
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -228,10 +228,13 @@ class MainViewModel(app: ShelfApp) : ShelfViewModel(app) {
     }
 }
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels {
         viewModelFactory { initializer { MainViewModel(application as ShelfApp) } }
     }
+
+    override fun attachBaseContext(base: Context) =
+        super.attachBaseContext(AppLanguage.localized(base))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition {

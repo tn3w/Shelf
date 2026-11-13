@@ -246,7 +246,6 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.appcompat)
     implementation(libs.splashscreen)
     implementation(libs.datastore)
     implementation(libs.datastore.preferences)

@@ -5,9 +5,9 @@ import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
 import android.text.format.Formatter
+import androidx.activity.compose.LocalActivity
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -28,7 +28,6 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.*
@@ -680,7 +679,8 @@ fun <T> Choice(
 
 @Composable
 private fun AppLanguageChoice() {
-    val chosen = AppCompatDelegate.getApplicationLocales()[0]
+    val activity = LocalActivity.current ?: return
+    val chosen = remember { AppLanguage.current(activity) }
     val tags = listOfNotNull(chosen?.toLanguageTag(), chosen?.language)
     var current by rememberSaveable {
         mutableStateOf(tags.firstOrNull { it in APP_LOCALES }.orEmpty())
@@ -688,8 +688,7 @@ private fun AppLanguageChoice() {
     val options = listOf("") + APP_LOCALES
     LanguageChips(options, current, R.string.app_language) { language ->
         current = language
-        val locales = LocaleListCompat.forLanguageTags(language)
-        AppCompatDelegate.setApplicationLocales(locales)
+        AppLanguage.choose(activity, language)
     }
 }
 
