@@ -31,9 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.core.content.IntentCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -463,14 +465,21 @@ private fun Dock(
     onSelect: (Int) -> Unit,
     player: (@Composable () -> Unit)?,
 ) {
-    Column(
-        Modifier.navigationBarsPadding()
-            .padding(bottom = 12.dp)
-            .floatingBar()
-            .width(IntrinsicSize.Min),
-    ) {
-        player?.invoke()
+    val bar = Modifier.navigationBarsPadding().padding(bottom = 12.dp).floatingBar()
+    val content = @Composable {
         DockTabs(selected, onSelect)
+        if (player != null) player()
+    }
+    Layout(content, bar) { measurables, _ ->
+        val tabs = measurables.first().measure(Constraints())
+        val sameWidth = Constraints.fixedWidth(tabs.width)
+        val playing = measurables.getOrNull(1)?.measure(sameWidth)
+        val top = playing?.height ?: 0
+
+        layout(tabs.width, top + tabs.height) {
+            playing?.place(0, 0)
+            tabs.place(0, top)
+        }
     }
 }
 
@@ -495,10 +504,7 @@ private fun DockTabs(selected: Int, onSelect: (Int) -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(tab.icon, label.takeUnless { chosen }, Modifier.size(22.dp), content)
-                if (chosen) {
-                    val whole = Modifier.width(IntrinsicSize.Max)
-                    Text(label, whole, content, style = Look.type.label, maxLines = 1)
-                }
+                if (chosen) Text(label, color = content, style = Look.type.label)
             }
         }
     }

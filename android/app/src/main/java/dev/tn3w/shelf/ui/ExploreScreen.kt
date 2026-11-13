@@ -52,7 +52,7 @@ private val SECTIONS = listOf(
     "topic" to R.string.topics,
 )
 
-class Start(val name: String, val route: SimilarRoute, val book: Book)
+data class Start(val name: String, val route: SimilarRoute, val book: Book)
 
 private fun Loaded.starts(saved: List<Saved>): List<Start> {
     val recent = saved
@@ -95,7 +95,7 @@ private fun Loaded.seedOf(route: SimilarRoute): Pair<String, RecommendSeed>? {
     }
 }
 
-class Genre(val tag: Tag, val books: List<Book>, val count: Int)
+data class Genre(val tag: Tag, val books: List<Book>, val count: Int)
 
 private fun Loaded.genres(tags: List<Tag>): List<Genre> {
     val shown = mutableSetOf<Int>()
@@ -191,10 +191,12 @@ fun ExploreScreen(navigator: Navigator) {
             item { SectionHeader(stringResource(R.string.start_from)) }
             item { StartRow(starts.orEmpty()) { navigator.similar(it) } }
         }
-        val rest = genres.orEmpty().drop(1)
-        if (rest.isNotEmpty()) {
+        val rows = genres.orEmpty().drop(1).chunked(2)
+        if (rows.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.genres)) }
-            item { GenreGrid(rest) { navigator.tag(it) } }
+            items(rows, key = { it.first().tag.id }) { row ->
+                GenreRow(row) { navigator.tag(it) }
+            }
         }
         SECTIONS.forEach { (category, title) ->
             val list = tags?.get(category) ?: return@forEach
@@ -276,14 +278,11 @@ private fun GenreTitle(genre: Genre, style: TextStyle) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun GenreGrid(genres: List<Genre>, onOpen: (Int) -> Unit) {
-    FlowRow(
-        Modifier.padding(horizontal = ScreenPadding),
+private fun GenreRow(genres: List<Genre>, onOpen: (Int) -> Unit) {
+    Row(
+        Modifier.padding(horizontal = ScreenPadding).padding(bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        maxItemsInEachRow = 2,
     ) {
         genres.forEach { genre ->
             CoverTheme(coverTone(genre.books.first())) {
