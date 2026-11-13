@@ -1,0 +1,7 @@
+• Zcela nový vzhled
+• Poslouchejte audioknihy nebo si nechte předčítat jakoukoli knihu
+• Zvýraznění a poznámky, export do Markdownu nebo Readwise
+• Hodnocení, recenze, data čtení a vlastní seznamy
+• Statistiky čtení a sdílitelné shrnutí roku
+• Záložky a hledání v knize
+• Nové katalogy: japonština, lotyština, portugalština, ruština, italština

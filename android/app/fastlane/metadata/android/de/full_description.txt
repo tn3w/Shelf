@@ -5,6 +5,9 @@ Shelf ist eine private Offline-Bücher-App. Der ganze Katalog liegt auf deinem H
 * Merkliste, Lese ich und Gelesen, Tagesziel und Leseserien
 * Genres, Reihen und Autoren entdecken, mit Empfehlungen direkt auf dem Handy
 * EPUB, Kindle, PDF, Comics, Word-Dateien und mehr lesen
+* Hörbücher hören oder jedes Buch vorlesen lassen, mit Stimmen direkt auf dem Handy
+* Markierungen, Notizen, Bewertungen, Rezensionen und eigene Listen
+* Lesestatistik und ein Jahresrückblick zum Teilen
 * Import aus Goodreads und StoryGraph
 * Kataloge auf Englisch, Deutsch, Französisch, Spanisch, Estnisch, Schwedisch, Polnisch, Tschechisch, Koreanisch, Finnisch, Japanisch, Lettisch, Portugiesisch, Russisch und Italienisch
 

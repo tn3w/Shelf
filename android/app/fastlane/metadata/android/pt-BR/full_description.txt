@@ -5,6 +5,9 @@ Shelf é um app de livros privado e offline. O catálogo inteiro fica no seu cel
 * Estantes Quero ler, Lendo e Lidos, meta diária e sequências
 * Explore gêneros, séries e autores, com recomendações feitas no seu celular
 * Leia EPUB, Kindle, PDF, quadrinhos, arquivos do Word e mais
+* Ouça audiolivros ou qualquer livro em voz alta, com vozes que rodam no seu celular
+* Destaques, notas, avaliações, resenhas e listas próprias
+* Estatísticas de leitura e uma retrospectiva do ano para compartilhar
 * Importe do Goodreads e do StoryGraph
 * Catálogos em inglês, alemão, francês, espanhol, estoniano, sueco, polonês, tcheco, coreano, finlandês, japonês, letão, português, russo e italiano
 

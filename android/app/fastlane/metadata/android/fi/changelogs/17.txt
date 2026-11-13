@@ -1,0 +1,7 @@
+• Täysin uusi ulkoasu
+• Kuuntele äänikirjoja tai anna minkä tahansa kirjan lukea ääneen
+• Korostukset ja muistiinpanot, vienti Markdowniin tai Readwiseen
+• Arviot, arvostelut, lukupäivät ja omat listat
+• Lukutilastot ja jaettava vuosikatsaus
+• Kirjanmerkit ja haku kirjan sisällä
+• Uudet luettelot: japani, latvia, portugali, venäjä, italia

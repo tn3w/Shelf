@@ -5,6 +5,9 @@ Shelf on privaatne võrguühenduseta raamatuäpp. Kogu kataloog on sinu telefoni
 * Riiulid Tahan lugeda, Loen ja Loetud, päevane eesmärk ja lugemisrütm
 * Avasta žanre, sarju ja autoreid, soovitused arvutatakse telefonis
 * Loe EPUB-, Kindle-, PDF-, koomiksi-, Wordi- ja muid faile
+* Kuula audioraamatuid või lase mis tahes raamatut ette lugeda telefonis töötavate häältega
+* Esiletõstud, märkmed, hinded, arvustused ja oma loendid
+* Lugemisstatistika ja jagatav aasta kokkuvõte
 * Import Goodreadsist ja StoryGraphist
 * Kataloogid inglise, saksa, prantsuse, hispaania, eesti, rootsi, poola, tšehhi, korea, soome, jaapani, läti, portugali, vene ja itaalia keeles
 

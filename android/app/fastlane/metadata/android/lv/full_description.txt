@@ -5,6 +5,9 @@ Shelf ir privāta bezsaistes grāmatu lietotne. Viss katalogs atrodas jūsu tāl
 * Plaukti “Gribu izlasīt”, “Lasu” un “Izlasīta”, dienas mērķis un sērijas
 * Pētiet žanrus, sērijas un autorus ar ieteikumiem, kas veidoti jūsu tālrunī
 * Lasiet EPUB, Kindle, PDF, komiksus, Word failus un citus
+* Klausieties audiogrāmatas vai ļaujiet nolasīt jebkuru grāmatu ar balsīm, kas darbojas jūsu tālrunī
+* Izcēlumi, piezīmes, vērtējumi, atsauksmes un savi saraksti
+* Lasīšanas statistika un kopīgojams gada kopsavilkums
 * Importējiet no Goodreads un StoryGraph
 * Katalogi angļu, vācu, franču, spāņu, igauņu, zviedru, poļu, čehu, korejiešu, somu, japāņu, latviešu, portugāļu, krievu un itāļu valodā
 

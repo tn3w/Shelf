@@ -5,6 +5,9 @@ Shelf on yksityinen offline-kirjasovellus. Koko luettelo on puhelimessasi, koott
 * Hyllyt Haluan lukea, Luen ja Luettu, päivätavoite ja lukuputket
 * Tutustu lajityyppeihin, sarjoihin ja kirjailijoihin, suositukset lasketaan puhelimessa
 * Lue EPUB-, Kindle-, PDF-, sarjakuva-, Word- ja muita tiedostoja
+* Kuuntele äänikirjoja tai anna minkä tahansa kirjan lukea ääneen puhelimessa toimivilla äänillä
+* Korostukset, muistiinpanot, arviot, arvostelut ja omat listat
+* Lukutilastot ja jaettava vuosikatsaus
 * Tuonti Goodreadsista ja StoryGraphista
 * Luettelot englanniksi, saksaksi, ranskaksi, espanjaksi, viroksi, ruotsiksi, puolaksi, tšekiksi, koreaksi, suomeksi, japaniksi, latviaksi, portugaliksi, venäjäksi ja italiaksi
 

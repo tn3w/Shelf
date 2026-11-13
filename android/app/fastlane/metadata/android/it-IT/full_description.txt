@@ -5,6 +5,9 @@ Shelf è un’app privata per i libri che funziona offline. L’intero catalogo 
 * Scaffali Da leggere, In lettura e Letti, obiettivo giornaliero e serie di lettura
 * Esplora generi, saghe e autori, con consigli creati sul tuo telefono
 * Leggi EPUB, Kindle, PDF, fumetti, file Word e altro
+* Ascolta audiolibri o fatti leggere qualsiasi libro con voci che funzionano sul tuo telefono
+* Evidenziazioni, note, valutazioni, recensioni ed elenchi personali
+* Statistiche di lettura e un riepilogo annuale da condividere
 * Importa da Goodreads e StoryGraph
 * Cataloghi in inglese, tedesco, francese, spagnolo, estone, svedese, polacco, ceco, coreano, finlandese, giapponese, lettone, portoghese, russo e italiano
 

@@ -5,6 +5,9 @@ Shelf är en privat bokapp som fungerar offline. Hela katalogen finns i telefone
 * Hyllorna Vill läsa, Läser och Läst, dagligt mål och lässviter
 * Utforska genrer, serier och författare, med rekommendationer som beräknas i telefonen
 * Läs EPUB, Kindle, PDF, tecknade serier, Word-filer och mer
+* Lyssna på ljudböcker eller få vilken bok som helst uppläst med röster som körs i telefonen
+* Markeringar, anteckningar, betyg, recensioner och egna listor
+* Lässtatistik och en årssammanfattning att dela
 * Import från Goodreads och StoryGraph
 * Kataloger på engelska, tyska, franska, spanska, estniska, svenska, polska, tjeckiska, koreanska, finska, japanska, lettiska, portugisiska, ryska och italienska
 

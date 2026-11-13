@@ -5,6 +5,9 @@ Shelf to prywatna aplikacja do książek offline. Cały katalog jest w twoim tel
 * Półki Chcę przeczytać, Czytam i Przeczytane, dzienny cel i serie czytania
 * Przeglądaj gatunki, serie i autorów, z rekomendacjami liczonymi w telefonie
 * Czytaj EPUB, Kindle, PDF, komiksy, pliki Word i więcej
+* Słuchaj audiobooków lub każ czytać na głos dowolną książkę głosami działającymi w telefonie
+* Zakreślenia, notatki, oceny, recenzje i własne listy
+* Statystyki czytania i podsumowanie roku do udostępnienia
 * Import z Goodreads i StoryGraph
 * Katalogi po angielsku, niemiecku, francusku, hiszpańsku, estońsku, szwedzku, polsku, czesku, koreańsku, fińsku, japońsku, łotewsku, portugalsku, rosyjsku i włosku
 

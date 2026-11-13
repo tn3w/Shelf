@@ -5,6 +5,9 @@ Shelf est une appli de livres privée et hors ligne. Tout le catalogue est sur v
 * Étagères À lire, En cours et Lus, objectif quotidien et séries de lecture
 * Explorez genres, séries et auteurs, avec des recommandations calculées sur votre téléphone
 * Lisez EPUB, Kindle, PDF, BD, fichiers Word et plus
+* Écoutez des livres audio ou faites lire n’importe quel livre par des voix qui tournent sur votre téléphone
+* Surlignages, notes, avis, critiques et listes personnelles
+* Statistiques de lecture et bilan annuel à partager
 * Import depuis Goodreads et StoryGraph
 * Catalogues en anglais, allemand, français, espagnol, estonien, suédois, polonais, tchèque, coréen, finnois, japonais, letton, portugais, russe et italien
 
