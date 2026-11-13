@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: android
@@ -48,7 +48,7 @@ jobs:
           minifyGithubReleaseWithR8 testGithubDebugUnitTest testFdroidDebugUnitTest
 
   builder:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: tooling/builder
@@ -64,7 +64,7 @@ jobs:
       - run: cargo test --locked
 
   server:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: tooling/server
@@ -82,7 +82,7 @@ jobs:
       - run: cargo test --locked --workspace
 
   scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: debian:trixie
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
