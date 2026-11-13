@@ -1,9 +1,11 @@
 package dev.tn3w.shelf.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,9 +17,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.*
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
@@ -27,11 +33,18 @@ import dev.tn3w.shelf.SimilarKind
 import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.abs
 import kotlin.math.max
 
 private const val STARTS = 3
 private const val SIMILAR_LIMIT = 40
+private const val FAN_POOL = 24
+private const val HERO_FAN = 5
+private const val CARD_FAN = 3
 private val DISLIKED = 1..2
+private val HeroCover = 84.dp
+private val CardCover = 56.dp
+private val StartCover = 64.dp
 
 private val SECTIONS = listOf(
     "audience" to R.string.audience,
@@ -39,7 +52,9 @@ private val SECTIONS = listOf(
     "topic" to R.string.topics,
 )
 
-private fun Loaded.starts(saved: List<Saved>): List<Pair<String, SimilarRoute>> {
+class Start(val name: String, val route: SimilarRoute, val book: Book)
+
+private fun Loaded.starts(saved: List<Saved>): List<Start> {
     val recent = saved
         .filter { it.shelf != Shelf.Want && it.rating !in DISLIKED }
         .sortedByDescending { max(it.updated, it.added) }
@@ -54,13 +69,13 @@ private fun Loaded.starts(saved: List<Saved>): List<Pair<String, SimilarRoute>> 
         .toList()
 }
 
-private fun startOf(book: Book, count: Int): Pair<String, SimilarRoute> {
+private fun startOf(book: Book, count: Int): Start {
     val author = book.authors.firstOrNull()
     if (author == null || author.number <= 0 || count < 2) {
-        return book.title to SimilarRoute(SimilarKind.Books, listOf(book.work))
+        return Start(book.title, SimilarRoute(SimilarKind.Books, listOf(book.work)), book)
     }
-    return author.name to
-        SimilarRoute(SimilarKind.Writer, listOf(author.number), author.name)
+    val route = SimilarRoute(SimilarKind.Writer, listOf(author.number), author.name)
+    return Start(author.name, route, book)
 }
 
 private fun Loaded.seedOf(route: SimilarRoute): Pair<String, RecommendSeed>? {
@@ -80,6 +95,20 @@ private fun Loaded.seedOf(route: SimilarRoute): Pair<String, RecommendSeed>? {
     }
 }
 
+class Genre(val tag: Tag, val books: List<Book>, val count: Int)
+
+private fun Loaded.genres(tags: List<Tag>): List<Genre> {
+    val shown = mutableSetOf<Int>()
+    return tags.map { tag ->
+        val books = recommender.popular(FAN_POOL, tag.id)
+            .asSequence()
+            .filter { shown.add(it.work) }
+            .take(HERO_FAN)
+            .toList()
+        Genre(tag, books, catalogue.tagCount(tag.id))
+    }
+}
+
 class ExploreViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val starts = combine(loaded.filterNotNull(), library.saved) { current, saved ->
         current.starts(saved)
@@ -89,6 +118,12 @@ class ExploreViewModel(app: ShelfApp) : ShelfViewModel(app) {
             .filter { catalogue.tagCount(it.id) > 0 }
             .sortedByDescending { catalogue.tagCount(it.id) }
             .groupBy { it.category }
+    }
+    val genres = catalogueState {
+        val tags = catalogue.tags
+            .filter { it.category == "genre" && catalogue.tagCount(it.id) > 0 }
+            .sortedByDescending { catalogue.tagCount(it.id) }
+        genres(tags).filter { it.books.isNotEmpty() }
     }
     val missing = catalogueState { catalogue.workCount == 0 }
 }
@@ -141,7 +176,9 @@ fun ExploreScreen(navigator: Navigator) {
     val viewModel = shelfViewModel(create = ::ExploreViewModel)
     val starts by viewModel.starts.collectAsStateWithLifecycle()
     val tags by viewModel.tags.collectAsStateWithLifecycle()
+    val genres by viewModel.genres.collectAsStateWithLifecycle()
     val missing by viewModel.missing.collectAsStateWithLifecycle()
+    val hero = genres?.firstOrNull()
 
     LazyColumn(contentPadding = screenInsets()) {
         item { LargeTitle(stringResource(R.string.explore)) }
@@ -149,16 +186,15 @@ fun ExploreScreen(navigator: Navigator) {
             item { NoCatalogue { navigator.settings(SettingsPage.Catalogue) } }
             return@LazyColumn
         }
+        hero?.let { item { HeroCard(it) { navigator.tag(it.tag.id) } } }
         if (!starts.isNullOrEmpty()) {
             item { SectionHeader(stringResource(R.string.start_from)) }
-            items(starts.orEmpty()) { (name, route) ->
-                val author = route.kind == SimilarKind.Writer
-                StartRow(name, author) { navigator.similar(route) }
-            }
+            item { StartRow(starts.orEmpty()) { navigator.similar(it) } }
         }
-        tags?.get("genre")?.let { genres ->
+        val rest = genres.orEmpty().drop(1)
+        if (rest.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.genres)) }
-            item { GenreGrid(genres, navigator) }
+            item { GenreGrid(rest) { navigator.tag(it) } }
         }
         SECTIONS.forEach { (category, title) ->
             val list = tags?.get(category) ?: return@forEach
@@ -168,26 +204,70 @@ fun ExploreScreen(navigator: Navigator) {
     }
 }
 
+/** Covers spread like a hand of cards, the first one on top in the middle. */
 @Composable
-private fun StartRow(name: String, author: Boolean, onClick: () -> Unit) {
-    val label =
-        if (author) R.string.because_you_read_author else R.string.because_you_read
-    Row(
-        Modifier.fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = ScreenPadding, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun CoverFan(books: List<Book>, width: Dp, modifier: Modifier = Modifier) {
+    val placed = books.mapIndexed { rank, book ->
+        val spread = if (rank % 2 == 1) -(rank + 1) / 2 else rank / 2
+        spread to book
+    }
+    Box(
+        modifier.fillMaxWidth().height(width * 1.6f),
+        contentAlignment = Alignment.BottomCenter,
     ) {
-        val icon = if (author) Icons.Rounded.Person else Icons.Rounded.AutoAwesome
-        Icon(icon, null, Modifier.size(20.dp), Look.colors.accent)
-        Text(
-            stringResource(label, name),
-            Modifier.weight(1f),
-            style = Look.type.body,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        val backToFront = placed.sortedByDescending { (spread, _) -> abs(spread) }
+        backToFront.forEach { (spread, book) ->
+            val step = abs(spread)
+            BookCover(
+                book,
+                width * (1f - step * 0.12f),
+                Modifier.offset(x = width * 0.62f * spread, y = -(4.dp * step))
+                    .rotate(spread * 6f),
+                lift = 10.dp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun Modifier.tintedCard(onClick: () -> Unit): Modifier {
+    val colors = Look.colors
+    val backdrop = Brush.verticalGradient(listOf(colors.glow, colors.raised))
+    return surface().background(backdrop).clickable(onClick = onClick)
+}
+
+@Composable
+private fun HeroCard(genre: Genre, onClick: () -> Unit) {
+    CoverTheme(coverTone(genre.books.first())) {
+        Column(
+            Modifier.padding(horizontal = ScreenPadding)
+                .padding(top = 8.dp)
+                .tintedCard(onClick)
+                .padding(top = 28.dp, bottom = 20.dp, start = 20.dp, end = 20.dp),
+        ) {
+            CoverFan(genre.books, HeroCover)
+            Eyebrow(
+                stringResource(R.string.popular),
+                Modifier.padding(top = 24.dp),
+                color = Look.colors.accent,
+            )
+            GenreTitle(genre, Look.type.title)
+        }
+    }
+}
+
+@Composable
+private fun GenreTitle(genre: Genre, style: TextStyle) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(top = 4.dp)) {
+            Text(
+                genre.tag.label,
+                style = style,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Hint(pluralStringResource(R.plurals.books, genre.count, genre.count))
+        }
         Icon(
             Icons.AutoMirrored.Rounded.KeyboardArrowRight,
             null,
@@ -198,22 +278,66 @@ private fun StartRow(name: String, author: Boolean, onClick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun GenreGrid(genres: List<Tag>, navigator: Navigator) {
+private fun GenreGrid(genres: List<Genre>, onOpen: (Int) -> Unit) {
     FlowRow(
         Modifier.padding(horizontal = ScreenPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         maxItemsInEachRow = 2,
     ) {
-        genres.forEach { tag ->
-            Box(
-                Modifier.weight(1f)
-                    .heightIn(min = 76.dp)
-                    .surface()
-                    .clickable { navigator.tag(tag.id) }
-                    .padding(16.dp),
-                contentAlignment = Alignment.BottomStart,
-            ) { Text(tag.label, style = Look.type.heading) }
+        genres.forEach { genre ->
+            CoverTheme(coverTone(genre.books.first())) {
+                Column(
+                    Modifier.weight(1f)
+                        .tintedCard { onOpen(genre.tag.id) }
+                        .padding(top = 20.dp, bottom = 14.dp, start = 14.dp, end = 8.dp),
+                ) {
+                    CoverFan(genre.books.take(CARD_FAN), CardCover)
+                    Spacer(Modifier.height(14.dp))
+                    GenreTitle(genre, Look.type.subhead)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartRow(starts: List<Start>, onOpen: (SimilarRoute) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = ScreenPadding),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(starts, key = { it.route.ids.first() }) { start ->
+            StartCard(start) { onOpen(start.route) }
+        }
+    }
+}
+
+@Composable
+private fun StartCard(start: Start, onClick: () -> Unit) {
+    val author = start.route.kind == SimilarKind.Writer
+    val label =
+        if (author) R.string.because_you_read_author else R.string.because_you_read
+    CoverTheme(coverTone(start.book)) {
+        Row(
+            Modifier.width(280.dp)
+                .tintedCard(onClick)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BookCover(start.book, StartCover, lift = 10.dp)
+            Column(Modifier.weight(1f)) {
+                val icon = if (author) Icons.Rounded.Person else Icons.Rounded.AutoAwesome
+                Icon(icon, null, Modifier.size(18.dp), Look.colors.accent)
+                Text(
+                    stringResource(label, start.name),
+                    Modifier.padding(top = 8.dp),
+                    style = Look.type.heading,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
