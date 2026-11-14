@@ -37,15 +37,9 @@ internal fun historyEmblem(cover: CoverCanvas): Typeset = with(cover) {
             spokePaint,
         )
     }
-    canvas.drawCircle(
-        centerX, centerY, radius * 0.3f, fillPaint(sepia),
-    )
+    canvas.drawCircle(centerX, centerY, radius * 0.3f, fillPaint(sepia))
 
-    Typeset(
-        ink = shade(sepia, 0.65f),
-        authorInk = sepia,
-        upper = true,
-    )
+    Typeset(ink = shade(sepia, 0.65f), authorInk = sepia, upper = true)
 }
 
 internal fun vintageBands(cover: CoverCanvas): Typeset = with(cover) {
@@ -70,12 +64,7 @@ internal fun vintageBands(cover: CoverCanvas): Typeset = with(cover) {
     val panelBottom = height * random.range(0.68f, 0.74f)
     canvas.drawRect(0f, panelTop, width, panelBottom, fillPaint(shell))
 
-    Typeset(
-        ink = ink,
-        authorInk = shell,
-        upper = true,
-        anchor = Anchor.Center,
-    )
+    Typeset(ink = ink, authorInk = shell, upper = true, anchor = Anchor.Center)
 }
 
 internal fun adventureMap(cover: CoverCanvas): Typeset = with(cover) {
@@ -122,11 +111,7 @@ internal fun adventureMap(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
 
-    Typeset(
-        ink = shade(ink, 0.75f),
-        authorInk = ink,
-        upper = true,
-    )
+    Typeset(ink = shade(ink, 0.75f), authorInk = ink, upper = true)
 }
 
 internal fun poetryWash(cover: CoverCanvas): Typeset = with(cover) {
@@ -260,11 +245,7 @@ internal fun spiritualRays(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(gold),
     )
 
-    Typeset(
-        ink = mix(gold, Color.WHITE, 0.55f),
-        authorInk = gold,
-        upper = true,
-    )
+    Typeset(ink = mix(gold, Color.WHITE, 0.55f), authorInk = gold, upper = true)
 }
 
 internal fun biographyPortrait(cover: CoverCanvas): Typeset = with(cover) {
@@ -314,11 +295,7 @@ internal fun biographyPortrait(cover: CoverCanvas): Typeset = with(cover) {
     }
     canvas.restore()
 
-    Typeset(
-        ink = shade(dark, 0.75f),
-        authorInk = shade(dark, 0.85f),
-        upper = true,
-    )
+    Typeset(ink = shade(dark, 0.75f), authorInk = shade(dark, 0.85f), upper = true)
 }
 
 internal fun spiritualEnso(cover: CoverCanvas): Typeset = with(cover) {
@@ -361,11 +338,7 @@ internal fun spiritualEnso(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(hsv(0.99f, 0.80f, 0.72f)),
     )
 
-    Typeset(
-        ink = sumi,
-        authorInk = Color.rgb(80, 74, 70),
-        upper = random.chance(0.5f),
-    )
+    Typeset(ink = sumi, authorInk = Color.rgb(80, 74, 70), upper = random.chance(0.5f))
 }
 
 internal fun technicalBlueprint(cover: CoverCanvas): Typeset = with(cover) {
@@ -390,11 +363,7 @@ internal fun technicalBlueprint(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawPath(gear(centerX, centerY, radius, random.between(10, 16)), line)
     canvas.drawCircle(centerX, centerY, radius * 0.3f, line)
 
-    Typeset(
-        ink = chalk,
-        font = CoverFont.Sans,
-        upper = true,
-    )
+    Typeset(ink = chalk, font = CoverFont.Sans, upper = true)
 }
 
 private fun gear(centerX: Float, centerY: Float, radius: Float, teeth: Int): Path {

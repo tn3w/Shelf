@@ -92,10 +92,7 @@ private fun tar(file: File, entries: Map<String, ByteArray>) = file.apply {
     TarArchiveOutputStream(outputStream()).use { archive ->
         entries.forEach { (name, bytes) ->
             archive.putArchiveEntry(
-                TarArchiveEntry(name).apply {
-                    size =
-                        bytes.size.toLong()
-                },
+                TarArchiveEntry(name).apply { size = bytes.size.toLong() },
             )
             archive.write(bytes)
             archive.closeArchiveEntry()

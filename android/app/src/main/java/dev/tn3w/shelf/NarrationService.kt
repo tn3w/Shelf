@@ -88,7 +88,7 @@ class NarrationService : Service() {
     }
 
     private fun update(state: Narration) {
-        if (!state.active && !state.loading) return stopSelf()
+        if (!state.busy) return stopSelf()
         session.setPlaybackState(playback(state))
         getSystemService(NotificationManager::class.java)
             .notify(NOTIFICATION, notification(state))

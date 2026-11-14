@@ -266,8 +266,7 @@ private class Diagnostics(val catalogue: Catalogue, seeds: List<Book>) {
         "cos" to cosine(book.tags),
         "readers" to (book.popularity?.readers ?: 0).toDouble(),
         "seedAuthor" to if (book.authors.any { it.number in seedAuthors }) 1.0 else 0.0,
-        "seedSeries" to
-            if (catalogue.series(book.work)?.name in seedSeries) 1.0 else 0.0,
+        "seedSeries" to if (catalogue.series(book.work)?.name in seedSeries) 1.0 else 0.0,
     )
 
     fun tags(book: Book) = book.tags.take(5).mapNotNull(slug::get).joinToString(",")

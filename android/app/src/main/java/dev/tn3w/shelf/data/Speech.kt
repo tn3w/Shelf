@@ -147,9 +147,7 @@ private fun withoutRunningHeaders(pieces: List<Piece>): List<Piece> {
     val counts = pieces.filter(::short).groupingBy(::key).eachCount()
     val repeated = counts.filter { it.value >= REPEATED_HEADER }.keys
         .filterNot { key -> key.all { it in "#. " } }.toSet()
-    return pieces.filter {
-        key(it) !in repeated || SENTENCE_END.containsMatchIn(it.text)
-    }
+    return pieces.filter { key(it) !in repeated || SENTENCE_END.containsMatchIn(it.text) }
 }
 
 private fun partsOf(pieces: List<Piece>): List<Part> {
@@ -250,8 +248,7 @@ fun speechOf(pages: List<String>) = passagesOf(spokenPieces(pagePieces(pages)))
 private val ABBREVIATION = Regex(
     "(\\b(Mr|Mrs|Ms|Dr|St|Prof|Jr|Sr|vs|Mme|Mlle|Hr|Fr|Nr|No|etc|pp?)|\\b\\p{Lu})\\.$",
 )
-private val SENTENCE_BREAK =
-    Regex("(?<=[.!?…][”\"’»)]{0,2})\\s+(?=[\\p{Lu}“\"‘»(¿¡])")
+private val SENTENCE_BREAK = Regex("(?<=[.!?…][”\"’»)]{0,2})\\s+(?=[\\p{Lu}“\"‘»(¿¡])")
 
 internal fun sentences(text: String): List<String> {
     val merged = mutableListOf<String>()

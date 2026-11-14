@@ -250,9 +250,7 @@ private fun RecipeForm(recipe: Recipe, onChange: (Recipe) -> Unit) {
     }
     Segments(BOOK_FORMATS, recipe.format, onSelect = {
         onChange(recipe.copy(format = it))
-    }) {
-        it.uppercase()
-    }
+    }) { it.uppercase() }
     RecipeLanguages(recipe.languages) { onChange(recipe.copy(languages = it)) }
     Heading(R.string.free_books_headers)
     HeaderRows(recipe.headers) { onChange(recipe.copy(headers = it)) }

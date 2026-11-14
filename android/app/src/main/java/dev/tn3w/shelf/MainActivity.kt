@@ -149,8 +149,7 @@ class Navigator(
     fun stats() = controller.navigate(StatsRoute) { launchSingleTop = true }
 
     fun wrapped(year: Int) = controller.navigate(WrappedRoute(year)) {
-        launchSingleTop =
-            true
+        launchSingleTop = true
     }
 
     fun settings(page: SettingsPage = SettingsPage.Main) =
@@ -359,7 +358,7 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
     val hidden = reading || WindowInsets.isImeVisible
     val speech by viewModel.narrator.state.collectAsStateWithLifecycle()
     val audio by viewModel.audiobooks.state.collectAsStateWithLifecycle()
-    val playing = listOf(audio, speech).firstOrNull { it.active || it.loading }
+    val playing = listOf(audio, speech).firstOrNull { it.busy }
     val listening = !hidden && playing != null
     val scope = rememberCoroutineScope()
     fun openPlaying() {
@@ -485,10 +484,7 @@ private fun Dock(
 
 @Composable
 private fun DockTabs(selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier.selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
+    Row(Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         tabs.forEachIndexed { index, tab ->
             val chosen = index == selected
             val (fill, content) = tabColors(chosen)
@@ -611,8 +607,6 @@ private inline fun <reified T : Any> NavGraphBuilder.screen(
     noinline content: @Composable (NavBackStackEntry) -> Unit,
 ) = composable<T> { entry ->
     CompositionLocalProvider(LocalAnimatedScope provides this) {
-        Box(Modifier.fillMaxSize().background(Look.colors.paper)) {
-            content(entry)
-        }
+        Box(Modifier.fillMaxSize().background(Look.colors.paper)) { content(entry) }
     }
 }

@@ -130,13 +130,7 @@ private fun ranked(
     val identity = expected?.let { identity(catalogue, it) }
     val top = scores.entries.sortedByDescending { it.value }.take(KEPT_SCORES)
     val works = top.map {
-        if (identity(catalogue, it.key) ==
-            identity
-        ) {
-            expected
-        } else {
-            it.key
-        }
+        if (identity(catalogue, it.key) == identity) expected else it.key
     }
     return works to top.map { it.value }
 }

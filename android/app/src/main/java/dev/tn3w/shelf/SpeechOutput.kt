@@ -44,13 +44,7 @@ interface SpeechOutput {
 
     val narrator: String
 
-    fun speak(
-        tag: Int,
-        index: Int,
-        segments: List<Spoken>,
-        flush: Boolean,
-        volume: Float,
-    )
+    fun speak(tag: Int, index: Int, segments: List<Spoken>, flush: Boolean, volume: Float)
 
     fun stop()
 
@@ -144,9 +138,7 @@ class TtsOutput(
             val casting = caster.castingOf(segment.speaker)
             system.firstOrNull { it.name == casting.voice.id }?.let { engine.voice = it }
             engine.setPitch(casting.pitch)
-            val mode = if (flush &&
-                part == 0
-            ) {
+            val mode = if (flush && part == 0) {
                 TextToSpeech.QUEUE_FLUSH
             } else {
                 TextToSpeech.QUEUE_ADD

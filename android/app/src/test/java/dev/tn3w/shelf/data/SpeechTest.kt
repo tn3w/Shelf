@@ -63,8 +63,7 @@ class SpeechTest {
         assertFalse(
             text.toString(),
             text.any {
-                it.contains("Donate") ||
-                    it.contains("licence")
+                it.contains("Donate") || it.contains("licence")
             },
         )
     }

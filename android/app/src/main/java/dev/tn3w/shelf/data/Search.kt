@@ -76,8 +76,8 @@ private val FOLD = buildMap {
         }
 }
 
-private fun isCjk(character: Char) =
-    KANJI.any { character in it } || (character != '・' && KANA.any { character in it })
+private fun isCjk(character: Char) = character >= KANA.first().first &&
+    (KANJI.any { character in it } || (character != '・' && KANA.any { character in it }))
 
 private fun foldCharacter(character: Char): Char? {
     val narrow =
@@ -108,6 +108,7 @@ fun tokenize(text: String): List<String> {
         word.clear()
     }
     fun pushBigrams() {
+        if (run.isEmpty()) return
         if (run.length == 1) tokens += run.toString()
         (0 until run.length - 1).mapTo(tokens) { run.substring(it, it + 2) }
         run.clear()
@@ -167,9 +168,7 @@ fun editDistance(left: String, right: String, limit: Int): Int {
             val cost = if (left[i - 1] == right[j - 1]) 0 else 1
             current[j] =
                 minOf(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
-            val swapped = i > 1 &&
-                j > 1 &&
-                left[i - 1] == right[j - 2] &&
+            val swapped = i > 1 && j > 1 && left[i - 1] == right[j - 2] &&
                 left[i - 2] == right[j - 1]
             if (swapped && beforePrevious != null) {
                 current[j] = min(current[j], beforePrevious[j - 2] + 1)
@@ -428,11 +427,11 @@ class Searcher(private val catalogue: Catalogue) {
         val popularity = HashMap<Int, Double>()
         fun popularityOf(work: Int) =
             popularity.getOrPut(work) { catalogue.popularity(work) }
-        val head = scored.keys
-            .sortedByDescending {
-                scored.getValue(it) + RANK_POPULARITY * popularityOf(it)
-            }
+        val head = scored
+            .map { (work, score) -> work to score + RANK_POPULARITY * popularityOf(work) }
+            .sortedByDescending { it.second }
             .asSequence()
+            .map { it.first }
             .filter { filter.accepts(it) }
             .take(RERANK_DEPTH)
             .toList()

@@ -54,12 +54,7 @@ internal fun scifiCircuit(cover: CoverCanvas): Typeset = with(cover) {
     canvas.drawPath(traces, strokePaint(accent, unit(0.006f)))
     for ((x, y) in pads) canvas.drawCircle(x, y, unit(0.014f), fillPaint(accent))
 
-    Typeset(
-        ink = SPACE_INK,
-        authorInk = accent,
-        font = CoverFont.Sans,
-        upper = true,
-    )
+    Typeset(ink = SPACE_INK, authorInk = accent, font = CoverFont.Sans, upper = true)
 }
 
 internal fun scifiOrbit(cover: CoverCanvas): Typeset = with(cover) {

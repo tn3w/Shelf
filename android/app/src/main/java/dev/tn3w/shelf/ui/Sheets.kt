@@ -63,8 +63,7 @@ fun Sheet(
     val isLocked by rememberUpdatedState(locked)
     val confirm = remember {
         { value: SheetValue ->
-            value != SheetValue.Hidden ||
-                !isLocked
+            value != SheetValue.Hidden || !isLocked
         }
     }
     val side = if (padded) ScreenPadding else 0.dp
@@ -274,9 +273,7 @@ fun Notice(
         Text(message, color = colors.paper, style = Look.type.label)
         CompositionLocalProvider(
             LocalColors provides colors.copy(accent = colors.paper),
-        ) {
-            Pill(action, kind = PillKind.Bare, onClick = onAction)
-        }
+        ) { Pill(action, kind = PillKind.Bare, onClick = onAction) }
     }
 }
 

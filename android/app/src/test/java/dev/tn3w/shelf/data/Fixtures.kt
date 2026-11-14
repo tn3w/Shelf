@@ -112,10 +112,7 @@ private class Postings(val titles: List<Int>, val authors: List<Int>)
 private fun terms(books: List<Fixture>, authors: List<String>): Map<String, Postings> {
     val titles = books.withIndex().flatMap { (local, book) ->
         val heads = "${book.title} ${book.subtitle} ${book.alternate}"
-        tokenize("$heads ${book.series.orEmpty()}").map {
-            it to
-                local
-        }
+        tokenize("$heads ${book.series.orEmpty()}").map { it to local }
     }
     val names = authors.withIndex().flatMap { (slot, name) ->
         tokenize(name).map { it to slot }

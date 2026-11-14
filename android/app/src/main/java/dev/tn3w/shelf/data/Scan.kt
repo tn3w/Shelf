@@ -494,10 +494,7 @@ private class GraySource(private val frame: Gray, private val quarterTurns: Int 
     }
 
     override fun getMatrix() = ByteArray(width * height) {
-        luminance(
-            it % width,
-            it / width,
-        )
+        luminance(it % width, it / width)
     }
 
     override fun isRotateSupported() = true

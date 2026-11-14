@@ -74,15 +74,12 @@ fun quoteStyleOf(paragraphs: List<String>): QuoteStyle {
 }
 
 private fun isSpoken(inside: String, after: String) =
-    SPOKEN_END.containsMatchIn(inside) ||
-        after.firstOrNull() in AFTER_SPOKEN ||
+    SPOKEN_END.containsMatchIn(inside) || after.firstOrNull() in AFTER_SPOKEN ||
         inside.length > SHORT_QUOTE_LENGTH ||
         words(inside).size > SHORT_QUOTE_WORDS
 
 private fun dashedUtterances(paragraph: String): List<Utterance> {
-    if (!DASH.containsMatchIn(paragraph)) {
-        return listOf(narration(paragraph, 0))
-    }
+    if (!DASH.containsMatchIn(paragraph)) return listOf(narration(paragraph, 0))
     var cursor = 0
     return paragraph.split(DASH_SPLIT).drop(1).mapIndexedNotNull { index, part ->
         val spoken = index % 2 == 0

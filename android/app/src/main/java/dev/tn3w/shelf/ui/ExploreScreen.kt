@@ -319,9 +319,7 @@ private fun StartCard(start: Start, onClick: () -> Unit) {
         if (author) R.string.because_you_read_author else R.string.because_you_read
     CoverTheme(coverTone(start.book)) {
         Row(
-            Modifier.width(280.dp)
-                .tintedCard(onClick)
-                .padding(16.dp),
+            Modifier.width(280.dp).tintedCard(onClick).padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -348,9 +346,7 @@ private fun TagChips(tags: List<Tag>, navigator: Navigator) {
         Modifier.padding(horizontal = ScreenPadding),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        tags.forEach { tag -> Tag(tag.label) { navigator.tag(tag.id) } }
-    }
+    ) { tags.forEach { tag -> Tag(tag.label) { navigator.tag(tag.id) } } }
 }
 
 @Composable

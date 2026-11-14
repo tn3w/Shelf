@@ -43,8 +43,7 @@ private fun HttpExchange.reply(code: Int, body: String = "", location: String? =
 private fun HttpExchange.parameters() = requestURI.rawQuery.orEmpty().split("&")
     .filter { "=" in it }
     .associate {
-        it.substringBefore("=") to
-            URLDecoder.decode(it.substringAfter("="), "UTF-8")
+        it.substringBefore("=") to URLDecoder.decode(it.substringAfter("="), "UTF-8")
     }
 
 private fun matching(query: String) = BOOKS.filter { (title, author) ->
@@ -370,8 +369,7 @@ class ProvidersTest {
     @Test
     fun traceShowsEachRequestBeforeItsAnswerAndEveryRedirect() = runBlocking<Unit> {
         val lines = mutableListOf<String>()
-        Provider(htmlRecipe(), log = { lines += it })
-            .probe(Query("Emma", "", "en"))
+        Provider(htmlRecipe(), log = { lines += it }).probe(Query("Emma", "", "en"))
         val request = lines.indexOfFirst {
             it.startsWith("GET http://127.0.0.1:$port/search")
         }

@@ -275,9 +275,7 @@ private fun components(edges: BooleanArray, width: Int): List<Component> {
     for (index in edges.indices) {
         if (!edges[index]) continue
         if (index % width > 0 && edges[index - 1]) parent[root(index)] = root(index - 1)
-        if (index >= width &&
-            edges[index - width]
-        ) {
+        if (index >= width && edges[index - width]) {
             parent[root(index)] = root(index - width)
         }
     }
@@ -297,8 +295,7 @@ private fun components(edges: BooleanArray, width: Int): List<Component> {
 }
 
 private fun isGlyph(component: Component, maximum: Int) =
-    component.height in 6..maximum &&
-        component.width <= component.height * 12 &&
+    component.height in 6..maximum && component.width <= component.height * 12 &&
         component.edges >= component.width * component.height * 0.1
 
 private class Group(first: LineBox) {

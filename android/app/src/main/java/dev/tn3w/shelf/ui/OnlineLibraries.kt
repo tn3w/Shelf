@@ -80,9 +80,7 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
     fun load() {
         val client = client() ?: return
         val shown = _feed.value
-        val target = if (shown ==
-            null
-        ) {
+        val target = if (shown == null) {
             url.ifEmpty { saved()?.url.orEmpty() }
         } else {
             shown.next
@@ -133,12 +131,7 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
                 delay(DOWNLOAD_SETTLE_MILLIS)
             }
             _files.update {
-                if (done) {
-                    it - file.url
-                } else {
-                    it +
-                        (file.url to Download.Failed)
-                }
+                if (done) it - file.url else it + (file.url to Download.Failed)
             }
             work.getOrNull()?.let(app::open)
         }
@@ -216,9 +209,7 @@ private fun Presets(
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        presets.forEach { (name, url) -> Tag(name) { onPick(name, url) } }
-    }
+    ) { presets.forEach { (name, url) -> Tag(name) { onPick(name, url) } } }
 }
 
 @Composable

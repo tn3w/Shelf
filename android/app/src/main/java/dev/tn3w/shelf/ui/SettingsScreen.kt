@@ -421,13 +421,10 @@ private fun ListeningSettings() {
     val installed by viewModel.models.installed.collectAsStateWithLifecycle()
     val detects = remember(installed) { viewModel.models.installed("speaker") != null }
     SettingsGroup(stringResource(R.string.narration)) {
-        val hint = when {
-            detects -> R.string.character_voices_hint
-            else -> R.string.character_voices_model
-        }
+        val model = R.string.character_voices_model
         SwitchRow(
             R.string.character_voices,
-            hint,
+            if (detects) R.string.character_voices_hint else model,
             settings.characterVoices && detects,
             enabled = detects,
             onChange = viewModel::setCharacterVoices,
@@ -767,9 +764,7 @@ private fun AboutRows() {
             Icons.Rounded.Refresh,
             summary.joinToString(" · "),
             checking,
-        ) {
-            viewModel.showUpdate(available)
-        }
+        ) { viewModel.showUpdate(available) }
     } else {
         SettingRow(stringResource(R.string.app_name), version)
     }

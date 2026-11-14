@@ -54,7 +54,7 @@ fun ListenSheet(
 ) {
     val speech by narrator.state.collectAsStateWithLifecycle()
     val audio by audiobooks.state.collectAsStateWithLifecycle()
-    val isAudio = audio.work == work && (audio.active || audio.loading || audio.failed)
+    val isAudio = audio.work == work && (audio.busy || audio.failed)
     val state = if (isAudio) audio else speech
     val playback = if (isAudio) audiobooks else narrator
     val picker = rememberLauncherForActivityResult(OpenMultipleDocuments()) { uris ->
@@ -111,9 +111,9 @@ fun ListenSheet(
 fun NowPlaying(narrator: Narrator, audiobooks: AudiobookPlayer, onOpen: () -> Unit) {
     val speech by narrator.state.collectAsStateWithLifecycle()
     val audio by audiobooks.state.collectAsStateWithLifecycle()
-    val isAudio = audio.active || audio.loading
+    val isAudio = audio.busy
     val state = if (isAudio) audio else speech
-    if (!state.active && !state.loading) return
+    if (!state.busy) return
     val playback = if (isAudio) audiobooks else narrator
     val saved by shelfViewModel().saved.collectAsStateWithLifecycle()
     val book = remember(saved, state.work) {
@@ -325,9 +325,7 @@ private fun Options(state: Narration, playback: Playback) {
 
         Choosing.Sleep -> Choices(SLEEP_OPTIONS, {
             it == state.sleep
-        }, { sleepLabel(it) }) {
-            playback.setSleep(it)
-        }
+        }, { sleepLabel(it) }) { playback.setSleep(it) }
 
         Choosing.Voice -> Choices(voices, { it.name == state.voice }, { it.label }) {
             (playback as? Narrator)?.setVoice(it.name)
@@ -349,9 +347,7 @@ private fun <T> Choices(
     Modifier.fillMaxWidth().surface(Corners.well, Look.colors.sunken).padding(10.dp),
     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
     verticalArrangement = Arrangement.spacedBy(8.dp),
-) {
-    options.forEach { Tag(label(it), selected = isSelected(it)) { onSelect(it) } }
-}
+) { options.forEach { Tag(label(it), selected = isSelected(it)) { onSelect(it) } } }
 
 private fun rateLabel(rate: Float) = "${rate.toString().removeSuffix(".0")}×"
 

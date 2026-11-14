@@ -419,9 +419,6 @@ private fun Modifier.bookClicks(
 )
 
 @Composable
-private fun SelectedMark(modifier: Modifier = Modifier) = Check(true, modifier)
-
-@Composable
 fun SelectableTitle(
     text: String,
     selection: Selection,
@@ -488,7 +485,7 @@ fun BookTile(
                 sharedKey = "$origin-${book.work}".takeIf { shared },
             )
             if (selection?.contains(book) == true) {
-                SelectedMark(Modifier.align(Alignment.TopEnd).padding(6.dp))
+                Check(true, Modifier.align(Alignment.TopEnd).padding(6.dp))
             }
         }
         Text(
@@ -618,7 +615,7 @@ fun BookListItem(
                 Modifier.padding(top = 2.dp),
             )
         }
-        if (selection?.contains(book) == true) SelectedMark()
+        if (selection?.contains(book) == true) Check(true)
     }
 }
 

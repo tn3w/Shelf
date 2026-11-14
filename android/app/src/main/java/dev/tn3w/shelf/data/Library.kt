@@ -466,9 +466,7 @@ private fun Progress.isBefore(other: Progress) =
     compareValuesBy(this, other, Progress::section, Progress::offset) < 0
 
 internal fun keptPosition(stored: Progress?, start: Progress, next: Progress?): Progress {
-    val onPage = stored != null &&
-        stored.file == start.file &&
-        !stored.isBefore(start) &&
+    val onPage = stored != null && stored.file == start.file && !stored.isBefore(start) &&
         (next == null || stored.isBefore(next))
     return if (onPage) stored.copy(page = start.page, pages = start.pages) else start
 }

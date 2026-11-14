@@ -143,9 +143,7 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
                         Icons.Rounded.DeleteOutline,
                         label,
                         tint = Look.colors.soft,
-                    ) {
-                        confirmDelete = true
-                    }
+                    ) { confirmDelete = true }
                 }
             }
             if (book == null) return@LazyColumn
@@ -362,8 +360,7 @@ private fun facts(book: Book): String {
             ?.editions
             ?.takeIf { it > 1 }
             ?.let { pluralStringResource(R.plurals.editions, it, it) },
-    )
-        .joinToString("  ·  ")
+    ).joinToString("  ·  ")
 }
 
 @Composable
@@ -391,7 +388,5 @@ private fun TagFlow(tags: List<Pair<Int, String>>, navigator: Navigator) {
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding).padding(top = 18.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        tags.forEach { (id, label) -> Tag(label) { navigator.tag(id) } }
-    }
+    ) { tags.forEach { (id, label) -> Tag(label) { navigator.tag(id) } } }
 }

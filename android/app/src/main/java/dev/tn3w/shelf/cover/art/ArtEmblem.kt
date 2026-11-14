@@ -38,11 +38,7 @@ internal fun spiritualMandala(cover: CoverCanvas): Typeset = with(cover) {
     }
     canvas.drawCircle(centerX, centerY, radius * 0.07f, fillPaint(gold))
 
-    Typeset(
-        ink = gold,
-        authorInk = mix(gold, Color.WHITE, 0.3f),
-        upper = true,
-    )
+    Typeset(ink = gold, authorInk = mix(gold, Color.WHITE, 0.3f), upper = true)
 }
 
 private fun petalRing(
@@ -57,8 +53,7 @@ private fun petalRing(
 ) = with(cover) {
     val length = reach * 0.5f
     val breadth = length * random.range(0.30f, 0.45f)
-    val paint =
-        if (filled) fillPaint(gold) else strokePaint(gold, unit(0.005f))
+    val paint = if (filled) fillPaint(gold) else strokePaint(gold, unit(0.005f))
     val offset = if (random.chance(0.5f)) 0.5f else 0f
     val oval = RectF(
         centerX - breadth / 2f,
@@ -170,10 +165,7 @@ internal fun poetryMoons(cover: CoverCanvas): Typeset = with(cover) {
         )
     }
 
-    Typeset(
-        ink = pale,
-        italic = true,
-    )
+    Typeset(ink = pale, italic = true)
 }
 
 private fun moonPhase(
@@ -231,11 +223,7 @@ internal fun adventureCompass(cover: CoverCanvas): Typeset = with(cover) {
         compassPoint(cover, centerX, centerY, angle, radius * 0.9f, cream, brass)
     }
 
-    Typeset(
-        ink = cream,
-        authorInk = brass,
-        upper = true,
-    )
+    Typeset(ink = cream, authorInk = brass, upper = true)
 }
 
 private fun compassPoint(
@@ -295,11 +283,7 @@ internal fun historyLaurel(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(gold),
     )
 
-    Typeset(
-        ink = gold,
-        authorInk = mix(gold, Color.WHITE, 0.3f),
-        upper = true,
-    )
+    Typeset(ink = gold, authorInk = mix(gold, Color.WHITE, 0.3f), upper = true)
 }
 
 private fun laurelBranch(
@@ -429,11 +413,7 @@ internal fun biographyCameo(cover: CoverCanvas): Typeset = with(cover) {
     )
     canvas.restore()
 
-    Typeset(
-        ink = cream,
-        authorInk = gold,
-        upper = random.chance(0.5f),
-    )
+    Typeset(ink = cream, authorInk = gold, upper = random.chance(0.5f))
 }
 
 private val PROFILE = listOf(

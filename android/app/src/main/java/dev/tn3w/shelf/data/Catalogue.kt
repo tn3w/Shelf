@@ -1,11 +1,13 @@
 package dev.tn3w.shelf.data
 
+import androidx.collection.LruCache
 import androidx.collection.MutableIntList
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.util.BitSet
 import java.util.PriorityQueue
 import kotlin.math.ln
+import kotlin.math.roundToInt
 
 const val COVERS = "https://covers.openlibrary.org"
 const val DNB_COVERS = "https://portal.dnb.de"
@@ -83,8 +85,12 @@ private val OMNIBUS = Regex(
 
 fun isCompanion(text: String) = COMPANION.containsMatchIn(text)
 
+private val companions = LruCache<String, Boolean>(4096)
+
 val Book.isCompanion
-    get() = isCompanion("$title $subtitle") || OMNIBUS.containsMatchIn(title)
+    get() = companions.getOrPut("$title\n$subtitle") {
+        isCompanion("$title $subtitle") || OMNIBUS.containsMatchIn(title)
+    }
 
 private const val ISBN_BASE = 978_000_000_000L
 private val ISBN_PREFIXES = setOf("978", "979")
@@ -124,6 +130,38 @@ data class Series(val name: String, val members: List<Int>)
 
 data class Location(val segment: Segment, val local: Int)
 
+private class Ranked(size: Int) {
+    val qualities = ByteArray(size)
+    private val tenths = IntArray(size)
+    private val readers = IntArray(size) { -1 }
+    private val ratings = IntArray(size)
+    private val twentieths = ByteArray(size)
+    private val editions = ByteArray(size)
+
+    operator fun set(index: Int, popularity: Popularity) {
+        qualities[index] = (QUALITY_STEPS * qualityOf(popularity)).toInt().toByte()
+        tenths[index] = (popularity.score * 10).roundToInt()
+        readers[index] = popularity.readers
+        ratings[index] = popularity.ratings
+        twentieths[index] = (popularity.rating * 20).roundToInt().toByte()
+        editions[index] = popularity.editions.toByte()
+    }
+
+    fun score(index: Int) = (tenths[index] / 10.0).toFloat()
+
+    operator fun get(index: Int) = if (readers[index] < 0) {
+        null
+    } else {
+        Popularity(
+            tenths[index] / 10.0,
+            readers[index],
+            ratings[index],
+            (twentieths[index].toInt() and 0xFF) / 20.0,
+            editions[index].toInt() and 0xFF,
+        )
+    }
+}
+
 class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ranks?) {
     private val visible = visibility(segments)
     private val order = segments.withIndex().associate { (index, it) -> it to index }
@@ -134,26 +172,30 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     /** Newest release among the segments, as the cover proxy names it. */
     val release = segments.map { it.month }.maxWithOrNull(releaseOrder)
     private val maxScore by lazy {
-        scores.maxOrNull()?.takeIf { it > 0 }?.toDouble() ?: 1.0
+        works.indices.maxOfOrNull(::scoreAt)?.takeIf { it > 0 }?.toDouble() ?: 1.0
     }
     private val tagCounts by lazy {
         tags.associate { tag -> tag.id to segments.sumOf { it.tagCount(tag.id) } }
     }
 
     private val works by lazy { allWorks() }
-    private val ranked by lazy {
-        val scores = FloatArray(works.size)
-        val qualities = ByteArray(works.size)
-        works.forEachIndexed { index, work ->
-            val popularity = ranks?.popularity(work) ?: return@forEachIndexed
-            scores[index] = popularity.score.toFloat()
-            qualities[index] = (QUALITY_STEPS * qualityOf(popularity)).toInt().toByte()
+    private val ranking = lazy {
+        Ranked(works.size).also { ranked ->
+            works.forEachIndexed { index, work ->
+                ranks?.popularity(work)?.let { ranked[index] = it }
+            }
         }
-        scores to qualities
     }
-    private val scores get() = ranked.first
+    private val ranked by ranking
+
+    private fun scoreAt(index: Int) = ranked.score(index)
 
     fun warmUp() = maxScore
+
+    fun trim() {
+        segments.forEach(Segment::trim)
+        ranks?.trim()
+    }
 
     fun locate(work: Int): Location? = find(work) ?: ranks?.alias(work)?.let(::find)
 
@@ -169,7 +211,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     fun alias(work: Int) = ranks?.alias(work)
 
     fun score(work: Int) =
-        works.binarySearch(work).let { if (it < 0) 0.0 else scores[it].toDouble() }
+        works.binarySearch(work).let { if (it < 0) 0.0 else scoreAt(it).toDouble() }
 
     fun popularity(work: Int) = ln(1 + score(work)) / ln(1 + maxScore)
 
@@ -178,7 +220,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     fun workAt(index: Int) = works[index]
 
-    fun popularityAt(index: Int) = ln(1 + scores[index]) / ln(1 + maxScore)
+    fun popularityAt(index: Int) = ln(1 + scoreAt(index)) / ln(1 + maxScore)
 
     /**
      * Positions of [items] among all works, -1 for absent ones. Posting lists arrive as
@@ -207,7 +249,12 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
 
     /** Reader count and smoothed rating in [0, 1], see [qualityOf]. */
     fun quality(work: Int) = works.binarySearch(work).let {
-        if (it < 0) 0.0 else (ranked.second[it].toInt() and 0xFF) / QUALITY_STEPS
+        if (it < 0) 0.0 else (ranked.qualities[it].toInt() and 0xFF) / QUALITY_STEPS
+    }
+
+    fun popularityOf(work: Int): Popularity? {
+        val index = if (ranking.isInitialized()) works.binarySearch(work) else -1
+        return if (index < 0) ranks?.popularity(work) else ranked[index]
     }
 
     fun tagCount(tag: Int) = tagCounts[tag] ?: 0
@@ -232,7 +279,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
             facts.year,
             facts.cover,
             facts.tags.toList(),
-            ranks?.popularity(work),
+            popularityOf(work),
             segment.libraryCover(local),
             language,
         )
@@ -293,19 +340,18 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     /** [topWorks] over every work, reading scores by index instead of by lookup. */
     private fun topOfAll(limit: Int): List<Int> {
         if (limit <= 0) return emptyList()
-        val scores = scores
         val heap = PriorityQueue<Int>(limit + 1) { left, right ->
-            scores[left].compareTo(scores[right])
+            scoreAt(left).compareTo(scoreAt(right))
         }
         for (index in works.indices) {
             if (heap.size < limit) {
                 heap.add(index)
-            } else if (scores[index] > scores[heap.peek()!!]) {
+            } else if (scoreAt(index) > scoreAt(heap.peek()!!)) {
                 heap.poll()
                 heap.add(index)
             }
         }
-        return heap.sortedByDescending { scores[it] }.map { works[it] }
+        return heap.sortedByDescending { scoreAt(it) }.map { works[it] }
     }
 
     fun topWorks(works: IntArray, limit: Int): List<Int> {
@@ -400,7 +446,8 @@ class Loaded(
     loadOthers: () -> List<Catalogue> = { emptyList() },
 ) {
     val searcher = Searcher(catalogue)
-    val others by lazy(loadOthers)
+    private val loadingOthers = lazy(loadOthers)
+    val others by loadingOthers
     val recommender = Recommender(catalogue, ::foreignBook)
 
     fun catalogueOf(work: Int) =
@@ -411,6 +458,11 @@ class Loaded(
     /** A work only another installed language has, ready to seed this catalogue. */
     private fun foreignBook(work: Int) = others.firstNotNullOfOrNull { other ->
         other.book(work)?.let { catalogue.adopt(it, other) }
+    }
+
+    fun trim() {
+        catalogue.trim()
+        if (loadingOthers.isInitialized()) others.forEach(Catalogue::trim)
     }
 
     /** The book as a recommendation seed for the current catalogue. */

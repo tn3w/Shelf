@@ -292,10 +292,7 @@ class LibraryTest {
             Saved(-7, Shelf.Read, 9, "Own", "Me"),
         )
         val merged = LibraryState(current).merge(Backup(entries = imported))
-        assertEquals(
-            setOf(current[0], imported[1], imported[2]),
-            merged.entries.toSet(),
-        )
+        assertEquals(setOf(current[0], imported[1], imported[2]), merged.entries.toSet())
     }
 
     @Test
@@ -331,9 +328,7 @@ class LibraryTest {
         val activity = mapOf(day(1) to 10, day(2) to 12, day(3) to 2, day(4) to 10)
         assertEquals(
             2 to false,
-            habitOf(activity, 10, today).let {
-                it.streak to it.done
-            },
+            habitOf(activity, 10, today).let { it.streak to it.done },
         )
         val met = activity + (today.toString() to 10)
         assertEquals(3 to true, habitOf(met, 10, today).let { it.streak to it.done })

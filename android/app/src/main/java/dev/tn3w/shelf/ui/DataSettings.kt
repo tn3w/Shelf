@@ -127,9 +127,7 @@ private fun <I> FileRow(
         if (uri == null) return@rememberLauncherForActivityResult
         viewModel.runFileAction(action, success, failure) { work(uri) }
     }
-    ActionRow(title, icon, status) {
-        launcher.launch(input)
-    }
+    ActionRow(title, icon, status) { launcher.launch(input) }
 }
 
 @Composable

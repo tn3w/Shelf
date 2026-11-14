@@ -186,8 +186,7 @@ class Unigram(pieces: List<Pair<String, Float>>) {
     private fun encodeWord(word: String, result: MutableList<Int>) {
         val points = word.codePoints().toArray()
         val best = FloatArray(points.size + 1) { Float.NEGATIVE_INFINITY }.also {
-            it[0] =
-                0f
+            it[0] = 0f
         }
         val from = IntArray(points.size + 1)
         val piece = IntArray(points.size + 1) { -1 }
@@ -195,9 +194,7 @@ class Unigram(pieces: List<Pair<String, Float>>) {
             for (length in 1..minOf(longest, end)) {
                 val start = end - length
                 val id = ids[String(points, start, length)]
-                val score = if (id !=
-                    null
-                ) {
+                val score = if (id != null) {
                     scores[id]
                 } else if (length == 1) {
                     unknownScore

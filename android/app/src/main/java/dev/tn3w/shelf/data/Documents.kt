@@ -342,9 +342,7 @@ fun readMetadata(file: File): Metadata? = runCatching {
         "fb2" -> fictionBookMetadata(file.inputStream())
         else -> null
     }
-}
-    .getOrNull()
-    ?.takeIf { it.title.isNotBlank() }
+}.getOrNull()?.takeIf { it.title.isNotBlank() }
 
 private fun zipMetadata(book: ZipBook): Metadata? {
     book.find("fb2")?.let { return book.stream(it)?.let(::fictionBookMetadata) }
@@ -480,6 +478,21 @@ private fun plainBlocks(text: String) = text
         Block(it.drop(level).trim(), heading = level, centered = level > 0)
     }
 
+private fun collapseSpaces(text: String): String {
+    val result = StringBuilder(text.length)
+    var spaced = false
+    for (character in text) {
+        val space = character == ' ' || character in '\t'..'\r'
+        if (!space) {
+            result.append(character)
+        } else if (!spaced) {
+            result.append(' ')
+        }
+        spaced = space
+    }
+    return result.toString()
+}
+
 private class HtmlReader(
     private val imagePath: (String) -> String?,
     private val anchors: Set<String> = emptySet(),
@@ -521,7 +534,7 @@ private class HtmlReader(
     }
 
     private fun append(words: String, bold: Boolean, italic: Boolean) {
-        val normalized = words.replace(WHITESPACE, " ")
+        val normalized = collapseSpaces(words)
         val start = text.length
         val atBreak = text.isEmpty() || text.endsWith(" ") || text.endsWith("\n")
         text.append(if (atBreak) normalized.trimStart() else normalized)
@@ -663,9 +676,7 @@ private fun anchoredParts(
     val anchors = entries.map { it.first }.filter { it.isNotEmpty() }.toSet()
     val reader = HtmlReader(imagePath, anchors).apply { read(body) }
     val starts = entries
-        .map { (anchor, title) ->
-            (reader.marks[anchor] ?: 0) to title
-        }
+        .map { (anchor, title) -> (reader.marks[anchor] ?: 0) to title }
         .plus(0 to null)
         .sortedBy { it.first }
         .distinctBy { it.first }
@@ -693,8 +704,7 @@ private fun docxStyles(book: ZipBook) =
     book.xml("word/styles.xml")?.select("w|style").orEmpty().mapNotNull { style ->
         val name = style.selectFirst("w|name")?.attr("w:val").orEmpty()
         headingLevel(name, style.selectFirst("w|pPr"))?.let {
-            style.attr("w:styleId") to
-                it
+            style.attr("w:styleId") to it
         }
     }.toMap()
 
@@ -724,13 +734,7 @@ private fun readDocx(book: ZipBook): TextDocument {
             target.appendText(
                 run.select("w|t, w|tab, w|br, w|cr")
                     .joinToString("") {
-                        if (it.tagName() ==
-                            "w:t"
-                        ) {
-                            it.wholeText()
-                        } else {
-                            " "
-                        }
+                        if (it.tagName() == "w:t") it.wholeText() else " "
                     },
             )
             run.select("a|blip").mapNotNull { links[it.attr("r:embed")] }

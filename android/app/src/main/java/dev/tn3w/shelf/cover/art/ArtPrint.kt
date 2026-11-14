@@ -18,12 +18,8 @@ private class Palette(val paper: Int, val primary: Int, val secondary: Int)
 private val SWISS = listOf(
     Palette(Color.rgb(241, 237, 228), Color.rgb(226, 58, 40), Color.rgb(22, 22, 24)),
     Palette(Color.rgb(22, 24, 30), Color.rgb(246, 196, 38), Color.rgb(236, 234, 228)),
-    Palette(
-        Color.rgb(232, 236, 238), Color.rgb(30, 86, 200), Color.rgb(255, 106, 60),
-    ),
-    Palette(
-        Color.rgb(246, 222, 200), Color.rgb(18, 110, 104), Color.rgb(200, 60, 40),
-    ),
+    Palette(Color.rgb(232, 236, 238), Color.rgb(30, 86, 200), Color.rgb(255, 106, 60)),
+    Palette(Color.rgb(246, 222, 200), Color.rgb(18, 110, 104), Color.rgb(200, 60, 40)),
     Palette(Color.rgb(28, 40, 72), Color.rgb(255, 120, 90), Color.rgb(244, 236, 220)),
 )
 
@@ -47,10 +43,7 @@ internal fun swissGrid(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(palette.secondary),
     )
     canvas.restore()
-    Typeset(
-        ink = palette.secondary,
-        font = CoverFont.Sans,
-    )
+    Typeset(ink = palette.secondary, font = CoverFont.Sans)
 }
 
 private val BAUHAUS = listOf(
@@ -75,12 +68,7 @@ internal fun bauhausTiles(cover: CoverCanvas): Typeset = with(cover) {
             bauhausTile(cover, RectF(x, y, x + cell, y + cell))
         }
     }
-    Typeset(
-        ink = BAUHAUS[3],
-        authorInk = BAUHAUS[0],
-        font = CoverFont.Sans,
-        upper = true,
-    )
+    Typeset(ink = BAUHAUS[3], authorInk = BAUHAUS[0], font = CoverFont.Sans, upper = true)
 }
 
 private fun bauhausTile(cover: CoverCanvas, box: RectF) = with(cover) {
@@ -216,11 +204,7 @@ internal fun travelStamp(cover: CoverCanvas): Typeset = with(cover) {
     )
     stampScene(cover, window, hue)
 
-    Typeset(
-        ink = paper,
-        font = CoverFont.Condensed,
-        upper = true,
-    )
+    Typeset(ink = paper, font = CoverFont.Condensed, upper = true)
 }
 
 private fun perforate(cover: CoverCanvas, box: RectF, paper: Int, ground: Int) =
@@ -304,11 +288,7 @@ internal fun seigaihaWaves(cover: CoverCanvas): Typeset = with(cover) {
     }
     canvas.drawRect(0f, height * 0.85f, width, height, fillPaint(indigo))
 
-    Typeset(
-        ink = indigo,
-        authorInk = paper,
-        upper = true,
-    )
+    Typeset(ink = indigo, authorInk = paper, upper = true)
 }
 
 private fun scallop(

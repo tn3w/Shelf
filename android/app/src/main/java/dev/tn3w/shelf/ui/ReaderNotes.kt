@@ -148,13 +148,7 @@ fun SelectionHandle(cursor: Rect, onMove: (Offset, settled: Boolean) -> Unit) {
                 }
             },
         contentAlignment = Alignment.TopCenter,
-    ) {
-        Box(
-            Modifier.size(HANDLE_DOT)
-                .clip(CircleShape)
-                .background(Look.colors.accent),
-        )
-    }
+    ) { Box(Modifier.size(HANDLE_DOT).clip(CircleShape).background(Look.colors.accent)) }
 }
 
 @Composable

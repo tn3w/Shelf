@@ -268,9 +268,7 @@ class Recognizer(bytes: ByteArray) {
         val bias = FloatArray(outputs) { buffer.getFloat() }
         val perOutput = inputs / spec[6] * kernelHeight * kernelWidth
         val weights = FloatArray(outputs * perOutput) {
-            val value = if (spec[9] ==
-                8
-            ) {
+            val value = if (spec[9] == 8) {
                 buffer.get().toInt()
             } else {
                 buffer.getShort().toInt()
@@ -291,8 +289,7 @@ class Recognizer(bytes: ByteArray) {
     fun read(line: Gray): Reading {
         var tensor = Tensor(1, line.height, line.width)
         for (index in tensor.data.indices) {
-            tensor.data[index] =
-                line.pixels[index] / 127.5f - 1
+            tensor.data[index] = line.pixels[index] / 127.5f - 1
         }
         val inputs = ArrayList<Tensor>(layers.size)
         for (layer in layers) {
@@ -315,9 +312,7 @@ class Recognizer(bytes: ByteArray) {
         for (step in 0 until steps) {
             var best = 0
             for (channel in 1 until tensor.channels) {
-                if (data[channel * steps + step] >
-                    data[best * steps + step]
-                ) {
+                if (data[channel * steps + step] > data[best * steps + step]) {
                     best = channel
                 }
             }

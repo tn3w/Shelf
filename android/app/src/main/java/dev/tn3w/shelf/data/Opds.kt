@@ -157,9 +157,7 @@ fun parseFeed(text: String, base: String): Feed {
     val root = document.children().firstOrNull { it.normalName() == "feed" }
         ?: document.children().firstOrNull { it.normalName() == "entry" }
         ?: throw IOException("not an OPDS feed")
-    if (root.normalName() ==
-        "entry"
-    ) {
+    if (root.normalName() == "entry") {
         return Feed(root.child("title"), listOf(atomEntry(root)))
     }
     val links = root.links()

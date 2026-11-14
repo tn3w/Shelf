@@ -129,8 +129,7 @@ private fun shelfOf(status: String) = when (status.lowercase()) {
 private fun dateOf(value: String) = runCatching {
     LocalDate.parse(value, DATE).atStartOfDay(ZoneId.systemDefault()).toInstant()
         .toEpochMilli()
-}
-    .getOrNull()
+}.getOrNull()
 
 private fun formatDate(millis: Long) =
     DATE.format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))

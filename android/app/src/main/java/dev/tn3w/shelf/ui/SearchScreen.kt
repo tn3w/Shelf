@@ -376,11 +376,6 @@ private fun SuggestionRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leading()
-        Text(
-            text,
-            Modifier.padding(start = 14.dp),
-            style = Look.type.body,
-            maxLines = 1,
-        )
+        Text(text, Modifier.padding(start = 14.dp), style = Look.type.body, maxLines = 1)
     }
 }

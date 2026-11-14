@@ -88,7 +88,6 @@
     <string name="pack_update">Update verfügbar</string>
     <string name="pack_young_adult">Jugendbuch</string>
     <string name="page_of">Seite %1$d von %2$d</string>
-    <string name="pages_of_goal">%1$d / %2$d Seiten</string>
     <string name="percent_read">%d%% gelesen</string>
     <string name="popular">Beliebt</string>
     <string name="popular_subtitle">Von Lesern geliebt.</string>

@@ -217,10 +217,7 @@ internal fun businessGraph(cover: CoverCanvas): Typeset = with(cover) {
     )
     canvas.drawLine(
         chart.left, chart.bottom, chart.right, chart.bottom,
-        strokePaint(
-            ink,
-            unit(0.004f),
-        ),
+        strokePaint(ink, unit(0.004f)),
     )
 
     Typeset(

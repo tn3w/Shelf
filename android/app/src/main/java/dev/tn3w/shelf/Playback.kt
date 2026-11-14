@@ -45,6 +45,7 @@ data class Narration(
     val secondsLeft: Long = 0,
 ) {
     val active get() = count > 0
+    val busy get() = active || loading
 }
 
 val SPEECH_ATTRIBUTES = AudioAttributes.Builder()

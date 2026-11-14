@@ -65,10 +65,7 @@ class VoicesTest {
     @Test
     fun splitsDashedDialogue() {
         val utterances = utterancesOf("— Hola — dijo Ana — ¿qué tal?", QuoteStyle.Dash)
-        assertEquals(
-            listOf("Hola", "dijo Ana", "¿qué tal?"),
-            utterances.map { it.text },
-        )
+        assertEquals(listOf("Hola", "dijo Ana", "¿qué tal?"), utterances.map { it.text })
         assertEquals(Utterance.Kind.Dialogue, utterances.last().kind)
     }
 

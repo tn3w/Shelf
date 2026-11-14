@@ -94,9 +94,7 @@ class FilterTest {
     @Test
     fun searchMatchesNotesAndLists() {
         val noted = entries.mapIndexed { index, saved ->
-            if (index ==
-                0
-            ) {
+            if (index == 0) {
                 saved.copy(notes = "Lent to Anna", lists = listOf("Gifts"))
             } else {
                 saved

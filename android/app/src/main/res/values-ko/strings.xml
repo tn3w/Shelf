@@ -88,7 +88,6 @@
     <string name="pack_update">업데이트 있음</string>
     <string name="pack_young_adult">청소년</string>
     <string name="page_of">%2$d쪽 중 %1$d쪽</string>
-    <string name="pages_of_goal">%1$d / %2$d쪽</string>
     <string name="percent_read">%d%% 읽음</string>
     <string name="popular">인기</string>
     <string name="popular_subtitle">전 세계 독자들이 사랑하는 책.</string>

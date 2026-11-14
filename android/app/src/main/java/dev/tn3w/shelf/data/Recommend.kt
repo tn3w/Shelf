@@ -211,8 +211,7 @@ class HomeRow(
         "${books.firstOrNull()?.work}",
         sources.joinToString("-") { "${it.work}" },
         "${author?.number}",
-    )
-        .joinToString("-")
+    ).joinToString("-")
 }
 
 private fun titleKey(book: Book): TitleKey {
@@ -1185,7 +1184,7 @@ class Recommender(
             TagSort.Popular -> works
 
             TagSort.Rated -> works.sortedByDescending { work ->
-                catalogue.ranks?.popularity(work)?.let(::smoothedRating) ?: 0.0
+                catalogue.popularityOf(work)?.let(::smoothedRating) ?: 0.0
             }
         }
         return ordered.mapNotNull(picker::accept).take(limit)

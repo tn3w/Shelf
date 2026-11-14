@@ -181,7 +181,7 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
         viewModelScope.launch {
             if (audiobooks.open(work, title)) return@launch audiobooks.play()
             val current = narrator.state.value
-            if (current.work == work && (current.active || current.loading)) return@launch
+            if (current.work == work && current.busy) return@launch
             val source = withContext(Dispatchers.Default) { build() }
             if (source.passages.isEmpty()) {
                 showListen = false
@@ -199,7 +199,7 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
 
     private fun isHeard() = listOf(narrator, audiobooks)
         .map { it.state.value }
-        .any { it.work == work && (it.active || it.loading) }
+        .any { it.work == work && it.busy }
 
     fun shouldResumeAudio(): Boolean {
         val resume = resumeAudio && !isHeard()
@@ -264,6 +264,7 @@ private fun pageStep(key: Key, volumeKeys: Boolean) = when (key) {
 }
 
 private const val MAX_TURN = 3
+private val PAGINATION = Dispatchers.Default.limitedParallelism(4)
 private val MAX_LINE_WIDTH = 640.dp
 
 internal fun sideMargin(width: Dp, margin: Dp) =
@@ -473,25 +474,45 @@ private fun textPages(
     }
 }
 
-private fun paginate(document: TextDocument, layout: PageLayout): List<TextPage> =
-    document.sections.flatMapIndexed { section, blocks ->
-        val starts = blockStarts(blocks)
-        val pages = mutableListOf<TextPage>()
-        var run = 0
-        fun flush(end: Int) {
-            if (end > run) {
-                pages += textPages(section, blocks.subList(run, end), starts[run], layout)
-            }
+private fun sectionPages(
+    document: TextDocument,
+    section: Int,
+    layout: PageLayout,
+): List<TextPage> {
+    val blocks = document.sections.getOrNull(section) ?: return emptyList()
+    val starts = blockStarts(blocks)
+    val pages = mutableListOf<TextPage>()
+    var run = 0
+    fun flush(end: Int) {
+        if (end > run) {
+            pages += textPages(section, blocks.subList(run, end), starts[run], layout)
         }
-        blocks.forEachIndexed { index, block ->
-            if (block.image == null) return@forEachIndexed
-            flush(index)
-            pages += TextPage(section, starts[index], image = block.image)
-            run = index + 1
-        }
-        flush(blocks.size)
-        pages
     }
+    blocks.forEachIndexed { index, block ->
+        if (block.image == null) return@forEachIndexed
+        flush(index)
+        pages += TextPage(section, starts[index], image = block.image)
+        run = index + 1
+    }
+    flush(blocks.size)
+    return pages
+}
+
+private suspend fun paginate(
+    document: TextDocument,
+    layout: PageLayout,
+    known: Pair<Int, List<TextPage>>,
+) = withContext(PAGINATION) {
+    document.sections.indices
+        .map { section ->
+            if (section == known.first) return@map CompletableDeferred(known.second)
+            async { sectionPages(document, section, layout) }
+        }
+        .awaitAll()
+        .flatten()
+}
+
+private class Pagination(val pages: List<TextPage>, val complete: Boolean)
 
 private fun List<TextPage>.indexAt(section: Int, offset: Int) =
     indexOfLast { it.section < section || (it.section == section && it.start <= offset) }
@@ -584,13 +605,24 @@ private fun TextReader(
             with(LocalDensity.current) { side.roundToPx() to margin.roundToPx() }
         val width = constraints.maxWidth - 2 * horizontal
         val height = constraints.maxHeight - 2 * vertical
-        val pages by produceState<List<TextPage>?>(null, document, width, height, style) {
-            value = withContext(Dispatchers.Default) {
-                paginate(document, PageLayout(measurer, style, width, height))
+        val padding = PaddingValues(horizontal = side, vertical = margin)
+        val pages by produceState<Pagination?>(null, document, width, height, style) {
+            val layout = PageLayout(measurer, style, width, height)
+            val section = position.section
+            val opened = withContext(Dispatchers.Default) {
+                sectionPages(document, section, layout)
             }
+            if (value == null && opened.isNotEmpty()) value = Pagination(opened, false)
+            value = Pagination(paginate(document, layout, section to opened), true)
         }
-        val current = pages ?: return@BoxWithConstraints Loading()
+        val pagination = pages ?: return@BoxWithConstraints Loading()
+        val current = pagination.pages
         if (current.isEmpty()) return@BoxWithConstraints OpenFailed(state.navigator)
+        if (!pagination.complete) {
+            val page = current[current.indexAt(position.section, position.offset)]
+            OpeningPage(document, page, highlights, style, padding)
+            return@BoxWithConstraints
+        }
         val initial =
             remember(current) { current.indexAt(position.section, position.offset) }
         val chapters = remember(document, current) {
@@ -599,7 +631,6 @@ private fun TextReader(
             }
         }
         val marks = remember(bookmarks, current) { textMarks(bookmarks, current) }
-        val padding = PaddingValues(horizontal = side, vertical = margin)
         val origin = Offset(horizontal.toFloat(), vertical.toFloat())
         key(current) {
             val pager = rememberPagerState(initial) { current.size }
@@ -615,11 +646,7 @@ private fun TextReader(
             }
             LaunchedEffect(spokenPage) {
                 spokenPage?.let {
-                    if (it !=
-                        pager.currentPage
-                    ) {
-                        pager.animateScrollToPage(it)
-                    }
+                    if (it != pager.currentPage) pager.animateScrollToPage(it)
                 }
             }
             BackHandler(annotator.selection != null) { annotator.selection = null }
@@ -648,10 +675,8 @@ private fun TextReader(
                     position = pageProgress(pager.currentPage)
                     viewModel.listen(state.title) {
                         val passages = speechOf(document)
-                        Source(passages, document.chapters, position) {
-                                passage,
-                                fraction,
-                            ->
+                        val chapters = document.chapters
+                        Source(passages, chapters, position) { passage, fraction ->
                             position.copy(
                                 section = passage.section,
                                 offset = passage.offset,
@@ -685,6 +710,21 @@ private fun TextReader(
             UndoRemove(viewModel, Modifier.align(Alignment.BottomCenter))
         }
     }
+}
+
+@Composable
+private fun OpeningPage(
+    document: TextDocument,
+    page: TextPage,
+    highlights: List<Highlight>,
+    style: TextStyle,
+    padding: PaddingValues,
+) {
+    if (page.image != null) return PageImage(document, page.image)
+    val text = remember(page, highlights) {
+        page.marked(highlights, "", null, Color.Unspecified)
+    }
+    Text(text, Modifier.fillMaxWidth().padding(padding), style = style)
 }
 
 @Composable
@@ -992,15 +1032,11 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
     }
 }
 
-private fun chromeEnter(reduced: Boolean, offset: (Int) -> Int) = when {
-    reduced -> EnterTransition.None
-    else -> fadeIn() + slideInVertically(initialOffsetY = offset)
-}
+private fun chromeEnter(reduced: Boolean, offset: (Int) -> Int) =
+    if (reduced) EnterTransition.None else fadeIn() + slideInVertically { offset(it) }
 
-private fun chromeExit(reduced: Boolean, offset: (Int) -> Int) = when {
-    reduced -> ExitTransition.None
-    else -> fadeOut() + slideOutVertically(targetOffsetY = offset)
-}
+private fun chromeExit(reduced: Boolean, offset: (Int) -> Int) =
+    if (reduced) ExitTransition.None else fadeOut() + slideOutVertically { offset(it) }
 
 internal enum class TapAction { Previous, Next, Menu }
 
@@ -1048,9 +1084,7 @@ private fun Pages(
         if (!chrome && !showChapters && !viewModel.showSearch) focus.requestFocus()
     }
 
-    LaunchedEffect(Unit) {
-        if (viewModel.shouldResumeAudio()) onListen?.invoke()
-    }
+    LaunchedEffect(Unit) { if (viewModel.shouldResumeAudio()) onListen?.invoke() }
 
     LaunchedEffect(pager.settledPage) {
         val settled = pager.settledPage
@@ -1470,9 +1504,7 @@ private fun SearchPanel(
                     onSubmit = { keyboard?.hide() },
                 )
             }
-            Box(Modifier.fillMaxWidth().height(4.dp)) {
-                if (searching) Meter(null)
-            }
+            Box(Modifier.fillMaxWidth().height(4.dp)) { if (searching) Meter(null) }
             when {
                 needle.length < MIN_QUERY -> {
                     val hint = stringResource(R.string.search_book_hint)

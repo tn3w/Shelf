@@ -53,7 +53,7 @@ class Narrator(app: ShelfApp) :
 
     fun open(work: Int, title: String, loaded: Source) {
         val now = current.value
-        if (now.work == work && (now.active || now.loading)) return
+        if (now.work == work && now.busy) return
         stop()
         app.stopOthers(this)
         source = loaded
@@ -76,9 +76,7 @@ class Narrator(app: ShelfApp) :
             }
             if (settings.characterVoices) startVoicing(work)
             val pocket = withContext(Dispatchers.IO) { pocketOutput(settings) }
-            if (pocket ==
-                null
-            ) {
+            if (pocket == null) {
                 createTts(work, settings, start)
             } else {
                 ready(work, pocket, start)
@@ -239,9 +237,7 @@ class Narrator(app: ShelfApp) :
             current.update { it.copy(preparing = true) }
             voicing?.awaitReady(index)
             current.update { it.copy(preparing = false) }
-            if (owner == generation &&
-                current.value.playing
-            ) {
+            if (owner == generation && current.value.playing) {
                 speakFrom(current.value.index)
             }
         }

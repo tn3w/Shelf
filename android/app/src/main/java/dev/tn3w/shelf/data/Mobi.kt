@@ -63,9 +63,7 @@ private class MobiHeader(record: ByteArray) {
     val isMobi = record.size >= 24 && String(record, 16, 4, Charsets.ISO_8859_1) == "MOBI"
     private val length = if (isMobi) buffer.getInt(20) else 0
     val charset: Charset =
-        if (field(28) ==
-            UTF8_CODE_PAGE
-        ) {
+        if (field(28) == UTF8_CODE_PAGE) {
             Charsets.UTF_8
         } else {
             Charset.forName("windows-1252")
@@ -234,9 +232,7 @@ private fun trailingSize(record: ByteArray, header: MobiHeader): Int {
         if (flags and 1 != 0) size += trailingEntrySize(record, record.size - size)
         flags = flags ushr 1
     }
-    if (header.extraFlags and 1 !=
-        0
-    ) {
+    if (header.extraFlags and 1 != 0) {
         size += (record[record.size - size - 1].toInt() and 3) + 1
     }
     return size

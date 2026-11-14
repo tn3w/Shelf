@@ -74,6 +74,18 @@ class CatalogueTest {
     }
 
     @Test
+    fun warmCatalogueKeepsPopularityExact() {
+        val ranks = Ranks(ranksBuffer(BOOKS))
+        val catalogue = Catalogue("en", listOf(segment(BOOKS)), ranks)
+        val works = BOOKS.map { it.work }
+        val cold = works.map(catalogue::popularityOf)
+        catalogue.warmUp()
+        assertEquals(works.map(ranks::popularity), cold)
+        assertEquals(cold, works.map(catalogue::popularityOf))
+        assertEquals(cold, works.map { catalogue.book(it)?.popularity })
+    }
+
+    @Test
     fun rejectsForeignFormats() {
         val sections = mapOf("meta" to "pack=core".toByteArray())
         val foreign = container(sections, magic = "ABCD")

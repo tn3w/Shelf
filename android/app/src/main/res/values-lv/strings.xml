@@ -91,7 +91,6 @@
     <string name="pack_update">Pieejams atjauninājums</string>
     <string name="pack_young_adult">Jauniešiem</string>
     <string name="page_of">%1$d. lappuse no %2$d</string>
-    <string name="pages_of_goal">%1$d / %2$d lappuses</string>
     <string name="percent_read">Izlasīti %d%%</string>
     <string name="popular">Populāras</string>
     <string name="popular_subtitle">Lasītāju iemīļotas visā pasaulē.</string>

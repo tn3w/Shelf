@@ -558,11 +558,7 @@ private fun RankRow(rank: Int, label: String, detail: String, order: Int) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            detail,
-            style = Look.type.body,
-            color = White.copy(alpha = 0.7f),
-        )
+        Text(detail, style = Look.type.body, color = White.copy(alpha = 0.7f))
     }
 }
 
@@ -678,11 +674,7 @@ private fun BookendsSlide(recap: Recap) {
 @Composable
 private fun Bookend(saved: Saved, label: Int, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            stringResource(label),
-            style = Look.type.label,
-            color = Gold,
-        )
+        Text(stringResource(label), style = Look.type.label, color = Gold)
         BookCover(
             saved.toBook(),
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -698,11 +690,7 @@ private fun Bookend(saved: Saved, label: Int, modifier: Modifier) {
             overflow = TextOverflow.Ellipsis,
         )
         saved.finishedOn()?.let {
-            Text(
-                dateLabel(it),
-                style = Look.type.note,
-                color = White.copy(alpha = 0.7f),
-            )
+            Text(dateLabel(it), style = Look.type.note, color = White.copy(alpha = 0.7f))
         }
     }
 }
@@ -723,9 +711,7 @@ private fun TypeSlide(type: ReaderType) {
         Box(
             Modifier.reveal(1).size(140.dp).clip(CircleShape).background(Gold),
             contentAlignment = Alignment.Center,
-        ) {
-            Icon(type.icon, null, Modifier.size(80.dp), tint = Color(Slide.Type.top))
-        }
+        ) { Icon(type.icon, null, Modifier.size(80.dp), tint = Color(Slide.Type.top)) }
         Headline(stringResource(type.title), 2, TitleStyle)
         Caption(stringResource(type.description), 3, White.copy(alpha = 0.85f))
     }

@@ -81,10 +81,8 @@ internal fun fantasyForest(cover: CoverCanvas): Typeset = with(cover) {
     verticalGradient(canopy, haze, 2.6f)
 
     val trunks = List(random.between(5, 7)) {
-        random.range(-0.05f, 1.05f) * width to
-            random.float()
-    }
-        .sortedBy { it.second }
+        random.range(-0.05f, 1.05f) * width to random.float()
+    }.sortedBy { it.second }
     for ((position, depth) in trunks) {
         val thickness = width * (0.012f + depth * depth * random.range(0.045f, 0.080f))
         val lean = random.range(-0.03f, 0.03f) * width
@@ -100,11 +98,7 @@ internal fun fantasyForest(cover: CoverCanvas): Typeset = with(cover) {
         canvas.drawPath(trunk, fillPaint(tone))
     }
 
-    Typeset(
-        ink = mix(glow, Color.WHITE, 0.75f),
-        authorInk = glow,
-        upper = true,
-    )
+    Typeset(ink = mix(glow, Color.WHITE, 0.75f), authorInk = glow, upper = true)
 }
 
 internal fun fantasyDawn(cover: CoverCanvas): Typeset = with(cover) {

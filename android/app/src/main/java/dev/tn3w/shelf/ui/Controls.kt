@@ -241,12 +241,7 @@ fun Check(checked: Boolean, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         if (checked) {
-            Icon(
-                Icons.Rounded.Check,
-                null,
-                Modifier.size(16.dp),
-                colors.onAccent,
-            )
+            Icon(Icons.Rounded.Check, null, Modifier.size(16.dp), colors.onAccent)
         }
     }
 }
@@ -407,14 +402,8 @@ fun Scrubber(
     fun valueAt(x: Float, width: Int, thumb: Float): Float {
         val across = ((x - thumb) / (width - 2 * thumb)).coerceIn(0f, 1f)
         val share = if (rtl) 1 - across else across
-        val stops = steps + 1
-        val snapped = if (steps >
-            0
-        ) {
-            (share * stops).roundToInt() / stops.toFloat()
-        } else {
-            share
-        }
+        val stops = steps + 1f
+        val snapped = if (steps > 0) (share * stops).roundToInt() / stops else share
         return range.start + snapped * span
     }
 

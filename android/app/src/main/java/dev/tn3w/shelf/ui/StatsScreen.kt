@@ -214,9 +214,7 @@ private fun MonthBar(
         else -> colors.sunken
     }
     Column(
-        modifier.fillMaxHeight()
-            .clip(Corners.well)
-            .clickable(onClick = onClick),
+        modifier.fillMaxHeight().clip(Corners.well).clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.fillMaxWidth().weight(1f), Alignment.BottomCenter) {

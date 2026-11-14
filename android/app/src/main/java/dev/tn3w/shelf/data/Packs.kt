@@ -214,9 +214,7 @@ class Packs(private val context: Context) {
     private val bundledManifest by lazy {
         runCatching {
             context.assets.open(MANIFEST_NAME).use { it.readBytes().decodeToString() }
-        }
-            .getOrNull()
-            ?.let(::parseManifest)
+        }.getOrNull()?.let(::parseManifest)
     }
 
     private fun parseManifest(text: String) =
@@ -361,9 +359,7 @@ class Packs(private val context: Context) {
                 val buffer = mapFile(temporary)
                 if (file.pack == "ranks") Ranks(buffer) else Segment(buffer)
             }
-        }
-            .isSuccess
-            .also { changed() }
+        }.isSuccess.also { changed() }
     }
 
     private fun importManifest(bytes: ByteArray): Boolean {

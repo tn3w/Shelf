@@ -102,8 +102,7 @@ fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
             if (choosing) return@Sheet
             val sources = stringResource(R.string.free_books_sources)
             Pill(sources, icon = Icons.Rounded.Tune, kind = PillKind.Bare) {
-                choosing =
-                    true
+                choosing = true
             }
         },
     ) {
@@ -119,9 +118,7 @@ fun FreeBookSheet(book: Book, viewModel: BookViewModel, onDismiss: () -> Unit) {
             return@Sheet
         }
         SettingsGroup(hint = stringResource(R.string.free_books_choose)) {
-            catalogs.forEach { catalog ->
-                CatalogSwitch(catalog, settings, update)
-            }
+            catalogs.forEach { catalog -> CatalogSwitch(catalog, settings, update) }
             recipes.forEach {
                 ProviderSwitch(Provider(it), settings, update, enabled = true)
             }

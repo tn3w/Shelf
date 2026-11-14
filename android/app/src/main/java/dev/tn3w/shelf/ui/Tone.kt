@@ -77,9 +77,7 @@ fun hsl(hue: Float, saturation: Float, lightness: Float): Int {
 
 private fun linear(channel: Int): Float {
     val value = channel / 255f
-    return if (value <=
-        0.03928f
-    ) {
+    return if (value <= 0.03928f) {
         value / 12.92f
     } else {
         ((value + 0.055f) / 1.055f).pow(2.4f)

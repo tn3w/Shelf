@@ -10,6 +10,7 @@ import androidx.annotation.StringRes
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
+import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import dev.tn3w.shelf.cover.CoverFetcher
 import dev.tn3w.shelf.cover.CoverKeyer
@@ -25,6 +26,7 @@ import kotlin.random.Random
 private const val MONTH_MILLIS = 30L * 24 * 60 * 60 * 1000
 private const val AUTOMATIC_UPDATE_BYTES = 5L * 1024 * 1024
 private const val SCAN_MODEL = "scan.bin"
+private const val IMAGE_MEMORY = 0.15
 
 class ShelfApp :
     Application(),
@@ -38,17 +40,14 @@ class ShelfApp :
     val narrator by lazy { Narrator(this) }
     val audiobooks by lazy { AudiobookPlayer(this) }
     val playback: Playback
-        get() = audiobooks.takeIf {
-            it.state.value.let { now -> now.active || now.loading }
-        }
-            ?: narrator
+        get() = audiobooks.takeIf { it.state.value.busy } ?: narrator
     val packs by lazy { Packs(this) }
     val models by lazy { Models(this) }
     val sources by lazy { Sources(this) }
     val catalogs by lazy { Catalogs(this) }
     private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }
     val canScan get() = BuildConfig.BUNDLED_SCAN_MODEL || scanCopy.exists()
-    val recognizer by lazy { Recognizer(scanModel()) }
+    val recognizer get() = Recognizer(scanModel())
     private val _loaded = MutableStateFlow<Loaded?>(null)
     val loaded = _loaded.asStateFlow()
     private val _downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
@@ -81,12 +80,22 @@ class ShelfApp :
 
     // Coil type-checks the Application for this; dropping it restores its default client.
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(context)
+        .memoryCache {
+            MemoryCache.Builder().maxSizePercent(context, IMAGE_MEMORY).build()
+        }
         .components {
             add(OkHttpNetworkFetcherFactory({ http }))
             add(CoverKeyer())
             add(CoverFetcher.Factory())
         }
         .build()
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level < TRIM_MEMORY_UI_HIDDEN) return
+        SingletonImageLoader.get(this).memoryCache?.clear()
+        loaded.value?.trim()
+    }
 
     private fun scanModel() = if (BuildConfig.BUNDLED_SCAN_MODEL) {
         assets.open(SCAN_MODEL).use { it.readBytes() }
@@ -231,7 +240,7 @@ class ShelfApp :
     }
 
     fun stopOthers(keep: Playback) = listOf(narrator, audiobooks)
-        .filter { it !== keep && (it.state.value.active || it.state.value.loading) }
+        .filter { it !== keep && it.state.value.busy }
         .forEach(Playback::stop)
 
     fun consumeOpenedWork() {

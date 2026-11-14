@@ -115,8 +115,7 @@ internal fun replacementsOf(config: String): Map<Char, String> {
         .takeWhile { it.startsWith(" ") }
         .mapNotNull(REPLACEMENT::find)
         .map {
-            it.groupValues[1].replace("''", "'") to
-                it.groupValues[2].replace("''", "'")
+            it.groupValues[1].replace("''", "'") to it.groupValues[2].replace("''", "'")
         }
         .filter { it.first.length == 1 }
         .associate { it.first[0] to it.second }

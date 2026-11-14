@@ -12,6 +12,7 @@ import java.util.zip.InflaterInputStream
 private const val MAGIC = "SHLF"
 const val CATALOGUE_FORMAT = BuildConfig.CATALOGUE_FORMAT
 private const val NAME_BYTES = 16
+private const val RECORD_BLOCKS = 1024
 private const val SEPARATOR = '\u001f'
 private const val YEAR_EPOCH = 1400
 private val COMPLETION_LENGTHS = 2..4
@@ -117,7 +118,14 @@ data class Heads(val title: String, val subtitle: String, val alternate: String)
 
 data class Description(val text: String, val translated: Boolean)
 
-class AuthorRecord(val number: Int, val born: Int, val name: String, val works: IntArray)
+class AuthorRecord(
+    val number: Int,
+    val born: Int,
+    val name: String,
+    private val postings: ByteArray,
+) {
+    val works get() = decodePostings(postings)
+}
 
 class Term(
     val text: String,
@@ -141,6 +149,8 @@ private class TermBlocks(buffer: ByteBuffer, private val withPostings: Boolean) 
     val count = table.count
     private val firstTerms = List(count) { table.leadingText(it, skip = 1) }
     private val cache = LruCache<Int, List<Term>>(512)
+
+    fun trim() = cache.evictAll()
 
     fun block(index: Int) = cache.getOrPut(index) {
         val reader = ByteReader(table[index])
@@ -207,8 +217,7 @@ class Segment(buffer: ByteBuffer) {
     private val series = Table(section("series"))
     private val terms = TermBlocks(section("terms"), withPostings = true)
     private val completions = Table(section("completions"))
-    private val completionKeys =
-        List(completions.count) { completions.leadingText(it) }
+    private val completionKeys = List(completions.count) { completions.leadingText(it) }
     private val grams = Table(section("grams"))
     private val gramKeys = List(grams.count) { grams.leadingText(it) }
     private val descriptions = BlockIndex(section("descriptions"))
@@ -219,13 +228,20 @@ class Segment(buffer: ByteBuffer) {
     }
     private val isbns = sections["isbns"]?.let(::BlockIndex)
     private val libraryCovers = sections["library_covers"]?.let(::BlockIndex)
-    private val blocks = LruCache<Pair<Table, Int>, List<ByteArray>>(256)
+    private val blocks = LruCache<Pair<Table, Int>, List<ByteArray>>(RECORD_BLOCKS)
     private val descriptionBlocks = LruCache<Int, Map<Int, Description>>(64)
     private val isbnBlocks = LruCache<Int, Map<Int, Int>>(16)
     private val isbnsByLocal by lazy { isbns?.let(::localIsbns) }
     private val coverBlocks = LruCache<Int, Map<Int, LibraryCover>>(16)
 
     private fun section(name: String) = sections.getValue(name)
+
+    fun trim() {
+        listOf(blocks, descriptionBlocks, isbnBlocks, coverBlocks).forEach {
+            it.evictAll()
+        }
+        terms.trim()
+    }
 
     fun work(local: Int) = worksBuffer.get(local)
 
@@ -269,7 +285,7 @@ class Segment(buffer: ByteBuffer) {
         val reader = ByteReader(record(authors, slot))
         val number = reader.varint()
         val born = reader.varint()
-        return AuthorRecord(number, born, reader.text(), decodePostings(reader.rest()))
+        return AuthorRecord(number, born, reader.text(), reader.rest())
     }
 
     fun series(slot: Int): Series {
@@ -412,7 +428,12 @@ class Ranks(buffer: ByteBuffer) {
     private val aliases = sections["aliases"]?.asIntBuffer() ?: IntBuffer.allocate(0)
     private val aliasFrom = IntArray(aliases.limit() / 2) { aliases[2 * it] }
     private val aliasTo = IntArray(aliasFrom.size) { aliases[2 * it + 1] }
-    private val cache = LruCache<Int, PopularityBlock>(64)
+    private val cache = LruCache<Int, PopularityBlock>(8)
+
+    fun trim() {
+        cache.evictAll()
+        terms.trim()
+    }
 
     fun frequency(text: String) = terms.find(text)?.frequency ?: 0
 

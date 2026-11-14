@@ -97,11 +97,7 @@ internal fun natureTree(cover: CoverCanvas): Typeset = with(cover) {
         fillPaint(bark),
     )
 
-    Typeset(
-        ink = shade(bark, 0.6f),
-        authorInk = bark,
-        upper = random.chance(0.5f),
-    )
+    Typeset(ink = shade(bark, 0.6f), authorInk = bark, upper = random.chance(0.5f))
 }
 
 private val RAINBOW = listOf(0.0f, 0.07f, 0.14f, 0.33f, 0.56f, 0.75f)
@@ -178,10 +174,7 @@ internal fun historyTemple(cover: CoverCanvas): Typeset = with(cover) {
     pediment.close()
     canvas.drawPath(pediment, paint)
 
-    Typeset(
-        ink = stone,
-        upper = true,
-    )
+    Typeset(ink = stone, upper = true)
 }
 
 internal fun spiritualLotus(cover: CoverCanvas): Typeset = with(cover) {
@@ -281,8 +274,5 @@ internal fun poetryRain(cover: CoverCanvas): Typeset = with(cover) {
         handle,
     )
 
-    Typeset(
-        ink = pale,
-        italic = true,
-    )
+    Typeset(ink = pale, italic = true)
 }

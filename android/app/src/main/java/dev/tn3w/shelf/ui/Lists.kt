@@ -125,10 +125,7 @@ private fun listSummary(entries: List<Saved>): String {
 @Composable
 fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) {
     val covers = entries.take(FAN_SIZE).map(Saved::toBook)
-    Box(
-        modifier.width(width).height(width * 0.8f),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier.width(width).height(width * 0.8f), contentAlignment = Alignment.Center) {
         if (covers.isEmpty()) {
             Icon(
                 Icons.AutoMirrored.Rounded.Label,

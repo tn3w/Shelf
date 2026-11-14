@@ -222,10 +222,7 @@ internal fun literaryShape(cover: CoverCanvas): Typeset = with(cover) {
                     if (x == 0f) wave.moveTo(x, waveY) else wave.lineTo(x, waveY)
                     x += width / 160f
                 }
-                canvas.drawPath(
-                    wave,
-                    strokePaint(accent, unit(0.008f)),
-                )
+                canvas.drawPath(wave, strokePaint(accent, unit(0.008f)))
             }
         }
     }
@@ -269,11 +266,7 @@ internal fun childrenMeadow(cover: CoverCanvas): Typeset = with(cover) {
     }
     canvas.drawRect(0f, height * 0.86f, width, height, fillPaint(shade(grass, 0.85f)))
 
-    Typeset(
-        ink = Color.WHITE,
-        authorInk = shade(grass, 0.45f),
-        font = CoverFont.Sans,
-    )
+    Typeset(ink = Color.WHITE, authorInk = shade(grass, 0.45f), font = CoverFont.Sans)
 }
 
 internal fun humorConfetti(cover: CoverCanvas): Typeset = with(cover) {
@@ -311,12 +304,7 @@ internal fun humorConfetti(cover: CoverCanvas): Typeset = with(cover) {
         canvas.restore()
     }
 
-    Typeset(
-        ink = ink,
-        authorInk = shade(ink, 1.4f),
-        font = CoverFont.Sans,
-        upper = true,
-    )
+    Typeset(ink = ink, authorInk = shade(ink, 1.4f), font = CoverFont.Sans, upper = true)
 }
 
 internal fun travelPoster(cover: CoverCanvas): Typeset = with(cover) {

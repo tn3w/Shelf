@@ -318,9 +318,7 @@ private class Camera(
             view.surfaceTextureListener = this
             return
         }
-        if (ContextCompat.checkSelfPermission(context, CAMERA) !=
-            PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(context, CAMERA) != PERMISSION_GRANTED) {
             return onFailed(R.string.camera_denied)
         }
         try {
@@ -365,8 +363,7 @@ private class Camera(
         reader =
             ImageReader.newInstance(
                 analysis.width, analysis.height, ImageFormat.YUV_420_888, 2,
-            )
-                .apply { setOnImageAvailableListener(::onImage, cameraHandler) }
+            ).apply { setOnImageAvailableListener(::onImage, cameraHandler) }
         val callback = DeviceCallback(++generation)
         try {
             manager.openCamera(id, callback, cameraHandler)

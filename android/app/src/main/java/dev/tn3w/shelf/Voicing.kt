@@ -103,9 +103,7 @@ class Voicing(
         val last = (first + READY_PARAGRAPHS).coerceAtMost(paragraphs.size)
         follow(passage)
         withTimeoutOrNull(READY_MILLIS) {
-            progress.first {
-                finished || (first until last).all(::isReady)
-            }
+            progress.first { finished || (first until last).all(::isReady) }
         }
     }
 

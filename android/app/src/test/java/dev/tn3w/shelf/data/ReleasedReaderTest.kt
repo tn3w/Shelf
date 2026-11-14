@@ -27,8 +27,7 @@ class ReleasedReaderTest {
         assertEquals(CATALOGUE_FORMAT, manifest.format)
         assertTrue(
             manifest.segments.none {
-                it.id.startsWith("links-") ||
-                    "extras" in it.id
+                it.id.startsWith("links-") || "extras" in it.id
             },
         )
         val packs = output.listFiles().orEmpty().mapNotNull { file ->

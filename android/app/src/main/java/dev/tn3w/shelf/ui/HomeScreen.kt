@@ -47,14 +47,8 @@ class HomeViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }
         .asState()
     val missing = catalogueState { catalogue.workCount == 0 }
-    val wrapped = combine(library.saved, library.activity, dates()) {
-            saved,
-            activity,
-            today,
-        ->
-        wrappedYear(today)?.let {
-            recapOf(it, saved, activity)
-        }?.takeUnless { it.isEmpty }
+    val wrapped = combine(library.saved, library.activity, dates()) { saved, pages, day ->
+        wrappedYear(day)?.let { recapOf(it, saved, pages) }?.takeUnless { it.isEmpty }
     }.asState()
     val habit = library.habit.asState()
     val progress = library.progress.asState()
