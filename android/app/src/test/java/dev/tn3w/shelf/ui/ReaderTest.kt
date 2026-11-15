@@ -1,11 +1,21 @@
 package dev.tn3w.shelf.ui
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
+import dev.tn3w.shelf.data.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReaderTest {
+    @Test
+    fun keepsLineSpacingBetweenParagraphs() {
+        val style = readerStyle(Settings(), Color.Black)
+
+        assertEquals(LineHeightStyle.Trim.None, style.lineHeightStyle?.trim)
+    }
+
     @Test
     fun countsSinglePageTurnPastFurthest() {
         assertEquals(1, newPagesRead(previous = 4, settled = 5, furthest = 4))

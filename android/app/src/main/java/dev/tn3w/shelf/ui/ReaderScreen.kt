@@ -250,6 +250,10 @@ fun readerStyle(settings: Settings, color: Color) = TextStyle(
     fontFamily = if (settings.serif) FontFamily.Serif else FontFamily.SansSerif,
     fontSize = (19 * settings.fontScale).sp,
     lineHeight = settings.lineSpacing.em,
+    lineHeightStyle = LineHeightStyle(
+        LineHeightStyle.Alignment.Proportional,
+        LineHeightStyle.Trim.None,
+    ),
     textAlign = if (settings.justify) TextAlign.Justify else TextAlign.Start,
     color = color,
     lineBreak = LineBreak.Paragraph,
