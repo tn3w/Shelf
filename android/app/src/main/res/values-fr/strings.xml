@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">À propos</string>
+    <string name="suggest_feature">Proposer une fonction</string>
+    <string name="report_problem">Signaler un problème</string>
+    <string name="send">Envoyer</string>
+    <string name="feature_hint">Qu’est-ce qui améliorerait Shelf ?</string>
+    <string name="problem_hint">Qu’est-ce qui n’a pas marché ? La version de l’app et un journal d’erreurs anonyme sont ajoutés.</string>
     <string name="about_book">À propos du livre</string>
     <string name="app_language">Langue de l\'appli</string>
     <string name="appearance">Apparence</string>

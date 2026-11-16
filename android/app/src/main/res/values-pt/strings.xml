@@ -2,6 +2,11 @@
 <resources>
     <string name="add_bookmark">Marcar esta página</string>
     <string name="about">Sobre</string>
+    <string name="suggest_feature">Sugerir um recurso</string>
+    <string name="report_problem">Relatar um problema</string>
+    <string name="send">Enviar</string>
+    <string name="feature_hint">O que deixaria o Shelf melhor?</string>
+    <string name="problem_hint">O que deu errado? A versão do app e um registro de erros anônimo são adicionados.</string>
     <string name="about_book">Sobre este livro</string>
     <string name="app_language">Idioma do app</string>
     <string name="appearance">Aparência</string>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">О приложении</string>
+    <string name="suggest_feature">Предложить функцию</string>
+    <string name="report_problem">Сообщить о проблеме</string>
+    <string name="send">Отправить</string>
+    <string name="feature_hint">Что сделало бы Shelf лучше?</string>
+    <string name="problem_hint">Что пошло не так? Добавляются версия приложения и анонимный журнал ошибок.</string>
     <string name="about_book">Об этой книге</string>
     <string name="app_language">Язык приложения</string>
     <string name="appearance">Внешний вид</string>

@@ -313,6 +313,25 @@ private fun SettingsOverview(navigator: Navigator) {
 }
 
 @Composable
+private fun FeedbackRows() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var writing by rememberSaveable { mutableStateOf<FeedbackKind?>(null) }
+    LinkRow(stringResource(FeedbackKind.Feature.title)) { writing = FeedbackKind.Feature }
+    LinkRow(stringResource(FeedbackKind.Problem.title)) { writing = FeedbackKind.Problem }
+    val kind = writing ?: return
+    PromptSheet(
+        stringResource(kind.title),
+        "",
+        { writing = null },
+        hint = stringResource(kind.hint),
+        lines = 4..8,
+        confirm = R.string.send,
+        valid = String::isNotBlank,
+    ) { message -> scope.launch { Feedback.send(context, kind, message.trim()) } }
+}
+
+@Composable
 private fun GeneralSettings(navigator: Navigator) {
     val viewModel = shelfViewModel()
     val (settings, update) = rememberSettings() ?: return
@@ -762,6 +781,7 @@ private fun AboutRows() {
     } else {
         SettingRow(stringResource(R.string.app_name), version)
     }
+    FeedbackRows()
     LinkRow(stringResource(R.string.source_code)) { uri.openUri(SOURCE_URL) }
     LinkRow(stringResource(R.string.license)) { uri.openUri(LICENSE_URL) }
     DATA_LICENSES.forEach { (title, url) ->

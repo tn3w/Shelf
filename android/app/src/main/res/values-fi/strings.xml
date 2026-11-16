@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Tietoja</string>
+    <string name="suggest_feature">Ehdota ominaisuutta</string>
+    <string name="report_problem">Ilmoita ongelmasta</string>
+    <string name="send">Lähetä</string>
+    <string name="feature_hint">Mikä tekisi Shelfistä paremman?</string>
+    <string name="problem_hint">Mikä meni vikaan? Sovelluksen versio ja nimetön virheloki lisätään.</string>
     <string name="about_book">Tietoja kirjasta</string>
     <string name="app_language">Sovelluksen kieli</string>
     <string name="appearance">Ulkoasu</string>

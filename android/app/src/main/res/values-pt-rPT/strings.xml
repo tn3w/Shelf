@@ -111,6 +111,11 @@
     <string name="type_marathoner_text">Semanas de leitura sem pausa. Nada o para.</string>
     <string name="add_bookmark">Marcar esta página</string>
     <string name="about">Acerca</string>
+    <string name="suggest_feature">Sugerir uma funcionalidade</string>
+    <string name="report_problem">Comunicar um problema</string>
+    <string name="send">Enviar</string>
+    <string name="feature_hint">O que tornaria o Shelf melhor?</string>
+    <string name="problem_hint">O que correu mal? São adicionados a versão da app e um registo de erros anónimo.</string>
     <string name="about_book">Acerca deste livro</string>
     <string name="appearance">Aspeto</string>
     <string name="audience">Faixa etária</string>

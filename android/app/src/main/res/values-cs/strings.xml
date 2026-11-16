@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">O aplikaci</string>
+    <string name="suggest_feature">Navrhnout funkci</string>
+    <string name="report_problem">Nahlásit problém</string>
+    <string name="send">Odeslat</string>
+    <string name="feature_hint">Co by Shelf vylepšilo?</string>
+    <string name="problem_hint">Co se pokazilo? Přidá se verze aplikace a anonymní protokol chyb.</string>
     <string name="about_book">O této knize</string>
     <string name="app_language">Jazyk aplikace</string>
     <string name="appearance">Vzhled</string>

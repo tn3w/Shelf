@@ -1,6 +1,11 @@
 <resources>
     <string name="add_bookmark">Pievienot grāmatzīmi šai lapai</string>
     <string name="about">Par</string>
+    <string name="suggest_feature">Ieteikt funkciju</string>
+    <string name="report_problem">Ziņot par problēmu</string>
+    <string name="send">Sūtīt</string>
+    <string name="feature_hint">Kas padarītu Shelf labāku?</string>
+    <string name="problem_hint">Kas nogāja greizi? Tiek pievienota lietotnes versija un anonīms kļūdu žurnāls.</string>
     <string name="about_book">Par šo grāmatu</string>
     <string name="app_language">Lietotnes valoda</string>
     <string name="appearance">Izskats</string>

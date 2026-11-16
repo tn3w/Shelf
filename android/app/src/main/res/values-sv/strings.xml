@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Om</string>
+    <string name="suggest_feature">Föreslå en funktion</string>
+    <string name="report_problem">Rapportera ett problem</string>
+    <string name="send">Skicka</string>
+    <string name="feature_hint">Vad skulle göra Shelf bättre?</string>
+    <string name="problem_hint">Vad gick fel? Appversionen och en anonym fellogg läggs till.</string>
     <string name="about_book">Om boken</string>
     <string name="app_language">Appens språk</string>
     <string name="appearance">Utseende</string>

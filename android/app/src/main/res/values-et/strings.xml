@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">Teave</string>
+    <string name="suggest_feature">Soovita funktsiooni</string>
+    <string name="report_problem">Teata probleemist</string>
+    <string name="send">Saada</string>
+    <string name="feature_hint">Mis teeks Shelfi paremaks?</string>
+    <string name="problem_hint">Mis läks valesti? Lisatakse rakenduse versioon ja anonüümne vealogi.</string>
     <string name="about_book">Raamatust</string>
     <string name="app_language">Rakenduse keel</string>
     <string name="appearance">Välimus</string>

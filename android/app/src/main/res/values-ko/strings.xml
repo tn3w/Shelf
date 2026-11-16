@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="about">정보</string>
+    <string name="suggest_feature">기능 제안</string>
+    <string name="report_problem">문제 신고</string>
+    <string name="send">보내기</string>
+    <string name="feature_hint">Shelf를 더 좋게 만들려면?</string>
+    <string name="problem_hint">무엇이 잘못되었나요? 앱 버전과 익명 오류 로그가 추가됩니다.</string>
     <string name="about_book">이 책에 대하여</string>
     <string name="app_language">앱 언어</string>
     <string name="appearance">화면</string>

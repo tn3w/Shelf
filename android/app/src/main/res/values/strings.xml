@@ -2,6 +2,11 @@
     <string name="add_bookmark">Bookmark this page</string>
     <string name="app_name" translatable="false">Shelf</string>
     <string name="about">About</string>
+    <string name="suggest_feature">Suggest a feature</string>
+    <string name="report_problem">Report a problem</string>
+    <string name="send">Send</string>
+    <string name="feature_hint">What would make Shelf better?</string>
+    <string name="problem_hint">What went wrong? The app version and an anonymous error log are added.</string>
     <string name="about_book">About this book</string>
     <string name="app_language">App language</string>
     <string name="appearance">Appearance</string>

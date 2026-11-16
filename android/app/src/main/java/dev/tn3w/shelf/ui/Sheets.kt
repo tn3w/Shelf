@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -208,6 +209,8 @@ fun PromptSheet(
     onDismiss: () -> Unit,
     text: String? = null,
     hint: String = "",
+    lines: IntRange = 1..1,
+    @StringRes confirm: Int = R.string.save,
     keyboard: KeyboardOptions = KeyboardOptions.Default,
     clean: (String) -> String = { it },
     valid: (String) -> Boolean = { true },
@@ -231,6 +234,7 @@ fun PromptSheet(
             Modifier.focusRequester(focus),
             hint = hint,
             invalid = !ready && value.isNotEmpty(),
+            lines = lines,
             keyboard = keyboard,
             onDone = ::save,
         )
@@ -240,7 +244,7 @@ fun PromptSheet(
                 onDismiss()
                 onReset?.invoke()
             }
-            Pill(stringResource(R.string.save), Modifier.weight(1f), enabled = ready) {
+            Pill(stringResource(confirm), Modifier.weight(1f), enabled = ready) {
                 save()
             }
         }

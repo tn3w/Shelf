@@ -1,6 +1,11 @@
 <resources>
     <string name="add_bookmark">Bladwijzer voor deze pagina</string>
     <string name="about">Over</string>
+    <string name="suggest_feature">Functie voorstellen</string>
+    <string name="report_problem">Probleem melden</string>
+    <string name="send">Versturen</string>
+    <string name="feature_hint">Wat zou Shelf beter maken?</string>
+    <string name="problem_hint">Wat ging er mis? De appversie en een anoniem foutenlogboek worden toegevoegd.</string>
     <string name="about_book">Over dit boek</string>
     <string name="app_language">App-taal</string>
     <string name="appearance">Uiterlijk</string>

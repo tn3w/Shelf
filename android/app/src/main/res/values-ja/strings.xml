@@ -1,6 +1,11 @@
 <resources>
     <string name="add_bookmark">このページをブックマーク</string>
     <string name="about">情報</string>
+    <string name="suggest_feature">機能を提案</string>
+    <string name="report_problem">問題を報告</string>
+    <string name="send">送信</string>
+    <string name="feature_hint">Shelf をもっと良くするには?</string>
+    <string name="problem_hint">何が起きましたか? アプリのバージョンと匿名のエラーログが追加されます。</string>
     <string name="about_book">この本について</string>
     <string name="app_language">アプリの言語</string>
     <string name="appearance">外観</string>

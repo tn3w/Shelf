@@ -2,6 +2,11 @@
 <resources>
     <string name="add_bookmark">Aggiungi segnalibro</string>
     <string name="about">Informazioni</string>
+    <string name="suggest_feature">Suggerisci una funzione</string>
+    <string name="report_problem">Segnala un problema</string>
+    <string name="send">Invia</string>
+    <string name="feature_hint">Cosa renderebbe Shelf migliore?</string>
+    <string name="problem_hint">Cosa è andato storto? Vengono aggiunti la versione dell’app e un log degli errori anonimo.</string>
     <string name="about_book">Informazioni sul libro</string>
     <string name="app_language">Lingua dell’app</string>
     <string name="appearance">Aspetto</string>

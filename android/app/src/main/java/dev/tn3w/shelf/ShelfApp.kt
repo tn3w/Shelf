@@ -65,6 +65,7 @@ class ShelfApp :
 
     override fun onCreate() {
         super.onCreate()
+        Feedback.recordCrashes(this)
         scope.launch {
             library.settings.collect { networkAllowed = !it.isOffline(this@ShelfApp) }
         }
