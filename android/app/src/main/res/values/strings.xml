@@ -40,7 +40,6 @@
     <string name="explore">Explore</string>
     <string name="finished">Finished</string>
     <string name="for_you">For you</string>
-    <string name="for_you_subtitle">Based on your library.</string>
     <string name="formats">Book types</string>
     <string name="genres">Genres</string>
     <string name="goal_reached">Daily goal reached. See you tomorrow!</string>
@@ -94,7 +93,6 @@
     <string name="page_of">Page %1$d of %2$d</string>
     <string name="percent_read">%d%% read</string>
     <string name="popular">Popular</string>
-    <string name="popular_subtitle">Loved by readers everywhere.</string>
     <string name="privacy">Privacy</string>
     <string name="privacy_note">No tracking, no ads, no accounts, no identifiers. Shelf reaches the network only for what you switch on or tap: catalogue packs from GitHub or your own source, app updates from GitHub, covers from Open Library, DNB, DIGAR and Bookbites, author photos from Open Library. Offline mode stops all of it. Your library stays on this device.</string>
     <string name="reading">Reading</string>
@@ -139,7 +137,6 @@
     <string name="update_pack">Update %s</string>
     <string name="version">Version %1$s (%2$s)</string>
     <string name="want_to_read">Want to read</string>
-    <string name="want_to_read_subtitle">Books you would like to read next.</string>
     <string name="welcome">Welcome to Shelf</string>
     <string name="welcome_text">Find, track and read books offline.</string>
     <plurals name="books">
@@ -185,7 +182,6 @@
     </plurals>
     <string name="because_you_read">Because you read %1$s</string>
     <string name="next_in_series">Next in your series</string>
-    <string name="next_in_series_subtitle">Continue where each series left off.</string>
     <string name="not_for_me">Not for me</string>
     <string name="machine_translated">Machine translated</string>
     <string name="catalogue_updates">Catalogue updates</string>
@@ -210,17 +206,14 @@
     <string name="your_data_hint">Backup, Goodreads and StoryGraph.</string>
     <string name="release_date">Release %s</string>
     <string name="language">Language</string>
-    <string name="book_language_hint">Auto follows the app language.</string>
     <string name="packs_language">Packs · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Reading</string>
     <string name="reading_hint">Daily goal, text and page turns.</string>
-    <string name="settings_footer">Open source under the MIT license. Your library stays on this device.</string>
     <string name="privacy_requests_hint">Requests use https only and carry no identifiers or cookies.</string>
     <string name="black_theme">Pure black</string>
     <string name="black_theme_hint">Black background in dark mode. Saves power on OLED screens.</string>
     <string name="wallpaper_colors">Wallpaper colours</string>
-    <string name="wallpaper_colors_hint">Tint the app with colours from your wallpaper.</string>
     <string name="e_ink">E-ink mode</string>
     <string name="e_ink_hint">Black on white, no animations, instant page turns, larger touch targets.</string>
     <string name="reader">Reader</string>
@@ -240,9 +233,7 @@
     <string name="page_paper">Paper</string>
     <string name="page_night">Night</string>
     <string name="justify">Justify text</string>
-    <string name="justify_hint">Align lines to both edges.</string>
     <string name="keep_screen_on">Keep screen on</string>
-    <string name="keep_screen_on_hint">The screen stays awake while a book is open.</string>
     <string name="volume_keys">Volume keys turn pages</string>
     <string name="volume_keys_hint">Page keys on e-readers always work.</string>
     <string name="brightness_swipe">Swipe for brightness</string>
@@ -367,7 +358,6 @@
     <string name="free_books_test_author" translatable="false">Jane Austen</string>
     <string name="stats">Reading stats</string>
     <string name="stats_empty">Nothing recorded this year yet. Pages you read and books you finish show up here.</string>
-    <string name="stats_private">Worked out on this device. Nothing leaves it unless you share.</string>
     <string name="year_in_books">Year in books</string>
     <string name="month_by_month">Month by month</string>
     <string name="pages_metric">Pages</string>
@@ -456,7 +446,6 @@
     <string name="rename_list">Rename list</string>
     <string name="delete_list">Delete list</string>
     <string name="delete_list_confirm">Delete the list %s? Its books stay in your library.</string>
-    <string name="private_note">Kept on your phone only</string>
     <string name="lists">Lists</string>
     <string name="edit_lists">Edit lists</string>
     <string name="share_list">Share list</string>
@@ -494,7 +483,6 @@
     <string name="pause_item">Pause %s</string>
     <string name="resume_item">Resume %s</string>
     <string name="character_voices">Character voices</string>
-    <string name="character_voices_hint">Each character speaks with their own voice</string>
     <string name="finding_speakers">Finding speakers…</string>
     <string name="speakers_found">Speakers found: %1$d</string>
     <string name="listening">Listening</string>
@@ -502,7 +490,6 @@
     <string name="narration">Narration</string>
     <string name="character_voices_model">Download speaker detection below to use this</string>
     <string name="system_voices">System voices</string>
-    <string name="system_voices_hint">Text-to-speech engine and voice data from Android</string>
     <string name="quality_standard">Standard</string>
     <string name="quality_high">High quality</string>
     <string name="other_languages">Other languages</string>

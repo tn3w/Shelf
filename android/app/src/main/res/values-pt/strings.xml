@@ -20,7 +20,7 @@
     <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é salvo nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos.</string>
     <string name="auto_backup_folder">Pasta de backup</string>
     <string name="auto_backup_off">Desativado</string>
-    <string name="born">Nascido em %d</string>
+    <string name="born">Nascimento: %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Pacotes offline, atualizações e fontes próprias.</string>
     <string name="catalogue_language">Idioma dos livros</string>
@@ -40,7 +40,6 @@
     <string name="explore">Explorar</string>
     <string name="finished">Lidos</string>
     <string name="for_you">Para você</string>
-    <string name="for_you_subtitle">Com base na sua biblioteca.</string>
     <string name="formats">Tipos de livro</string>
     <string name="genres">Gêneros</string>
     <string name="goal_reached">Meta diária alcançada. Até amanhã!</string>
@@ -94,7 +93,6 @@
     <string name="page_of">Página %1$d de %2$d</string>
     <string name="percent_read">%d%% lido</string>
     <string name="popular">Populares</string>
-    <string name="popular_subtitle">Amados por leitores do mundo todo.</string>
     <string name="privacy">Privacidade</string>
     <string name="privacy_note">Sem rastreamento, sem anúncios, sem contas, sem identificadores. O Shelf só usa a rede para o que você ativar ou tocar: pacotes do catálogo do GitHub ou da sua própria fonte, atualizações do app do GitHub, capas do Open Library, DNB, DIGAR e Bookbites, fotos de autores do Open Library. O modo offline bloqueia tudo isso. Sua biblioteca fica neste dispositivo.</string>
     <string name="reading">Lendo</string>
@@ -139,7 +137,6 @@
     <string name="update_pack">Atualizar %s</string>
     <string name="version">Versão %1$s (%2$s)</string>
     <string name="want_to_read">Quero ler</string>
-    <string name="want_to_read_subtitle">Livros que você quer ler em breve.</string>
     <string name="welcome">Boas-vindas ao Shelf</string>
     <string name="welcome_text">Encontre, acompanhe e leia livros offline.</string>
     <plurals name="books">
@@ -195,7 +192,6 @@
     </plurals>
     <string name="because_you_read">Porque você leu %1$s</string>
     <string name="next_in_series">Próximos nas suas séries</string>
-    <string name="next_in_series_subtitle">Continue de onde parou em cada série.</string>
     <string name="not_for_me">Não é para mim</string>
     <string name="machine_translated">Tradução automática</string>
     <string name="catalogue_updates">Atualizações do catálogo</string>
@@ -220,17 +216,14 @@
     <string name="your_data_hint">Backup, Goodreads e StoryGraph.</string>
     <string name="release_date">Lançamento %s</string>
     <string name="language">Idioma</string>
-    <string name="book_language_hint">Auto segue o idioma do app.</string>
     <string name="packs_language">Pacotes · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Leitura</string>
     <string name="reading_hint">Meta diária, texto e virada de página.</string>
-    <string name="settings_footer">Código aberto sob a licença MIT. Sua biblioteca fica neste dispositivo.</string>
     <string name="privacy_requests_hint">As requisições usam apenas https e não levam identificadores nem cookies.</string>
     <string name="black_theme">Preto puro</string>
     <string name="black_theme_hint">Fundo preto no modo escuro. Economiza bateria em telas OLED.</string>
     <string name="wallpaper_colors">Cores do papel de parede</string>
-    <string name="wallpaper_colors_hint">Colore o app com as cores do seu papel de parede.</string>
     <string name="e_ink">Modo e-ink</string>
     <string name="e_ink_hint">Preto no branco, sem animações, páginas instantâneas, áreas de toque maiores.</string>
     <string name="reader">Leitor</string>
@@ -250,9 +243,7 @@
     <string name="page_paper">Papel</string>
     <string name="page_night">Noite</string>
     <string name="justify">Justificar texto</string>
-    <string name="justify_hint">Alinha as linhas às duas margens.</string>
     <string name="keep_screen_on">Manter tela ligada</string>
-    <string name="keep_screen_on_hint">A tela fica acesa enquanto um livro está aberto.</string>
     <string name="volume_keys">Teclas de volume viram a página</string>
     <string name="volume_keys_hint">As teclas de página dos leitores digitais sempre funcionam.</string>
     <string name="brightness_swipe">Deslizar para o brilho</string>
@@ -265,7 +256,7 @@
     <string name="delete_all">Excluir tudo</string>
     <string name="offline_forced">Sem permissão de rede, o Shelf fica offline.</string>
     <string name="offline_mode">Modo offline</string>
-    <string name="offline_mode_hint">Nenhum acesso à rede: sem atualizações, sem catálogo, sem imagens.</string>
+    <string name="offline_mode_hint">Nenhum acesso à rede: sem atualizações, sem atualização do catálogo, sem imagens.</string>
     <string name="start_offline">Continuar offline</string>
     <string name="import_book">Importar livro</string>
     <string name="own_book">Adicionar livro próprio</string>
@@ -291,7 +282,7 @@
     <string name="no_catalogue">Nenhum catálogo instalado ainda. Baixe um ou importe arquivos do catálogo nas Configurações para explorar livros. Seus próprios arquivos podem ser importados na Biblioteca.</string>
     <string name="open_settings">Abrir configurações</string>
     <string name="scan">Escanear capa</string>
-    <string name="scan_hint">Mostre uma capa ou código de barras e toque</string>
+    <string name="scan_hint">Mostre uma capa ou código de barras e toque para capturar</string>
     <string name="scan_again">Escanear de novo</string>
     <string name="camera_denied">O Shelf lê capas de livros com a câmera, tudo no seu celular. Permita o acesso à câmera nas configurações do sistema para escanear.</string>
     <string name="camera_failed">A câmera fechou inesperadamente. Volte e tente de novo.</string>
@@ -375,7 +366,6 @@
     </plurals>
     <string name="stats">Estatísticas de leitura</string>
     <string name="stats_empty">Nada registrado este ano ainda. As páginas lidas e os livros terminados aparecem aqui.</string>
-    <string name="stats_private">Calculado neste dispositivo. Nada sai dele a menos que você compartilhe.</string>
     <string name="year_in_books">Ano em livros</string>
     <string name="month_by_month">Mês a mês</string>
     <string name="pages_metric">Páginas</string>
@@ -454,7 +444,7 @@
     </plurals>
     <string name="rate_stars">%d de 5 estrelas</string>
     <string name="started_on">Iniciado</string>
-    <string name="finished_on">Fim</string>
+    <string name="finished_on">Terminado</string>
     <string name="read_in">Lido em %s</string>
     <string name="average_rating">Média %s</string>
     <string name="review">Resenha</string>
@@ -468,7 +458,6 @@
     <string name="rename_list">Renomear lista</string>
     <string name="delete_list">Excluir lista</string>
     <string name="delete_list_confirm">Excluir a lista %s? Os livros continuam na sua biblioteca.</string>
-    <string name="private_note">Fica só no seu celular</string>
     <string name="lists">Listas</string>
     <string name="edit_lists">Editar listas</string>
     <string name="share_list">Compartilhar lista</string>
@@ -491,30 +480,28 @@
     <string name="time_left">Faltam %s</string>
     <string name="voice">Voz</string>
     <string name="voice_missing">Nenhuma voz instalada para o idioma deste livro.</string>
-    <string name="voice_settings">Definições de voz</string>
+    <string name="voice_settings">Configurações de voz</string>
     <string name="add_audiobook">Adicionar audiolivro</string>
     <string name="remove_audiobook">Remover audiolivro</string>
     <string name="rewind">Recuar 10 segundos</string>
     <string name="fast_forward">Avançar 10 segundos</string>
     <string name="no_audio">Nenhum áudio reproduzível encontrado.</string>
     <string name="voice_models">Modelos de voz</string>
-    <string name="voice_models_hint">Transferências opcionais para vozes naturais e deteção de quem fala. Cada ficheiro é verificado com SHA-256 antes de ser usado.</string>
-    <string name="model_speaker">Deteção de quem fala</string>
+    <string name="voice_models_hint">Downloads opcionais para vozes naturais e detecção de falantes. Cada arquivo é verificado com SHA-256 antes do uso.</string>
+    <string name="model_speaker">Detecção de falantes</string>
     <string name="not_enough_space">Espaço de armazenamento insuficiente.</string>
-    <string name="listen_failed">Motor de voz indisponível</string>
+    <string name="listen_failed">Mecanismo de voz indisponível</string>
     <string name="no_text">Este livro não tem texto legível</string>
     <string name="pause_item">Pausar %s</string>
     <string name="resume_item">Retomar %s</string>
-    <string name="character_voices">Vozes das personagens</string>
-    <string name="character_voices_hint">Cada personagem fala com a sua própria voz</string>
-    <string name="finding_speakers">A procurar falantes…</string>
+    <string name="character_voices">Vozes dos personagens</string>
+    <string name="finding_speakers">Procurando falantes…</string>
     <string name="speakers_found">Falantes encontrados: %1$d</string>
-    <string name="listening">Audição</string>
+    <string name="listening">Escuta</string>
     <string name="listening_hint">Vozes, leitura em voz alta e audiolivros</string>
     <string name="narration">Narração</string>
     <string name="character_voices_model">Baixe a detecção de falantes abaixo para usar isto</string>
     <string name="system_voices">Vozes do sistema</string>
-    <string name="system_voices_hint">Mecanismo de conversão de texto em voz e dados de voz do Android</string>
     <string name="quality_standard">Padrão</string>
     <string name="quality_high">Alta qualidade</string>
     <string name="other_languages">Outros idiomas</string>

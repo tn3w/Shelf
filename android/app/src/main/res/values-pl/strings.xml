@@ -38,7 +38,6 @@
     <string name="explore">Odkrywaj</string>
     <string name="finished">Przeczytane</string>
     <string name="for_you">Dla ciebie</string>
-    <string name="for_you_subtitle">Na podstawie twojej biblioteki.</string>
     <string name="formats">Rodzaje książek</string>
     <string name="genres">Gatunki</string>
     <string name="goal_reached">Cel dzienny osiągnięty. Do jutra!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Strona %1$d z %2$d</string>
     <string name="percent_read">Przeczytano %d%%</string>
     <string name="popular">Popularne</string>
-    <string name="popular_subtitle">Ulubione czytelników na całym świecie.</string>
     <string name="privacy">Prywatność</string>
     <string name="privacy_note">Bez śledzenia, reklam, kont i identyfikatorów. Shelf łączy się z siecią tylko w tym, co włączysz lub dotkniesz: pakiety katalogu z GitHuba lub twojego źródła, aktualizacje aplikacji z GitHuba, okładki z Open Library, DNB, DIGAR i Bookbites, zdjęcia autorów z Open Library. Tryb offline wyłącza to wszystko. Twoja biblioteka zostaje na tym urządzeniu.</string>
     <string name="reading">Czytam</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Aktualizuj %s</string>
     <string name="version">Wersja %1$s (%2$s)</string>
     <string name="want_to_read">Chcę przeczytać</string>
-    <string name="want_to_read_subtitle">Książki, które chcesz przeczytać jako następne.</string>
     <string name="welcome">Witaj w Shelf</string>
     <string name="welcome_text">Znajduj, śledź i czytaj książki offline.</string>
     <plurals name="books">
@@ -189,9 +186,8 @@
         <item quantity="many">Przeczytaj %d stron, aby zacząć serię.</item>
         <item quantity="other">Przeczytaj %d strony, aby zacząć serię.</item>
     </plurals>
-    <string name="because_you_read">Bo czytasz: %1$s</string>
+    <string name="because_you_read">Po lekturze: %1$s</string>
     <string name="next_in_series">Dalej w twoich seriach</string>
-    <string name="next_in_series_subtitle">Kontynuuj każdą serię tam, gdzie skończyłeś.</string>
     <string name="not_for_me">Nie dla mnie</string>
     <string name="machine_translated">Przetłumaczone maszynowo</string>
     <string name="catalogue_updates">Aktualizacje katalogu</string>
@@ -216,17 +212,14 @@
     <string name="your_data_hint">Kopia zapasowa, Goodreads i StoryGraph.</string>
     <string name="release_date">Wydanie %s</string>
     <string name="language">Język</string>
-    <string name="book_language_hint">Auto podąża za językiem aplikacji.</string>
     <string name="packs_language">Pakiety · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Czytanie</string>
     <string name="reading_hint">Cel dzienny, tekst i przewracanie stron.</string>
-    <string name="settings_footer">Otwarte oprogramowanie na licencji MIT. Twoja biblioteka zostaje na tym urządzeniu.</string>
     <string name="privacy_requests_hint">Żądania używają tylko https i nie zawierają identyfikatorów ani ciasteczek.</string>
     <string name="black_theme">Czysta czerń</string>
     <string name="black_theme_hint">Czarne tło w trybie ciemnym. Oszczędza energię na ekranach OLED.</string>
     <string name="wallpaper_colors">Kolory tapety</string>
-    <string name="wallpaper_colors_hint">Barwi aplikację kolorami z tapety.</string>
     <string name="e_ink">Tryb e-ink</string>
     <string name="e_ink_hint">Czarne na białym, bez animacji, natychmiastowe przewracanie stron, większe pola dotyku.</string>
     <string name="reader">Czytnik</string>
@@ -246,9 +239,7 @@
     <string name="page_paper">Papier</string>
     <string name="page_night">Noc</string>
     <string name="justify">Wyjustuj tekst</string>
-    <string name="justify_hint">Wyrównuje wiersze do obu krawędzi.</string>
     <string name="keep_screen_on">Nie wygaszaj ekranu</string>
-    <string name="keep_screen_on_hint">Ekran pozostaje włączony, gdy książka jest otwarta.</string>
     <string name="volume_keys">Przyciski głośności przewracają strony</string>
     <string name="volume_keys_hint">Przyciski stron w czytnikach działają zawsze.</string>
     <string name="brightness_swipe">Jasność przesunięciem</string>
@@ -386,7 +377,6 @@
     </plurals>
     <string name="stats">Statystyki czytania</string>
     <string name="stats_empty">Brak danych za ten rok. Przeczytane strony i ukończone książki pojawią się tutaj.</string>
-    <string name="stats_private">Obliczone na tym urządzeniu. Nic go nie opuszcza, chyba że udostępnisz.</string>
     <string name="year_in_books">Rok w książkach</string>
     <string name="month_by_month">Miesiąc po miesiącu</string>
     <string name="pages_metric">Strony</string>
@@ -395,7 +385,7 @@
     <string name="longest_streak">Najdłuższa seria</string>
     <string name="finished_in">Ukończone w %d</string>
     <string name="share">Udostępnij</string>
-    <string name="share_recap">Mój rok %1$d w książkach: %2$s i %3$s, prywatnie z Shelf.</string>
+    <string name="share_recap">Mój rok %1$d w książkach: %2$s i %3$s, prywatnie zapisane w Shelf.</string>
     <plurals name="pages_count">
         <item quantity="one">%d strona</item>
         <item quantity="few">%d strony</item>
@@ -411,14 +401,14 @@
     <string name="close">Zamknij</string>
     <string name="wrapped_banner">Twój %d w książkach</string>
     <string name="wrapped_banner_text">Stuknij, by przeżyć swój czytelniczy rok jeszcze raz.</string>
-    <string name="wrapped_intro">Spójrzmy wstecz na Twój czytelniczy rok.</string>
-    <string name="wrapped_books">Ukończyłeś</string>
-    <string name="wrapped_pages">Przewróciłeś</string>
+    <string name="wrapped_intro">Spójrzmy wstecz na twój czytelniczy rok.</string>
+    <string name="wrapped_books">Ukończone książki</string>
+    <string name="wrapped_pages">Przewrócone strony</string>
     <string name="wrapped_best_day">Najlepszy dzień: %1$s, %2$s</string>
     <string name="wrapped_month">Twój najlepszy miesiąc to</string>
     <string name="wrapped_genre">Twój ulubiony gatunek</string>
-    <string name="wrapped_author">Nie mogłeś się oderwać od</string>
-    <string name="wrapped_days">Czytałeś przez</string>
+    <string name="wrapped_author">Nie sposób było oderwać się od</string>
+    <string name="wrapped_days">Czytanie przez</string>
     <string name="wrapped_bookends">Od pierwszej do ostatniej</string>
     <string name="wrapped_first">Pierwsza</string>
     <string name="wrapped_last">Ostatnia</string>
@@ -432,7 +422,7 @@
     <string name="type_weekender">Weekendowy czytelnik</string>
     <string name="type_weekender_text">Soboty i niedziele należą do twoich książek.</string>
     <string name="type_bookworm">Mól książkowy</string>
-    <string name="type_bookworm_text">Równe strony przez cały rok. Czytanie to część ciebie.</string>
+    <string name="type_bookworm_text">Strona za stroną przez cały rok. Czytanie to część ciebie.</string>
     <plurals name="wrapped_hours">
         <item quantity="one">To około %d godzina czytania.</item>
         <item quantity="few">To około %d godziny czytania.</item>
@@ -475,7 +465,7 @@
     <string name="review">Recenzja</string>
     <string name="review_hint">Co o tym myślisz? Tylko ty to zobaczysz.</string>
     <string name="write_review">Napisz recenzję</string>
-    <string name="book_notes_hint">Prywatne notatki, np. komu ją pożyczyłeś</string>
+    <string name="book_notes_hint">Prywatne notatki, np. komu ją pożyczono</string>
     <string name="add_notes">Dodaj notatki</string>
     <string name="add_to_list">Dodaj do listy</string>
     <string name="new_list">Nowa lista</string>
@@ -483,7 +473,6 @@
     <string name="rename_list">Zmień nazwę listy</string>
     <string name="delete_list">Usuń listę</string>
     <string name="delete_list_confirm">Usunąć listę %s? Jej książki zostaną w bibliotece.</string>
-    <string name="private_note">Zostaje tylko na twoim telefonie</string>
     <string name="lists">Listy</string>
     <string name="edit_lists">Edytuj listy</string>
     <string name="share_list">Udostępnij listę</string>
@@ -500,7 +489,7 @@
     <string name="previous_sentence">Poprzednie zdanie</string>
     <string name="next_sentence">Następne zdanie</string>
     <string name="sleep_timer">Wyłącznik czasowy</string>
-    <string name="sleep_off">Wył.</string>
+    <string name="sleep_off">Wyłączony</string>
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Koniec rozdziału</string>
     <string name="time_left">Pozostało %s</string>
@@ -521,15 +510,13 @@
     <string name="pause_item">Wstrzymaj: %s</string>
     <string name="resume_item">Wznów: %s</string>
     <string name="character_voices">Głosy postaci</string>
-    <string name="character_voices_hint">Każda postać mówi własnym głosem</string>
     <string name="finding_speakers">Szukanie mówiących…</string>
     <string name="speakers_found">Znalezieni mówiący: %1$d</string>
     <string name="listening">Słuchanie</string>
     <string name="listening_hint">Głosy, czytanie na głos i audiobooki</string>
     <string name="narration">Czytanie na głos</string>
-    <string name="character_voices_model">Aby tego użyć, pobierz poniżej rozpoznawanie mówców</string>
+    <string name="character_voices_model">Aby tego użyć, pobierz poniżej rozpoznawanie mówiących</string>
     <string name="system_voices">Głosy systemowe</string>
-    <string name="system_voices_hint">Silnik syntezy mowy i dane głosowe Androida</string>
     <string name="quality_standard">Standardowa</string>
     <string name="quality_high">Wysoka jakość</string>
     <string name="other_languages">Inne języki</string>

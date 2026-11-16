@@ -22,7 +22,7 @@ private fun translatable(folder: String): Set<String> {
 }
 
 private val PLURAL_FORMS = mapOf(
-    listOf("one", "other") to listOf("de", "et", "sv", "fi"),
+    listOf("one", "other") to listOf("de", "et", "sv", "fi", "nl"),
     listOf("one", "many", "other") to listOf("fr", "es", "pt", "it"),
     listOf("one", "few", "many", "other") to listOf("pl", "cs", "ru"),
     listOf("zero", "one", "other") to listOf("lv"),

@@ -18,7 +18,7 @@
     <string name="auto_backup_hint">Una vez al día, al salir de Shelf se guarda un zip con fecha en esta carpeta y se conservan los 7 más recientes. Elige una carpeta de Syncthing para copiarlo a otros dispositivos.</string>
     <string name="auto_backup_folder">Carpeta de copias</string>
     <string name="auto_backup_off">Desactivada</string>
-    <string name="born">Nacido en %d</string>
+    <string name="born">Nació en %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Paquetes sin conexión, actualizaciones y fuentes propias.</string>
     <string name="catalogue_language">Idioma de los libros</string>
@@ -38,12 +38,11 @@
     <string name="explore">Explorar</string>
     <string name="finished">Leídos</string>
     <string name="for_you">Para ti</string>
-    <string name="for_you_subtitle">Según tu biblioteca.</string>
     <string name="formats">Tipos de libro</string>
     <string name="genres">Géneros</string>
     <string name="goal_reached">Meta cumplida. ¡Hasta mañana!</string>
     <string name="home">Inicio</string>
-    <string name="import_to_start">Importa un archivo</string>
+    <string name="import_to_start">Importa un archivo para empezar</string>
     <string name="install">Instalar</string>
     <string name="install_anyway">Instalar de todos modos</string>
     <string name="larger_text">Texto más grande</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Página %1$d de %2$d</string>
     <string name="percent_read">%d%% leído</string>
     <string name="popular">Populares</string>
-    <string name="popular_subtitle">Favoritos de los lectores.</string>
     <string name="privacy">Privacidad</string>
     <string name="privacy_note">Sin rastreo, sin anuncios, sin cuentas, sin identificadores. Shelf usa la red solo para lo que actives o toques: paquetes del catálogo desde GitHub o tu propia fuente, actualizaciones desde GitHub, portadas desde Open Library, la DNB, DIGAR y Bookbites, fotos de autores desde Open Library. El modo sin conexión lo detiene todo. Tu biblioteca queda en el dispositivo.</string>
     <string name="reading">Leyendo</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Actualizar %s</string>
     <string name="version">Versión %1$s (%2$s)</string>
     <string name="want_to_read">Quiero leer</string>
-    <string name="want_to_read_subtitle">Libros que quieres leer pronto.</string>
     <string name="welcome">Bienvenido a Shelf</string>
     <string name="welcome_text">Encuentra, sigue y lee libros sin conexión.</string>
     <plurals name="books">
@@ -182,7 +179,6 @@
     </plurals>
     <string name="because_you_read">Porque leíste %1$s</string>
     <string name="next_in_series">Lo siguiente en tus sagas</string>
-    <string name="next_in_series_subtitle">Continúa donde dejaste cada saga.</string>
     <string name="not_for_me">No es para mí</string>
     <string name="machine_translated">Traducción automática</string>
     <string name="catalogue_updates">Actualizaciones del catálogo</string>
@@ -207,17 +203,14 @@
     <string name="your_data_hint">Copia de seguridad, Goodreads y StoryGraph.</string>
     <string name="release_date">Versión %s</string>
     <string name="language">Idioma</string>
-    <string name="book_language_hint">Auto sigue el idioma de la app.</string>
     <string name="packs_language">Paquetes · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Lectura</string>
-    <string name="reading_hint">Objetivo diario, texto y páginas.</string>
-    <string name="settings_footer">Código abierto con licencia MIT. Tu biblioteca se queda en este dispositivo.</string>
+    <string name="reading_hint">Meta diaria, texto y paso de página.</string>
     <string name="privacy_requests_hint">Las solicitudes usan solo https, sin identificadores ni cookies.</string>
     <string name="black_theme">Negro puro</string>
     <string name="black_theme_hint">Fondo negro en modo oscuro. Ahorra batería en pantallas OLED.</string>
     <string name="wallpaper_colors">Colores del fondo</string>
-    <string name="wallpaper_colors_hint">Teñir la app con los colores de tu fondo de pantalla.</string>
     <string name="e_ink">Modo e-ink</string>
     <string name="e_ink_hint">Negro sobre blanco, sin animaciones, pasar página al instante, botones más grandes.</string>
     <string name="reader">Lector</string>
@@ -237,9 +230,7 @@
     <string name="page_paper">Papel</string>
     <string name="page_night">Noche</string>
     <string name="justify">Justificar texto</string>
-    <string name="justify_hint">Alinear las líneas a ambos bordes.</string>
     <string name="keep_screen_on">Mantener pantalla encendida</string>
-    <string name="keep_screen_on_hint">La pantalla no se apaga mientras hay un libro abierto.</string>
     <string name="volume_keys">Teclas de volumen pasan página</string>
     <string name="volume_keys_hint">Las teclas de página de los lectores e-ink siempre funcionan.</string>
     <string name="brightness_swipe">Deslizar para brillo</string>
@@ -252,7 +243,7 @@
     <string name="delete_all">Eliminar todo</string>
     <string name="offline_forced">Sin permiso de red, Shelf permanece sin conexión.</string>
     <string name="offline_mode">Modo sin conexión</string>
-    <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin catálogo, sin imágenes.</string>
+    <string name="offline_mode_hint">Nada de red: sin actualizaciones, sin actualizar el catálogo, sin imágenes.</string>
     <string name="start_offline">Continuar sin conexión</string>
     <string name="import_book">Importar libro</string>
     <string name="own_book">Añadir libro propio</string>
@@ -278,7 +269,7 @@
     <string name="no_catalogue">Aún no hay catálogo instalado. Descarga uno o importa archivos de catálogo en Ajustes para explorar libros. Tus propios archivos se importan en Biblioteca.</string>
     <string name="open_settings">Abrir ajustes</string>
     <string name="scan">Escanear portada</string>
-    <string name="scan_hint">Enfoca portada o código de barras, toca</string>
+    <string name="scan_hint">Enfoca una portada o un código de barras y toca para capturar</string>
     <string name="scan_again">Escanear de nuevo</string>
     <string name="camera_denied">Shelf lee portadas con la cámara, todo en tu teléfono. Permite el acceso a la cámara en los ajustes del sistema para escanear.</string>
     <string name="camera_failed">La cámara se cerró inesperadamente. Vuelve atrás e inténtalo de nuevo.</string>
@@ -335,7 +326,7 @@
     <string name="free_books_add">Crear fuente</string>
     <string name="free_books_import">Importar archivo</string>
     <string name="free_books_export">Exportar archivo</string>
-    <string name="free_books_export_headers">Incluye encabezados guardados como cookies o tokens</string>
+    <string name="free_books_export_headers">Incluye cabeceras guardadas como cookies o tokens</string>
     <string name="free_books_form">Formulario</string>
     <string name="free_books_file">Archivo</string>
     <string name="free_books_name">Nombre</string>
@@ -375,7 +366,6 @@
     </plurals>
     <string name="stats">Estadísticas de lectura</string>
     <string name="stats_empty">Aún no hay nada registrado este año. Aquí aparecerán las páginas leídas y los libros terminados.</string>
-    <string name="stats_private">Calculado en este dispositivo. Nada sale de él salvo que lo compartas.</string>
     <string name="year_in_books">Año en libros</string>
     <string name="month_by_month">Mes a mes</string>
     <string name="pages_metric">Páginas</string>
@@ -468,7 +458,6 @@
     <string name="rename_list">Renombrar lista</string>
     <string name="delete_list">Eliminar lista</string>
     <string name="delete_list_confirm">¿Eliminar la lista %s? Sus libros siguen en tu biblioteca.</string>
-    <string name="private_note">Solo se guarda en tu teléfono</string>
     <string name="lists">Listas</string>
     <string name="edit_lists">Editar listas</string>
     <string name="share_list">Compartir lista</string>
@@ -506,7 +495,6 @@
     <string name="pause_item">Pausar %s</string>
     <string name="resume_item">Reanudar %s</string>
     <string name="character_voices">Voces de personajes</string>
-    <string name="character_voices_hint">Cada personaje habla con su propia voz</string>
     <string name="finding_speakers">Buscando hablantes…</string>
     <string name="speakers_found">Hablantes encontrados: %1$d</string>
     <string name="listening">Escucha</string>
@@ -514,7 +502,6 @@
     <string name="narration">Narración</string>
     <string name="character_voices_model">Descarga abajo la detección de hablantes para usarlo</string>
     <string name="system_voices">Voces del sistema</string>
-    <string name="system_voices_hint">Motor de texto a voz y datos de voz de Android</string>
     <string name="quality_standard">Estándar</string>
     <string name="quality_high">Alta calidad</string>
     <string name="other_languages">Otros idiomas</string>

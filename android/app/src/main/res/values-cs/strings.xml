@@ -38,7 +38,6 @@
     <string name="explore">Objevovat</string>
     <string name="finished">Přečteno</string>
     <string name="for_you">Pro vás</string>
-    <string name="for_you_subtitle">Podle vaší knihovny.</string>
     <string name="formats">Typy knih</string>
     <string name="genres">Žánry</string>
     <string name="goal_reached">Denní cíl splněn. Zítra zase!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Strana %1$d z %2$d</string>
     <string name="percent_read">Přečteno %d %%</string>
     <string name="popular">Oblíbené</string>
-    <string name="popular_subtitle">Oblíbené u čtenářů po celém světě.</string>
     <string name="privacy">Soukromí</string>
     <string name="privacy_note">Žádné sledování, reklamy, účty ani identifikátory. Shelf používá síť jen pro to, co zapnete nebo na co klepnete: balíčky katalogu z GitHubu nebo vašeho zdroje, aktualizace aplikace z GitHubu, obálky z Open Library, DNB, DIGAR a Bookbites, fotky autorů z Open Library. Režim offline vše zastaví. Vaše knihovna zůstává v tomto zařízení.</string>
     <string name="reading">Čtu</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Aktualizovat %s</string>
     <string name="version">Verze %1$s (%2$s)</string>
     <string name="want_to_read">Chci číst</string>
-    <string name="want_to_read_subtitle">Knihy, které chcete číst příště.</string>
     <string name="welcome">Vítejte v Shelf</string>
     <string name="welcome_text">Hledejte, sledujte a čtěte knihy offline.</string>
     <plurals name="books">
@@ -189,9 +186,8 @@
         <item quantity="many">Přečtěte %d strany a začněte sérii.</item>
         <item quantity="other">Přečtěte %d stran a začněte sérii.</item>
     </plurals>
-    <string name="because_you_read">Protože čtete %1$s</string>
+    <string name="because_you_read">Protože jste četli %1$s</string>
     <string name="next_in_series">Další ve vašich sériích</string>
-    <string name="next_in_series_subtitle">Pokračujte tam, kde každá série skončila.</string>
     <string name="not_for_me">Není pro mě</string>
     <string name="machine_translated">Strojově přeloženo</string>
     <string name="catalogue_updates">Aktualizace katalogu</string>
@@ -216,17 +212,14 @@
     <string name="your_data_hint">Záloha, Goodreads a StoryGraph.</string>
     <string name="release_date">Vydání %s</string>
     <string name="language">Jazyk</string>
-    <string name="book_language_hint">Auto se řídí jazykem aplikace.</string>
     <string name="packs_language">Balíčky · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Čtení</string>
     <string name="reading_hint">Denní cíl, text a otáčení stránek.</string>
-    <string name="settings_footer">Open source pod licencí MIT. Vaše knihovna zůstává v tomto zařízení.</string>
     <string name="privacy_requests_hint">Požadavky používají jen https a neobsahují identifikátory ani cookies.</string>
     <string name="black_theme">Čistě černá</string>
     <string name="black_theme_hint">Černé pozadí v tmavém režimu. Šetří energii na displejích OLED.</string>
     <string name="wallpaper_colors">Barvy tapety</string>
-    <string name="wallpaper_colors_hint">Obarví aplikaci barvami z tapety.</string>
     <string name="e_ink">Režim e-ink</string>
     <string name="e_ink_hint">Černá na bílé, bez animací, okamžité otáčení stránek, větší dotykové plochy.</string>
     <string name="reader">Čtečka</string>
@@ -246,9 +239,7 @@
     <string name="page_paper">Papír</string>
     <string name="page_night">Noc</string>
     <string name="justify">Zarovnat do bloku</string>
-    <string name="justify_hint">Zarovná řádky k oběma okrajům.</string>
     <string name="keep_screen_on">Nevypínat obrazovku</string>
-    <string name="keep_screen_on_hint">Obrazovka zůstane zapnutá, dokud je otevřená kniha.</string>
     <string name="volume_keys">Tlačítka hlasitosti otáčí stránky</string>
     <string name="volume_keys_hint">Tlačítka stránek na čtečkách fungují vždy.</string>
     <string name="brightness_swipe">Jas přejetím</string>
@@ -386,7 +377,6 @@
     </plurals>
     <string name="stats">Statistiky čtení</string>
     <string name="stats_empty">Pro tento rok zatím nic není. Přečtené stránky a dočtené knihy se zobrazí zde.</string>
-    <string name="stats_private">Spočítáno v tomto zařízení. Nic neopustí zařízení, pokud to nesdílíte.</string>
     <string name="year_in_books">Rok v knihách</string>
     <string name="month_by_month">Měsíc po měsíci</string>
     <string name="pages_metric">Stránky</string>
@@ -432,7 +422,7 @@
     <string name="type_weekender">Víkendový čtenář</string>
     <string name="type_weekender_text">Soboty a neděle patří vašim knihám.</string>
     <string name="type_bookworm">Knihomol</string>
-    <string name="type_bookworm_text">Stálé stránky po celý rok. Čtení je prostě vaší součástí.</string>
+    <string name="type_bookworm_text">Stránku za stránkou, celý rok. Čtení je prostě vaší součástí.</string>
     <plurals name="wrapped_hours">
         <item quantity="one">To je asi %d hodina čtení.</item>
         <item quantity="few">To jsou asi %d hodiny čtení.</item>
@@ -473,22 +463,21 @@
     <string name="read_in">Přečteno za %s</string>
     <string name="average_rating">průměr %s</string>
     <string name="review">Recenze</string>
-    <string name="review_hint">Jak se ti líbila? Uvidíš to jen ty.</string>
+    <string name="review_hint">Jak se vám líbila? Uvidíte to jen vy.</string>
     <string name="write_review">Napsat recenzi</string>
-    <string name="book_notes_hint">Soukromé poznámky, třeba komu jsi ji půjčil</string>
+    <string name="book_notes_hint">Soukromé poznámky, třeba komu jste ji půjčili</string>
     <string name="add_notes">Přidat poznámky</string>
     <string name="add_to_list">Přidat do seznamu</string>
     <string name="new_list">Nový seznam</string>
     <string name="list_hint">např. Oblíbené, Půjčeno Anně</string>
     <string name="rename_list">Přejmenovat seznam</string>
     <string name="delete_list">Smazat seznam</string>
-    <string name="delete_list_confirm">Smazat seznam %s? Knihy zůstanou ve tvé knihovně.</string>
-    <string name="private_note">Zůstává jen ve tvém telefonu</string>
+    <string name="delete_list_confirm">Smazat seznam %s? Knihy zůstanou ve vaší knihovně.</string>
     <string name="lists">Seznamy</string>
     <string name="edit_lists">Upravit seznamy</string>
     <string name="share_list">Sdílet seznam</string>
     <string name="read_of_list">Přečteno: %d</string>
-    <string name="your_book">Tvoje kniha</string>
+    <string name="your_book">Vaše kniha</string>
     <string name="add_started">Přidat datum začátku</string>
     <string name="add_finished">Přidat datum dočtení</string>
     <string name="listen">Poslouchat</string>
@@ -521,7 +510,6 @@
     <string name="pause_item">Pozastavit: %s</string>
     <string name="resume_item">Pokračovat: %s</string>
     <string name="character_voices">Hlasy postav</string>
-    <string name="character_voices_hint">Každá postava mluví vlastním hlasem</string>
     <string name="finding_speakers">Hledám mluvčí…</string>
     <string name="speakers_found">Nalezení mluvčí: %1$d</string>
     <string name="listening">Poslech</string>
@@ -529,7 +517,6 @@
     <string name="narration">Předčítání</string>
     <string name="character_voices_model">Pro použití stáhněte níže rozpoznávání mluvčích</string>
     <string name="system_voices">Systémové hlasy</string>
-    <string name="system_voices_hint">Převod textu na řeč a hlasová data z Androidu</string>
     <string name="quality_standard">Standardní</string>
     <string name="quality_high">Vysoká kvalita</string>
     <string name="other_languages">Další jazyky</string>

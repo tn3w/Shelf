@@ -40,10 +40,7 @@ fun CatalogueSettings() {
     val language = viewModel.bookLanguage(settings)
     val packs = packInfos(language)
 
-    SettingsGroup(
-        stringResource(R.string.catalogue_language),
-        stringResource(R.string.book_language_hint),
-    ) {
+    SettingsGroup(stringResource(R.string.catalogue_language)) {
         LanguageChips(
             listOf("") + LANGUAGES,
             settings.language,

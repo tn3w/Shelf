@@ -7,7 +7,7 @@
     <string name="audience">Vanuserühm</string>
     <string name="back">Tagasi</string>
     <string name="backup">Varukoopia</string>
-    <string name="backup_hint">Salvesta riiulid, edenemine, seadistused ja imporditud raamatufailid zip-faili.</string>
+    <string name="backup_hint">Salvesta riiulid, edenemine, seaded ja imporditud raamatufailid zip-faili.</string>
     <string name="backup_export">Ekspordi faili</string>
     <string name="backup_import">Impordi failist</string>
     <string name="backup_done">Raamatukogu on ühendatud.</string>
@@ -38,7 +38,6 @@
     <string name="explore">Avasta</string>
     <string name="finished">Loetud</string>
     <string name="for_you">Sinule</string>
-    <string name="for_you_subtitle">Sinu raamatukogu põhjal.</string>
     <string name="formats">Raamatutüübid</string>
     <string name="genres">Žanrid</string>
     <string name="goal_reached">Päeva eesmärk on täidetud. Homseni!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Lehekülg %1$d / %2$d</string>
     <string name="percent_read">%d%% loetud</string>
     <string name="popular">Populaarne</string>
-    <string name="popular_subtitle">Lugejate lemmikud kõikjal.</string>
     <string name="privacy">Privaatsus</string>
     <string name="privacy_note">Jälgimist, reklaame, kontosid ega identifikaatoreid pole. Shelf kasutab võrku ainult selleks, mille sisse lülitad või mida puudutad: kataloogipaketid GitHubist või sinu enda allikast, rakenduse uuendused GitHubist, kaanepildid Open Libraryst, DNB-st, DIGARist ja Bookbitesist, autorifotod Open Libraryst. Võrguühenduseta režiim peatab kõik selle. Sinu raamatukogu jääb sellesse seadmesse.</string>
     <string name="reading">Loen</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Uuenda: %s</string>
     <string name="version">Versioon %1$s (%2$s)</string>
     <string name="want_to_read">Tahan lugeda</string>
-    <string name="want_to_read_subtitle">Raamatud, mida tahaksid järgmisena lugeda.</string>
     <string name="welcome">Tere tulemast Shelfi</string>
     <string name="welcome_text">Leia, jälgi ja loe raamatuid võrguühenduseta.</string>
     <plurals name="books">
@@ -173,7 +170,6 @@
     </plurals>
     <string name="because_you_read">Kuna lugesid raamatut %1$s</string>
     <string name="next_in_series">Järgmine sinu sarjades</string>
-    <string name="next_in_series_subtitle">Jätka iga sarjaga sealt, kus pooleli jäi.</string>
     <string name="not_for_me">Pole minu jaoks</string>
     <string name="machine_translated">Masintõlge</string>
     <string name="catalogue_updates">Kataloogi uuendused</string>
@@ -198,17 +194,14 @@
     <string name="your_data_hint">Varukoopia, Goodreads ja StoryGraph.</string>
     <string name="release_date">Väljalase %s</string>
     <string name="language">Keel</string>
-    <string name="book_language_hint">Automaatne järgib rakenduse keelt.</string>
     <string name="packs_language">Paketid · %s</string>
     <string name="language_auto">Automaatne</string>
     <string name="reading_settings">Lugemine</string>
     <string name="reading_hint">Päeva eesmärk, tekst ja lehekeeramine.</string>
-    <string name="settings_footer">Avatud lähtekoodiga MIT-litsentsi all. Sinu raamatukogu jääb sellesse seadmesse.</string>
     <string name="privacy_requests_hint">Päringud kasutavad ainult https-i ega sisalda identifikaatoreid ega küpsiseid.</string>
     <string name="black_theme">Täismust</string>
     <string name="black_theme_hint">Must taust tumedas režiimis. Säästab OLED-ekraanidel energiat.</string>
     <string name="wallpaper_colors">Taustapildi värvid</string>
-    <string name="wallpaper_colors_hint">Toonib rakendust taustapildi värvidega.</string>
     <string name="e_ink">E-tindi režiim</string>
     <string name="e_ink_hint">Must valgel, animatsioonideta, kohene lehepööre, suuremad puutealad.</string>
     <string name="reader">Lugeja</string>
@@ -228,9 +221,7 @@
     <string name="page_paper">Paber</string>
     <string name="page_night">Öö</string>
     <string name="justify">Rööpjoonda tekst</string>
-    <string name="justify_hint">Joonda read mõlema servaga.</string>
     <string name="keep_screen_on">Hoia ekraan sees</string>
-    <string name="keep_screen_on_hint">Ekraan püsib ärkvel, kuni raamat on avatud.</string>
     <string name="volume_keys">Helitugevuse nupud keeravad lehte</string>
     <string name="volume_keys_hint">E-lugerite lehekeeramisnupud töötavad alati.</string>
     <string name="brightness_swipe">Heledus pühkimisega</string>
@@ -317,14 +308,14 @@
     <string name="online_library_servers">Sinu server</string>
     <string name="online_library_free">Vabad raamatukogud</string>
     <string name="online_library_search">Otsi: %s</string>
-    <string name="online_library_offline">Võrguta režiim on sees. Sirvimiseks lülita see välja.</string>
+    <string name="online_library_offline">Võrguühenduseta režiim on sees. Sirvimiseks lülita see välja.</string>
     <string name="sign_in">Logi sisse</string>
     <string name="sign_in_to">Logi sisse: %s</string>
     <string name="sign_in_failed">Vale kasutajanimi või parool.</string>
     <string name="free_books_add">Loo allikas</string>
     <string name="free_books_import">Impordi fail</string>
     <string name="free_books_export">Ekspordi fail</string>
-    <string name="free_books_export_headers">Sisaldab salvestatud päiseid, näiteks küpsiseid või võtmeid</string>
+    <string name="free_books_export_headers">Sisaldab salvestatud päiseid, näiteks küpsiseid või tokeneid</string>
     <string name="free_books_form">Vorm</string>
     <string name="free_books_file">Fail</string>
     <string name="free_books_name">Nimi</string>
@@ -364,7 +355,6 @@
     </plurals>
     <string name="stats">Lugemisstatistika</string>
     <string name="stats_empty">Sel aastal pole veel midagi kirjas. Loetud lehed ja lõpetatud raamatud ilmuvad siia.</string>
-    <string name="stats_private">Arvutatud selles seadmes. Midagi ei lahku sealt, kui sa ei jaga.</string>
     <string name="year_in_books">Aasta raamatutes</string>
     <string name="month_by_month">Kuu kaupa</string>
     <string name="pages_metric">Lehed</string>
@@ -391,22 +381,22 @@
     <string name="wrapped_best_day">Suurim päev: %1$s, %2$s</string>
     <string name="wrapped_month">Sinu parim kuu oli</string>
     <string name="wrapped_genre">Sinu lemmikžanr</string>
-    <string name="wrapped_author">Sa ei suutnud lahti lasta</string>
+    <string name="wrapped_author">Sa ei suutnud käest panna</string>
     <string name="wrapped_days">Sa lugesid</string>
     <string name="wrapped_bookends">Esimesest viimaseni</string>
     <string name="wrapped_first">Esimene</string>
     <string name="wrapped_last">Viimane</string>
     <string name="wrapped_type">Sinu lugejatüüp</string>
-    <string name="type_marathoner">Maratonijooksja</string>
+    <string name="type_marathoner">Maratonilugeja</string>
     <string name="type_marathoner_text">Nädalaid lugemist ilma pausita. Miski ei peata sind.</string>
     <string name="type_explorer">Avastaja</string>
-    <string name="type_explorer_text">Sa uitad igal riiulil, žanrist žanrisse.</string>
+    <string name="type_explorer_text">Sa uitad riiulist riiulisse, žanrist žanrisse.</string>
     <string name="type_devotee">Pühendunu</string>
     <string name="type_devotee_text">Kui autor su võidab, loed sa kõik tema raamatud.</string>
     <string name="type_weekender">Nädalavahetuse lugeja</string>
     <string name="type_weekender_text">Laupäevad ja pühapäevad kuuluvad sinu raamatutele.</string>
     <string name="type_bookworm">Raamatuuss</string>
-    <string name="type_bookworm_text">Ühtlased leheküljed terve aasta. Lugemine on lihtsalt osa sinust.</string>
+    <string name="type_bookworm_text">Lehekülg lehekülje järel, terve aasta. Lugemine on lihtsalt osa sinust.</string>
     <plurals name="wrapped_hours">
         <item quantity="one">See on umbes %d tund lugemist.</item>
         <item quantity="other">See on umbes %d tundi lugemist.</item>
@@ -453,7 +443,6 @@
     <string name="rename_list">Nimeta loend ümber</string>
     <string name="delete_list">Kustuta loend</string>
     <string name="delete_list_confirm">Kas kustutada loend %s? Raamatud jäävad sinu raamatukokku.</string>
-    <string name="private_note">Jääb ainult sinu telefoni</string>
     <string name="lists">Loendid</string>
     <string name="edit_lists">Muuda loendeid</string>
     <string name="share_list">Jaga loendit</string>
@@ -475,7 +464,7 @@
     <string name="sleep_chapter_end">Peatüki lõpp</string>
     <string name="time_left">%s jäänud</string>
     <string name="voice">Hääl</string>
-    <string name="voice_missing">Selle raamatu keele jaoks pole häält installitud.</string>
+    <string name="voice_missing">Selle raamatu keele jaoks pole häält paigaldatud.</string>
     <string name="voice_settings">Hääleseaded</string>
     <string name="add_audiobook">Lisa audioraamat</string>
     <string name="remove_audiobook">Eemalda audioraamat</string>
@@ -491,7 +480,6 @@
     <string name="pause_item">Peata: %s</string>
     <string name="resume_item">Jätka: %s</string>
     <string name="character_voices">Tegelaste hääled</string>
-    <string name="character_voices_hint">Iga tegelane räägib oma häälega</string>
     <string name="finding_speakers">Otsin kõnelejaid…</string>
     <string name="speakers_found">Leitud kõnelejaid: %1$d</string>
     <string name="listening">Kuulamine</string>
@@ -499,7 +487,6 @@
     <string name="narration">Ettelugemine</string>
     <string name="character_voices_model">Selle kasutamiseks laadi allpool alla kõneleja tuvastus</string>
     <string name="system_voices">Süsteemi hääled</string>
-    <string name="system_voices_hint">Androidi kõnesüntees ja häälteandmed</string>
     <string name="quality_standard">Standardne</string>
     <string name="quality_high">Kõrge kvaliteet</string>
     <string name="other_languages">Teised keeled</string>

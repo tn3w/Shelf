@@ -109,7 +109,6 @@ fun HomeScreen(navigator: Navigator) {
                     want,
                     "want",
                     navigator::book,
-                    subtitle = stringResource(R.string.want_to_read_subtitle),
                     onMore = navigator::library,
                 )
             }
@@ -125,7 +124,6 @@ fun HomeScreen(navigator: Navigator) {
                     row.books,
                     row.key,
                     navigator::book,
-                    subtitle = rowSubtitle(row),
                     onDismiss = ::dismiss,
                 )
             }
@@ -249,18 +247,6 @@ private fun rowTitle(row: HomeRow) = when (row.kind) {
         row.sources.firstOrNull()?.let {
             stringResource(R.string.because_you_read, mainTitle(it.title))
         } ?: stringResource(R.string.for_you)
-}
-
-@Composable
-private fun rowSubtitle(row: HomeRow) = when (row.kind) {
-    RowKind.Series -> stringResource(R.string.next_in_series_subtitle)
-
-    RowKind.Popular -> stringResource(R.string.popular_subtitle)
-
-    RowKind.Because ->
-        if (row.sources.isEmpty()) stringResource(R.string.for_you_subtitle) else null
-
-    else -> null
 }
 
 @Composable

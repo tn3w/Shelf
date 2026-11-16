@@ -38,7 +38,6 @@
     <string name="explore">Utforska</string>
     <string name="finished">Läst</string>
     <string name="for_you">För dig</string>
-    <string name="for_you_subtitle">Baserat på ditt bibliotek.</string>
     <string name="formats">Boktyper</string>
     <string name="genres">Genrer</string>
     <string name="goal_reached">Dagens mål är nått. Vi ses i morgon!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Sida %1$d av %2$d</string>
     <string name="percent_read">%d%% läst</string>
     <string name="popular">Populärt</string>
-    <string name="popular_subtitle">Älskade av läsare överallt.</string>
     <string name="privacy">Integritet</string>
     <string name="privacy_note">Ingen spårning, inga annonser, inga konton, inga identifierare. Shelf använder nätverket bara för det du slår på eller trycker på: katalogpaket från GitHub eller din egen källa, appuppdateringar från GitHub, omslag från Open Library, DNB, DIGAR och Bookbites, författarfoton från Open Library. Offlineläget stoppar allt. Ditt bibliotek stannar på enheten.</string>
     <string name="reading">Läser</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Uppdatera %s</string>
     <string name="version">Version %1$s (%2$s)</string>
     <string name="want_to_read">Vill läsa</string>
-    <string name="want_to_read_subtitle">Böcker du vill läsa härnäst.</string>
     <string name="welcome">Välkommen till Shelf</string>
     <string name="welcome_text">Hitta, följ och läs böcker offline.</string>
     <plurals name="books">
@@ -173,7 +170,6 @@
     </plurals>
     <string name="because_you_read">Eftersom du läste %1$s</string>
     <string name="next_in_series">Nästa i dina serier</string>
-    <string name="next_in_series_subtitle">Fortsätt där varje serie slutade.</string>
     <string name="not_for_me">Inte för mig</string>
     <string name="machine_translated">Maskinöversatt</string>
     <string name="catalogue_updates">Kataloguppdateringar</string>
@@ -198,17 +194,14 @@
     <string name="your_data_hint">Säkerhetskopia, Goodreads och StoryGraph.</string>
     <string name="release_date">Utgåva %s</string>
     <string name="language">Språk</string>
-    <string name="book_language_hint">Auto följer appens språk.</string>
     <string name="packs_language">Paket · %s</string>
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Läsning</string>
     <string name="reading_hint">Dagligt mål, text och sidbyten.</string>
-    <string name="settings_footer">Öppen källkod under MIT-licensen. Ditt bibliotek stannar på enheten.</string>
     <string name="privacy_requests_hint">Förfrågningar använder bara https och innehåller inga identifierare eller cookies.</string>
     <string name="black_theme">Helsvart</string>
     <string name="black_theme_hint">Svart bakgrund i mörkt läge. Sparar ström på OLED-skärmar.</string>
-    <string name="wallpaper_colors">Bakgrundsfärger</string>
-    <string name="wallpaper_colors_hint">Färga appen med färger från din bakgrundsbild.</string>
+    <string name="wallpaper_colors">Färger från bakgrundsbilden</string>
     <string name="e_ink">E-bläckläge</string>
     <string name="e_ink_hint">Svart på vitt, inga animationer, direkta sidbyten, större tryckytor.</string>
     <string name="reader">Läsare</string>
@@ -228,9 +221,7 @@
     <string name="page_paper">Papper</string>
     <string name="page_night">Natt</string>
     <string name="justify">Marginaljustera text</string>
-    <string name="justify_hint">Rada upp raderna mot båda kanterna.</string>
     <string name="keep_screen_on">Håll skärmen på</string>
-    <string name="keep_screen_on_hint">Skärmen förblir tänd medan en bok är öppen.</string>
     <string name="volume_keys">Volymknappar bläddrar</string>
     <string name="volume_keys_hint">Bläddringsknappar på läsplattor fungerar alltid.</string>
     <string name="brightness_swipe">Svep för ljusstyrka</string>
@@ -338,7 +329,7 @@
     <string name="free_books_variable_taken">Namnet används redan</string>
     <string name="free_books_step">Steg %d</string>
     <string name="free_books_step_add">Lägg till steg</string>
-    <string name="free_books_headers">Rubriker</string>
+    <string name="free_books_headers">Headers</string>
     <string name="free_books_header_add">Lägg till header</string>
     <string name="free_books_header_value">Värde</string>
     <string name="free_books_languages">Källans språk</string>
@@ -364,7 +355,6 @@
     </plurals>
     <string name="stats">Lässtatistik</string>
     <string name="stats_empty">Inget registrerat i år ännu. Lästa sidor och utlästa böcker visas här.</string>
-    <string name="stats_private">Beräknat på den här enheten. Inget lämnar den om du inte delar.</string>
     <string name="year_in_books">Året i böcker</string>
     <string name="month_by_month">Månad för månad</string>
     <string name="pages_metric">Sidor</string>
@@ -384,8 +374,8 @@
     </plurals>
     <string name="close">Stäng</string>
     <string name="wrapped_banner">Ditt %d i böcker</string>
-    <string name="wrapped_banner_text">Tryck för att återuppleva ditt läsår.</string>
-    <string name="wrapped_intro">Vi blickar tillbaka på ditt läsår.</string>
+    <string name="wrapped_banner_text">Tryck för att återuppleva ditt bokår.</string>
+    <string name="wrapped_intro">Vi blickar tillbaka på ditt bokår.</string>
     <string name="wrapped_books">Du läste ut</string>
     <string name="wrapped_pages">Du vände</string>
     <string name="wrapped_best_day">Största dagen: %1$s, %2$s</string>
@@ -406,7 +396,7 @@
     <string name="type_weekender">Helgläsaren</string>
     <string name="type_weekender_text">Lördagar och söndagar tillhör dina böcker.</string>
     <string name="type_bookworm">Bokmalen</string>
-    <string name="type_bookworm_text">Jämna sidor hela året. Läsning är en del av dig.</string>
+    <string name="type_bookworm_text">Sida efter sida hela året. Läsning är en del av dig.</string>
     <plurals name="wrapped_hours">
         <item quantity="one">Det är ungefär %d timmes läsning.</item>
         <item quantity="other">Det är ungefär %d timmars läsning.</item>
@@ -453,7 +443,6 @@
     <string name="rename_list">Byt namn på listan</string>
     <string name="delete_list">Radera listan</string>
     <string name="delete_list_confirm">Radera listan %s? Böckerna finns kvar i ditt bibliotek.</string>
-    <string name="private_note">Sparas bara på din telefon</string>
     <string name="lists">Listor</string>
     <string name="edit_lists">Redigera listor</string>
     <string name="share_list">Dela listan</string>
@@ -491,15 +480,13 @@
     <string name="pause_item">Pausa %s</string>
     <string name="resume_item">Återuppta %s</string>
     <string name="character_voices">Röster för figurer</string>
-    <string name="character_voices_hint">Varje figur talar med sin egen röst</string>
     <string name="finding_speakers">Letar efter talare…</string>
     <string name="speakers_found">Hittade talare: %1$d</string>
     <string name="listening">Lyssnande</string>
     <string name="listening_hint">Röster, uppläsning och ljudböcker</string>
     <string name="narration">Uppläsning</string>
-    <string name="character_voices_model">Ladda ner talarigenkänning nedan för att använda detta</string>
+    <string name="character_voices_model">Ladda ner talaridentifiering nedan för att använda detta</string>
     <string name="system_voices">Systemröster</string>
-    <string name="system_voices_hint">Androids talsyntes och röstdata</string>
     <string name="quality_standard">Standard</string>
     <string name="quality_high">Hög kvalitet</string>
     <string name="other_languages">Andra språk</string>

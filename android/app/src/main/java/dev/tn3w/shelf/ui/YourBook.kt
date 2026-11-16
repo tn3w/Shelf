@@ -228,10 +228,7 @@ private fun WritingSheet(
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Lock, null, Modifier.size(16.dp), Look.colors.faint)
-            Hint(
-                stringResource(R.string.private_note),
-                Modifier.weight(1f).padding(horizontal = 8.dp),
-            )
+            Spacer(Modifier.weight(1f))
             Pill(stringResource(R.string.done), onClick = ::close)
         }
     }

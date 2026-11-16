@@ -181,7 +181,8 @@ Prefer your own picture? Tap the cover to pick one.
 Čeština · 한국어 · Suomi · 日本語 · Latviešu · Português · Русский · Italiano, with optional
 packs for fantasy, sci-fi, mystery, romance, kids, young adult and non-fiction.
 
-**App:** all catalogue languages; Português in Brazilian and European variants.
+**App:** all catalogue languages plus Nederlands; Português in Brazilian and European
+variants.
 [Help translate](https://hosted.weblate.org/engage/shelf/), no coding needed.
 
 <a href="https://hosted.weblate.org/engage/shelf/"><img src="https://hosted.weblate.org/widget/shelf/multi-auto.svg" alt="Translation status"></a>

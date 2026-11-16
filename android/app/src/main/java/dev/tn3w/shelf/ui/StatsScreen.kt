@@ -90,12 +90,7 @@ fun StatsScreen(navigator: Navigator) {
             item { GenreBars(current.genres) }
         }
         if (current.books.isNotEmpty()) readingLog(current, navigator)
-        item {
-            Hint(
-                stringResource(R.string.stats_private),
-                Modifier.padding(horizontal = ScreenPadding, vertical = 24.dp),
-            )
-        }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 

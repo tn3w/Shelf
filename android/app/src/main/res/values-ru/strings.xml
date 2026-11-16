@@ -23,7 +23,7 @@
     <string name="catalogue_hint">Офлайн-пакеты, обновления и собственные источники.</string>
     <string name="catalogue_language">Язык книг</string>
     <string name="check_updates">Обновления приложения</string>
-    <string name="check_updates_hint">Ежедневно проверяет Github. Новые версии появляются через день после выпуска.</string>
+    <string name="check_updates_hint">Ежедневно проверяет GitHub. Новые версии появляются через день после выпуска.</string>
     <string name="choose_packs">Дополнительные пакеты</string>
     <string name="clear">Очистить</string>
     <string name="contents">Содержание</string>
@@ -38,7 +38,6 @@
     <string name="explore">Обзор</string>
     <string name="finished">Прочитано</string>
     <string name="for_you">Для вас</string>
-    <string name="for_you_subtitle">На основе вашей библиотеки.</string>
     <string name="formats">Типы книг</string>
     <string name="genres">Жанры</string>
     <string name="goal_reached">Цель на день достигнута. До завтра!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Страница %1$d из %2$d</string>
     <string name="percent_read">Прочитано: %d%%</string>
     <string name="popular">Популярное</string>
-    <string name="popular_subtitle">Любимое читателями по всему миру.</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="privacy_note">Никакого отслеживания, рекламы, аккаунтов и идентификаторов. Shelf обращается к сети только для того, что вы включили или нажали: пакеты каталога с GitHub или из вашего источника, обновления приложения с GitHub, обложки из Open Library, DNB, DIGAR и Bookbites, фото авторов из Open Library. Офлайн-режим отключает всё это. Ваша библиотека остаётся на этом устройстве.</string>
     <string name="reading">Читаю</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Обновить %s</string>
     <string name="version">Версия %1$s (%2$s)</string>
     <string name="want_to_read">Хочу прочитать</string>
-    <string name="want_to_read_subtitle">Книги, которые вы хотели бы прочитать следующими.</string>
     <string name="welcome">Добро пожаловать в Shelf</string>
     <string name="welcome_text">Находите, отслеживайте и читайте книги офлайн.</string>
     <plurals name="books">
@@ -191,7 +188,6 @@
     </plurals>
     <string name="because_you_read">Потому что вы прочитали «%1$s»</string>
     <string name="next_in_series">Следующее в ваших сериях</string>
-    <string name="next_in_series_subtitle">Продолжайте с того места, где остановились в каждой серии.</string>
     <string name="not_for_me">Не для меня</string>
     <string name="machine_translated">Машинный перевод</string>
     <string name="catalogue_updates">Обновления каталога</string>
@@ -216,17 +212,14 @@
     <string name="your_data_hint">Резервная копия, Goodreads и StoryGraph.</string>
     <string name="release_date">Выпуск %s</string>
     <string name="language">Язык</string>
-    <string name="book_language_hint">Авто: язык приложения.</string>
     <string name="packs_language">Пакеты · %s</string>
     <string name="language_auto">Авто</string>
     <string name="reading_settings">Чтение</string>
     <string name="reading_hint">Дневная цель, текст и перелистывание.</string>
-    <string name="settings_footer">Открытый исходный код под лицензией MIT. Ваша библиотека остаётся на этом устройстве.</string>
     <string name="privacy_requests_hint">Запросы идут только по https и не содержат идентификаторов и cookie.</string>
     <string name="black_theme">Чисто чёрная</string>
     <string name="black_theme_hint">Чёрный фон в тёмном режиме. Экономит заряд на OLED-экранах.</string>
     <string name="wallpaper_colors">Цвета обоев</string>
-    <string name="wallpaper_colors_hint">Окрашивать приложение в цвета ваших обоев.</string>
     <string name="e_ink">Режим e-ink</string>
     <string name="e_ink_hint">Чёрное на белом, без анимаций, мгновенное перелистывание, крупные элементы управления.</string>
     <string name="reader">Читалка</string>
@@ -246,9 +239,7 @@
     <string name="page_paper">Бумага</string>
     <string name="page_night">Ночь</string>
     <string name="justify">Выравнивание по ширине</string>
-    <string name="justify_hint">Выравнивать строки по обоим краям.</string>
     <string name="keep_screen_on">Не гасить экран</string>
-    <string name="keep_screen_on_hint">Экран не гаснет, пока открыта книга.</string>
     <string name="volume_keys">Листать клавишами громкости</string>
     <string name="volume_keys_hint">Клавиши страниц на электронных книгах работают всегда.</string>
     <string name="brightness_swipe">Яркость свайпом</string>
@@ -337,7 +328,7 @@
     <string name="online_library_servers">Ваш сервер</string>
     <string name="online_library_free">Свободные библиотеки</string>
     <string name="online_library_search">Поиск в %s</string>
-    <string name="online_library_offline">Автономный режим включён. Выключите его, чтобы просматривать.</string>
+    <string name="online_library_offline">Офлайн-режим включён. Выключите его, чтобы просматривать.</string>
     <string name="sign_in">Войти</string>
     <string name="sign_in_to">Войти в %s</string>
     <string name="sign_in_failed">Неверное имя пользователя или пароль.</string>
@@ -386,7 +377,6 @@
     </plurals>
     <string name="stats">Статистика чтения</string>
     <string name="stats_empty">За этот год пока ничего нет. Здесь появятся прочитанные страницы и законченные книги.</string>
-    <string name="stats_private">Считается на этом устройстве. Ничего не покидает его, пока вы не поделитесь.</string>
     <string name="year_in_books">Год в книгах</string>
     <string name="month_by_month">По месяцам</string>
     <string name="pages_metric">Страницы</string>
@@ -395,7 +385,7 @@
     <string name="longest_streak">Самая длинная серия</string>
     <string name="finished_in">Прочитано в %d</string>
     <string name="share">Поделиться</string>
-    <string name="share_recap">Мой %1$d в книгах: %2$s и %3$s, приватно с Shelf.</string>
+    <string name="share_recap">Мой %1$d в книгах: %2$s и %3$s, приватно записано в Shelf.</string>
     <plurals name="pages_count">
         <item quantity="one">%d страница</item>
         <item quantity="few">%d страницы</item>
@@ -432,7 +422,7 @@
     <string name="type_weekender">Читатель выходного дня</string>
     <string name="type_weekender_text">Субботы и воскресенья принадлежат вашим книгам.</string>
     <string name="type_bookworm">Книжный червь</string>
-    <string name="type_bookworm_text">Ровные страницы весь год. Чтение — часть вас.</string>
+    <string name="type_bookworm_text">Страница за страницей весь год. Чтение — часть вас.</string>
     <plurals name="wrapped_hours">
         <item quantity="one">Это около %d часа чтения.</item>
         <item quantity="few">Это около %d часов чтения.</item>
@@ -483,7 +473,6 @@
     <string name="rename_list">Переименовать список</string>
     <string name="delete_list">Удалить список</string>
     <string name="delete_list_confirm">Удалить список %s? Книги останутся в библиотеке.</string>
-    <string name="private_note">Хранится только на вашем телефоне</string>
     <string name="lists">Списки</string>
     <string name="edit_lists">Изменить списки</string>
     <string name="share_list">Поделиться списком</string>
@@ -521,15 +510,13 @@
     <string name="pause_item">Приостановить: %s</string>
     <string name="resume_item">Продолжить: %s</string>
     <string name="character_voices">Голоса персонажей</string>
-    <string name="character_voices_hint">Каждый персонаж говорит своим голосом</string>
     <string name="finding_speakers">Поиск говорящих…</string>
     <string name="speakers_found">Найдено говорящих: %1$d</string>
     <string name="listening">Прослушивание</string>
     <string name="listening_hint">Голоса, чтение вслух и аудиокниги</string>
     <string name="narration">Чтение вслух</string>
-    <string name="character_voices_model">Чтобы использовать, скачайте ниже распознавание говорящих</string>
+    <string name="character_voices_model">Чтобы использовать, скачайте ниже определение говорящих</string>
     <string name="system_voices">Системные голоса</string>
-    <string name="system_voices_hint">Движок синтеза речи и голосовые данные Android</string>
     <string name="quality_standard">Стандартное</string>
     <string name="quality_high">Высокое качество</string>
     <string name="other_languages">Другие языки</string>

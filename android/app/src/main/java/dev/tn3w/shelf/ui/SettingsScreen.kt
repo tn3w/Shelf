@@ -309,9 +309,7 @@ private fun SettingsOverview(navigator: Navigator) {
             }
         }
     }
-    SettingsGroup(
-        stringResource(R.string.about), stringResource(R.string.settings_footer),
-    ) { AboutRows() }
+    SettingsGroup(stringResource(R.string.about)) { AboutRows() }
 }
 
 @Composable
@@ -343,11 +341,9 @@ private fun DisplaySettings(settings: Settings, update: SettingsUpdate) {
         R.string.black_theme, R.string.black_theme_hint, settings.blackTheme,
     ) { on -> update { it.copy(blackTheme = on) } }
     if (wallpaperColorsSupported) {
-        SwitchRow(
-            R.string.wallpaper_colors,
-            R.string.wallpaper_colors_hint,
-            settings.wallpaperColors,
-        ) { on -> update { it.copy(wallpaperColors = on) } }
+        SwitchRow(R.string.wallpaper_colors, null, settings.wallpaperColors) { on ->
+            update { it.copy(wallpaperColors = on) }
+        }
     }
 }
 
@@ -395,14 +391,14 @@ private fun ReadingSettings() {
         OptionChoice(PAGE_COLORS, settings.pageColor, R.string.page_color) { value ->
             update { it.copy(pageColor = value) }
         }
-        SwitchRow(R.string.justify, R.string.justify_hint, settings.justify) { on ->
+        SwitchRow(R.string.justify, null, settings.justify) { on ->
             update { it.copy(justify = on) }
         }
     }
     SettingsGroup {
-        SwitchRow(
-            R.string.keep_screen_on, R.string.keep_screen_on_hint, settings.keepScreenOn,
-        ) { on -> update { it.copy(keepScreenOn = on) } }
+        SwitchRow(R.string.keep_screen_on, null, settings.keepScreenOn) { on ->
+            update { it.copy(keepScreenOn = on) }
+        }
         SwitchRow(
             R.string.volume_keys, R.string.volume_keys_hint, settings.volumeKeys,
         ) { on -> update { it.copy(volumeKeys = on) } }
@@ -421,18 +417,16 @@ private fun ListeningSettings() {
     val installed by viewModel.models.installed.collectAsStateWithLifecycle()
     val detects = remember(installed) { viewModel.models.installed("speaker") != null }
     SettingsGroup(stringResource(R.string.narration)) {
-        val model = R.string.character_voices_model
         SwitchRow(
             R.string.character_voices,
-            if (detects) R.string.character_voices_hint else model,
+            R.string.character_voices_model.takeUnless { detects },
             settings.characterVoices && detects,
             enabled = detects,
             onChange = viewModel::setCharacterVoices,
         )
-        LinkRow(
-            stringResource(R.string.system_voices),
-            stringResource(R.string.system_voices_hint),
-        ) { runCatching { context.startActivity(Intent(TTS_SETTINGS)) } }
+        LinkRow(stringResource(R.string.system_voices)) {
+            runCatching { context.startActivity(Intent(TTS_SETTINGS)) }
+        }
     }
     VoiceModels(settings.isOffline(context), viewModel.bookLanguage(settings))
 }
@@ -643,13 +637,13 @@ fun ActionRow(
 @Composable
 fun SwitchRow(
     @StringRes title: Int,
-    @StringRes hint: Int,
+    @StringRes hint: Int?,
     checked: Boolean,
     enabled: Boolean = true,
     onChange: (Boolean) -> Unit,
 ) = SettingRow(
     stringResource(title),
-    stringResource(hint),
+    hint?.let { stringResource(it) },
     enabled = enabled,
     onClick = { onChange(!checked) },
 ) { Toggle(checked, onChange, enabled) }

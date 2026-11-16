@@ -38,7 +38,6 @@
     <string name="explore">둘러보기</string>
     <string name="finished">다 읽음</string>
     <string name="for_you">추천</string>
-    <string name="for_you_subtitle">내 서재를 바탕으로.</string>
     <string name="formats">책 종류</string>
     <string name="genres">장르 목록</string>
     <string name="goal_reached">오늘 목표 달성. 내일 또 만나요!</string>
@@ -56,10 +55,10 @@
     <string name="no_results">결과가 없습니다.</string>
     <string name="online_covers">표지 불러오기</string>
     <string name="cover_proxy">빠른 표지</string>
-    <string name="cover_proxy_hint">표지와 저자 사진을 Shelf 표지 프록시에서 작은 AVIF 이미지로 가져옵니다. 프록시에 연결할 수 없으면 원본 출처를 사용합니다.</string>
+    <string name="cover_proxy_hint">표지와 작가 사진을 Shelf 표지 프록시에서 작은 AVIF 이미지로 가져옵니다. 프록시에 연결할 수 없으면 원본 출처를 사용합니다.</string>
     <string name="cover_proxy_url">표지 프록시</string>
     <string name="cover_proxy_url_hint">Shelf 이미지 프록시가 실행 중인 서버의 HTTPS 주소입니다. 기본 주소를 쓰려면 비워 두세요.</string>
-    <string name="online_covers_hint">Open Library, DNB, DIGAR, Bookbites에서 표지 이미지를, Open Library에서 저자 사진을 가져옵니다.</string>
+    <string name="online_covers_hint">Open Library, DNB, DIGAR, Bookbites에서 표지 이미지를, Open Library에서 작가 사진을 가져옵니다.</string>
     <string name="open_failed">이 파일을 열 수 없습니다.</string>
     <string name="page_failed">이 페이지를 표시할 수 없습니다.</string>
     <string name="open_library_license">Open Library 데이터 라이선스</string>
@@ -90,7 +89,6 @@
     <string name="page_of">%2$d쪽 중 %1$d쪽</string>
     <string name="percent_read">%d%% 읽음</string>
     <string name="popular">인기</string>
-    <string name="popular_subtitle">전 세계 독자들이 사랑하는 책.</string>
     <string name="privacy">개인정보</string>
     <string name="privacy_note">추적, 광고, 계정, 식별자가 없습니다. Shelf는 사용자가 켜거나 누른 기능에만 네트워크를 사용합니다: GitHub 또는 직접 지정한 소스의 카탈로그 팩, GitHub의 앱 업데이트, Open Library·DNB·DIGAR·Bookbites의 표지, Open Library의 작가 사진. 오프라인 모드는 이 모든 것을 멈춥니다. 서재는 이 기기에 남습니다.</string>
     <string name="reading">읽는 중</string>
@@ -128,11 +126,10 @@
     <string name="update_install_failed">업데이트에 실패했습니다. %s</string>
     <string name="update_changed">이 릴리스가 변경되었거나 철회되어 설치하지 않았습니다.</string>
     <string name="update_waiting">%1$s, %2$s 준비</string>
-    <string name="update_wait_note">%s 게시. Shelf는 출시 하루 뒤에 업데이트를 제공하므로 손상된 릴리스를 먼저 발견하고 철회할 수 있습니다.</string>
+    <string name="update_wait_note">%s 게시. Shelf는 출시 하루 뒤에 업데이트를 제공하므로 변조된 릴리스를 먼저 발견하고 철회할 수 있습니다.</string>
     <string name="update_pack">%s 업데이트</string>
     <string name="version">버전 %1$s (%2$s)</string>
     <string name="want_to_read">읽고 싶은 책</string>
-    <string name="want_to_read_subtitle">다음에 읽고 싶은 책.</string>
     <string name="welcome">Shelf에 오신 것을 환영합니다</string>
     <string name="welcome_text">오프라인에서 책을 찾고, 기록하고, 읽으세요.</string>
     <plurals name="books">
@@ -164,7 +161,6 @@
     </plurals>
     <string name="because_you_read">%1$s을(를) 읽으셨기 때문에</string>
     <string name="next_in_series">내 시리즈의 다음 책</string>
-    <string name="next_in_series_subtitle">각 시리즈를 멈춘 곳에서 이어 읽으세요.</string>
     <string name="not_for_me">관심 없음</string>
     <string name="machine_translated">기계 번역</string>
     <string name="catalogue_updates">카탈로그 업데이트</string>
@@ -189,17 +185,14 @@
     <string name="your_data_hint">백업, Goodreads, StoryGraph.</string>
     <string name="release_date">릴리스 %s</string>
     <string name="language">언어</string>
-    <string name="book_language_hint">자동은 앱 언어를 따릅니다.</string>
     <string name="packs_language">팩 · %s</string>
     <string name="language_auto">자동</string>
     <string name="reading_settings">읽기</string>
     <string name="reading_hint">하루 목표, 글자, 페이지 넘기기.</string>
-    <string name="settings_footer">MIT 라이선스의 오픈 소스. 서재는 이 기기에 남습니다.</string>
     <string name="privacy_requests_hint">요청은 https만 사용하며 식별자나 쿠키를 포함하지 않습니다.</string>
     <string name="black_theme">완전한 검정</string>
     <string name="black_theme_hint">어두운 모드에서 검은 배경. OLED 화면에서 전력을 아낍니다.</string>
     <string name="wallpaper_colors">배경화면 색상</string>
-    <string name="wallpaper_colors_hint">배경화면의 색으로 앱을 꾸밉니다.</string>
     <string name="e_ink">전자잉크 모드</string>
     <string name="e_ink_hint">흰 바탕에 검은 글자, 애니메이션 없음, 즉시 페이지 넘김, 더 큰 터치 영역.</string>
     <string name="reader">리더</string>
@@ -219,9 +212,7 @@
     <string name="page_paper">종이</string>
     <string name="page_night">야간</string>
     <string name="justify">양쪽 정렬</string>
-    <string name="justify_hint">줄을 양쪽 가장자리에 맞춥니다.</string>
     <string name="keep_screen_on">화면 켜짐 유지</string>
-    <string name="keep_screen_on_hint">책을 여는 동안 화면이 꺼지지 않습니다.</string>
     <string name="volume_keys">볼륨 버튼으로 페이지 넘기기</string>
     <string name="volume_keys_hint">전자책 리더의 페이지 버튼은 항상 작동합니다.</string>
     <string name="brightness_swipe">밝기 스와이프</string>
@@ -353,7 +344,6 @@
     </plurals>
     <string name="stats">독서 통계</string>
     <string name="stats_empty">이 해의 기록이 아직 없습니다. 읽은 페이지와 다 읽은 책이 여기에 표시됩니다.</string>
-    <string name="stats_private">이 기기에서 계산됩니다. 공유하지 않으면 외부로 나가지 않습니다.</string>
     <string name="year_in_books">책으로 본 한 해</string>
     <string name="month_by_month">월별</string>
     <string name="pages_metric">페이지</string>
@@ -364,7 +354,7 @@
     <string name="share">공유</string>
     <string name="share_recap">나의 %1$d년 독서: %2$s, %3$s. Shelf로 비공개 기록.</string>
     <plurals name="pages_count">
-        <item quantity="other">%d페이지</item>
+        <item quantity="other">%d쪽</item>
     </plurals>
     <plurals name="days_count">
         <item quantity="other">%d일</item>
@@ -418,7 +408,7 @@
     <string name="notes_markdown">Markdown 내보내기</string>
     <string name="notes_readwise">Readwise용 CSV 내보내기</string>
     <string name="highlight_removed">하이라이트를 삭제했습니다</string>
-    <string name="undo">실행취소</string>
+    <string name="undo">실행 취소</string>
     <plurals name="highlights">
         <item quantity="other">하이라이트 %d개</item>
     </plurals>
@@ -438,7 +428,6 @@
     <string name="rename_list">목록 이름 바꾸기</string>
     <string name="delete_list">목록 삭제</string>
     <string name="delete_list_confirm">%s 목록을 삭제할까요? 책은 서재에 그대로 남아요.</string>
-    <string name="private_note">내 휴대폰에만 저장돼요</string>
     <string name="lists">목록</string>
     <string name="edit_lists">목록 편집</string>
     <string name="share_list">목록 공유</string>
@@ -473,10 +462,9 @@
     <string name="not_enough_space">저장 공간이 부족합니다.</string>
     <string name="listen_failed">음성 엔진을 사용할 수 없음</string>
     <string name="no_text">이 책에는 읽을 수 있는 텍스트가 없습니다</string>
-    <string name="pause_item">%s 일시 중지</string>
+    <string name="pause_item">%s 일시정지</string>
     <string name="resume_item">%s 재개</string>
     <string name="character_voices">등장인물 목소리</string>
-    <string name="character_voices_hint">등장인물마다 다른 목소리로 읽습니다</string>
     <string name="finding_speakers">화자를 찾는 중…</string>
     <string name="speakers_found">찾은 화자: %1$d</string>
     <string name="listening">듣기</string>
@@ -484,7 +472,6 @@
     <string name="narration">읽어주기</string>
     <string name="character_voices_model">사용하려면 아래에서 화자 인식을 다운로드하세요</string>
     <string name="system_voices">시스템 음성</string>
-    <string name="system_voices_hint">Android의 텍스트 음성 변환 엔진과 음성 데이터</string>
     <string name="quality_standard">표준</string>
     <string name="quality_high">고품질</string>
     <string name="other_languages">다른 언어</string>

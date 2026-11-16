@@ -18,7 +18,7 @@ import java.security.MessageDigest
 
 val LANGUAGES =
     listOf("en", "de", "fr", "es", "et", "sv", "pl", "cs", "ko", "fi", "ja", "lv")
-val APP_LANGUAGES = LANGUAGES + listOf("ru", "pt", "it")
+val APP_LANGUAGES = LANGUAGES + listOf("ru", "pt", "it", "nl")
 private val REGIONS = mapOf("pt" to listOf("pt-PT"))
 val APP_LOCALES = APP_LANGUAGES.flatMap { listOf(it) + REGIONS[it].orEmpty() }
 val MAIN_LANGUAGES = listOf("en", "de", "fr", "es")

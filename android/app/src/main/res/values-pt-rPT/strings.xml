@@ -36,13 +36,10 @@
     <string name="trending">Em destaque</string>
     <string name="unsupported_file">Ficheiro não suportado. Tente EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT ou HTML.</string>
     <string name="update_wait_note">Publicada %s. O Shelf oferece atualizações um dia após o lançamento, para que uma versão comprometida possa ser detetada e retirada antes.</string>
-    <string name="welcome">Bem-vindo ao Shelf</string>
+    <string name="welcome">Boas-vindas ao Shelf</string>
     <string name="catalogue_check_failed">Não foi possível aceder à fonte do catálogo.</string>
-    <string name="book_language_hint">Auto segue o idioma da app.</string>
     <string name="black_theme_hint">Fundo preto no modo escuro. Poupa bateria em ecrãs OLED.</string>
-    <string name="wallpaper_colors_hint">Colore a app com as cores do seu papel de parede.</string>
     <string name="keep_screen_on">Manter ecrã ligado</string>
-    <string name="keep_screen_on_hint">O ecrã fica aceso enquanto um livro está aberto.</string>
     <string name="reader_hint">As opções de texto valem para EPUB, FB2, TXT e HTML. PDF e banda desenhada mantêm o próprio layout.</string>
     <string name="download_all_short">Transferir tudo</string>
     <string name="csv_progress">A procurar livros… %d%%</string>
@@ -73,7 +70,7 @@
     <string name="transfers">Transferências e importações</string>
     <string name="transfer_running">A concluir transferência ou importação</string>
     <string name="free_books_retry">Tentar novamente</string>
-    <string name="free_books_own_hint">Qualquer site, servidor local ou API, descrito como dados: pesquisar, extrair, mais requisições, transferir. Nenhum script é executado. Fica guardado só neste dispositivo; ficheiros exportados incluem cabeçalhos como chaves de API.</string>
+    <string name="free_books_own_hint">Qualquer site, servidor local ou API, descrito como dados: pesquisar, extrair, mais pedidos, transferir. Nenhum script é executado. Fica guardado só neste dispositivo; ficheiros exportados incluem cabeçalhos como chaves de API.</string>
     <string name="online_libraries_hint">Explore o seu próprio servidor ou uma biblioteca gratuita e transfira livros diretamente para o Shelf. Funciona com qualquer catálogo OPDS. Os logins ficam neste dispositivo.</string>
     <string name="online_library_username">Utilizador ou e-mail</string>
     <string name="online_library_password">Palavra-passe</string>
@@ -87,7 +84,6 @@
     <string name="free_books_form_help">{name} insere uma variável codificada para URL, {+name} sem alteração. A pesquisa conhece {query}, {title}, {author}, {titleWords}, {surname}, {language}, {language3}, {languageName}, {isbn} e {isbns}; cada regra adiciona o próprio nome. Uma pesquisa com {isbn} tenta os ISBNs do livro um a um e mantém todos os resultados. As regras aplicam CSS, depois caminho JSON, depois atributo, depois regex (primeiro grupo); páginas XML são lidas como XML. Regras chamadas size (bytes) e format descrevem o ficheiro, skip descarta o item. Links relativos são resolvidos a partir da página anterior.</string>
     <string name="free_books_test_hint">Pesquisa, executa todas as etapas para o primeiro item e abre o ficheiro sem transferi-lo. O teste de depuração também regista cabeçalhos, páginas e todos os itens e guarda o registo; os valores dos cabeçalhos ficam ocultos, verifique os URLs antes de partilhar.</string>
     <string name="stats_empty">Nada registado este ano ainda. As páginas lidas e os livros terminados aparecem aqui.</string>
-    <string name="stats_private">Calculado neste dispositivo. Nada sai dele a menos que partilhe.</string>
     <string name="share">Partilhar</string>
     <string name="share_recap">O meu %1$d em livros: %2$s e %3$s, registado com privacidade no Shelf.</string>
     <string name="wrapped_genre">O seu género favorito</string>
@@ -99,14 +95,12 @@
     <string name="save_readwise">Guardar CSV para o Readwise</string>
     <string name="delete_list">Eliminar lista</string>
     <string name="delete_list_confirm">Eliminar a lista %s? Os livros continuam na sua biblioteca.</string>
-    <string name="private_note">Fica só no seu telemóvel</string>
     <string name="share_list">Partilhar lista</string>
     <string name="for_you">Para si</string>
     <string name="similar">Também pode gostar</string>
-    <string name="want_to_read_subtitle">Livros que quer ler em breve.</string>
     <string name="because_you_read_author">Porque lê %1$s</string>
     <string name="because_you_read">Porque leu %1$s</string>
-    <string name="review_hint">O que achou? Só você verá isto.</string>
+    <string name="review_hint">O que achou? Mais ninguém verá isto.</string>
     <string name="note_hint">Em que é que este excerto o faz pensar?</string>
     <string name="book_notes_hint">Notas privadas, como a quem o emprestou</string>
     <string name="wrapped_books">Terminou</string>
@@ -127,7 +121,7 @@
     <string name="auto_backup">Cópia de segurança automática</string>
     <string name="auto_backup_folder">Pasta das cópias de segurança</string>
     <string name="auto_backup_off">Desativada</string>
-    <string name="born">Nascido em %d</string>
+    <string name="born">Nascimento: %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Pacotes offline, atualizações e fontes próprias.</string>
     <string name="catalogue_language">Idioma dos livros</string>
@@ -142,7 +136,6 @@
     <string name="download_all">Tudo (%s)</string>
     <string name="explore">Explorar</string>
     <string name="finished">Lidos</string>
-    <string name="for_you_subtitle">Com base na sua biblioteca.</string>
     <string name="formats">Tipos de livro</string>
     <string name="goal_reached">Objetivo diário alcançado. Até amanhã!</string>
     <string name="home">Início</string>
@@ -185,7 +178,6 @@
     <string name="page_of">Página %1$d de %2$d</string>
     <string name="percent_read">%d%% lido</string>
     <string name="popular">Populares</string>
-    <string name="popular_subtitle">Adorados por leitores de todo o mundo.</string>
     <string name="privacy">Privacidade</string>
     <string name="remove_bookmark">Remover marcador</string>
     <string name="remove_pack">Remover %s</string>
@@ -268,7 +260,6 @@
         <item quantity="other">Leia %d páginas para iniciar uma sequência.</item>
     </plurals>
     <string name="next_in_series">Seguintes nas suas séries</string>
-    <string name="next_in_series_subtitle">Continue de onde ficou em cada série.</string>
     <string name="not_for_me">Não é para mim</string>
     <string name="machine_translated">Tradução automática</string>
     <string name="catalogue_updates">Atualizações do catálogo</string>
@@ -296,7 +287,6 @@
     <string name="language_auto">Auto</string>
     <string name="reading_settings">Leitura</string>
     <string name="reading_hint">Objetivo diário, texto e mudança de página.</string>
-    <string name="settings_footer">Código aberto sob a licença MIT. A sua biblioteca fica neste dispositivo.</string>
     <string name="privacy_requests_hint">Os pedidos usam apenas https e não levam identificadores nem cookies.</string>
     <string name="black_theme">Preto puro</string>
     <string name="wallpaper_colors">Cores do papel de parede</string>
@@ -319,7 +309,6 @@
     <string name="page_paper">Papel</string>
     <string name="page_night">Noite</string>
     <string name="justify">Justificar texto</string>
-    <string name="justify_hint">Alinha as linhas pelas duas margens.</string>
     <string name="volume_keys">Teclas de volume mudam de página</string>
     <string name="volume_keys_hint">As teclas de página dos leitores de e-books funcionam sempre.</string>
     <string name="brightness_swipe">Deslizar para ajustar o brilho</string>
@@ -328,7 +317,7 @@
     <string name="reader_sample">Alice estava a começar a ficar muito cansada de estar sentada ao lado da irmã na margem do rio, sem ter nada que fazer: uma ou duas vezes tinha espreitado o livro que a irmã estava a ler, mas não tinha imagens nem diálogos. “E de que serve um livro”, pensou Alice, “sem imagens nem diálogos?”</string>
     <string name="offline_forced">Sem permissão de rede, o Shelf fica offline.</string>
     <string name="offline_mode">Modo offline</string>
-    <string name="offline_mode_hint">Sem acesso à rede: sem atualizações, sem catálogo, sem imagens.</string>
+    <string name="offline_mode_hint">Sem acesso à rede: sem atualizações, sem atualização do catálogo, sem imagens.</string>
     <string name="start_offline">Continuar offline</string>
     <string name="import_book">Importar livro</string>
     <string name="own_book">Adicionar livro próprio</string>
@@ -341,7 +330,7 @@
     <string name="remove">Remover</string>
     <string name="cancel">Cancelar</string>
     <string name="catalogue_source">Fonte do catálogo</string>
-    <string name="scan_hint">Mostre uma capa ou um código de barras e toque</string>
+    <string name="scan_hint">Mostre uma capa ou um código de barras e toque para capturar</string>
     <string name="sort">Ordenar</string>
     <string name="sort_added">Adicionados recentemente</string>
     <string name="sort_rating">A minha avaliação</string>
@@ -460,7 +449,7 @@
     </plurals>
     <string name="rate_stars">%d de 5 estrelas</string>
     <string name="started_on">Iniciado</string>
-    <string name="finished_on">Fim</string>
+    <string name="finished_on">Terminado</string>
     <string name="read_in">Lido em %s</string>
     <string name="average_rating">Média %s</string>
     <string name="review">Crítica</string>
@@ -488,7 +477,7 @@
     <string name="sleep_off">Desligado</string>
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Fim do capítulo</string>
-    <string name="time_left">%s restantes</string>
+    <string name="time_left">Faltam %s</string>
     <string name="voice">Voz</string>
     <string name="voice_missing">Não está instalada nenhuma voz para o idioma deste livro.</string>
     <string name="voice_settings">Definições de voz</string>
@@ -497,9 +486,8 @@
     <string name="listening">Audição</string>
     <string name="listening_hint">Vozes, leitura em voz alta e audiolivros</string>
     <string name="narration">Narração</string>
-    <string name="character_voices_model">Transfira a deteção de oradores abaixo para usar isto</string>
+    <string name="character_voices_model">Transfira abaixo a deteção de falantes para usar isto</string>
     <string name="system_voices">Vozes do sistema</string>
-    <string name="system_voices_hint">Motor de conversão de texto em voz e dados de voz do Android</string>
     <string name="quality_standard">Padrão</string>
     <string name="quality_high">Alta qualidade</string>
     <string name="other_languages">Outros idiomas</string>
@@ -510,13 +498,12 @@
     <string name="fast_forward">Avançar 10 segundos</string>
     <string name="no_audio">Nenhum áudio reproduzível encontrado.</string>
     <string name="voice_models">Modelos de voz</string>
-    <string name="voice_models_hint">Transferências opcionais para vozes naturais e deteção de quem fala. Cada ficheiro é verificado com SHA-256 antes de ser usado.</string>
-    <string name="model_speaker">Deteção de quem fala</string>
+    <string name="voice_models_hint">Transferências opcionais para vozes naturais e deteção de falantes. Cada ficheiro é verificado com SHA-256 antes de ser usado.</string>
+    <string name="model_speaker">Deteção de falantes</string>
     <string name="not_enough_space">Espaço de armazenamento insuficiente.</string>
     <string name="pause_item">Pausar %s</string>
     <string name="resume_item">Retomar %s</string>
     <string name="character_voices">Vozes das personagens</string>
-    <string name="character_voices_hint">Cada personagem fala com a sua própria voz</string>
     <string name="finding_speakers">A procurar falantes…</string>
     <string name="speakers_found">Falantes encontrados: %1$d</string>
 </resources>

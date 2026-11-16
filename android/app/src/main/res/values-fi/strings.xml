@@ -38,7 +38,6 @@
     <string name="explore">Tutki</string>
     <string name="finished">Luettu</string>
     <string name="for_you">Sinulle</string>
-    <string name="for_you_subtitle">Kirjastosi perusteella.</string>
     <string name="formats">Kirjatyypit</string>
     <string name="genres">Lajityypit</string>
     <string name="goal_reached">Päivätavoite saavutettu. Nähdään huomenna!</string>
@@ -90,7 +89,6 @@
     <string name="page_of">Sivu %1$d/%2$d</string>
     <string name="percent_read">%d %% luettu</string>
     <string name="popular">Suositut</string>
-    <string name="popular_subtitle">Lukijoiden suosikit kaikkialla.</string>
     <string name="privacy">Yksityisyys</string>
     <string name="privacy_note">Ei seurantaa, mainoksia, tilejä eikä tunnisteita. Shelf käyttää verkkoa vain siihen, minkä kytket päälle tai napautat: luettelopaketit GitHubista tai omasta lähteestäsi, sovelluspäivitykset GitHubista, kannet Open Librarysta, DNB:stä, DIGARista ja Bookbitesista, kirjailijakuvat Open Librarysta. Offline-tila pysäyttää kaiken. Kirjastosi pysyy tällä laitteella.</string>
     <string name="reading">Luen</string>
@@ -132,7 +130,6 @@
     <string name="update_pack">Päivitä %s</string>
     <string name="version">Versio %1$s (%2$s)</string>
     <string name="want_to_read">Haluan lukea</string>
-    <string name="want_to_read_subtitle">Kirjat, jotka haluat lukea seuraavaksi.</string>
     <string name="welcome">Tervetuloa Shelfiin</string>
     <string name="welcome_text">Löydä, seuraa ja lue kirjoja ilman verkkoa.</string>
     <plurals name="books">
@@ -173,7 +170,6 @@
     </plurals>
     <string name="because_you_read">Koska luit teoksen %1$s</string>
     <string name="next_in_series">Seuraavaksi sarjoissasi</string>
-    <string name="next_in_series_subtitle">Jatka jokaista sarjaa siitä, mihin jäit.</string>
     <string name="not_for_me">Ei minulle</string>
     <string name="machine_translated">Konekäännetty</string>
     <string name="catalogue_updates">Luettelopäivitykset</string>
@@ -198,17 +194,14 @@
     <string name="your_data_hint">Varmuuskopio, Goodreads ja StoryGraph.</string>
     <string name="release_date">Julkaisu %s</string>
     <string name="language">Kieli</string>
-    <string name="book_language_hint">Automaattinen seuraa sovelluksen kieltä.</string>
     <string name="packs_language">Paketit · %s</string>
     <string name="language_auto">Automaattinen</string>
     <string name="reading_settings">Lukeminen</string>
     <string name="reading_hint">Päivätavoite, teksti ja sivunkääntö.</string>
-    <string name="settings_footer">Avointa lähdekoodia MIT-lisenssillä. Kirjastosi pysyy tällä laitteella.</string>
     <string name="privacy_requests_hint">Pyynnöt käyttävät vain https:ää eivätkä sisällä tunnisteita tai evästeitä.</string>
     <string name="black_theme">Täysmusta</string>
     <string name="black_theme_hint">Musta tausta tummassa tilassa. Säästää virtaa OLED-näytöillä.</string>
     <string name="wallpaper_colors">Taustakuvan värit</string>
-    <string name="wallpaper_colors_hint">Sävytä sovellus taustakuvasi väreillä.</string>
     <string name="e_ink">E-mustetila</string>
     <string name="e_ink_hint">Musta valkoisella, ei animaatioita, välitön sivunkääntö, suuremmat kosketusalueet.</string>
     <string name="reader">Lukija</string>
@@ -228,9 +221,7 @@
     <string name="page_paper">Paperi</string>
     <string name="page_night">Yö</string>
     <string name="justify">Tasaa teksti</string>
-    <string name="justify_hint">Tasaa rivit molempiin reunoihin.</string>
     <string name="keep_screen_on">Pidä näyttö päällä</string>
-    <string name="keep_screen_on_hint">Näyttö pysyy päällä, kun kirja on auki.</string>
     <string name="volume_keys">Äänenvoimakkuusnäppäimet kääntävät sivua</string>
     <string name="volume_keys_hint">Lukulaitteiden sivunkääntönäppäimet toimivat aina.</string>
     <string name="brightness_swipe">Kirkkaus pyyhkäisemällä</string>
@@ -363,8 +354,7 @@
         <item quantity="other">%d osumaa</item>
     </plurals>
     <string name="stats">Lukutilastot</string>
-    <string name="stats_empty">Tälle vuodelle ei ole vielä mitään. Luetut sivut ja luetut kirjat näkyvät tässä.</string>
-    <string name="stats_private">Laskettu tällä laitteella. Mitään ei lähde laitteelta, ellet jaa sitä.</string>
+    <string name="stats_empty">Tälle vuodelle ei ole vielä mitään. Luetut sivut ja loppuun luetut kirjat näkyvät tässä.</string>
     <string name="year_in_books">Vuosi kirjoina</string>
     <string name="month_by_month">Kuukausittain</string>
     <string name="pages_metric">Sivut</string>
@@ -384,8 +374,8 @@
     </plurals>
     <string name="close">Sulje</string>
     <string name="wrapped_banner">Sinun %d kirjoina</string>
-    <string name="wrapped_banner_text">Napauta ja elä lukuvuotesi uudelleen.</string>
-    <string name="wrapped_intro">Katsotaan taaksepäin lukuvuoteesi.</string>
+    <string name="wrapped_banner_text">Napauta ja elä lukemisvuotesi uudelleen.</string>
+    <string name="wrapped_intro">Muistellaan lukemisvuottasi.</string>
     <string name="wrapped_books">Luit loppuun</string>
     <string name="wrapped_pages">Käänsit</string>
     <string name="wrapped_best_day">Suurin päivä: %1$s, %2$s</string>
@@ -426,11 +416,11 @@
     <string name="export_notes">Vie muistiinpanot</string>
     <string name="share_markdown">Jaa Markdownina</string>
     <string name="save_markdown">Tallenna Markdownina</string>
-    <string name="save_readwise">Tallenna CSV Readwiseen</string>
+    <string name="save_readwise">Tallenna CSV Readwiseä varten</string>
     <string name="notes_exported">Muistiinpanot viety.</string>
     <string name="notes_hint">Kaikki kirjojesi korostukset ja muistiinpanot Markdownina tai Readwiseen tuotavana CSV:nä.</string>
     <string name="notes_markdown">Vie Markdown</string>
-    <string name="notes_readwise">Vie CSV Readwiseen</string>
+    <string name="notes_readwise">Vie CSV Readwiseä varten</string>
     <string name="highlight_removed">Korostus poistettu</string>
     <string name="undo">Kumoa</string>
     <plurals name="highlights">
@@ -453,7 +443,6 @@
     <string name="rename_list">Nimeä lista uudelleen</string>
     <string name="delete_list">Poista lista</string>
     <string name="delete_list_confirm">Poistetaanko lista %s? Sen kirjat jäävät kirjastoosi.</string>
-    <string name="private_note">Säilyy vain puhelimessasi</string>
     <string name="lists">Listat</string>
     <string name="edit_lists">Muokkaa listoja</string>
     <string name="share_list">Jaa lista</string>
@@ -476,13 +465,13 @@
     <string name="time_left">%s jäljellä</string>
     <string name="voice">Ääni</string>
     <string name="voice_missing">Tämän kirjan kielelle ei ole asennettu ääntä.</string>
-    <string name="voice_settings">Ääniasetukset</string>
+    <string name="voice_settings">Puheäänen asetukset</string>
     <string name="add_audiobook">Lisää äänikirja</string>
     <string name="remove_audiobook">Poista äänikirja</string>
     <string name="rewind">10 sekuntia taaksepäin</string>
     <string name="fast_forward">10 sekuntia eteenpäin</string>
     <string name="no_audio">Toistettavaa ääntä ei löytynyt.</string>
-    <string name="voice_models">Äänimallit</string>
+    <string name="voice_models">Puheäänimallit</string>
     <string name="voice_models_hint">Valinnaisia latauksia luonnollisille äänille ja puhujan tunnistukselle. Jokainen tiedosto tarkistetaan SHA-256:lla ennen käyttöä.</string>
     <string name="model_speaker">Puhujan tunnistus</string>
     <string name="not_enough_space">Tallennustilaa ei ole tarpeeksi.</string>
@@ -491,7 +480,6 @@
     <string name="pause_item">Keskeytä: %s</string>
     <string name="resume_item">Jatka: %s</string>
     <string name="character_voices">Hahmojen äänet</string>
-    <string name="character_voices_hint">Jokainen hahmo puhuu omalla äänellään</string>
     <string name="finding_speakers">Etsitään puhujia…</string>
     <string name="speakers_found">Puhujia löydetty: %1$d</string>
     <string name="listening">Kuuntelu</string>
@@ -499,9 +487,8 @@
     <string name="narration">Ääneenluku</string>
     <string name="character_voices_model">Lataa puhujantunnistus alta käyttääksesi tätä</string>
     <string name="system_voices">Järjestelmän äänet</string>
-    <string name="system_voices_hint">Androidin puhesynteesi ja äänidata</string>
     <string name="quality_standard">Tavallinen</string>
     <string name="quality_high">Korkea laatu</string>
     <string name="other_languages">Muut kielet</string>
-    <string name="found_in_catalogue">Löytyi katalogista</string>
+    <string name="found_in_catalogue">Löytyi luettelosta</string>
 </resources>

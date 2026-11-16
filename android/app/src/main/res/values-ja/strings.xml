@@ -39,7 +39,6 @@
     <string name="explore">探す</string>
     <string name="finished">読了</string>
     <string name="for_you">あなたへのおすすめ</string>
-    <string name="for_you_subtitle">あなたのライブラリに基づいています。</string>
     <string name="formats">本の種類</string>
     <string name="genres">ジャンル一覧</string>
     <string name="goal_reached">今日の目標を達成しました。また明日！</string>
@@ -93,7 +92,6 @@
     <string name="page_of">%2$d ページ中 %1$d ページ</string>
     <string name="percent_read">%d%% 読了</string>
     <string name="popular">人気</string>
-    <string name="popular_subtitle">世界中の読者に愛されている本。</string>
     <string name="privacy">プライバシー</string>
     <string name="privacy_note">トラッキングなし、広告なし、アカウントなし、識別子なし。Shelf がネットワークに接続するのは、あなたがオンにしたりタップしたりしたときだけです: GitHub または独自ソースからのカタログパック、GitHub からのアプリ更新、Open Library、DNB、DIGAR、Bookbites からの表紙、Open Library からの著者の写真。オフラインモードではすべて停止します。ライブラリはこの端末に保存されたままです。</string>
     <string name="reading">読書中</string>
@@ -138,7 +136,6 @@
     <string name="update_pack">%s を更新</string>
     <string name="version">バージョン %1$s (%2$s)</string>
     <string name="want_to_read">読みたい</string>
-    <string name="want_to_read_subtitle">次に読みたい本。</string>
     <string name="welcome">Shelf へようこそ</string>
     <string name="welcome_text">本を探し、記録し、オフラインで読めます。</string>
     <plurals name="books">
@@ -174,7 +171,6 @@
     </plurals>
     <string name="because_you_read">%1$s を読んだあなたに</string>
     <string name="next_in_series">シリーズの続き</string>
-    <string name="next_in_series_subtitle">各シリーズの続きから。</string>
     <string name="not_for_me">興味なし</string>
     <string name="machine_translated">機械翻訳</string>
     <string name="catalogue_updates">カタログの更新</string>
@@ -199,17 +195,14 @@
     <string name="your_data_hint">バックアップ、Goodreads、StoryGraph。</string>
     <string name="release_date">リリース %s</string>
     <string name="language">言語</string>
-    <string name="book_language_hint">自動ではアプリの言語に従います。</string>
     <string name="packs_language">パック · %s</string>
     <string name="language_auto">自動</string>
     <string name="reading_settings">読書</string>
     <string name="reading_hint">1 日の目標、文字、ページめくり。</string>
-    <string name="settings_footer">MIT ライセンスのオープンソース。ライブラリはこの端末に保存されたままです。</string>
     <string name="privacy_requests_hint">通信は https のみで、識別子や Cookie は含まれません。</string>
     <string name="black_theme">純粋な黒</string>
     <string name="black_theme_hint">ダークモードで背景を黒にします。有機 EL 画面で電力を節約できます。</string>
     <string name="wallpaper_colors">壁紙の色</string>
-    <string name="wallpaper_colors_hint">壁紙の色でアプリを彩ります。</string>
     <string name="e_ink">E Ink モード</string>
     <string name="e_ink_hint">白地に黒、アニメーションなし、即時ページめくり、大きなタッチ領域。</string>
     <string name="reader">リーダー</string>
@@ -229,9 +222,7 @@
     <string name="page_paper">紙</string>
     <string name="page_night">夜間</string>
     <string name="justify">両端揃え</string>
-    <string name="justify_hint">行を両端に揃えます。</string>
     <string name="keep_screen_on">画面をオンのままにする</string>
-    <string name="keep_screen_on_hint">本を開いている間は画面が消えません。</string>
     <string name="volume_keys">音量ボタンでページをめくる</string>
     <string name="volume_keys_hint">電子書籍リーダーのページボタンは常に使えます。</string>
     <string name="brightness_swipe">スワイプで明るさを調整</string>
@@ -352,7 +343,6 @@
     </plurals>
     <string name="stats">読書統計</string>
     <string name="stats_empty">この年の記録はまだありません。読んだページと読み終えた本がここに表示されます。</string>
-    <string name="stats_private">この端末で計算されます。共有しない限り外部に送信されません。</string>
     <string name="year_in_books">読書の一年</string>
     <string name="month_by_month">月ごと</string>
     <string name="pages_metric">ページ</string>
@@ -361,12 +351,12 @@
     <string name="longest_streak">最長連続記録</string>
     <string name="finished_in">%d年に読了</string>
     <string name="share">共有</string>
-    <string name="share_recap">私の%1$d年の読書：%2$s、%3$s。Shelfでプライベートに記録。</string>
+    <string name="share_recap">私の %1$d 年の読書：%2$s、%3$s。Shelf でプライベートに記録。</string>
     <plurals name="pages_count">
-        <item quantity="other">%dページ</item>
+        <item quantity="other">%d ページ</item>
     </plurals>
     <plurals name="days_count">
-        <item quantity="other">%d日</item>
+        <item quantity="other">%d 日</item>
     </plurals>
     <string name="close">閉じる</string>
     <string name="wrapped_banner">%d年の読書</string>
@@ -394,7 +384,7 @@
     <string name="type_bookworm">本の虫</string>
     <string name="type_bookworm_text">一年中こつこつと。読書はあなたの一部です。</string>
     <plurals name="wrapped_hours">
-        <item quantity="other">約%d時間の読書です。</item>
+        <item quantity="other">約 %d 時間の読書です。</item>
     </plurals>
     <string name="color_yellow">黄</string>
     <string name="color_green">緑</string>
@@ -409,22 +399,22 @@
     <string name="copy">コピー</string>
     <string name="copied">コピーしました</string>
     <string name="export_notes">メモを書き出す</string>
-    <string name="share_markdown">Markdownで共有</string>
-    <string name="save_markdown">Markdownで保存</string>
-    <string name="save_readwise">Readwise用CSVで保存</string>
+    <string name="share_markdown">Markdown で共有</string>
+    <string name="save_markdown">Markdown で保存</string>
+    <string name="save_readwise">Readwise 用 CSV で保存</string>
     <string name="notes_exported">メモを書き出しました。</string>
-    <string name="notes_hint">本のハイライトとメモをすべて、MarkdownまたはReadwiseで読み込めるCSVで書き出します。</string>
-    <string name="notes_markdown">Markdownを書き出す</string>
-    <string name="notes_readwise">Readwise用CSVを書き出す</string>
+    <string name="notes_hint">本のハイライトとメモをすべて、Markdown または Readwise で読み込める CSV で書き出します。</string>
+    <string name="notes_markdown">Markdown を書き出す</string>
+    <string name="notes_readwise">Readwise 用 CSV を書き出す</string>
     <string name="highlight_removed">ハイライトを削除しました</string>
     <string name="undo">元に戻す</string>
     <plurals name="highlights">
-        <item quantity="other">%d件のハイライト</item>
+        <item quantity="other">%d 件のハイライト</item>
     </plurals>
-    <string name="rate_stars">5つ星中%d</string>
+    <string name="rate_stars">5 つ星中 %d</string>
     <string name="started_on">読み始め</string>
     <string name="finished_on">読了</string>
-    <string name="read_in">%sで読了</string>
+    <string name="read_in">%s で読了</string>
     <string name="average_rating">平均 %s</string>
     <string name="review">レビュー</string>
     <string name="review_hint">どうでしたか？あなただけが見られます。</string>
@@ -437,11 +427,10 @@
     <string name="rename_list">リスト名を変更</string>
     <string name="delete_list">リストを削除</string>
     <string name="delete_list_confirm">リスト「%s」を削除しますか？本はライブラリに残ります。</string>
-    <string name="private_note">このスマホにだけ保存されます</string>
     <string name="lists">リスト</string>
     <string name="edit_lists">リストを編集</string>
     <string name="share_list">リストを共有</string>
-    <string name="read_of_list">%d冊読了</string>
+    <string name="read_of_list">%d 冊読了</string>
     <string name="your_book">あなたの本</string>
     <string name="add_started">開始日を追加</string>
     <string name="add_finished">読了日を追加</string>
@@ -455,16 +444,16 @@
     <string name="next_sentence">次の文</string>
     <string name="sleep_timer">スリープタイマー</string>
     <string name="sleep_off">オフ</string>
-    <string name="sleep_minutes">%d分</string>
+    <string name="sleep_minutes">%d 分</string>
     <string name="sleep_chapter_end">章の終わり</string>
-    <string name="time_left">残り%s</string>
+    <string name="time_left">残り %s</string>
     <string name="voice">音声</string>
     <string name="voice_missing">この本の言語の音声がインストールされていません。</string>
     <string name="voice_settings">音声設定</string>
     <string name="add_audiobook">オーディオブックを追加</string>
     <string name="remove_audiobook">オーディオブックを削除</string>
-    <string name="rewind">10秒戻る</string>
-    <string name="fast_forward">10秒進む</string>
+    <string name="rewind">10 秒戻る</string>
+    <string name="fast_forward">10 秒進む</string>
     <string name="no_audio">再生できる音声が見つかりません。</string>
     <string name="voice_models">音声モデル</string>
     <string name="voice_models_hint">自然な音声と話者判定のための任意のダウンロードです。各ファイルは使用前に SHA-256 で検証されます。</string>
@@ -475,15 +464,13 @@
     <string name="pause_item">%s を一時停止</string>
     <string name="resume_item">%s を再開</string>
     <string name="character_voices">登場人物の声</string>
-    <string name="character_voices_hint">登場人物ごとに別の声で読み上げます</string>
     <string name="finding_speakers">話者を探しています…</string>
     <string name="speakers_found">見つかった話者: %1$d</string>
     <string name="listening">聴く</string>
     <string name="listening_hint">音声、読み上げ、オーディオブック</string>
     <string name="narration">読み上げ</string>
-    <string name="character_voices_model">使用するには下で話者認識をダウンロードしてください</string>
+    <string name="character_voices_model">使用するには下で話者判定をダウンロードしてください</string>
     <string name="system_voices">システムの音声</string>
-    <string name="system_voices_hint">Android の音声合成エンジンと音声データ</string>
     <string name="quality_standard">標準</string>
     <string name="quality_high">高品質</string>
     <string name="other_languages">その他の言語</string>
