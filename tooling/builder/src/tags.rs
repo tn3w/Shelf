@@ -1,10 +1,13 @@
 use crate::dumps::Book;
-use Category::{Accolade, Audience, Form, Genre, Topic};
+use Category::{Accolade, Audience, Form, Genre, Theme, Topic};
 use serde::Deserialize;
 use serde_json::Value;
 use std::cell::RefCell;
+use std::cmp::Reverse;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::LazyLock;
+use unicode_normalization::UnicodeNormalization;
+use unicode_normalization::char::is_combining_mark;
 
 #[derive(Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -14,6 +17,7 @@ pub enum Category {
     Audience,
     Form,
     Accolade,
+    Theme,
 }
 
 impl Category {
@@ -24,6 +28,7 @@ impl Category {
             Audience => "audience",
             Form => "form",
             Accolade => "accolade",
+            Theme => "theme",
         }
     }
 }
@@ -37,18 +42,30 @@ pub struct Rule {
     exclude: Vec<String>,
     #[serde(default)]
     motifs: Vec<String>,
+    #[serde(default)]
+    fiction: bool,
 }
 
 #[derive(Deserialize)]
 struct Taxonomy {
     rules: Vec<Rule>,
+    themes: Vec<Rule>,
     bisac: BTreeMap<String, Vec<String>>,
 }
 
+struct Term {
+    theme: u16,
+    words: Vec<String>,
+    excluding: bool,
+}
+
+const TAXONOMY_TEXT: &str = include_str!("../tags.json");
+
 static TAXONOMY: LazyLock<Taxonomy> =
-    LazyLock::new(|| serde_json::from_str(include_str!("../tags.json")).expect("valid tags.json"));
+    LazyLock::new(|| serde_json::from_str(TAXONOMY_TEXT).expect("valid tags.json"));
 
 const MAX_TAGS: usize = 8;
+pub const MAX_THEMES: usize = 3;
 const WEAK_TAG_FILL: usize = 3;
 const BISAC_WEIGHT: u16 = 2;
 const MOTIF_WEIGHT: u16 = 2;
@@ -67,8 +84,18 @@ const MEMO_LIMIT: usize = 200_000;
 const AUTHOR_FILL_SHARE: f32 = 0.7;
 const AUTHOR_FILL_MINIMUM: usize = 2;
 
+const STORY_TAGS: [&str; 6] = [
+    "fiction",
+    "short-stories",
+    "graphic-novel",
+    "drama",
+    "poetry",
+    "picture-book",
+];
+
 const ADULT_ONLY_TAGS: [&str; 3] = ["horror", "thriller", "true-crime"];
 const YOUNG_TAGS: [&str; 2] = ["picture-book", "middle-grade"];
+const YOUNG_SUBJECT_TAGS: [&str; 3] = ["childrens", "picture-book", "middle-grade"];
 
 const BAD_SUBJECTS: &[&str] = &[
     "periodicals",
@@ -114,6 +141,7 @@ const IGNORED_PREFIXES: &[&str] = &[
     "open library",
     "open_syllabus",
     "long now manual",
+    "/tags/",
 ];
 const IGNORED_PHRASES: &[&str] = &[
     "adaptations",
@@ -171,8 +199,38 @@ thread_local! {
     static MEMO: RefCell<HashMap<String, Vec<u8>>> = RefCell::new(HashMap::new());
 }
 
+static THEME_TERMS: LazyLock<HashMap<String, Vec<Term>>> = LazyLock::new(|| {
+    let mut index: HashMap<String, Vec<Term>> = HashMap::new();
+    for (theme, rule) in themes().iter().enumerate() {
+        let included = rule.include.iter().map(|text| (text, false));
+        let excluded = rule.exclude.iter().map(|text| (text, true));
+        for (text, excluding) in included.chain(excluded) {
+            let words = words(text);
+            let Some(first) = words.first() else {
+                continue;
+            };
+            let term = Term {
+                theme: theme as u16,
+                words: words.clone(),
+                excluding,
+            };
+            index.entry(first.clone()).or_default().push(term);
+        }
+    }
+    index
+});
+
+/// Changes whenever tag ids or matching change, so delta segments rebase.
+pub fn fingerprint() -> u64 {
+    crate::libraries::hash(&[TAXONOMY_TEXT.as_bytes()])
+}
+
 pub fn rules() -> &'static [Rule] {
     &TAXONOMY.rules
+}
+
+pub fn themes() -> &'static [Rule] {
+    &TAXONOMY.themes
 }
 
 pub fn tag(slug: &str) -> u8 {
@@ -661,15 +719,18 @@ pub fn confident_tags<'a>(
         support.add_subject(&normalized);
         seen.push(normalized);
     }
+    let reader = reader_of(classes, editions);
+    let young = reader == Reader::Kids
+        || classes.picture > 0
+        || YOUNG_SUBJECT_TAGS.iter().any(|slug| support.of(slug) > 0);
     if support.of("fiction") > 0 {
-        for found in seen.iter().flat_map(|subject| motif_tags(subject)) {
-            support.add(found, MOTIF_WEIGHT);
-        }
+        let motifs = seen.iter().flat_map(|subject| motif_tags(subject));
+        let fitting = motifs.filter(|&found| !young || !ADULT_ONLY_TAGS.contains(&slug(found)));
+        fitting.for_each(|found| support.add(found, MOTIF_WEIGHT));
     }
     class_tags(classes)
         .into_iter()
         .for_each(|found| support.add(found, CLASS_WEIGHT));
-    let reader = reader_of(classes, editions);
     for found in reader_tags(classes, &reader) {
         support.add(found, BAND_WEIGHT);
     }
@@ -696,13 +757,122 @@ fn exclusive(chosen: Vec<u8>, support: &Support) -> Vec<u8> {
         .collect()
 }
 
+pub fn words(text: &str) -> Vec<String> {
+    let folded: String = text
+        .nfkd()
+        .filter(|character| !is_combining_mark(*character))
+        .flat_map(char::to_lowercase)
+        .map(|character| {
+            if character.is_alphanumeric() {
+                character
+            } else {
+                ' '
+            }
+        })
+        .collect();
+    folded.split_whitespace().map(str::to_string).collect()
+}
+
+fn starts_with_term(heading: &[String], term: &[String]) -> bool {
+    let Some((last, head)) = term.split_last() else {
+        return false;
+    };
+    let Some(word) = heading.get(head.len()) else {
+        return false;
+    };
+    heading[..head.len()] == *head && (word == last || word.strip_suffix('s') == Some(last))
+}
+
+pub fn heading_themes(heading: &str) -> Vec<u16> {
+    if is_ignored(&heading.trim().to_lowercase()) {
+        return Vec::new();
+    }
+    let words = words(heading);
+    let mut found: Vec<(u16, bool)> = Vec::new();
+    for start in 0..words.len() {
+        let word = words[start].as_str();
+        for key in [Some(word), word.strip_suffix('s')].into_iter().flatten() {
+            let terms = THEME_TERMS.get(key).into_iter().flatten();
+            let matching = terms.filter(|term| starts_with_term(&words[start..], &term.words));
+            found.extend(matching.map(|term| (term.theme, term.excluding)));
+        }
+    }
+    let excluded: Vec<u16> = found.iter().filter(|hit| hit.1).map(|hit| hit.0).collect();
+    let mut themes: Vec<u16> = found
+        .into_iter()
+        .filter(|&(theme, excluding)| !excluding && !excluded.contains(&theme))
+        .map(|(theme, _)| theme)
+        .collect();
+    themes.sort_unstable();
+    themes.dedup();
+    themes
+}
+
+pub fn themes_of<S: AsRef<str>>(headings: impl IntoIterator<Item = S>) -> Vec<u16> {
+    let mut themes: Vec<u16> = headings
+        .into_iter()
+        .flat_map(|heading| heading_themes(heading.as_ref()))
+        .collect();
+    themes.sort_unstable();
+    themes.dedup();
+    themes
+}
+
+/// Themes with how many distinct headings or library records name them.
+pub fn theme_support<'a>(
+    subjects: impl Iterator<Item = &'a str>,
+    records: &[u16],
+) -> Vec<(u16, u8)> {
+    let mut headings: Vec<String> = subjects
+        .map(|subject| subject.trim().to_lowercase())
+        .collect();
+    headings.sort_unstable();
+    headings.dedup();
+    let mut support: Vec<(u16, u8)> = Vec::new();
+    let found = headings.iter().flat_map(|heading| heading_themes(heading));
+    for theme in found.chain(records.iter().copied()) {
+        match support.iter_mut().find(|(known, _)| *known == theme) {
+            Some(entry) => entry.1 = entry.1.saturating_add(1),
+            None => support.push((theme, 1)),
+        }
+    }
+    support
+}
+
+/// Orders each book's themes by support, then rarest first across the books.
+pub fn rank_themes(books: &mut [Book]) {
+    let mut counts = vec![0u32; themes().len()];
+    let found = books.iter().flat_map(|book| book.themes.iter());
+    found.for_each(|&(theme, _)| counts[theme as usize] += 1);
+    for book in books.iter_mut() {
+        book.themes
+            .sort_by_key(|&(theme, support)| (Reverse(support), counts[theme as usize], theme));
+    }
+}
+
+fn is_story(tags: &[u8]) -> bool {
+    tags.iter()
+        .any(|&tag| category(tag) == Genre || STORY_TAGS.contains(&slug(tag)))
+}
+
+/// The themes a book shows: the strongest few, story-only themes only on stories.
+pub fn chosen_themes(tags: &[u8], themes: &[(u16, u8)]) -> Vec<u16> {
+    let story = is_story(tags);
+    themes
+        .iter()
+        .map(|&(theme, _)| theme)
+        .filter(|&theme| story || !self::themes()[theme as usize].fiction)
+        .take(MAX_THEMES)
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn every_tag_labelled_in_every_catalogue_language() {
-        for rule in rules() {
+        for rule in rules().iter().chain(themes()) {
             for language in crate::LANGUAGES {
                 assert!(
                     rule.labels.contains_key(language),
@@ -711,6 +881,99 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn every_slug_names_one_tag() {
+        let mut slugs: Vec<&str> = rules()
+            .iter()
+            .chain(themes())
+            .map(|rule| rule.slug.as_str())
+            .collect();
+        let count = slugs.len();
+        slugs.sort_unstable();
+        slugs.dedup();
+        assert_eq!(slugs.len(), count);
+        assert!(themes().iter().all(|rule| rule.category == Theme));
+    }
+
+    fn theme(slug: &str) -> u16 {
+        let found = themes().iter().position(|rule| rule.slug == slug);
+        found.expect("known theme") as u16
+    }
+
+    #[test]
+    fn headings_in_every_language_merge_into_one_theme() {
+        for heading in [
+            "Werewolves -- Fiction",
+            "Werewolves--Juvenile fiction",
+            "Werwolf",
+            "Loups-garous",
+            "Varulvar",
+            "Wilkołaki",
+            "vlkodlaci",
+            "gnd:4189721-3",
+        ] {
+            assert_eq!(heading_themes(heading), [theme("werewolves")], "{heading}");
+        }
+        let shifters = [theme("shapeshifters")];
+        assert_eq!(
+            heading_themes("Fiction / Romance / Paranormal / Shifters"),
+            shifters
+        );
+        assert_eq!(heading_themes("Gestaltwandler"), shifters);
+    }
+
+    #[test]
+    fn homonyms_stay_out_of_themes() {
+        for heading in [
+            "Unternehmen Werwolf",
+            "Spoken English",
+            "Mars (Planet)",
+            "Drake, Francis",
+            "Engels, Friedrich",
+            "Wales",
+            "Magic realism (Literature)",
+            "Metamorphes Gestein",
+            "/tags/OL177T",
+            "Werewolf (Game)",
+        ] {
+            assert!(heading_themes(heading).is_empty(), "{heading}");
+        }
+    }
+
+    #[test]
+    fn support_counts_distinct_headings_and_records() {
+        let dragons = theme("dragons");
+        let subjects = ["Dragons", "dragons ", "Dragons -- Fiction", "Filler"];
+        assert_eq!(theme_support(subjects.into_iter(), &[]), [(dragons, 2)]);
+        assert_eq!(
+            theme_support(["Drache"].into_iter(), &[dragons]),
+            [(dragons, 2)]
+        );
+        let film = theme_support(["Film adaptations", "Depressions"].into_iter(), &[]);
+        assert!(film.is_empty());
+    }
+
+    #[test]
+    fn monster_picture_books_are_not_horror() {
+        let subjects = ["Monsters -- Juvenile fiction", "Picture books for children"];
+        let horror = tag("horror");
+        let young = confident_tags(subjects.into_iter(), &Classes::default(), 1);
+        assert!(!young.contains(&horror));
+        let grown = confident_tags(["Monsters -- Fiction"].into_iter(), &Classes::default(), 1);
+        assert!(grown.contains(&horror));
+    }
+
+    #[test]
+    fn story_themes_need_a_story_and_few_themes_show() {
+        let school = theme("school");
+        let slugs = ["school", "dragons", "witches", "pirates", "ghosts"];
+        let candidates: Vec<(u16, u8)> = slugs.iter().map(|slug| (theme(slug), 1)).collect();
+        assert!(!chosen_themes(&[tag("nonfiction")], &candidates).contains(&school));
+        let story = chosen_themes(&[tag("fantasy")], &candidates);
+        assert_eq!(story.len(), MAX_THEMES);
+        assert_eq!(story[0], school);
     }
 
     fn pack(slugs: &[&str]) -> &'static str {

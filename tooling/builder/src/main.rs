@@ -227,6 +227,7 @@ fn placed_works<'a>(job: &Job<'a>, selection: &'a Selection) -> Vec<Placed<'a>> 
                 year: book.year,
                 cover: entry.cover,
                 tags: &book.tags,
+                themes: &book.themes,
                 series: chosen
                     .series
                     .map(|(slot, order)| (&selection.series[slot], order)),
@@ -544,6 +545,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     dump_works(job, &placed);
     let state = State {
         base: job.base.to_string(),
+        taxonomy: tags::fingerprint(),
         works: tracked,
         aliases: job.aliases.to_vec(),
     };
@@ -978,6 +980,7 @@ fn main() {
         works.books.into_iter().partition(is_listed);
     eprintln!("month {month}, {} books", books.len());
     tags::fill_author_tags(&mut books);
+    tags::rank_themes(&mut books);
     let gutenberg = enrichment::match_gutenberg(gutenberg, &books, &authors, &wikidata);
     let credited = books.iter().flat_map(|book| book.authors.iter().copied());
     let people = dumps::people(&options.source, &credited.collect());
@@ -1031,10 +1034,16 @@ fn main() {
             details.extend(outcome.details);
             renamed = outcome.aliases;
             tags::fill_author_tags(&mut books);
+            tags::rank_themes(&mut books);
         }
         let state = &states[language];
         let same_year = |state: &&State| state.base[..4] == month[..4];
-        let previous = state.as_ref().filter(same_year).filter(|_| !options.rebase);
+        let same_tags = |state: &&State| state.taxonomy == tags::fingerprint();
+        let previous = state
+            .as_ref()
+            .filter(same_year)
+            .filter(same_tags)
+            .filter(|_| !options.rebase);
         rebased[language] = previous.is_none();
         let base = previous.map_or(month.as_str(), |state| state.base.as_str());
         let known = state

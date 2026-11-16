@@ -126,6 +126,16 @@ fun isbnOf(key: Int) = (ISBN_BASE + key).toString().let { it + checkDigit(it) }
 
 data class Tag(val id: Int, val slug: String, val label: String, val category: String)
 
+const val THEME = "theme"
+private const val BOOK_TAG_LIMIT = 6
+
+/** The chips a book page shows: its strongest tags, keeping room for its themes. */
+fun shownTags(tags: List<Tag>): List<Tag> {
+    val (themes, others) = tags.partition { it.category == THEME }
+    val kept = themes.take(BOOK_TAG_LIMIT / 2)
+    return others.take(BOOK_TAG_LIMIT - kept.size) + kept
+}
+
 data class Series(val name: String, val members: List<Int>)
 
 data class Location(val segment: Segment, val local: Int)
@@ -166,7 +176,7 @@ class Catalogue(val language: String, val segments: List<Segment>, val ranks: Ra
     private val visible = visibility(segments)
     private val order = segments.withIndex().associate { (index, it) -> it to index }
     val workCount = visible.sumOf { it.cardinality() }
-    val tags = segments.firstOrNull()?.tags.orEmpty()
+    val tags = segments.maxByOrNull { it.tags.size }?.tags.orEmpty()
     val tagBySlug = tags.associateBy { it.slug }
 
     /** Newest release among the segments, as the cover proxy names it. */

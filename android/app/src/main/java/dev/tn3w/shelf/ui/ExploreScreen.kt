@@ -51,6 +51,7 @@ private val SECTIONS = listOf(
     "form" to R.string.formats,
     "topic" to R.string.topics,
 )
+private const val THEME_CHIPS = 24
 
 data class Start(val name: String, val route: SimilarRoute, val book: Book)
 
@@ -114,10 +115,13 @@ class ExploreViewModel(app: ShelfApp) : ShelfViewModel(app) {
         current.starts(saved)
     }.asState()
     val tags = catalogueState {
-        catalogue.tags
+        val counted = catalogue.tags
             .filter { catalogue.tagCount(it.id) > 0 }
             .sortedByDescending { catalogue.tagCount(it.id) }
-            .groupBy { it.category }
+        val themes = counted.filter { it.category == THEME }.take(THEME_CHIPS).toSet()
+        counted
+            .filter { it.category != THEME || it in themes }
+            .groupBy { if (it.category == THEME) "topic" else it.category }
     }
     val genres = catalogueState {
         val tags = catalogue.tags

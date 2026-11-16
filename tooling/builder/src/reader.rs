@@ -186,6 +186,7 @@ pub struct Facts {
     pub tags: Vec<u8>,
     pub series: Option<usize>,
     pub position: u32,
+    pub themes: Vec<u16>,
 }
 
 pub struct Heads {
@@ -229,6 +230,21 @@ pub struct Tag {
     pub slug: String,
     pub label: String,
     pub category: String,
+}
+
+fn tag_list(table: &[u8]) -> Vec<Tag> {
+    (0..table_count(table))
+        .map(|id| {
+            let mut reader = Reader::new(table_entry(table, id));
+            let (slug, label, category) = (reader.text(), reader.text(), reader.text());
+            Tag {
+                id,
+                slug,
+                label,
+                category,
+            }
+        })
+        .collect()
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -361,6 +377,7 @@ pub struct Segment {
     terms_per_block: usize,
     pub tombstones: Vec<u32>,
     pub tags: Vec<Tag>,
+    pub themes: Vec<Tag>,
     terms: TermBlocks,
     completion_keys: Vec<String>,
     gram_keys: Vec<String>,
@@ -382,19 +399,11 @@ impl Segment {
             .iter()
             .map(|word| u32::from_le_bytes(*word))
             .collect();
-        let tag_table = &bytes[sections.get("tags")?.clone()];
-        let tags = (0..table_count(tag_table))
-            .map(|id| {
-                let mut reader = Reader::new(table_entry(tag_table, id));
-                let (slug, label, category) = (reader.text(), reader.text(), reader.text());
-                Tag {
-                    id,
-                    slug,
-                    label,
-                    category,
-                }
-            })
-            .collect();
+        let tags = tag_list(&bytes[sections.get("tags")?.clone()]);
+        let themes = sections
+            .get("themes")
+            .map(|range| tag_list(&bytes[range.clone()]))
+            .unwrap_or_default();
         let keys = |name: &str| {
             let table = &bytes[sections[name].clone()];
             (0..table_count(table))
@@ -420,6 +429,7 @@ impl Segment {
             terms_per_block: meta.get("terms_per_block")?.parse().ok()?,
             tombstones,
             tags,
+            themes,
             terms: TermBlocks::new(&bytes, sections.get("terms")?.clone(), true),
             completion_keys: keys("completions"),
             gram_keys: keys("grams"),
@@ -533,6 +543,13 @@ impl Segment {
         } else {
             0
         };
+        let themes = if reader.has_more() {
+            (0..reader.varint())
+                .map(|_| reader.varint() as u16)
+                .collect()
+        } else {
+            Vec::new()
+        };
         Facts {
             authors,
             year,
@@ -540,6 +557,7 @@ impl Segment {
             tags,
             series,
             position,
+            themes,
         }
     }
 
@@ -888,6 +906,7 @@ pub struct Book {
     pub year: u32,
     pub cover: u32,
     pub tags: Vec<u8>,
+    pub themes: Vec<u16>,
     pub library_cover: Option<LibraryCover>,
     pub language: String,
 }
@@ -1053,6 +1072,7 @@ impl Catalogue {
             year: facts.year,
             cover: facts.cover,
             tags: facts.tags,
+            themes: facts.themes,
             library_cover: source.library_cover(local),
             language: self.language.clone(),
         }

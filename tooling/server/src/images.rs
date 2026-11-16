@@ -372,6 +372,7 @@ pub mod tests {
             year: 0,
             cover,
             tags: Vec::new(),
+            themes: Vec::new(),
             library_cover,
             language: String::new(),
         };

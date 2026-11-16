@@ -52,9 +52,8 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
     val details = catalogueState {
         val source = catalogueOf(work) ?: return@catalogueState null
         val book = source.book(work) ?: return@catalogueState null
-        val tags = book.tags.mapNotNull { id ->
-            source.tags.getOrNull(id)?.let { id to it.label }
-        }
+        val tags = shownTags(book.tags.mapNotNull(source.tags::getOrNull))
+            .map { it.id to it.label }
         Details(book, source.description(work), tags)
     }
     val related = catalogueState {

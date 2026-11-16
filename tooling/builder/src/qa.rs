@@ -166,8 +166,65 @@ fn rows(text: &str) -> Vec<Vec<String>> {
         .collect()
 }
 
-fn check_gold(context: &Context, text: &str, failures: &mut Vec<String>) -> [Gold; 2] {
-    let (mut works, mut apart) = (Gold::default(), Gold::default());
+fn slugs(context: &Context, found: &[(String, Book)]) -> Vec<String> {
+    let mut slugs: Vec<String> = Vec::new();
+    for (language, book) in found {
+        let catalogue = context
+            .catalogues
+            .iter()
+            .find(|known| &known.language == language);
+        let tables = catalogue.and_then(|catalogue| {
+            catalogue
+                .segments
+                .iter()
+                .max_by_key(|segment| segment.themes.len())
+        });
+        let Some(segment) = tables else { continue };
+        let tags = book
+            .tags
+            .iter()
+            .filter_map(|&tag| segment.tags.get(tag as usize));
+        let themes = book
+            .themes
+            .iter()
+            .filter_map(|&theme| segment.themes.get(theme as usize));
+        slugs.extend(tags.chain(themes).map(|tag| tag.slug.clone()));
+    }
+    slugs.sort_unstable();
+    slugs.dedup();
+    slugs
+}
+
+fn listed(field: &str) -> Vec<&str> {
+    field.split('|').filter(|slug| *slug != "-").collect()
+}
+
+fn check_tags(found: &[(String, Book)], slugs: &[String], row: [&str; 3]) -> Option<String> {
+    let [titles, expected, forbidden] = row;
+    let has = |slug: &&str| slugs.iter().any(|known| known == slug);
+    let missing: Vec<&str> = listed(expected)
+        .into_iter()
+        .filter(|slug| !has(slug))
+        .collect();
+    let wrong: Vec<&str> = listed(forbidden).into_iter().filter(has).collect();
+    if missing.is_empty() && wrong.is_empty() {
+        return None;
+    }
+    let languages: Vec<&str> = found
+        .iter()
+        .map(|(language, _)| language.as_str())
+        .collect();
+    Some(format!(
+        "tags {titles}: missing {} · unwanted {} · has {} ({})",
+        missing.join(","),
+        wrong.join(","),
+        slugs.join(","),
+        languages.join(",")
+    ))
+}
+
+fn check_gold(context: &Context, text: &str, failures: &mut Vec<String>) -> [Gold; 3] {
+    let (mut works, mut apart, mut tags) = (Gold::default(), Gold::default(), Gold::default());
     for row in rows(text) {
         match row
             .iter()
@@ -202,10 +259,25 @@ fn check_gold(context: &Context, text: &str, failures: &mut Vec<String>) -> [Gol
                     failures.push(format!("apart {first} / {second}: {left} | {right}"));
                 }
             }
+            ["tags", author, titles, isbns, expected, forbidden] => {
+                let found = context.found(titles, author, isbns);
+                if found.is_empty() {
+                    tags.missing += 1;
+                    continue;
+                }
+                let slugs = slugs(context, &found);
+                match check_tags(&found, &slugs, [titles, expected, forbidden]) {
+                    None => tags.passed += 1,
+                    Some(failure) => {
+                        tags.failed += 1;
+                        failures.push(failure);
+                    }
+                }
+            }
             _ => failures.push(format!("gold row not understood: {}", row.join("⇥"))),
         }
     }
-    [works, apart]
+    [works, apart, tags]
 }
 
 #[derive(Default)]
@@ -259,10 +331,10 @@ fn check_queries(
     classes
 }
 
-fn report(summary: &str, gold: &[Gold; 2], classes: &BTreeMap<String, Ranking>) -> String {
+fn report(summary: &str, gold: &[Gold; 3], classes: &BTreeMap<String, Ranking>) -> String {
     let mut text = format!("## Unify\n\n{summary}\n## QA\n\n| Gold | Pass | Fail | Not found |\n");
     text += "|---|---|---|---|\n";
-    for (name, counts) in ["work", "apart"].iter().zip(gold) {
+    for (name, counts) in ["work", "apart", "tags"].iter().zip(gold) {
         let line = format!(
             "| {name} | {} | {} | {} |\n",
             counts.passed, counts.failed, counts.missing

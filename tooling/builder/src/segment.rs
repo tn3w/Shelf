@@ -33,6 +33,7 @@ pub struct Work<'a> {
     pub year: u16,
     pub cover: u32,
     pub tags: &'a [u8],
+    pub themes: &'a [(u16, u8)],
     pub series: Option<(&'a Series, u16)>,
     pub description: &'a str,
     pub translated: bool,
@@ -208,6 +209,13 @@ fn facts(work: &Work, author_slots: &[u32], series_slot: Option<u32>) -> Vec<u8>
         &mut record,
         work.series.map_or(0, |(_, order)| order as u32),
     );
+    let themes = tags::chosen_themes(work.tags, work.themes);
+    if !themes.is_empty() {
+        put_varint(&mut record, themes.len() as u32);
+        themes
+            .iter()
+            .for_each(|&theme| put_varint(&mut record, u32::from(theme)));
+    }
     record
 }
 
@@ -459,9 +467,23 @@ fn tag_section(works: &[Work], language: usize) -> Vec<u8> {
             .iter()
             .for_each(|&tag| push_unique(&mut tagged[tag as usize], index as u32));
     }
-    let records: Vec<Vec<u8>> = tags::rules()
+    tag_table(tags::rules(), &tagged, language)
+}
+
+fn theme_section(works: &[Work], language: usize) -> Vec<u8> {
+    let mut tagged: Vec<Vec<u32>> = vec![Vec::new(); tags::themes().len()];
+    for (index, work) in works.iter().enumerate() {
+        for theme in tags::chosen_themes(work.tags, work.themes) {
+            tagged[theme as usize].push(index as u32);
+        }
+    }
+    tag_table(tags::themes(), &tagged, language)
+}
+
+fn tag_table(rules: &[tags::Rule], tagged: &[Vec<u32>], language: usize) -> Vec<u8> {
+    let records: Vec<Vec<u8>> = rules
         .iter()
-        .zip(&tagged)
+        .zip(tagged)
         .map(|(rule, members)| {
             let mut record = Vec::new();
             put_text(&mut record, &rule.slug);
@@ -603,6 +625,7 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         ("heads", record_blocks(&head_records, &head_dictionary)),
         ("authors", author_section(works, &order, &slots, authors)),
         ("tags", tag_section(works, meta.language)),
+        ("themes", theme_section(works, meta.language)),
         ("series", series_section(&series)),
         ("terms", term_blocks(&terms, true)),
         ("completions", completion_section(&terms)),
@@ -715,6 +738,7 @@ mod tests {
             year: 0,
             cover: 0,
             tags: &[],
+            themes: &[],
             series: None,
             description: "",
             translated: false,
@@ -910,6 +934,7 @@ mod tests {
                 year: 1815,
                 cover: 99,
                 tags: &[2, 5],
+                themes: &[(3, 2), (0, 1)],
                 series: Some((&series, 1)),
                 description: "Matchmaking in Highbury.",
                 translated: true,
@@ -950,6 +975,11 @@ mod tests {
             (facts.year, facts.cover, facts.tags),
             (1815, 99, vec![2, 5])
         );
+        assert_eq!((facts.themes, facts.position), (vec![3, 0], 1));
+        assert!(read.facts(1).themes.is_empty());
+        assert_eq!(read.tags.len(), tags::rules().len());
+        assert_eq!(read.themes.len(), tags::themes().len());
+        assert_eq!(read.themes[3].category, "theme");
         let author = read.author(facts.authors[0]);
         assert_eq!(
             (author.number, author.name.as_str(), author.works),
@@ -1154,6 +1184,7 @@ mod tests {
                 year: 0,
                 cover: 0,
                 tags: Vec::new(),
+                themes: Vec::new(),
                 library_cover: None,
                 language: String::new(),
             };

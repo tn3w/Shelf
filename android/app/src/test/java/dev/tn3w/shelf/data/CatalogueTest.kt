@@ -318,4 +318,53 @@ class PackForTest {
         assertEquals("fantasy", pack("urban-fantasy", "genre"))
         assertNull(pack("classics", "genre"))
     }
+
+    @Test
+    fun themesFollowTagsAndOlderSegmentsHaveNone() {
+        val howl = Fixture(
+            10,
+            "Moon Howl",
+            tags = listOf("fiction"),
+            series = "Howl",
+            themes = listOf("werewolves", "pirates"),
+        )
+        val segment =
+            segment(listOf(howl, Fixture(20, "Plain", tags = listOf("fiction"))))
+        val werewolves = TAGS.size + THEMES.indexOf("werewolves")
+        val pirates = TAGS.size + THEMES.indexOf("pirates")
+        val tag = Tag(werewolves, "werewolves", "werewolves", THEME)
+        assertEquals(tag, segment.tags[werewolves])
+        val facts = segment.facts(0)
+        val expected = listOf(TAGS.indexOf("fiction"), werewolves, pirates)
+        assertEquals(expected, facts.tags.toList())
+        assertEquals(0, facts.series)
+        assertArrayEquals(intArrayOf(0), segment.tagWorks(werewolves))
+        assertEquals(0, segment.tagCount(TAGS.size + THEMES.indexOf("time-travel")))
+        assertEquals(TAGS.size, segment(BOOKS).tags.size)
+    }
+
+    @Test
+    fun catalogueTakesThemesFromNewerSegments() {
+        val base = segment(listOf(Fixture(10, "Plain", tags = listOf("fiction"))))
+        val howl = Fixture(20, "Moon Howl", themes = listOf("werewolves"))
+        val delta = segment(listOf(howl), month = "2000-02", base = "2000-01")
+        val catalogue = Catalogue("en", listOf(base, delta), null)
+        val werewolves = catalogue.tagBySlug.getValue("werewolves")
+        assertEquals(1, catalogue.tagCount(werewolves.id))
+        assertEquals(listOf(werewolves.id), catalogue.facts(20)?.tags?.toList())
+    }
+
+    @Test
+    fun bookPagesShowFewTagsAndKeepRoomForThemes() {
+        val genres = (0 until 8).map { Tag(it, "g$it", "G$it", "genre") }
+        val themes = (8 until 11).map { Tag(it, "t$it", "T$it", THEME) }
+        assertEquals(listOf(0, 1, 2, 8, 9, 10), shownTags(genres + themes).map { it.id })
+        assertEquals(
+            listOf(0, 1, 8),
+            shownTags(genres.take(2) + themes.take(1)).map {
+                it.id
+            },
+        )
+        assertEquals((0 until 6).toList(), shownTags(genres).map { it.id })
+    }
 }

@@ -222,9 +222,10 @@ class Segment(buffer: ByteBuffer) {
     private val gramKeys = List(grams.count) { grams.leadingText(it) }
     private val descriptions = BlockIndex(section("descriptions"))
     private val tagTable = Table(section("tags"))
-    val tags = List(tagTable.count) {
-        val reader = ByteReader(tagTable[it])
-        Tag(it, reader.text(), reader.text(), reader.text())
+    private val themeTable = sections["themes"]?.let(::Table)
+    val tags = (0 until tagTable.count + (themeTable?.count ?: 0)).map { id ->
+        val reader = ByteReader(tagRecord(id) ?: ByteArray(0))
+        Tag(id, reader.text(), reader.text(), reader.text())
     }
     private val isbns = sections["isbns"]?.let(::BlockIndex)
     private val libraryCovers = sections["library_covers"]?.let(::BlockIndex)
@@ -272,7 +273,14 @@ class Segment(buffer: ByteBuffer) {
         val year = reader.varint().let { if (it == 0) 0 else it + YEAR_EPOCH }
         val cover = reader.varint()
         val tagIds = IntArray(reader.varint()) { reader.byte() }
-        return Facts(authorSlots, year, cover, tagIds, reader.varint() - 1)
+        val series = reader.varint() - 1
+        if (reader.hasMore) reader.varint()
+        val themes = if (reader.hasMore) {
+            IntArray(reader.varint()) { tagTable.count + reader.varint() }
+        } else {
+            IntArray(0)
+        }
+        return Facts(authorSlots, year, cover, tagIds + themes, series)
     }
 
     fun heads(local: Int): Heads {
@@ -294,9 +302,16 @@ class Segment(buffer: ByteBuffer) {
         return Series(name, List(reader.varint()) { reader.varint() })
     }
 
+    /** Tag ids run on from the byte-sized tags into the themes older readers skip. */
+    private fun tagRecord(tag: Int): ByteArray? {
+        if (tag < tagTable.count) return tagTable[tag]
+        val theme = tag - tagTable.count
+        return themeTable?.takeIf { theme < it.count }?.get(theme)
+    }
+
     private fun afterTagLabels(tag: Int): ByteReader? {
-        if (tag >= tagTable.count) return null
-        return ByteReader(tagTable[tag]).also { reader ->
+        val record = tagRecord(tag) ?: return null
+        return ByteReader(record).also { reader ->
             repeat(3) { reader.skip(reader.varint()) }
         }
     }

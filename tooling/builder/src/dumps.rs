@@ -1115,6 +1115,7 @@ pub struct Book {
     pub subtitle: String,
     pub authors: Vec<u32>,
     pub tags: Vec<u8>,
+    pub themes: Vec<(u16, u8)>,
     pub description: String,
     pub description_language: Option<usize>,
     pub covers: Vec<u32>,
@@ -1140,6 +1141,7 @@ pub struct Claim {
     pub scores: [f32; LANGUAGE_COUNT],
     pub eligible: [bool; LANGUAGE_COUNT],
     pub tags: Vec<u8>,
+    pub themes: Vec<(u16, u8)>,
     pub editions: u16,
 }
 
@@ -1223,11 +1225,13 @@ fn claim(id: u32, book: &Draft, context: &Context) -> Option<Box<Claim>> {
     let (scores, eligible) = judged(&book.traits, &facts, &book.signal, context.built);
     let library = context.library.subjects(&groups);
     let subjects = book.subjects.iter().copied().chain(library);
+    let themes = context.library.themes(&groups);
     Some(Box::new(Claim {
+        tags: tags::confident_tags(subjects, &facts.classes, facts.editions),
+        themes: tags::theme_support(book.subjects.iter().copied(), &themes),
         groups,
         scores,
         eligible,
-        tags: tags::confident_tags(subjects, &facts.classes, facts.editions),
         editions: facts.editions,
     }))
 }
@@ -1293,6 +1297,7 @@ fn book_from(id: u32, work: &Value, context: &Context) -> Option<Book> {
         work: id,
         title: title.to_string(),
         subtitle: libraries::sanitized(text(work, "subtitle")),
+        themes: tags::theme_support(subjects.iter().copied(), &[]),
         tags: tags::confident_tags(subjects.into_iter(), &facts.classes, facts.editions),
         description_language: catalog::detect_language(&description),
         description: if described {

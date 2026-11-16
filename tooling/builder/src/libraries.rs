@@ -333,6 +333,7 @@ pub struct Record {
     pub format: u8,
     pub classes: Classes,
     pub subjects: Vec<&'static str>,
+    pub themes: Vec<u16>,
     pub digar: u32,
     pub compilation: bool,
     pub joins_only: bool,
@@ -938,6 +939,8 @@ struct Fields<'a> {
     genres: Vec<u16>,
     categories: Vec<&'a str>,
     thema: Vec<&'a str>,
+    gnd_subjects: Vec<&'a str>,
+    keywords: Vec<&'a str>,
     audiences: Vec<&'a str>,
 }
 
@@ -978,6 +981,10 @@ impl<'a> Fields<'a> {
             ("dcterms:subject", _) if resource.contains("/thema/") => {
                 self.thema.push(last_segment(resource));
             }
+            ("dcterms:subject", _) if resource.contains("/gnd/") => {
+                self.gnd_subjects.push(last_segment(resource));
+            }
+            ("dcterms:subject", "rdf:value") => self.keywords.push(text),
             ("dcterms:audience", _) => self.audiences.push(last_segment(resource)),
             _ => {}
         }
@@ -1041,6 +1048,13 @@ impl<'a> Fields<'a> {
             _ if bound.iter().any(|kind| self.binding.starts_with(kind)) => HARDCOVER,
             _ => PAPERBACK,
         }
+    }
+
+    fn themes(&self) -> Vec<u16> {
+        let gnd = self.gnd_subjects.iter().map(|id| format!("gnd:{id}"));
+        let thema = self.thema.iter().map(|code| format!("thema:{code}"));
+        let keywords = self.keywords.iter().map(|keyword| keyword.to_string());
+        tags::themes_of(gnd.chain(thema).chain(keywords))
     }
 
     fn subjects(&self, reader: &Reader) -> Vec<&'static str> {
@@ -1165,6 +1179,7 @@ impl<'a> Fields<'a> {
             format,
             classes,
             subjects: self.subjects(&reader),
+            themes: self.themes(),
             compilation: title_text.contains(" ; "),
             ..Record::default()
         })
@@ -1811,6 +1826,15 @@ impl Library {
         facts
     }
 
+    pub fn themes(&self, groups: &[u32]) -> Vec<u16> {
+        let records = groups
+            .iter()
+            .flat_map(|&group| self.members(group as usize));
+        records
+            .flat_map(|record| record.themes.iter().copied())
+            .collect()
+    }
+
     pub fn subjects(&self, groups: &[u32]) -> Vec<&'static str> {
         let records = groups
             .iter()
@@ -1974,6 +1998,7 @@ impl Library {
             book.eligible[language] = claim.eligible[language];
         }
         book.tags = claim.tags;
+        book.themes = claim.themes;
         book.editions = claim.editions;
         book.library_cover = groups.iter().find_map(|&group| self.cover(group));
         let mut canonical: Vec<u32> = Vec::new();
@@ -2034,6 +2059,7 @@ impl Library {
             subtitle: String::new(),
             authors: vec![author],
             tags: tags::confident_tags(subjects.into_iter(), &facts.classes, facts.editions),
+            themes: tags::theme_support(std::iter::empty(), &self.themes(&[group as u32])),
             description: String::new(),
             description_language: None,
             covers: Vec::new(),
@@ -2839,6 +2865,7 @@ mod tests {
             subtitle: String::new(),
             authors: vec![author],
             tags: Vec::new(),
+            themes: Vec::new(),
             description: String::new(),
             description_language: None,
             covers: Vec::new(),
@@ -2871,6 +2898,7 @@ mod tests {
                 scores: per_language(&[(0, 200.0), (1, 250.0)]),
                 eligible: per_language(&[(0, true), (1, true)]),
                 tags: Vec::new(),
+                themes: Vec::new(),
                 editions: 2,
             }));
         }

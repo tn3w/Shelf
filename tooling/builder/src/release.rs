@@ -154,7 +154,7 @@ pub fn parse_series(parts: &[&str]) -> Option<(String, u16)> {
     Some((name, later.or_else(|| position_of(tail)).unwrap_or(0)))
 }
 const STATE_MAGIC: &[u8; 4] = b"SHST";
-const STATE_VERSION: u32 = 3;
+const STATE_VERSION: u32 = 4;
 const LEGACY_LABEL_BYTES: usize = 10;
 const RECORD_BYTES: usize = 13;
 const ALIAS_MAGIC: &[u8; 4] = b"ALIA";
@@ -169,6 +169,7 @@ pub struct Tracked {
 
 pub struct State {
     pub base: String,
+    pub taxonomy: u64,
     pub works: Vec<Tracked>,
     pub aliases: Vec<(u32, u32)>,
 }
@@ -195,16 +196,24 @@ impl State {
         if !bytes.starts_with(STATE_MAGIC) {
             panic!("{} is not a state file", path.display());
         }
-        let (label_start, label_bytes) = match u32_at(&bytes, 4) {
+        let version = u32_at(&bytes, 4);
+        let (label_start, label_bytes) = match version {
             Some(2) => (8, LEGACY_LABEL_BYTES),
-            Some(STATE_VERSION) => (9, *bytes.get(8)? as usize),
+            Some(3 | STATE_VERSION) => (9, *bytes.get(8)? as usize),
             _ => panic!("{} has an unknown state version", path.display()),
         };
         let label_end = label_start + label_bytes;
         let label = bytes.get(label_start..label_end)?;
         let base = String::from_utf8_lossy(label).into_owned();
-        let count = u32_at(&bytes, label_end)? as usize;
-        let header = label_end + 4;
+        let (taxonomy, count_at) = match version {
+            Some(STATE_VERSION) => {
+                let taxonomy = bytes.get(label_end..label_end + 8)?.try_into().ok()?;
+                (u64::from_le_bytes(taxonomy), label_end + 8)
+            }
+            _ => (0, label_end),
+        };
+        let count = u32_at(&bytes, count_at)? as usize;
+        let header = count_at + 4;
         let end = header + count * RECORD_BYTES;
         let records = bytes.get(header..end)?;
         let works = records
@@ -219,6 +228,7 @@ impl State {
             .collect();
         Some(State {
             base,
+            taxonomy,
             works,
             aliases: aliases(&bytes[end..]),
         })
@@ -230,6 +240,7 @@ impl State {
         bytes.extend_from_slice(&STATE_VERSION.to_le_bytes());
         bytes.push(self.base.len() as u8);
         bytes.extend_from_slice(self.base.as_bytes());
+        bytes.extend_from_slice(&self.taxonomy.to_le_bytes());
         bytes.extend_from_slice(&(self.works.len() as u32).to_le_bytes());
         for tracked in &self.works {
             bytes.extend_from_slice(&tracked.work.to_le_bytes());
@@ -589,11 +600,13 @@ mod tests {
         }];
         let plain = State {
             base: "base".to_string(),
+            taxonomy: 7,
             works: works.clone(),
             aliases: Vec::new(),
         };
         let aliased = State {
             base: "base".to_string(),
+            taxonomy: 7,
             works,
             aliases: vec![(1_000_000_001, 5)],
         };
@@ -601,7 +614,7 @@ mod tests {
         assert!(loaded.aliases.is_empty());
         let (loaded, aliased_bytes) = saved(&aliased, "aliased");
         assert_eq!(loaded.aliases, vec![(1_000_000_001, 5)]);
-        assert_eq!(loaded.works[0].work, 5);
+        assert_eq!((loaded.works[0].work, loaded.taxonomy), (5, 7));
         assert!(aliased_bytes.starts_with(&plain_bytes));
         assert_eq!(aliased_bytes.len(), plain_bytes.len() + 4 + 4 + 8);
     }

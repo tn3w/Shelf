@@ -276,3 +276,95 @@ apart	zola	Germinal	zola	Nana
 apart	balzac	Le Père Goriot	balzac	Eugénie Grandet
 apart	plato	The Republic	cicero	De re publica
 apart	austen	Emma	austen	Persuasion
+tags	stevenson	Nimona	-	shapeshifters	nonfiction
+tags	stoker	Dracula	-	vampires	childrens|nonfiction
+tags	meyer	Twilight	-	vampires	nonfiction
+tags	rowling	Harry Potter and the Philosopher's Stone|Harry Potter and the Sorcerer's Stone|Harry Potter und der Stein der Weisen|Harry Potter à l'école des sorciers	-	wizards	nonfiction|horror
+tags	tolkien	The Hobbit|Der kleine Hobbit|Der Hobbit|Bilbo le Hobbit	-	dragons	nonfiction
+tags	shelley	Frankenstein	-	monsters	childrens
+tags	wells	The Time Machine|Die Zeitmaschine|La Machine à explorer le temps	-	time-travel	nonfiction
+tags	wells	The War of the Worlds|Krieg der Welten|La Guerre des mondes	-	aliens	nonfiction
+tags	asimov	I, Robot	-	robots	nonfiction
+tags	dick	Do Androids Dream of Electric Sheep?	-	robots	nonfiction
+tags	gibson	Neuromancer	-	cyberpunk	nonfiction
+tags	mccarthy	The Road|Die Straße	-	apocalypse	childrens
+tags	mandel	Station Eleven	-	pandemics	nonfiction
+tags	camus	La Peste|The Plague|Die Pest	-	pandemics	childrens
+tags	stevenson	Treasure Island|Die Schatzinsel|L'Île au trésor	-	pirates	nonfiction
+tags	barrie	Peter Pan	-	fairies	horror
+tags	sewell	Black Beauty	-	horses	nonfiction
+tags	london	The Call of the Wild|Ruf der Wildnis	-	dogs	nonfiction
+tags	london	White Fang|Wolfsblut|Croc-Blanc	-	wolves	nonfiction
+tags	adams	Watership Down|Unten am Fluss	-	rabbits	nonfiction
+tags	melville	Moby-Dick|Moby Dick	-	whales	childrens
+tags	hemingway	The Old Man and the Sea|Der alte Mann und das Meer|Le Vieil Homme et la Mer	-	sea	childrens
+tags	defoe	Robinson Crusoe	-	shipwrecks	nonfiction
+tags	golding	Lord of the Flies|Herr der Fliegen|Sa Majesté des mouches	-	islands	nonfiction
+tags	paulsen	Hatchet	-	survival	nonfiction
+tags	frank	The Diary of a Young Girl|Das Tagebuch der Anne Frank|Het Achterhuis	-	holocaust	wizards|school
+tags	remarque	All Quiet on the Western Front|Im Westen nichts Neues|À l'ouest rien de nouveau	-	world-war-1	childrens
+tags	vonnegut	Slaughterhouse-Five|Schlachthof 5	-	world-war-2	childrens
+tags	morrison	Beloved	-	slavery	childrens
+tags	whitehead	The Underground Railroad	-	slavery	nonfiction
+tags	lee	To Kill a Mockingbird|Wer die Nachtigall stört	-	racism	nonfiction
+tags	plath	The Bell Jar|Die Glasglocke	-	mental-illness	childrens
+tags	austen	Pride and Prejudice|Stolz und Vorurteil|Orgueil et préjugés	-	siblings	horror|nonfiction
+tags	alcott	Little Women|Betty und ihre Schwestern	-	siblings	horror
+tags	bronte	Jane Eyre	-	orphans	nonfiction
+tags	dickens	Oliver Twist	-	orphans	nonfiction
+tags	montgomery	Anne of Green Gables	-	orphans	nonfiction
+tags	burnett	The Secret Garden|Der geheime Garten	-	orphans	nonfiction
+tags	dumas	The Count of Monte Cristo|Le Comte de Monte-Cristo|Der Graf von Monte Christo	-	revenge	childrens
+tags	dickens	A Tale of Two Cities	-	french-revolution	nonfiction
+tags	orczy	The Scarlet Pimpernel	-	french-revolution	nonfiction
+tags	mantel	Wolf Hall	-	tudors	childrens
+tags	eco	Il nome della rosa|The Name of the Rose|Der Name der Rose	-	middle-ages	childrens
+tags	follett	The Pillars of the Earth|Die Säulen der Erde	-	middle-ages	childrens
+tags	graves	I, Claudius	-	ancient-world	childrens
+tags	mitchell	Gone with the Wind|Vom Winde verweht	-	civil-war-us	childrens
+tags	steinbeck	The Grapes of Wrath|Früchte des Zorns	-	great-depression	childrens
+tags	le carré	The Spy Who Came in from the Cold|Der Spion, der aus der Kälte kam	-	spies	childrens
+tags	fleming	Casino Royale	-	spies	childrens
+tags	puzo	The Godfather|Der Pate	-	mafia	childrens
+tags	harris	The Silence of the Lambs|Das Schweigen der Lämmer	-	serial-killers	childrens
+tags	flynn	Gone Girl	-	missing-persons	childrens
+tags	king	The Shining|Shining	-	psychic-powers	childrens
+tags	king	Carrie	-	psychic-powers	nonfiction
+tags	rice	Interview with the Vampire	-	vampires	childrens
+tags	baum	The Wonderful Wizard of Oz|Der Zauberer von Oz	-	wizards	horror
+tags	dahl	The Witches|Hexen hexen	-	witches	nonfiction
+tags	dickens	A Christmas Carol|Eine Weihnachtsgeschichte	-	christmas	nonfiction
+tags	van allsburg	The Polar Express	-	christmas	horror
+tags	brown	Goodnight Moon	-	bedtime	horror
+tags	carle	The Very Hungry Caterpillar|Die kleine Raupe Nimmersatt	-	insects	horror
+tags	sendak	Where the Wild Things Are|Wo die wilden Kerle wohnen	-	monsters	horror
+tags	donaldson	The Gruffalo|Der Grüffelo	-	mice	horror
+tags	crichton	Jurassic Park	-	dinosaurs	childrens
+tags	weir	The Martian|Der Marsianer	-	space-exploration	childrens
+tags	l'engle	A Wrinkle in Time	-	time-travel	nonfiction
+tags	gabaldon	Outlander	-	time-travel	childrens
+tags	niffenegger	The Time Traveler's Wife	-	time-travel	childrens
+tags	cline	Ready Player One	-	virtual-reality	nonfiction
+tags	lewis	The Lion, the Witch and the Wardrobe|Der König von Narnia	-	witches	nonfiction
+tags	verne	Vingt mille lieues sous les mers|Twenty Thousand Leagues Under the Sea|20.000 Meilen unter dem Meer	-	sea	nonfiction
+tags	lindgren	Bröderna Lejonhjärta|Die Brüder Löwenherz|The Brothers Lionheart	-	siblings	nonfiction
+tags	preußler	Krabat	-	wizards	nonfiction
+tags	preußler	Die kleine Hexe|The Little Witch	-	witches	horror
+tags	sommer-bodenburg	Der kleine Vampir|The Little Vampire	-	vampires	nonfiction
+tags	süskind	Das Parfum|Perfume	-	serial-killers	childrens
+tags	brandis	Carags Verwandlung	-	shapeshifters	nonfiction
+tags	funke	Tintenherz|Inkheart	-	books-libraries	nonfiction
+tags	kafka	Die Verwandlung|The Metamorphosis|La Métamorphose	-	-	shapeshifters
+tags	garcía márquez	Cien años de soledad|One Hundred Years of Solitude|Hundert Jahre Einsamkeit	-	family-saga	loneliness
+tags	harari	Sapiens	-	evolution	fiction|school
+tags	hawking	A Brief History of Time|Eine kurze Geschichte der Zeit	-	astronomy	fiction|time-travel
+tags	dawkins	The Selfish Gene|Das egoistische Gen	-	evolution	fiction
+tags	carson	Silent Spring|Der stumme Frühling	-	environmentalism	fiction
+tags	clear	Atomic Habits	-	productivity	fiction
+tags	ries	The Lean Startup	-	entrepreneurship	fiction
+tags	graham	The Intelligent Investor	-	investing	fiction
+tags	aurelius	Meditations|Selbstbetrachtungen	-	stoicism	fiction
+tags	gawande	Being Mortal	-	aging	fiction
+tags	krakauer	Into Thin Air	-	mountains	fiction
+tags	bourdain	Kitchen Confidential	-	-	chefs
+tags	capote	In Cold Blood|Kaltblütig	-	true-crime	school|chefs

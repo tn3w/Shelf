@@ -9,6 +9,7 @@ import java.util.zip.DeflaterOutputStream
 val TAGS = listOf(
     "fiction", "nonfiction", "fantasy", "magic", "dragons", "space", "crime", "childrens",
 )
+val THEMES = listOf("werewolves", "pirates", "time-travel")
 private const val RECORDS_PER_BLOCK = 2
 private const val TERMS_PER_BLOCK = 3
 private const val COMPLETION_LIMIT = 12
@@ -29,6 +30,7 @@ data class Fixture(
     val digar: Int = 0,
     val alternate: String = "",
     val rating: Double = 4.0,
+    val themes: List<String> = emptyList(),
 )
 
 class Bytes {
@@ -216,6 +218,7 @@ fun segmentBuffer(
     base: String? = null,
     tombstones: List<Int> = emptyList(),
     tagTable: List<String> = TAGS,
+    themeTable: List<String> = THEMES,
 ): ByteBuffer {
     val books = unsorted.sortedBy { it.work }
     val authors = books.map { it.author }.distinct()
@@ -230,6 +233,10 @@ fun segmentBuffer(
                 book.tags.forEach { byte(tagTable.indexOf(it)) }
             }
             varint(series.indexOf(book.series) + 1)
+            if (book.themes.isNotEmpty()) {
+                varint(0).varint(book.themes.size)
+                book.themes.forEach { varint(themeTable.indexOf(it)) }
+            }
         }
     }
     val heads = books.map {
@@ -246,6 +253,10 @@ fun segmentBuffer(
     val tagRows = tagTable.map { slug ->
         val locals = books.indices.filter { slug in books[it].tags }
         bytes { text(slug).text(slug).text("genre").varint(locals.size).postings(locals) }
+    }
+    val themeRows = themeTable.map { slug ->
+        val locals = books.indices.filter { slug in books[it].themes }
+        bytes { text(slug).text(slug).text("theme").varint(locals.size).postings(locals) }
     }
     val descriptions = bytes {
         books.forEachIndexed { local, book ->
@@ -285,7 +296,9 @@ fun segmentBuffer(
         ),
         "tags" to table(tagRows),
     )
+    val themed = books.any { it.themes.isNotEmpty() }
     val optional = listOfNotNull(
+        if (themed) "themes" to table(themeRows) else null,
         isbnSection(books)?.let { "isbns" to it },
         libraryCoverSection(books)?.let { "library_covers" to it },
     )

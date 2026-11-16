@@ -5,7 +5,7 @@ use crate::libraries::{
     first_number, normalized_name,
 };
 use crate::release;
-use crate::tags::Classes;
+use crate::tags::{self, Classes};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
@@ -199,6 +199,30 @@ fn tail(uri: &str) -> &str {
         .rsplit(['/', '#'])
         .next()
         .unwrap_or(uri)
+}
+
+fn spaced(camel: &str) -> String {
+    let mut words = String::with_capacity(camel.len() + 8);
+    let mut previous = ' ';
+    for character in camel.chars() {
+        if character.is_uppercase() && (previous.is_lowercase() || previous.is_ascii_digit()) {
+            words.push(' ');
+        }
+        words.push(character);
+        previous = character;
+    }
+    words
+}
+
+fn libris_themes(work: &Value) -> Vec<u16> {
+    let headings =
+        items(&work["subject"])
+            .into_iter()
+            .map(|subject| match text(&subject["prefLabel"]) {
+                "" => percent_decoded(tail(text(&subject["@id"]))),
+                label => label.to_string(),
+            });
+    tags::themes_of(headings)
 }
 
 fn mapped(terms: &[String], table: &[(&str, &'static str)]) -> Vec<&'static str> {
@@ -403,6 +427,7 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
         format,
         classes,
         subjects,
+        themes: libris_themes(work),
         identifier: format!("libris:{control}"),
         ..Record::default()
     })
@@ -448,6 +473,7 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
     let literature = kdc.starts_with('8') && !kdc[1..].starts_with('0');
     let form = kdc.chars().nth(2).filter(|_| literature);
     let keywords = texts(&value["keyword"]);
+    let themes = tags::themes_of(&keywords);
     let mut terms: Vec<String> = keywords.iter().map(|keyword| keyword.to_string()).collect();
     terms.push(text(&value["title"]).to_string());
     let mut subjects = mapped(&terms, &NLK_SUBJECTS);
@@ -510,6 +536,7 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
         format: PAPERBACK,
         classes,
         subjects,
+        themes,
         ..Record::default()
     })
     .filter(|record| !record.title.is_empty())
@@ -525,6 +552,7 @@ struct BnbDraft {
     year: u16,
     english: bool,
     subjects: Vec<String>,
+    headings: Vec<String>,
 }
 
 impl BnbDraft {
@@ -540,7 +568,11 @@ impl BnbDraft {
             "isbn13" | "isbn10" => self.isbns.extend(catalog::isbn_key(&literal(object))),
             "isPartOf" => self.series = uri(object).trim_start_matches(BNB_SERIES).to_string(),
             "language" => self.english |= object.ends_with("/eng>"),
-            "subject" => self.subjects.push(tail(uri(object)).to_lowercase()),
+            "subject" => {
+                let concept = tail(uri(object));
+                self.subjects.push(concept.to_lowercase());
+                self.headings.push(spaced(concept));
+            }
             _ => {}
         }
     }
@@ -569,6 +601,7 @@ impl BnbDraft {
         let has = |stem: &str| self.has(stem);
         let fiction = self.is_fiction();
         let mut subjects = mapped(&self.subjects, &BNB_SUBJECTS);
+        let themes = tags::themes_of(&self.headings);
         subjects.extend(match form {
             Some('1') => Some("poetry"),
             Some('2') => Some("drama"),
@@ -614,6 +647,7 @@ impl BnbDraft {
             format: PAPERBACK,
             classes,
             subjects,
+            themes,
             joins_only: true,
             ..Record::default()
         }

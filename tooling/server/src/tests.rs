@@ -49,6 +49,7 @@ fn work<'a>(id: u32, title: &'a str, authors: &'a [u32], tags: &'a [u8]) -> Work
         year: 0,
         cover: 0,
         tags,
+        themes: &[],
         series: None,
         description: "",
         translated: false,

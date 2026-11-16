@@ -7,7 +7,7 @@ use crate::libraries::{
 };
 use crate::people;
 use crate::release;
-use crate::tags::Classes;
+use crate::tags::{self, Classes};
 use std::collections::HashMap;
 
 const FICTION_FORMS: &str = "1fjpdmhc";
@@ -756,6 +756,16 @@ fn classes(reader: &Reader) -> Classes {
     }
 }
 
+const MARC21_HEADINGS: [&str; 6] = ["650", "651", "653", "655", "648", "689"];
+const UNIMARC_HEADINGS: [&str; 4] = ["606", "607", "608", "610"];
+
+fn themes(marc: &Marc, tags: &[&str]) -> Vec<u16> {
+    let fields = tags.iter().flat_map(|&tag| marc.fields(tag));
+    let subfields = fields.flat_map(|field| field.subfields.iter());
+    let headings = subfields.filter(|(code, _)| matches!(code, 'a' | 'x' | 'v'));
+    tags::themes_of(headings.map(|&(_, text)| text))
+}
+
 fn finished(mut subjects: Vec<&'static str>, reader: &Reader) -> Vec<&'static str> {
     let base = match () {
         _ if reader.teen => Some("young adult fiction"),
@@ -1010,6 +1020,7 @@ pub fn marc21_record(marc: &Marc, source: Source, profile: &Profile) -> Option<R
         format: marc_format(marc, &terms, reader.comics),
         classes: classes(&reader),
         subjects: finished(subjects, &reader),
+        themes: themes(marc, &MARC21_HEADINGS),
         digar: digar(marc),
         compilation: main.trim_end().ends_with(';') || main.contains(" ; "),
         joins_only: false,
@@ -1136,6 +1147,7 @@ pub fn unimarc_record(marc: &Marc, profile: &Unimarc) -> Option<Record> {
         format,
         classes: classes(&reader),
         subjects: finished(subjects, &reader),
+        themes: themes(marc, &UNIMARC_HEADINGS),
         compilation: marc.values("200", 'a').nth(1).is_some(),
         ..Record::default()
     })
