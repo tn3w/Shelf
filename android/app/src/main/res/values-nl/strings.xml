@@ -3,7 +3,7 @@
     <string name="about">Over</string>
     <string name="about_book">Over dit boek</string>
     <string name="app_language">App-taal</string>
-    <string name="appearance">Weergave</string>
+    <string name="appearance">Uiterlijk</string>
     <string name="audience">Leeftijdsgroep</string>
     <string name="back">Terug</string>
     <string name="backup">Back-up</string>
@@ -47,7 +47,7 @@
     <string name="install">Installeren</string>
     <string name="install_anyway">Toch installeren</string>
     <string name="larger_text">Grotere tekst</string>
-    <string name="later">Later</string>
+    <string name="later">Straks</string>
     <string name="next">Doorgaan</string>
     <string name="library">Bibliotheek</string>
     <string name="library_empty">Boeken die je begint, bewaart of importeert, verschijnen hier.</string>
@@ -88,7 +88,7 @@
     <string name="pack_scifi">Sciencefiction</string>
     <string name="pack_suggestion">De meeste boeken zoals deze zitten in het pakket “%s”, dat nog niet is geïnstalleerd. Download het om er veel meer te zien.</string>
     <string name="pack_update">Update beschikbaar</string>
-    <string name="pack_young_adult">Young adult</string>
+    <string name="pack_young_adult">Jongvolwassenen</string>
     <string name="page_of">Pagina %1$d van %2$d</string>
     <string name="percent_read">%d%% gelezen</string>
     <string name="popular">Populair</string>
@@ -124,7 +124,7 @@
     <string name="theme_light">Licht</string>
     <string name="theme_system">Systeem</string>
     <string name="topics">Onderwerpen</string>
-    <string name="trending">Trending</string>
+    <string name="trending">Nu populair</string>
     <string name="unsupported_file">Bestand niet ondersteund. Probeer EPUB, MOBI, AZW3, PDF, FB2, CBZ, DOCX, ODT, RTF, TXT of HTML.</string>
     <string name="up_to_date">Shelf is up-to-date.</string>
     <string name="update_available">Shelf %s beschikbaar</string>
@@ -221,7 +221,7 @@
     <string name="margins">Marges</string>
     <string name="typeface">Lettertype</string>
     <string name="page_color">Paginakleur</string>
-    <string name="spacing_compact">Compact</string>
+    <string name="spacing_compact">Dicht</string>
     <string name="normal">Normaal</string>
     <string name="spacing_relaxed">Ruim</string>
     <string name="margin_narrow">Smal</string>
@@ -481,7 +481,7 @@
     <string name="character_voices">Stemmen per personage</string>
     <string name="finding_speakers">Sprekers zoeken…</string>
     <string name="speakers_found">Sprekers gevonden: %1$d</string>
-    <string name="listening">Luisteren</string>
+    <string name="listening">Audio</string>
     <string name="listening_hint">Stemmen, voorlezen en luisterboeken</string>
     <string name="narration">Voorlezen</string>
     <string name="character_voices_model">Download hieronder sprekerherkenning om dit te gebruiken</string>
