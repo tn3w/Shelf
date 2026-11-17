@@ -79,7 +79,11 @@ jobs:
           retention-days: 1
 
   enrichment:
+    needs: prepare
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOURCES: ${{ needs.prepare.outputs.sources }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -87,9 +91,16 @@ jobs:
         run: |
           mkdir -p enrichment
           tooling/wikidata.sh enrichment/wikidata
-          curl -sSfL --retry 10 --retry-all-errors \
-            https://www.gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2 \
-            | tar -xjO | gzip -1 > enrichment/gutenberg.rdf.gz
+          for host in www.gutenberg.org gutenberg.pglaf.org; do
+            curl -sSfL --retry 1 --retry-all-errors --connect-timeout 30 --max-time 600 \
+              -o gutenberg.tar.bz2 "https://$host/cache/epub/feeds/rdf-files.tar.bz2" && break
+            rm -f gutenberg.tar.bz2
+          done
+          if ! { [ -f gutenberg.tar.bz2 ] \
+            && tar -xjOf gutenberg.tar.bz2 | gzip -1 > enrichment/gutenberg.rdf.gz; }; then
+            echo "Gutenberg unreachable, using the copy in $SOURCES"
+            gh release download "$SOURCES" --pattern gutenberg.rdf.gz --dir enrichment --clobber
+          fi
           du -sh enrichment/*
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
