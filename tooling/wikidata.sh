@@ -10,8 +10,10 @@ endpoint=https://qlever.dev/api/wikidata
 languages="en de fr es et sv pl cs ko fi ja lv pt ru it"
 
 fetch() {
-  curl -sSfL --retry 5 --retry-all-errors --max-time 900 "$endpoint" \
-    -H "Accept: text/tab-separated-values" --data-urlencode "query=$2" >> "$out/$1.tsv"
+  curl -sSfL --retry 8 --retry-delay 30 --retry-all-errors --max-time 900 "$endpoint" \
+    -H "Accept: text/tab-separated-values" --data-urlencode "query=$2" -o "$out/part.tsv"
+  cat "$out/part.tsv" >> "$out/$1.tsv"
+  rm "$out/part.tsv"
 }
 
 mkdir -p "$out"
