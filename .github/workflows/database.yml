@@ -90,7 +90,12 @@ jobs:
       - name: Fetch Wikidata and Project Gutenberg
         run: |
           mkdir -p enrichment
-          tooling/wikidata.sh enrichment/wikidata
+          if ! tooling/wikidata.sh enrichment/wikidata; then
+            echo "Wikidata unreachable, using the copy in $SOURCES"
+            rm -rf enrichment/wikidata
+            gh release download "$SOURCES" --pattern wikidata.tar.gz --clobber
+            tar -xzf wikidata.tar.gz -C enrichment
+          fi
           for host in www.gutenberg.org gutenberg.pglaf.org; do
             curl -sSfL --connect-timeout 20 --max-time 300 \
               --speed-limit 2000000 --speed-time 20 -o gutenberg.tar.bz2 \
