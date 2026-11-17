@@ -251,8 +251,19 @@ jobs:
           }
           latvia() {
             dom=https://dom.lndb.lv/data/obj
-            books=$(curl -sSf "$dom/1642421.xml" \
+            books=$(curl -sSf --connect-timeout 20 --max-time 60 "$dom/1642421.xml" \
               | grep -oE 'hasPart digitalObjectId="[0-9]+"' | grep -oE '[0-9]+' | tail -1)
+            if [ -z "$books" ]; then
+              echo "LNB unreachable, using the copies in $SOURCES" >&2
+              gh release download "$SOURCES" --dir /mnt/dumps/parts --pattern "lnb-*.zst.part*" >&2
+              for first in /mnt/dumps/parts/lnb-*.zst.part00; do
+                name=$(basename "$first" .zst.part00)
+                cat /mnt/dumps/parts/"$name".zst.part* | zstd -dc > "/mnt/dumps/$name"
+                printf '/mnt/dumps/%s\n' "$name"
+              done | paste -sd,
+              rm -r /mnt/dumps/parts
+              return
+            fi
             curl -sSf "$dom/$books.xml" \
               | grep -oE 'id="[0-9]+" type="Access" [^>]*name="bk_[a-z0-9_]+\.xml"' \
               | sed -E 's/id="([0-9]+)".*name="([^"]+)"/\1 \2/' \
