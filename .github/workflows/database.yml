@@ -165,6 +165,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
+      fail-fast: false
       matrix:
         language: [en, de, fr, es, et, sv, pl, cs, ko, fi, ja, lv, pt, ru, it]
     env:
@@ -316,9 +317,16 @@ jobs:
               library="nlk=/mnt/dumps/$name" ;;
             fi)
               index=https://data.nationallibrary.fi/download/
-              name=$(curl -sSf "$index" | grep -oE 'Fennica-bib-[0-9]+\.zip' \
-                | sort -u | tail -1)
-              aria "$index$name"
+              name=$(curl -sSf --max-time 60 "$index" \
+                | grep -oE 'Fennica-bib-[0-9]+\.zip' | sort -u | tail -1)
+              if [ -n "$name" ]; then
+                aria "$index$name"
+              else
+                echo "Fennica dump unreachable, using the copy in $SOURCES"
+                gh release download "$SOURCES" --dir /mnt/dumps \
+                  --pattern "Fennica-bib-*.zip"
+                name=$(cd /mnt/dumps && ls Fennica-bib-*.zip | tail -1)
+              fi
               library="fennica=/mnt/dumps/$name" ;;
             es)
               for name in monomodernas recelectronicos persona; do
