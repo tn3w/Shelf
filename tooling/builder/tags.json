@@ -1988,7 +1988,8 @@
         "games",
         "video games",
         "computer games"
-      ]
+      ],
+      "fiction": true
     },
     {
       "slug": "ghosts",
@@ -6342,8 +6343,6 @@
       "include": [
         "conspiracy",
         "conspiracy theories",
-        "political corruption",
-        "corruption",
         "verschwörung",
         "verschwörungstheorien",
         "complot",
@@ -6458,7 +6457,14 @@
         "секты",
         "gnd:4077343-7"
       ],
-      "exclude": ["game", "games", "video games", "computer games"]
+      "exclude": [
+        "christian",
+        "islamic",
+        "game",
+        "games",
+        "video games",
+        "computer games"
+      ]
     },
     {
       "slug": "terrorism",
@@ -9664,7 +9670,6 @@
         "cinéma",
         "industrie cinématographique",
         "filmregisseure",
-        "film",
         "cine y hollywood",
         "film ja hollywood",
         "film och hollywood",
@@ -11807,7 +11812,7 @@
         "gnd:4058900-6",
         "gnd:4146608-1"
       ],
-      "exclude": ["game", "games", "video games", "computer games"]
+      "exclude": ["pastoral", "game", "games", "video games", "computer games"]
     }
   ],
   "bisac": {

@@ -139,6 +139,7 @@ const IGNORED_PREFIXES: &[&str] = &[
     "reading level",
     "accelerated reader",
     "open library",
+    "internet archive",
     "open_syllabus",
     "long now manual",
     "/tags/",
@@ -937,6 +938,18 @@ mod tests {
             "Metamorphes Gestein",
             "/tags/OL177T",
             "Werewolf (Game)",
+            "Internet Archive Wishlist",
+            "Films",
+            "In library",
+            "Accessible book",
+            "Protected DAISY",
+            "Lending library",
+            "OverDrive",
+            "Large type books",
+            "Popular Print Disabled Books",
+            "Political corruption",
+            "Christian sects",
+            "Pastoral letters and charges",
         ] {
             assert!(heading_themes(heading).is_empty(), "{heading}");
         }
