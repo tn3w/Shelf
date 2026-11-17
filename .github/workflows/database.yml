@@ -81,7 +81,7 @@ jobs:
   enrichment:
     needs: prepare
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 20
     env:
       SOURCES: ${{ needs.prepare.outputs.sources }}
     steps:
@@ -92,8 +92,9 @@ jobs:
           mkdir -p enrichment
           tooling/wikidata.sh enrichment/wikidata
           for host in www.gutenberg.org gutenberg.pglaf.org; do
-            curl -sSfL --retry 1 --retry-all-errors --connect-timeout 30 --max-time 600 \
-              -o gutenberg.tar.bz2 "https://$host/cache/epub/feeds/rdf-files.tar.bz2" && break
+            curl -sSfL --connect-timeout 20 --max-time 300 \
+              --speed-limit 2000000 --speed-time 20 -o gutenberg.tar.bz2 \
+              "https://$host/cache/epub/feeds/rdf-files.tar.bz2" && break
             rm -f gutenberg.tar.bz2
           done
           if ! { [ -f gutenberg.tar.bz2 ] \
