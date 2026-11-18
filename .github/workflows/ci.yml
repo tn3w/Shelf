@@ -22,6 +22,19 @@ env:
 jobs:
   android:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - check: lint
+            tasks: lintGithubDebug lintFdroidRelease
+          - check: test
+            tasks: testGithubDebugUnitTest testFdroidDebugUnitTest
+          - check: release
+            tasks: >-
+              assembleGithubDebug minifyGithubReleaseWithR8 testGithubDebugUnitTest
+              --tests dev.tn3w.shelf.ReleaseRouteTest
+    name: android (${{ matrix.check }})
     defaults:
       run:
         working-directory: android
@@ -41,6 +54,7 @@ jobs:
           "ndk;30.0.16248370" "cmake;3.31.6" > /dev/null
 
       - name: ktlint
+        if: matrix.check == 'lint'
         env:
           KTLINT: https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
           KTLINT_SHA256: a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75
@@ -50,12 +64,15 @@ jobs:
           chmod +x ktlint
           ./ktlint "app/src/**/*.kt"
 
-      - run: >
-          ./gradlew assembleGithubDebug lintGithubDebug lintFdroidRelease
-          minifyGithubReleaseWithR8 testGithubDebugUnitTest testFdroidDebugUnitTest
+      - run: ./gradlew ${{ matrix.tasks }}
 
   rust:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [clippy, test]
+    name: rust (${{ matrix.check }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -65,26 +82,32 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             tooling/target
-          key: rust-${{ hashFiles('tooling/*/Cargo.lock', 'tooling/*/Cargo.toml') }}
-          restore-keys: rust-
+          key: >-
+            rust-${{ matrix.check }}-${{
+            hashFiles('tooling/*/Cargo.lock', 'tooling/*/Cargo.toml') }}
+          restore-keys: rust-${{ matrix.check }}-
 
-      - run: sudo apt-get install -y nasm
-
-      - run: rustup component add rustfmt clippy
-
-      - name: builder
-        working-directory: tooling/builder
+      - name: nasm
         run: |
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get install -y --no-install-recommends nasm
+
+      - name: clippy
+        if: matrix.check == 'clippy'
+        run: |
+          rustup component add rustfmt clippy
+          cd tooling/builder
           cargo fmt --check
           cargo clippy --locked --all-targets -- -D warnings
-          cargo test --locked
-
-      - name: server
-        working-directory: tooling/server
-        run: |
+          cd ../server
           cargo fmt --all --check
           cargo clippy --locked --workspace --all-targets -- -D warnings
-          cargo test --locked --workspace
+
+      - name: test
+        if: matrix.check == 'test'
+        run: |
+          cargo test --locked --manifest-path tooling/builder/Cargo.toml
+          cargo test --locked --workspace --manifest-path tooling/server/Cargo.toml
 
   scan:
     runs-on: ubuntu-24.04
