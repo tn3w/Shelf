@@ -11,8 +11,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.LibraryAdd
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -38,6 +40,7 @@ import kotlin.math.max
 
 private const val STARTS = 3
 private const val SIMILAR_LIMIT = 40
+private const val WISH_LIMIT = 90
 private const val FAN_POOL = 24
 private const val HERO_FAN = 5
 private const val CARD_FAN = 3
@@ -132,17 +135,23 @@ class ExploreViewModel(app: ShelfApp) : ShelfViewModel(app) {
     val missing = catalogueState { catalogue.workCount == 0 }
 }
 
+private fun ShelfApp.missingPack(
+    language: String,
+    tags: List<Tag>,
+): Pair<String, String>? {
+    val available = packs.packs(language)
+        .filter { it.state == PackState.Available }
+        .map { it.pack }
+    val pack = tags.mapNotNull(::packFor).firstOrNull { it in available } ?: return null
+    return language to pack
+}
+
 class TagViewModel(app: ShelfApp, id: Int) : ShelfViewModel(app) {
     private val _sort = MutableStateFlow(TagSort.Popular)
     val sort = _sort.asStateFlow()
     val tag = catalogueState { catalogue.tags.getOrNull(id) }
     val missingPack = catalogueState {
-        val pack = catalogue.tags.getOrNull(id)?.let(::packFor)
-            ?: return@catalogueState null
-        val language = catalogue.language
-        val missing = app.packs.packs(language)
-            .any { it.pack == pack && it.state == PackState.Available }
-        if (missing) language to pack else null
+        app.missingPack(catalogue.language, listOfNotNull(catalogue.tags.getOrNull(id)))
     }
     val books = combine(loaded.filterNotNull(), sort) { current, order ->
         current.recommender.popular(90, id, order)
@@ -150,6 +159,31 @@ class TagViewModel(app: ShelfApp, id: Int) : ShelfViewModel(app) {
 
     fun sortBy(order: TagSort) {
         _sort.value = order
+    }
+
+    fun download(language: String, pack: String) = app.download(language, pack)
+}
+
+class WishViewModel(app: ShelfApp, query: String) : ShelfViewModel(app) {
+    private val _skipped = MutableStateFlow(emptySet<Int>())
+    val skipped = _skipped.asStateFlow()
+    val wish = catalogueState { wishOf(query, catalogue.tags) }
+    val wished = combine(loaded.filterNotNull(), skipped) { current, off ->
+        val wish = wishOf(query, current.catalogue.tags)
+        val kept = Wish(
+            wish.tags.filter { it.id !in off },
+            wish.excluded.filter { it.id !in off },
+        )
+        current.recommender.wished(kept, WISH_LIMIT)
+    }.asState()
+
+    val missingPack = catalogueState {
+        app.missingPack(catalogue.language, wishOf(query, catalogue.tags).tags)
+    }
+
+    fun toggle(tag: Tag) {
+        val id = tag.id
+        _skipped.update { if (id in it) it - id else it + id }
     }
 
     fun download(language: String, pack: String) = app.download(language, pack)
@@ -338,6 +372,59 @@ private fun StartCard(start: Start, onClick: () -> Unit) {
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun WishScreen(query: String, navigator: Navigator) {
+    val viewModel = shelfViewModel { WishViewModel(it, query) }
+    val wish by viewModel.wish.collectAsStateWithLifecycle()
+    val skipped by viewModel.skipped.collectAsStateWithLifecycle()
+    val wished by viewModel.wished.collectAsStateWithLifecycle()
+    val missingPack by viewModel.missingPack.collectAsStateWithLifecycle()
+    val downloads by viewModel.downloads.collectAsStateWithLifecycle()
+    val offline = loadedSettings()?.isOffline(LocalContext.current) ?: true
+    val noResults = stringResource(R.string.no_results)
+    Column(Modifier.padding(top = statusBarHeight())) {
+        BackBar(navigator::back)
+        Text(
+            query,
+            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 14.dp),
+            style = Look.type.title,
+        )
+        wish?.let { WishChips(it, wished?.used.orEmpty(), skipped, viewModel::toggle) }
+        BookGrid(wished?.books, "wish", navigator::book, footer = {
+            if (wished?.books?.isEmpty() == true && missingPack == null) {
+                fullWidth { EmptyState(Icons.Rounded.SearchOff, noResults) }
+            }
+            val (language, pack) = missingPack?.takeIf { !offline } ?: return@BookGrid
+            fullWidth {
+                MissingPack(pack, downloads["$language-$pack"]) {
+                    viewModel.download(language, pack)
+                }
+            }
+        })
+    }
+}
+
+@Composable
+private fun WishChips(
+    wish: Wish,
+    used: List<Tag>,
+    skipped: Set<Int>,
+    onToggle: (Tag) -> Unit,
+) {
+    if (wish.tags.isEmpty()) return
+    FilterRow {
+        wish.tags.forEach { tag ->
+            Tag(tag.label, selected = used.any { it.id == tag.id }) { onToggle(tag) }
+        }
+        wish.excluded.forEach { tag ->
+            val active = tag.id !in skipped
+            Tag(tag.label, selected = active, icon = Icons.Rounded.Block) {
+                onToggle(tag)
             }
         }
     }

@@ -44,6 +44,7 @@
     <string name="finished">Przeczytane</string>
     <string name="for_you">Dla ciebie</string>
     <string name="formats">Rodzaje książek</string>
+    <string name="wish_suggestion">Książki: %s</string>
     <string name="genres">Gatunki</string>
     <string name="goal_reached">Cel dzienny osiągnięty. Do jutra!</string>
     <string name="home">Start</string>

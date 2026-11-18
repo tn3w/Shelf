@@ -44,6 +44,7 @@
     <string name="finished">Loetud</string>
     <string name="for_you">Sinule</string>
     <string name="formats">Raamatutüübid</string>
+    <string name="wish_suggestion">Raamatud: %s</string>
     <string name="genres">Žanrid</string>
     <string name="goal_reached">Päeva eesmärk on täidetud. Homseni!</string>
     <string name="home">Avaleht</string>

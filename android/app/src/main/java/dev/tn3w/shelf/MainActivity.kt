@@ -75,6 +75,8 @@ import androidx.compose.ui.graphics.Color as Tint
 
 @Serializable data class TagRoute(val id: Int)
 
+@Serializable data class WishRoute(val query: String)
+
 @Serializable data class SeriesRoute(val work: Int)
 
 @Serializable data class ListRoute(val name: String)
@@ -132,6 +134,8 @@ class Navigator(
         controller.navigate(AuthorRoute(author.number, author.name))
 
     fun tag(id: Int) = controller.navigate(TagRoute(id))
+
+    fun wish(query: String) = controller.navigate(WishRoute(query))
 
     fun series(work: Int) = controller.navigate(SeriesRoute(work))
 
@@ -586,6 +590,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
             AuthorScreen(Author(route.number, route.name), navigator)
         }
         screen<TagRoute> { TagScreen(it.toRoute<TagRoute>().id, navigator) }
+        screen<WishRoute> { WishScreen(it.toRoute<WishRoute>().query, navigator) }
         screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
         screen<ListRoute> { ListScreen(it.toRoute<ListRoute>().name, navigator) }
         screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }

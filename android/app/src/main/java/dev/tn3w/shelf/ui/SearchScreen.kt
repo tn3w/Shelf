@@ -43,6 +43,7 @@ data class Results(
     val authors: List<Author>,
     val books: List<Book>,
     val facets: List<Tag>,
+    val wish: List<Tag>,
 )
 
 private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Results {
@@ -61,6 +62,7 @@ private fun Loaded.results(query: String, filter: SearchFilter, job: Job): Resul
         if (refining) emptyList() else searcher.authors(lookup, job = job),
         listOfNotNull(isbn) + books.filter { it.work != isbn?.work },
         tags.distinct().mapNotNull { catalogue.tags.getOrNull(it) },
+        if (refining) emptyList() else wishOf(query, catalogue.tags).tags,
     )
 }
 
@@ -147,9 +149,23 @@ fun SearchScreen(navigator: Navigator) {
                 }
                 return@LazyColumn
             }
-            val nothing = current.authors.isEmpty() && current.books.isEmpty()
+            val nothing = current.authors.isEmpty() && current.books.isEmpty() &&
+                current.wish.isEmpty()
             if (nothing && owned.isEmpty()) {
                 item { NoResults(filter.narrows, ::clearFilters) }
+            }
+            if (current.wish.isNotEmpty()) {
+                item(key = "wish") {
+                    val tags = current.wish.joinToString(" · ") { it.label }
+                    IconSuggestionRow(
+                        Icons.Rounded.AutoAwesome,
+                        stringResource(R.string.wish_suggestion, tags),
+                        Modifier.animateItem(),
+                    ) {
+                        saveQuery()
+                        navigator.wish(query.trim())
+                    }
+                }
             }
             val completions =
                 current.completions.filter { it != query.trim().lowercase() }

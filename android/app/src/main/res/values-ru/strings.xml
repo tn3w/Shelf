@@ -44,6 +44,7 @@
     <string name="finished">Прочитано</string>
     <string name="for_you">Для вас</string>
     <string name="formats">Типы книг</string>
+    <string name="wish_suggestion">Книги: %s</string>
     <string name="genres">Жанры</string>
     <string name="goal_reached">Цель на день достигнута. До завтра!</string>
     <string name="home">Главная</string>

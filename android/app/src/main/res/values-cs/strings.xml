@@ -44,6 +44,7 @@
     <string name="finished">Přečteno</string>
     <string name="for_you">Pro vás</string>
     <string name="formats">Typy knih</string>
+    <string name="wish_suggestion">Knihy: %s</string>
     <string name="genres">Žánry</string>
     <string name="goal_reached">Denní cíl splněn. Zítra zase!</string>
     <string name="home">Domů</string>

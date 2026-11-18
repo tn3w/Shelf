@@ -44,6 +44,7 @@
     <string name="finished">Läst</string>
     <string name="for_you">För dig</string>
     <string name="formats">Boktyper</string>
+    <string name="wish_suggestion">Böcker med %s</string>
     <string name="genres">Genrer</string>
     <string name="goal_reached">Dagens mål är nått. Vi ses i morgon!</string>
     <string name="home">Hem</string>

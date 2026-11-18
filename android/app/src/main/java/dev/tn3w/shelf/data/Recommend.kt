@@ -14,7 +14,7 @@ import kotlin.random.Random
 private val SHELF_WEIGHT =
     mapOf(Shelf.Read to 0.8, Shelf.Reading to 1.0, Shelf.Want to 0.5)
 private val FORM_TAGS = setOf("fiction", "nonfiction")
-private val AUDIENCE_TAGS =
+internal val AUDIENCE_TAGS =
     setOf("picture-book", "childrens", "middle-grade", "young-adult")
 private val BROAD_TAGS = FORM_TAGS + AUDIENCE_TAGS
 
@@ -88,6 +88,7 @@ private const val REPEAT_BOOST = 0.5
 private const val SPARSE_TAGS = 2
 private const val ENRICH_WEIGHT = 0.4
 private const val ENRICH_WORKS = 6
+private const val WISH_MINIMUM = 12
 private const val DISLIKED_STARS = 2
 private const val DISLIKE_WEIGHT = 0.4
 private const val DISLIKED_AUTHOR = 0.6
@@ -192,6 +193,8 @@ sealed interface RecommendSeed {
 class Recommendation(val book: Book, val score: Double, val signals: Map<String, Double>)
 
 data class AuthorGroup(val series: String?, val books: List<Book>)
+
+data class Wished(val used: List<Tag>, val books: List<Book>)
 
 enum class RowKind {
     Series,
@@ -1188,6 +1191,39 @@ class Recommender(
             }
         }
         return ordered.mapNotNull(picker::accept).take(limit)
+    }
+
+    private fun sharedWorks(tags: List<Tag>): IntArray {
+        val lists = tags.map { catalogue.tagWorks(it.id) }.sortedBy { it.size }
+        val others = lists.drop(1).map { it.sortedArray() }
+        return lists.first()
+            .filter { work -> others.all { it.binarySearch(work) >= 0 } }
+            .toIntArray()
+    }
+
+    private fun withoutTags(works: IntArray, tags: List<Tag>): IntArray {
+        val unwanted = tags.map { catalogue.tagWorks(it.id).sortedArray() }
+        return works.filter { work -> unwanted.none { it.binarySearch(work) >= 0 } }
+            .toIntArray()
+    }
+
+    /**
+     * Popular books carrying every wished tag and none of the excluded ones. The reader
+     * group always holds; while too few books remain, the broadest other tag is let go.
+     */
+    fun wished(wish: Wish, limit: Int = 90): Wished {
+        if (wish.tags.isEmpty()) return Wished(emptyList(), emptyList())
+        val (readers, wanted) = wish.tags.partition { it.slug in AUDIENCE_TAGS }
+        var kept = wanted.sortedBy { catalogue.tagCount(it.id) }
+        fun works() = withoutTags(sharedWorks(readers + kept), wish.excluded)
+        var works = works()
+        while (works.size < WISH_MINIMUM && kept.size > 1) {
+            kept = kept.dropLast(1)
+            works = works()
+        }
+        val picker = Picker()
+        val books = catalogue.topWorks(works, limit * 6).mapNotNull(picker::accept)
+        return Wished(readers + kept, books.take(limit))
     }
 
     private fun distinct(

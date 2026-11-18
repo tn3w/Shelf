@@ -12,6 +12,7 @@
     <string name="continue_reading">Continuar a ler</string>
     <string name="download">Transferir</string>
     <string name="download_item">Transferir %s</string>
+    <string name="wish_suggestion">Livros com %s</string>
     <string name="genres">Géneros</string>
     <string name="import_to_start">Importe um ficheiro para começar</string>
     <string name="library_empty">Os livros que começar, guardar ou importar aparecem aqui.</string>

@@ -44,6 +44,7 @@
     <string name="finished">Luettu</string>
     <string name="for_you">Sinulle</string>
     <string name="formats">Kirjatyypit</string>
+    <string name="wish_suggestion">Kirjat: %s</string>
     <string name="genres">Lajityypit</string>
     <string name="goal_reached">Päivätavoite saavutettu. Nähdään huomenna!</string>
     <string name="home">Koti</string>
