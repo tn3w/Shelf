@@ -1,0 +1,6 @@
+• 200 uutta aihetta, kuten lohikäärmeet, muodonmuuttajat ja koulu, kirjasivuilla ja Tutki-näkymässä osuvampia suosituksia varten
+• Uudistettu Tutki-näkymä lajityyppien kansilla
+• Hollanninkielinen käännös
+• Ehdota ominaisuuksia ja ilmoita virheistä sovelluksessa
+• Nopeampi haku, suositukset ja lukunäkymä, pienempi sovellus
+• Korjauksia lukunäkymän riviväliin ja alapalkkiin

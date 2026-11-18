@@ -1,0 +1,6 @@
+• 200 nya teman som drakar, hamnskiftare eller skolliv på boksidor och i Utforska, för träffsäkrare tips
+• Omgjort Utforska med genreomslag
+• Nederländsk översättning
+• Föreslå funktioner och rapportera fel direkt i appen
+• Snabbare sökning, rekommendationer och läsare, mindre app
+• Rättningar för radavstånd i läsaren och nedre fältet

@@ -1,0 +1,6 @@
+• 200 new topics like dragons, shapeshifters or school life on book pages and in Explore, for sharper recommendations
+• Redesigned Explore with genre covers
+• Dutch translation
+• Suggest features and report bugs from the app
+• Faster search, recommendations and reader, smaller app
+• Fixes for reader line spacing and the bottom bar

@@ -439,6 +439,15 @@ jobs:
         run: |
           jq -r '.segments[].url | split("/")[-2]' out/manifest.json > referenced
           echo "catalogue-$RELEASE" >> referenced
+          for ref in master "$(gh release view --json tagName -q .tagName)"; do
+            file="android/app/build.gradle.kts?ref=$ref"
+            pinned=$(gh api "repos/$GH_REPO/contents/$file" \
+              -H "Accept: application/vnd.github.raw" \
+              | grep -oP 'catalogueRelease = "\K[^"]+') || continue
+            echo "$pinned" >> referenced
+            gh release download "$pinned" --pattern manifest.json --output - \
+              | jq -r '.segments[].url | split("/")[-2]' >> referenced || true
+          done
           gh release list --limit 200 --json tagName \
             --jq '.[].tagName | select(startswith("catalogue-"))' \
             | { grep -vxF -f referenced || true; } \

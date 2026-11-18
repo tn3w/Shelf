@@ -8,9 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-val catalogueRelease = "catalogue-2026-11-03"
+val catalogueRelease = "catalogue-2026-11-17-1"
 val catalogueManifestSha256 =
-    "963fc7103fe7c095166252d9af0865a32878cd90a045534164d23aa3e73fddd4"
+    "8ed753123d1295ed6febfa066e53f80a8fdf19e18e9d96a8b7589cc053a56086"
 val catalogueFormat = 2
 val bundledLanguage = "en"
 val bundledPacks = listOf("core", "ranks")
@@ -52,8 +52,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 17
-        versionName = "1.6.0"
+        versionCode = 18
+        versionName = "1.6.1"
         buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
         externalNativeBuild {
             cmake {
