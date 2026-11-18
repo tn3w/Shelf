@@ -25,6 +25,10 @@ env:
   BNF_FOLDERS: BNF-Livres_2025 BNF-Livres_2025_Unimarc_UTF8
   HF_HOME: /mnt/huggingface
   MODEL_CACHE: nllb-200-3.3B-int8
+  ARIA_OPTIONS: >-
+    --dir /mnt/dumps --split 16 --max-connection-per-server 16 --min-split-size 64M
+    --retry-wait 5 --file-allocation none --continue --auto-file-renaming=false
+    --console-log-level warn --summary-interval 60
 
 jobs:
   prepare:
@@ -36,18 +40,19 @@ jobs:
     steps:
       - id: names
         run: |
-          latest=$(gh release list --limit 100 --json tagName \
-            --jq '[.[].tagName | select(startswith("catalogue-"))] | sort | last // ""')
-          sources=$(gh release list --limit 100 --json tagName \
-            --jq '[.[].tagName | select(startswith("sources-"))] | sort | last // ""')
+          newest() {
+            gh release list --limit 100 --json tagName \
+              --jq "[.[].tagName | select(startswith(\"$1-\"))] | sort | last // \"\""
+          }
+          latest=$(newest catalogue)
+          sources=$(newest sources)
           release=$(date -u +%F)
           for suffix in 1 2 3; do
             gh release view "catalogue-$release" >/dev/null 2>&1 || break
             release=$(date -u +%F)-$suffix
           done
-          echo "release=$release" >> "$GITHUB_OUTPUT"
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          echo "sources=$sources" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "release=$release" "latest=$latest" "sources=$sources" \
+            >> "$GITHUB_OUTPUT"
 
   dumps:
     runs-on: ubuntu-24.04
@@ -62,10 +67,7 @@ jobs:
           sudo apt-get install -y -qq aria2
           sudo install -d -o "$USER" /mnt/dumps
           for attempt in 1 2 3 4 5; do
-            aria2c --dir /mnt/dumps --out "$FILE" --split 16 \
-              --max-connection-per-server 16 --min-split-size 64M --max-tries 20 --retry-wait 5 \
-              --file-allocation none --continue --auto-file-renaming=false \
-              --console-log-level warn --summary-interval 60 "$DUMPS/$FILE" && break
+            aria2c $ARIA_OPTIONS --max-tries 20 --out "$FILE" "$DUMPS/$FILE" && break
             [ "$attempt" = 5 ] && exit 1
             sleep $((attempt * 30))
           done
@@ -103,9 +105,11 @@ jobs:
             rm -f gutenberg.tar.bz2
           done
           if ! { [ -f gutenberg.tar.bz2 ] \
-            && tar -xjOf gutenberg.tar.bz2 | gzip -1 > enrichment/gutenberg.rdf.gz; }; then
+            && tar -xjOf gutenberg.tar.bz2 | gzip -1 > enrichment/gutenberg.rdf.gz
+          }; then
             echo "Gutenberg unreachable, using the copy in $SOURCES"
-            gh release download "$SOURCES" --pattern gutenberg.rdf.gz --dir enrichment --clobber
+            gh release download "$SOURCES" --pattern gutenberg.rdf.gz --dir enrichment \
+              --clobber
           fi
           du -sh enrichment/*
 
@@ -194,11 +198,7 @@ jobs:
               url=$(curl -sSf --retry 5 --retry-all-errors -o /dev/null \
                 -w '%{redirect_url}' -H "Authorization: Bearer $GH_TOKEN" \
                 "https://api.github.com/repos/$GH_REPO/actions/artifacts/$1/zip")
-              aria2c --dir /mnt/dumps --out "$2" --split 16 \
-                --max-connection-per-server 16 --min-split-size 64M --max-tries 3 \
-                --retry-wait 5 --file-allocation none --continue \
-                --auto-file-renaming=false --console-log-level warn \
-                --summary-interval 60 "$url" && return
+              aria2c $ARIA_OPTIONS --max-tries 3 --out "$2" "$url" && return
               sleep $((attempt * 10))
             done
             return 1
@@ -233,11 +233,8 @@ jobs:
             --pattern manifest.json &
           aria() {
             for attempt in 1 2 3 4 5; do
-              aria2c --dir /mnt/dumps --max-concurrent-downloads 8 --split 16 \
-                --max-connection-per-server 16 --min-split-size 64M --max-tries 20 \
-                --retry-wait 5 --file-allocation none --continue \
-                --auto-file-renaming=false --console-log-level warn \
-                --summary-interval 60 "$@" && return
+              aria2c $ARIA_OPTIONS --max-tries 20 --max-concurrent-downloads 8 "$@" \
+                && return
               sleep $((attempt * 30))
             done
             return 1
@@ -256,7 +253,8 @@ jobs:
               | grep -oE 'hasPart digitalObjectId="[0-9]+"' | grep -oE '[0-9]+' | tail -1)
             if [ -z "$books" ]; then
               echo "LNB unreachable, using the copies in $SOURCES" >&2
-              gh release download "$SOURCES" --dir /mnt/dumps/parts --pattern "lnb-*.zst.part*" >&2
+              gh release download "$SOURCES" --dir /mnt/dumps/parts \
+                --pattern "lnb-*.zst.part*" >&2
               for first in /mnt/dumps/parts/lnb-*.zst.part00; do
                 name=$(basename "$first" .zst.part00)
                 cat /mnt/dumps/parts/"$name".zst.part* | zstd -dc > "/mnt/dumps/$name"
@@ -302,8 +300,9 @@ jobs:
               library="libris=/mnt/dumps/libris-instances.ndjsonld.gz"
               library="$library,/mnt/dumps/libris-persons.ndjsonld.gz" ;;
             pl)
-              stream bibs-ksiazka.marc https://data.bn.org.pl/db/networks/bibs-ksiazka.marc
-              stream bibs-e_book.marc https://data.bn.org.pl/db/networks/bibs-e_book.marc
+              networks=https://data.bn.org.pl/db/networks
+              stream bibs-ksiazka.marc "$networks/bibs-ksiazka.marc"
+              stream bibs-e_book.marc "$networks/bibs-e_book.marc"
               library="bnp=/mnt/dumps/bibs-ksiazka.marc"
               library="$library --library bnp=/mnt/dumps/bibs-e_book.marc" ;;
             cs)
@@ -377,6 +376,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       RELEASE: ${{ needs.prepare.outputs.release }}
+      LATEST: ${{ needs.prepare.outputs.latest }}
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -384,31 +384,23 @@ jobs:
           path: out
           merge-multiple: true
 
-      - name: Merge manifests
-        run: |
-          jq -s '{format: .[0].format, month: .[0].month}
-            + {segments: map(.segments) | add}' out/manifest-*.json > out/manifest.json
-          rm out/manifest-*.json
-          du -sh out
-
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: builder
           path: bin
 
-      - name: Merge sidecars
+      - name: Merge manifests and sidecars, unify works and run QA
         run: |
+          set -o pipefail
+          jq -s '{format: .[0].format, month: .[0].month}
+            + {segments: map(.segments) | add}' out/manifest-*.json > out/manifest.json
+          rm out/manifest-*.json
+          du -sh out
           chmod +x bin/builder
           for kind in links extras people; do
             bin/builder "$kind" "out/$kind.bin" out/"$kind"-*.bin
             rm out/"$kind"-*.bin
           done
-
-      - name: Unify works and run QA
-        env:
-          LATEST: ${{ needs.prepare.outputs.latest }}
-        run: |
-          set -o pipefail
           mkdir -p unify previous
           cp -l out/*.bin out/manifest.json unify/
           jq -r '.segments[].url' out/manifest.json | while read -r url; do
