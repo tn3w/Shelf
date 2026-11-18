@@ -516,9 +516,7 @@ Wikidata, votes or shared authority (refused, not merged) and per-language join 
 
 ## Website
 
-`.github/site/` → https://shelf.tn3w.dev via `.github/workflows/pages.yml` on push to
-`master`. Workflow adds icon, thumbnail (`og:image`), covers and screenshots as WebP,
-then minifies.
+`.github/site/` holds the sources of https://shelf.tn3w.dev.
 
 ## Project
 

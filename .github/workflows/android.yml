@@ -1,0 +1,69 @@
+name: Android
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    environment: release
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-disabled: true
+
+      - name: NDK and CMake
+        run: >
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "ndk;30.0.16248370" "cmake;3.31.6" > /dev/null
+
+      - name: Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "KEYSTORE_BASE64 missing"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: >
+          ./gradlew assembleGithubRelease assembleUpdateRelease assembleFdroidRelease
+          testGithubDebugUnitTest --tests dev.tn3w.shelf.ReleaseRouteTest --parallel
+
+      - name: Collect
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/github/release/*.apk dist/shelf.apk
+          cp app/build/outputs/apk/update/release/*.apk dist/shelf-update.apk
+          cp app/build/outputs/apk/fdroid/release/*.apk dist/shelf-fdroid.apk
+          (cd dist && sha256sum *.apk > SHA256SUMS)
+          code=$(grep -oP 'versionCode = \K\d+' app/build.gradle.kts)
+          for locale in app/fastlane/metadata/android/*/; do
+            language=$(basename "$locale")
+            cp "$locale/changelogs/$code.txt" "dist/changelog-${language%%-*}.txt"
+          done
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "Shelf $GITHUB_REF_NAME" --generate-notes
