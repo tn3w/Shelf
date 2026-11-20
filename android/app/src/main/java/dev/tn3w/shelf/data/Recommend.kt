@@ -611,7 +611,7 @@ class Recommender(
         ) = size > TEXT_CACHE
     }
 
-    /** Content words of a work's description, with counts; its authors' names left out. */
+    /** Description words of a work with their counts, minus its authors' names. */
     private fun textOf(work: Int, book: Book? = null): Map<String, Int> =
         synchronized(texts) {
             texts.getOrPut(work) {
@@ -632,8 +632,9 @@ class Recommender(
     /**
      * Refines the head of a ranking with what needs the full record: titles in another
      * language count for less, and description similarity is added. Text term weights
-     * come from the head itself, so words every candidate shares (genre boilerplate) count
-     * for little and names, places and themes the seed shares with a few count for much.
+     * come from the head itself, so words every candidate shares (genre boilerplate)
+     * count for little and names, places and themes the seed shares with a few count
+     * for much.
      */
     private fun refine(
         taste: Taste,
@@ -819,8 +820,10 @@ class Recommender(
         books.flatMap { listOfNotNull(titleKey(it).key, originalKey(it)) }.toSet()
 
     /** The original-language title with its author: separate works that are one book. */
-    private fun originalKey(book: Book) = book.alternate.takeIf { it.isNotEmpty() }?.let {
-        "${tokenize(mainTitle(it)).joinToString(" ")}|${book.authors.firstOrNull()?.number}"
+    private fun originalKey(book: Book): String? {
+        if (book.alternate.isEmpty()) return null
+        val title = tokenize(mainTitle(book.alternate)).joinToString(" ")
+        return "$title|${book.authors.firstOrNull()?.number}"
     }
 
     private fun similarToBooks(
@@ -909,7 +912,7 @@ class Recommender(
             is RecommendSeed.Library -> personal(seed.entries, seed.hidden, limit)
         }
 
-    /** Several picked books: clustered and mixed like a library, none of them returned. */
+    /** Several picked books, clustered and mixed like a library, none returned. */
     private fun picked(books: List<Book>, limit: Int): List<Recommendation> {
         val bounds = Bounds(
             works = books.map { it.work }.toSet(),

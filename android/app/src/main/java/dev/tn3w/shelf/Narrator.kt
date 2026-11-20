@@ -64,8 +64,9 @@ class Narrator(app: ShelfApp) :
             isAtOrAfter(it, loaded.progress)
         }.coerceAtLeast(0)
         current.value = Narration(work = work, title = title, loading = true)
-        app.scope.launch {
+        app.scope.launch(Dispatchers.Main) {
             val settings = app.library.settings.first()
+            if (current.value.work != work) return@launch
             current.update {
                 it.copy(
                     rate = settings.speechRate,

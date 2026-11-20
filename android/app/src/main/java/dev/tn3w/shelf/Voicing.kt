@@ -1,6 +1,7 @@
 package dev.tn3w.shelf
 
 import android.os.Process
+import android.util.Log
 import dev.tn3w.shelf.data.Attributor
 import dev.tn3w.shelf.data.Character
 import dev.tn3w.shelf.data.ModelJudge
@@ -73,7 +74,7 @@ class Voicing(
     private val job = app.scope.launch(thread) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
         runCatching { direct() }
-            .onFailure { android.util.Log.w("Voicing", "speaker detection failed", it) }
+            .onFailure { Log.w("Voicing", "speaker detection failed", it) }
         finished = true
         progress.value++
     }.apply { invokeOnCompletion { thread.close() } }
