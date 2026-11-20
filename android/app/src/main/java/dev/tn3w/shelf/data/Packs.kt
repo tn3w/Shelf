@@ -384,7 +384,7 @@ class Packs(private val context: Context) {
 
     suspend fun download(language: String, pack: String, onProgress: (Float) -> Unit) =
         withContext(Dispatchers.IO) {
-            val manifest = manifest ?: refreshManifest()
+            val manifest = refreshManifest()
             val ids = localIds()
             val entries = manifest.segments.filter {
                 it.language == language && (it.pack == pack || it.pack == "ranks")
