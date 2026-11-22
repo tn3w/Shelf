@@ -481,6 +481,10 @@
     <string name="voice_models">Stimmmodelle</string>
     <string name="voice_models_hint">Optionale Downloads für natürliche Stimmen und Sprechererkennung. Jede Datei wird vor der Nutzung per SHA-256 geprüft.</string>
     <string name="model_speaker">Sprechererkennung</string>
+    <string name="dictionaries">Wörterbücher</string>
+    <string name="dictionaries_hint">Wörter offline nachschlagen: Beim Lesen ein Wort lange drücken und auf das Buchsymbol tippen.</string>
+    <string name="define">Nachschlagen</string>
+    <string name="no_definition">Keine Definition gefunden. Wörterbücher lassen sich in den Einstellungen herunterladen.</string>
     <string name="not_enough_space">Nicht genug Speicherplatz.</string>
     <string name="listen_failed">Sprachausgabe nicht verfügbar</string>
     <string name="no_text">Dieses Buch enthält keinen lesbaren Text</string>

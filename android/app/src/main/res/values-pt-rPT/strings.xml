@@ -506,6 +506,10 @@
     <string name="voice_models">Modelos de voz</string>
     <string name="voice_models_hint">Transferências opcionais para vozes naturais e deteção de falantes. Cada ficheiro é verificado com SHA-256 antes de ser usado.</string>
     <string name="model_speaker">Deteção de falantes</string>
+    <string name="dictionaries">Dicionários</string>
+    <string name="dictionaries_hint">Consulte palavras offline: mantenha uma palavra premida durante a leitura e toque no ícone do livro.</string>
+    <string name="define">Consultar</string>
+    <string name="no_definition">Nenhuma definição encontrada. Os dicionários podem ser transferidos nas Definições.</string>
     <string name="not_enough_space">Espaço de armazenamento insuficiente.</string>
     <string name="pause_item">Pausar %s</string>
     <string name="resume_item">Retomar %s</string>

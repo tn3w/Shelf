@@ -142,6 +142,11 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     var editing by mutableStateOf<Editing?>(null)
     var removed by mutableStateOf<Highlight?>(null)
+    var defining by mutableStateOf<String?>(null)
+
+    suspend fun define(word: String, language: String) = withContext(Dispatchers.IO) {
+        runCatching { app.define(word, language) }.getOrNull()
+    }
 
     fun addHighlight(highlight: Highlight) = detached {
         library.changeHighlights(work) { it + highlight }
@@ -722,6 +727,7 @@ private fun TextReader(
                 }
             }
             HighlightEditor(state)
+            DefinitionSheet(state)
             UndoRemove(viewModel, Modifier.align(Alignment.BottomCenter))
         }
     }
@@ -873,6 +879,7 @@ private fun SelectionActions(state: ReaderState, annotator: Annotator) {
     val anchor = annotator.bounds(chosen) ?: return
     val viewModel = state.viewModel
     val context = LocalContext.current
+    val word = annotator.textOf(chosen).trim()
     fun add(color: HighlightColor, writing: Boolean) {
         val highlight = annotator.highlightOf(chosen, color)
         viewModel.addHighlight(highlight)
@@ -893,7 +900,40 @@ private fun SelectionActions(state: ReaderState, annotator: Annotator) {
             context.shareText(quote, state.title)
             annotator.selection = null
         },
+        onDefine = {
+            viewModel.defining = word
+            annotator.selection = null
+        }.takeIf { word.none(Char::isWhitespace) },
     )
+}
+
+@Composable
+private fun DefinitionSheet(state: ReaderState) {
+    val viewModel = state.viewModel
+    val word = viewModel.defining ?: return
+    val context = LocalContext.current
+    val uri = LocalUriHandler.current
+    val settings = loadedSettings() ?: Settings()
+    val language =
+        state.book?.language?.ifEmpty { null } ?: viewModel.bookLanguage(settings)
+    val definition by produceState<String?>("", word, language) {
+        value = viewModel.define(word, language)
+    }
+    Sheet(onDismiss = { viewModel.defining = null }, title = word) {
+        val text = definition ?: stringResource(R.string.no_definition)
+        val styled = if ('<' in
+            text
+        ) {
+            AnnotatedString.fromHtml(text)
+        } else {
+            AnnotatedString(text)
+        }
+        Text(styled, style = Look.type.body)
+        if (settings.isOffline(context) || !context.isConnected()) return@Sheet
+        Pill(stringResource(R.string.wikipedia), kind = PillKind.Bare) {
+            uri.openUri("https://$language.wikipedia.org/wiki/${Uri.encode(word)}")
+        }
+    }
 }
 
 @Composable

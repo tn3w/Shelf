@@ -481,6 +481,10 @@
     <string name="voice_models">Puheäänimallit</string>
     <string name="voice_models_hint">Valinnaisia latauksia luonnollisille äänille ja puhujan tunnistukselle. Jokainen tiedosto tarkistetaan SHA-256:lla ennen käyttöä.</string>
     <string name="model_speaker">Puhujan tunnistus</string>
+    <string name="dictionaries">Sanakirjat</string>
+    <string name="dictionaries_hint">Hae sanoja ilman verkkoyhteyttä: paina sanaa pitkään lukiessasi ja napauta kirjakuvaketta.</string>
+    <string name="define">Hae</string>
+    <string name="no_definition">Määritelmää ei löytynyt. Sanakirjoja voi ladata asetuksista.</string>
     <string name="not_enough_space">Tallennustilaa ei ole tarpeeksi.</string>
     <string name="listen_failed">Puhemoottori ei ole käytettävissä</string>
     <string name="no_text">Tässä kirjassa ei ole luettavaa tekstiä</string>

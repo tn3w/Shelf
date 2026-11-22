@@ -511,6 +511,10 @@
     <string name="voice_models">Modele głosowe</string>
     <string name="voice_models_hint">Opcjonalne pobrania naturalnych głosów i rozpoznawania mówiących. Każdy plik jest sprawdzany SHA-256 przed użyciem.</string>
     <string name="model_speaker">Rozpoznawanie mówiących</string>
+    <string name="dictionaries">Słowniki</string>
+    <string name="dictionaries_hint">Sprawdzaj słowa offline: przytrzymaj słowo podczas czytania i dotknij ikony książki.</string>
+    <string name="define">Sprawdź</string>
+    <string name="no_definition">Nie znaleziono definicji. Słowniki można pobrać w Ustawieniach.</string>
     <string name="not_enough_space">Za mało miejsca na dysku.</string>
     <string name="listen_failed">Silnik mowy niedostępny</string>
     <string name="no_text">Ta książka nie zawiera tekstu do odczytu</string>

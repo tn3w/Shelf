@@ -210,6 +210,16 @@ class ShelfApp :
         models.remove(model)
     }
 
+    private val dictionaries = ConcurrentHashMap<String, StarDict>()
+
+    fun define(word: String, language: String): String? {
+        val model = models.installed("dictionary", language) ?: return null
+        val dictionary = dictionaries.getOrPut(model.folder) {
+            StarDict(models.folderOf(model))
+        }
+        return dictionary.define(word)
+    }
+
     fun removePacks(language: String, pack: String? = null) =
         scope.launch(Dispatchers.IO) {
             val stopped = downloadJobs.keys.filter {

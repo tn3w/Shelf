@@ -496,6 +496,10 @@
     <string name="voice_models">Modelos de voz</string>
     <string name="voice_models_hint">Descargas opcionales para voces naturales y detección de hablantes. Cada archivo se comprueba con SHA-256 antes de usarlo.</string>
     <string name="model_speaker">Detección de hablantes</string>
+    <string name="dictionaries">Diccionarios</string>
+    <string name="dictionaries_hint">Busca palabras sin conexión: mantén pulsada una palabra mientras lees y toca el icono del libro.</string>
+    <string name="define">Buscar</string>
+    <string name="no_definition">No se encontró ninguna definición. Puedes descargar diccionarios en Ajustes.</string>
     <string name="not_enough_space">No hay suficiente espacio de almacenamiento.</string>
     <string name="listen_failed">Motor de voz no disponible</string>
     <string name="no_text">Este libro no tiene texto legible</string>

@@ -496,6 +496,10 @@
     <string name="voice_models">Modelli vocali</string>
     <string name="voice_models_hint">Download facoltativi per voci naturali e riconoscimento dei parlanti. Ogni file viene verificato con SHA-256 prima dell’uso.</string>
     <string name="model_speaker">Riconoscimento dei parlanti</string>
+    <string name="dictionaries">Dizionari</string>
+    <string name="dictionaries_hint">Cerca le parole offline: tieni premuta una parola durante la lettura e tocca l’icona del libro.</string>
+    <string name="define">Cerca</string>
+    <string name="no_definition">Nessuna definizione trovata. Puoi scaricare i dizionari nelle Impostazioni.</string>
     <string name="not_enough_space">Spazio di archiviazione insufficiente.</string>
     <string name="listen_failed">Sintesi vocale non disponibile</string>
     <string name="no_text">Questo libro non ha testo leggibile</string>

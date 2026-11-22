@@ -426,6 +426,7 @@ private fun ReadingSettings() {
             settings.brightnessSwipe,
         ) { on -> update { it.copy(brightnessSwipe = on, readerBrightness = null) } }
     }
+    Dictionaries(settings.isOffline(LocalContext.current))
 }
 
 @Composable

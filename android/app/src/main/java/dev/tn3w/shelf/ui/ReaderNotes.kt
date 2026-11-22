@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
@@ -158,6 +159,7 @@ fun SelectionBar(
     onNote: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit,
+    onDefine: (() -> Unit)?,
 ) {
     val gap = with(LocalDensity.current) { BAR_GAP.toPx() }
     val lift = if (Look.colors.plain) 0.dp else 12.dp
@@ -168,7 +170,7 @@ fun SelectionBar(
                 .blockTouches()
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-        ) { SelectionButtons(onHighlight, onNote, onCopy, onShare) }
+        ) { SelectionButtons(onHighlight, onNote, onCopy, onShare, onDefine) }
     }
 }
 
@@ -178,6 +180,7 @@ private fun SelectionButtons(
     onNote: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit,
+    onDefine: (() -> Unit)?,
 ) {
     HighlightColor.entries.forEach { color ->
         ColorDot(color, selected = false, size = 40) { onHighlight(color) }
@@ -193,7 +196,12 @@ private fun SelectionButtons(
         onClick = onNote,
     )
     IconAction(Icons.Rounded.ContentCopy, stringResource(R.string.copy), onClick = onCopy)
-    IconAction(Icons.Rounded.IosShare, stringResource(R.string.share), onClick = onShare)
+    val share = onDefine == null
+    IconAction(
+        if (share) Icons.Rounded.IosShare else Icons.AutoMirrored.Rounded.MenuBook,
+        stringResource(if (share) R.string.share else R.string.define),
+        onClick = onDefine ?: onShare,
+    )
 }
 
 @Composable

@@ -481,6 +481,10 @@
     <string name="voice_models">Röstmodeller</string>
     <string name="voice_models_hint">Valfria nedladdningar för naturliga röster och talaridentifiering. Varje fil kontrolleras med SHA-256 före användning.</string>
     <string name="model_speaker">Talaridentifiering</string>
+    <string name="dictionaries">Ordböcker</string>
+    <string name="dictionaries_hint">Slå upp ord offline: tryck länge på ett ord medan du läser och tryck på bokikonen.</string>
+    <string name="define">Slå upp</string>
+    <string name="no_definition">Ingen definition hittades. Ordböcker kan laddas ned i Inställningar.</string>
     <string name="not_enough_space">Inte tillräckligt med lagringsutrymme.</string>
     <string name="listen_failed">Talsyntes otillgänglig</string>
     <string name="no_text">Boken har ingen läsbar text</string>

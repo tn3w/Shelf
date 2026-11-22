@@ -511,6 +511,10 @@
     <string name="voice_models">Hlasové modely</string>
     <string name="voice_models_hint">Volitelná stahování pro přirozené hlasy a rozpoznání mluvčích. Každý soubor se před použitím ověří pomocí SHA-256.</string>
     <string name="model_speaker">Rozpoznání mluvčích</string>
+    <string name="dictionaries">Slovníky</string>
+    <string name="dictionaries_hint">Vyhledávejte slova offline: podržte slovo při čtení a klepněte na ikonu knihy.</string>
+    <string name="define">Vyhledat</string>
+    <string name="no_definition">Definice nenalezena. Slovníky lze stáhnout v Nastavení.</string>
     <string name="not_enough_space">Nedostatek úložného prostoru.</string>
     <string name="listen_failed">Syntéza řeči není dostupná</string>
     <string name="no_text">Tato kniha neobsahuje čitelný text</string>

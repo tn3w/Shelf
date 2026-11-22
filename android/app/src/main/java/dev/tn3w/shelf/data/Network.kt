@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.data
 
+import android.content.Context
+import android.net.ConnectivityManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,6 +26,9 @@ val json = Json {
     ignoreUnknownKeys = true
     coerceInputValues = true
 }
+
+fun Context.isConnected() =
+    getSystemService(ConnectivityManager::class.java).activeNetwork != null
 
 const val UPDATE_DELAY_MILLIS = 24L * 60 * 60 * 1000
 

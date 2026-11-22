@@ -480,6 +480,10 @@
     <string name="voice_models">Stemmodellen</string>
     <string name="voice_models_hint">Optionele downloads voor natuurlijke stemmen en sprekerherkenning. Elk bestand wordt voor gebruik gecontroleerd met SHA-256.</string>
     <string name="model_speaker">Sprekerherkenning</string>
+    <string name="dictionaries">Woordenboeken</string>
+    <string name="dictionaries_hint">Zoek woorden offline op: houd tijdens het lezen een woord ingedrukt en tik op het boekpictogram.</string>
+    <string name="define">Opzoeken</string>
+    <string name="no_definition">Geen definitie gevonden. Woordenboeken kun je downloaden in Instellingen.</string>
     <string name="not_enough_space">Niet genoeg opslagruimte.</string>
     <string name="listen_failed">Spraakengine niet beschikbaar</string>
     <string name="no_text">Dit boek bevat geen leesbare tekst</string>

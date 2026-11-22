@@ -481,6 +481,10 @@
     <string name="voice_models">Häälemudelid</string>
     <string name="voice_models_hint">Valikulised allalaadimised loomulike häälte ja kõneleja tuvastamise jaoks. Iga faili kontrollitakse enne kasutamist SHA-256-ga.</string>
     <string name="model_speaker">Kõneleja tuvastamine</string>
+    <string name="dictionaries">Sõnastikud</string>
+    <string name="dictionaries_hint">Otsi sõnu võrguühenduseta: vajuta lugedes sõnale pikalt ja puuduta raamatuikooni.</string>
+    <string name="define">Otsi</string>
+    <string name="no_definition">Definitsiooni ei leitud. Sõnastikke saab alla laadida seadetes.</string>
     <string name="not_enough_space">Salvestusruumi pole piisavalt.</string>
     <string name="listen_failed">Kõnesüntesaator pole saadaval</string>
     <string name="no_text">Sellel raamatul pole loetavat teksti</string>

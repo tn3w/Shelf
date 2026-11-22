@@ -14,7 +14,7 @@ import urllib.request
 from pathlib import Path
 
 FORMAT = 1
-OPEN = {"Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC0-1.0"}
+OPEN = {"Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0"}
 RELEASE = "voices-2026-11"
 GITHUB = f"https://api.github.com/repos/tn3w/Shelf/releases/tags/{RELEASE}"
 SPEAKER = "shelf-speaker-qwen3-1.7b-q4_k_m.gguf"

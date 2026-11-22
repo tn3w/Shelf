@@ -484,6 +484,11 @@
     <string name="voice_models">Voice models</string>
     <string name="voice_models_hint">Optional downloads for natural voices and speaker detection. Each file is checked with SHA-256 before use.</string>
     <string name="model_speaker">Speaker detection</string>
+    <string name="dictionaries">Dictionaries</string>
+    <string name="dictionaries_hint">Look up a word offline: long-press it while reading and tap the book icon.</string>
+    <string name="define">Look up</string>
+    <string name="no_definition">No definition found. Dictionaries can be downloaded in Settings.</string>
+    <string name="wikipedia" translatable="false">Wikipedia</string>
     <string name="not_enough_space">Not enough storage space.</string>
     <string name="listen_failed">Speech engine unavailable</string>
     <string name="no_text">This book has no readable text</string>

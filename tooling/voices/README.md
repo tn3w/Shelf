@@ -29,6 +29,12 @@ stuart_bell, estelle, giovanni, lola, javert. Disagree: alba is listed Female bu
 measures male (115–124 Hz, classifier male). Unclear: marius is listed Male and
 classified male, but its pitch is 244–287 Hz (possibly a young speaker).
 
+## Dictionaries
+
+Entries with `"kind": "dictionary"` and a `language` are offered under Settings → Reading
+and looked up by long-pressing a word. Their `files` are one uncompressed StarDict pair
+(`.idx` with 32-bit offsets, `.dict`), e.g. a Wiktionary export (CC-BY-SA-4.0).
+
 ## Pocket TTS to GGUF
 
 `convert_pocket.py` turns each Pocket model plus its open voices into one GGUF

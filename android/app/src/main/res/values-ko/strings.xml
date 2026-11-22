@@ -466,6 +466,10 @@
     <string name="voice_models">음성 모델</string>
     <string name="voice_models_hint">자연스러운 음성과 화자 인식을 위한 선택 다운로드입니다. 각 파일은 사용 전에 SHA-256으로 확인됩니다.</string>
     <string name="model_speaker">화자 인식</string>
+    <string name="dictionaries">사전</string>
+    <string name="dictionaries_hint">오프라인으로 단어 찾기: 읽는 중 단어를 길게 누른 뒤 책 아이콘을 누르세요.</string>
+    <string name="define">찾아보기</string>
+    <string name="no_definition">정의를 찾을 수 없습니다. 사전은 설정에서 다운로드할 수 있습니다.</string>
     <string name="not_enough_space">저장 공간이 부족합니다.</string>
     <string name="listen_failed">음성 엔진을 사용할 수 없음</string>
     <string name="no_text">이 책에는 읽을 수 있는 텍스트가 없습니다</string>

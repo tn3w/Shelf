@@ -53,6 +53,20 @@ fun VoiceModels(offline: Boolean, language: String) {
 }
 
 @Composable
+fun Dictionaries(offline: Boolean) {
+    val dictionaries = usableModels().filter { it.kind == "dictionary" }
+    if (dictionaries.isEmpty()) return
+    SettingsGroup(
+        stringResource(R.string.dictionaries),
+        stringResource(R.string.dictionaries_hint),
+    ) {
+        dictionaries.groupBy { it.language }.forEach { (language, choices) ->
+            LanguageRow(language, choices, offline)
+        }
+    }
+}
+
+@Composable
 fun VoiceModelRows(
     usable: List<Model>,
     language: String,
