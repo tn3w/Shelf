@@ -103,6 +103,7 @@
     <string name="reading">読書中</string>
     <string name="recent">最近の検索</string>
     <string name="remove_bookmark">ブックマークを削除</string>
+    <string name="right_to_left">右から左に読む</string>
     <string name="remove_pack">%s を削除</string>
     <string name="resume">続ける</string>
     <string name="retry_item">%s を再試行</string>

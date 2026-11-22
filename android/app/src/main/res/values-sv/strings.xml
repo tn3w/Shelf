@@ -352,6 +352,7 @@
     <string name="no_bookmarks">Inga bokmärken ännu. Tryck på bokmärkesikonen högst upp för att spara en sida.</string>
     <string name="no_matches">Inga träffar i den här boken</string>
     <string name="remove_bookmark">Ta bort bokmärke</string>
+    <string name="right_to_left">Läs från höger till vänster</string>
     <string name="search_book">Sök i boken</string>
     <string name="search_book_hint">Skriv minst två bokstäver för att söka i alla kapitel.</string>
     <string name="many_matches">Fler än %d träffar</string>

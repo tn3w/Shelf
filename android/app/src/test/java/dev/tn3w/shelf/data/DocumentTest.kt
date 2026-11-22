@@ -2,6 +2,7 @@ package dev.tn3w.shelf.data
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -180,6 +181,18 @@ class DocumentTest {
             ),
         )
         (openDocument(file) as PagedDocument).use { assertEquals(2, it.pageCount) }
+    }
+
+    @Test
+    fun mangaComicInfoTurnsPagesRightToLeft() {
+        fun readsRightToLeft(manga: String) = ComicDocument(
+            listOf("page1.jpg", "ComicInfo.xml"),
+            Resources { "<ComicInfo><Manga>$manga</Manga></ComicInfo>".toByteArray() },
+        ).rightToLeft
+
+        assertTrue(readsRightToLeft("YesAndRightToLeft"))
+        assertFalse(readsRightToLeft("Yes"))
+        assertFalse(ComicDocument(listOf("page1.jpg"), Resources { null }).rightToLeft)
     }
 
     @Test

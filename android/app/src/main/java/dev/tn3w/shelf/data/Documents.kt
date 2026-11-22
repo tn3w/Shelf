@@ -1,7 +1,11 @@
 package dev.tn3w.shelf.data
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.pdf.PdfRenderer
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -37,6 +41,7 @@ private val CHAPTER_HEADINGS = 1..3
 const val MAX_ENTRY_BYTES = 64L * 1024 * 1024
 private const val MAX_EXTRACTED_BYTES = 2L * 1024 * 1024 * 1024
 const val EXTRACTED_PREFIX = "comic"
+private const val COMIC_INFO = "ComicInfo.xml"
 private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif")
 private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
@@ -133,6 +138,8 @@ class TextDocument(
 
 interface PagedDocument : Document {
     val pageCount: Int
+    val rightToLeft: Boolean
+        get() = false
 
     fun page(index: Int, width: Int, height: Int): Any
 }
@@ -155,6 +162,31 @@ class PdfDocument(file: File) : PagedDocument {
                 }
             }
         }
+
+    fun zoomedPage(
+        index: Int,
+        width: Int,
+        height: Int,
+        scale: Float,
+        left: Float,
+        top: Float,
+    ) = synchronized(renderer) {
+        renderer.openPage(index).use { page ->
+            val (fitWidth, fitHeight) = fit(page.width, page.height, width, height)
+            val area = RectF(0f, 0f, page.width.toFloat(), page.height.toFloat())
+            val matrix = Matrix().apply {
+                setScale(fitWidth / area.width(), fitHeight / area.height())
+                postTranslate((width - fitWidth) / 2f, (height - fitHeight) / 2f)
+                postScale(scale, scale)
+                postTranslate(left, top)
+                mapRect(area)
+            }
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also {
+                Canvas(it).drawRect(area, Paint().apply { color = Color.WHITE })
+                page.render(it, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            }
+        }
+    }
 
     fun texts(): List<String>? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return null
@@ -221,6 +253,10 @@ class ComicDocument(names: List<String>, private val resources: Resources) :
     PagedDocument {
     private val pages = names.filter(::isComicPage).sortedBy(::naturalSortKey)
     override val pageCount = pages.size
+    override val rightToLeft =
+        names.firstOrNull { File(it).name.equals(COMIC_INFO, true) }
+            ?.let { runCatching { resources.bytes(it) }.getOrNull() }
+            ?.let(::readsRightToLeft) == true
 
     override fun page(index: Int, width: Int, height: Int) =
         checkNotNull(resources.image(pages[index])) { "missing page" }
@@ -244,6 +280,7 @@ private class ExtractedPages<T>(
 
     @Synchronized
     override fun image(path: String): File? {
+        if (!isComicPage(path)) return null
         while (path !in files && pending.hasNext()) extract(pending.next())
         return files[path]
     }
@@ -304,6 +341,10 @@ private fun isComicPage(name: String): Boolean {
     if (name.startsWith("__MACOSX/") || file.name.startsWith(".")) return false
     return file.extension.lowercase() in IMAGE_EXTENSIONS
 }
+
+internal fun readsRightToLeft(comicInfo: ByteArray) =
+    Jsoup.parse(String(comicInfo), "", Parser.xmlParser())
+        .selectFirst("Manga")?.text() == "YesAndRightToLeft"
 
 internal fun naturalSortKey(name: String) =
     name.lowercase().replace(Regex("\\d+")) { it.value.padStart(20, '0') }

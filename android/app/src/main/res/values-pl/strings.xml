@@ -372,6 +372,7 @@
     <string name="no_bookmarks">Brak zakładek. Stuknij ikonę zakładki u góry, aby zapisać stronę.</string>
     <string name="no_matches">Brak wyników w tej książce</string>
     <string name="remove_bookmark">Usuń zakładkę</string>
+    <string name="right_to_left">Czytaj od prawej do lewej</string>
     <string name="search_book">Szukaj w książce</string>
     <string name="search_book_hint">Wpisz co najmniej dwie litery, aby przeszukać wszystkie rozdziały.</string>
     <string name="many_matches">Więcej niż %d wyników</string>

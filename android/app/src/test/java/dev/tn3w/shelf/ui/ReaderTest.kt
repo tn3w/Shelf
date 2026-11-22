@@ -1,5 +1,7 @@
 package dev.tn3w.shelf.ui
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
@@ -7,6 +9,8 @@ import dev.tn3w.shelf.data.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
+private val SCREEN = Size(1000f, 2000f)
 
 class ReaderTest {
     @Test
@@ -49,6 +53,39 @@ class ReaderTest {
         assertEquals(TapAction.Menu, tapAction(300f, 1000, menuShown = false))
         assertEquals(TapAction.Menu, tapAction(700f, 1000, menuShown = false))
         assertEquals(TapAction.Next, tapAction(950f, 1000, menuShown = false))
+    }
+
+    @Test
+    fun rightToLeftSwapsTurnZones() {
+        assertEquals(TapAction.Next, tapAction(50f, 1000, false, rightToLeft = true))
+        assertEquals(TapAction.Previous, tapAction(950f, 1000, false, rightToLeft = true))
+    }
+
+    @Test
+    fun pinchKeepsThePointUnderTheFingers() {
+        val centroid = Offset(300f, 800f)
+        val zoom = Zoom().by(centroid, 2f, Offset.Zero, SCREEN)
+
+        assertEquals(2f, zoom.scale)
+        assertEquals(centroid, centroid * zoom.scale + zoom.offset)
+    }
+
+    @Test
+    fun zoomStaysWithinLimitsAndPageEdges() {
+        val zoom = Zoom().by(Offset.Zero, 100f, Offset(500f, 500f), SCREEN)
+        val panned = zoom.by(Offset.Zero, 1f, Offset(-99_999f, -99_999f), SCREEN)
+
+        assertEquals(Zoom(5f, Offset.Zero), zoom)
+        assertEquals(Offset(-4000f, -8000f), panned.offset)
+        assertEquals(Zoom(), panned.by(Offset.Zero, 0.01f, Offset.Zero, SCREEN))
+    }
+
+    @Test
+    fun doubleTapZoomsInAndBackOut() {
+        val zoomed = Zoom().toggled(Offset(500f, 1000f), SCREEN)
+
+        assertTrue(zoomed.zoomed)
+        assertEquals(Zoom(), zoomed.toggled(Offset.Zero, SCREEN))
     }
 
     @Test

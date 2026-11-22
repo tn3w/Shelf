@@ -103,6 +103,7 @@
     <string name="reading">Lasu</string>
     <string name="recent">Nesenie meklējumi</string>
     <string name="remove_bookmark">Noņemt grāmatzīmi</string>
+    <string name="right_to_left">Lasīt no labās uz kreiso</string>
     <string name="remove_pack">Noņemt %s</string>
     <string name="resume">Turpināt</string>
     <string name="retry_item">Atkārtot %s</string>

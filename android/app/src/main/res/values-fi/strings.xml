@@ -352,6 +352,7 @@
     <string name="no_bookmarks">Ei vielä kirjanmerkkejä. Tallenna sivu napauttamalla ylhäällä kirjanmerkkikuvaketta.</string>
     <string name="no_matches">Ei osumia tästä kirjasta</string>
     <string name="remove_bookmark">Poista kirjanmerkki</string>
+    <string name="right_to_left">Lue oikealta vasemmalle</string>
     <string name="search_book">Hae kirjasta</string>
     <string name="search_book_hint">Kirjoita vähintään kaksi kirjainta hakeaksesi kaikista luvuista.</string>
     <string name="many_matches">Yli %d osumaa</string>

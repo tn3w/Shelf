@@ -372,6 +372,7 @@
     <string name="no_bookmarks">Закладок пока нет. Нажмите значок закладки вверху, чтобы сохранить страницу.</string>
     <string name="no_matches">В этой книге совпадений нет</string>
     <string name="remove_bookmark">Удалить закладку</string>
+    <string name="right_to_left">Читать справа налево</string>
     <string name="search_book">Поиск в книге</string>
     <string name="search_book_hint">Введите минимум две буквы, чтобы искать по всем главам.</string>
     <string name="many_matches">Более %d совпадений</string>

@@ -20,6 +20,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.pager.*
@@ -35,14 +37,17 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -53,6 +58,8 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
 import dev.tn3w.shelf.Narration
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
@@ -261,9 +268,11 @@ fun readerStyle(settings: Settings, color: Color) = TextStyle(
     lineBreak = LineBreak.Paragraph,
 )
 
-private fun pageStep(key: Key, volumeKeys: Boolean) = when (key) {
-    Key.PageDown, Key.DirectionRight -> 1
-    Key.PageUp, Key.DirectionLeft -> -1
+private fun pageStep(key: Key, volumeKeys: Boolean, rightToLeft: Boolean) = when (key) {
+    Key.PageDown -> 1
+    Key.PageUp -> -1
+    Key.DirectionRight -> if (rightToLeft) -1 else 1
+    Key.DirectionLeft -> if (rightToLeft) 1 else -1
     Key.VolumeDown -> if (volumeKeys) 1 else null
     Key.VolumeUp -> if (volumeKeys) -1 else null
     else -> null
@@ -988,6 +997,13 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
     LaunchedEffect(spoken) {
         spoken?.let { if (it != pager.currentPage) pager.animateScrollToPage(it) }
     }
+    val zoom = remember { mutableStateOf(Zoom()) }
+    var rightToLeft by rememberSaveable {
+        mutableStateOf(progress.rightToLeft ?: document.rightToLeft)
+    }
+    fun progressAt(page: Int) =
+        progress.copy(page = page, pages = count, rightToLeft = rightToLeft)
+
     BoxWithConstraints(
         Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars),
     ) {
@@ -999,42 +1015,84 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             emptyList(),
             marks,
             onSearch = null,
-            save = { progress.copy(page = it, pages = count) },
+            save = ::progressAt,
             onListen = (document as? PdfDocument)?.let { pdf ->
                 {
                     state.viewModel.listen(state.title) {
                         val start = progress.copy(section = progress.page)
                         val pages = pdf.texts().orEmpty()
                         Source(speechOf(pages), emptyList(), start) { passage, _ ->
-                            progress.copy(page = passage.section, pages = count)
+                            progressAt(passage.section)
                         }
                     }
                 }
             },
+            zoom = zoom,
+            rightToLeft = rightToLeft,
+            onDirection = {
+                rightToLeft = !rightToLeft
+                state.viewModel.save(progressAt(pager.currentPage), pagesRead = 0)
+            },
         ) {
-            val page by produceState<Result<Any>?>(null, it, width, height) {
-                value = withContext(Dispatchers.IO) {
-                    runSuspendCatching { document.page(it, width, height) }
-                }
-            }
-            var failed by remember(page) { mutableStateOf(false) }
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                val image = page?.getOrNull()
-                if (page == null) return@Box Ring(null, size = 32.dp)
-                if (image == null || failed) {
-                    return@Box EmptyState(
-                        Icons.Rounded.BrokenImage, stringResource(R.string.page_failed),
-                    )
-                }
-                AsyncImage(
-                    image,
-                    contentDescription = stringResource(R.string.page_of, it + 1, count),
-                    contentScale = ContentScale.Fit,
-                    onError = { failed = true },
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+            val shown = if (it == pager.currentPage) zoom.value else Zoom()
+            DocumentPage(document, it, IntSize(width, height), shown)
         }
+    }
+}
+
+@Composable
+private fun DocumentPage(document: PagedDocument, index: Int, size: IntSize, zoom: Zoom) {
+    val page by produceState<Result<Any>?>(null, index, size) {
+        value = withContext(Dispatchers.IO) {
+            runSuspendCatching { document.page(index, size.width, size.height) }
+        }
+    }
+    var failed by remember(page) { mutableStateOf(false) }
+    val context = LocalPlatformContext.current
+    Box(Modifier.fillMaxSize().clipToBounds(), contentAlignment = Alignment.Center) {
+        val image = page?.getOrNull()
+        if (page == null) return@Box Ring(null, size = 32.dp)
+        if (image == null || failed) {
+            return@Box EmptyState(
+                Icons.Rounded.BrokenImage, stringResource(R.string.page_failed),
+            )
+        }
+        val request = remember(image, size) {
+            ImageRequest.Builder(context)
+                .data(image)
+                .size(size.width * DETAIL, size.height * DETAIL)
+                .build()
+        }
+        val description = stringResource(R.string.page_of, index + 1, document.pageCount)
+        AsyncImage(
+            request,
+            contentDescription = description,
+            contentScale = ContentScale.Fit,
+            onError = { failed = true },
+            modifier = Modifier.fillMaxSize().zoomed(zoom),
+        )
+        if (document is PdfDocument &&
+            zoom.zoomed
+        ) {
+            SharpPdfPage(document, index, size, zoom)
+        }
+    }
+}
+
+@Composable
+private fun SharpPdfPage(pdf: PdfDocument, index: Int, size: IntSize, zoom: Zoom) {
+    val sharp by produceState<Pair<Zoom, ImageBitmap>?>(null, zoom) {
+        delay(SHARPEN_DELAY)
+        val rendered = withContext(Dispatchers.IO) {
+            runSuspendCatching {
+                val (left, top) = zoom.offset
+                pdf.zoomedPage(index, size.width, size.height, zoom.scale, left, top)
+            }.getOrNull()
+        }
+        value = rendered?.let { zoom to it.asImageBitmap() }
+    }
+    sharp?.takeIf { it.first == zoom }?.let {
+        Image(it.second, contentDescription = null, Modifier.fillMaxSize())
     }
 }
 
@@ -1048,11 +1106,46 @@ internal enum class TapAction { Previous, Next, Menu }
 
 private const val TURN_ZONE = 0.25f
 
-internal fun tapAction(x: Float, width: Int, menuShown: Boolean) = when {
+internal fun tapAction(
+    x: Float,
+    width: Int,
+    menuShown: Boolean,
+    rightToLeft: Boolean = false,
+) = when {
     menuShown -> TapAction.Menu
-    x < width * TURN_ZONE -> TapAction.Previous
-    x > width * (1 - TURN_ZONE) -> TapAction.Next
+    x < width * TURN_ZONE -> if (rightToLeft) TapAction.Next else TapAction.Previous
+    x > width * (1 - TURN_ZONE) -> if (rightToLeft) TapAction.Previous else TapAction.Next
     else -> TapAction.Menu
+}
+
+private const val MAX_ZOOM = 5f
+private const val DOUBLE_TAP_ZOOM = 2.5f
+private const val DETAIL = 2
+private const val SHARPEN_DELAY = 150L
+
+@Immutable
+internal data class Zoom(val scale: Float = 1f, val offset: Offset = Offset.Zero) {
+    val zoomed
+        get() = scale > 1f
+
+    fun by(centroid: Offset, factor: Float, pan: Offset, size: Size): Zoom {
+        val scaled = (scale * factor).coerceIn(1f, MAX_ZOOM)
+        val moved = centroid - (centroid - offset) * (scaled / scale) + pan
+        val x = moved.x.coerceIn(size.width * (1 - scaled), 0f)
+        val y = moved.y.coerceIn(size.height * (1 - scaled), 0f)
+        return Zoom(scaled, Offset(x, y))
+    }
+
+    fun toggled(at: Offset, size: Size) =
+        if (zoomed) Zoom() else by(at, DOUBLE_TAP_ZOOM, Offset.Zero, size)
+}
+
+private fun Modifier.zoomed(zoom: Zoom) = graphicsLayer {
+    transformOrigin = TransformOrigin(0f, 0f)
+    scaleX = zoom.scale
+    scaleY = zoom.scale
+    translationX = zoom.offset.x
+    translationY = zoom.offset.y
 }
 
 private fun chapterAt(chapters: List<Pair<String, Int>>, page: Int) =
@@ -1069,6 +1162,9 @@ private fun Pages(
     notes: (@Composable (onSelect: (Int) -> Unit) -> Unit)? = null,
     onTap: (Int, Offset) -> Boolean = { _, _ -> false },
     onListen: (() -> Unit)? = null,
+    zoom: MutableState<Zoom>? = null,
+    rightToLeft: Boolean = false,
+    onDirection: (() -> Unit)? = null,
     page: @Composable (Int) -> Unit,
 ) {
     val viewModel = state.viewModel
@@ -1086,11 +1182,32 @@ private fun Pages(
         if (reduced) pager.scrollToPage(page) else pager.animateScrollToPage(page)
     }
 
+    fun tap(index: Int, offset: Offset, width: Int) {
+        if (tapped(index, offset)) return
+        when (tapAction(offset.x, width, chrome, rightToLeft)) {
+            TapAction.Previous -> turn(index - 1)
+            TapAction.Next -> turn(index + 1)
+            TapAction.Menu -> chrome = !chrome
+        }
+    }
+
     LaunchedEffect(chrome, showChapters, viewModel.showSearch) {
         if (!chrome && !showChapters && !viewModel.showSearch) focus.requestFocus()
     }
 
     LaunchedEffect(Unit) { if (viewModel.shouldResumeAudio()) onListen?.invoke() }
+
+    LaunchedEffect(pager.currentPage) { zoom?.value = Zoom() }
+
+    var pageSize by remember { mutableStateOf(Size.Zero) }
+    val transform = rememberTransformableState { centroid, factor, pan, _ ->
+        zoom?.let { it.value = it.value.by(centroid, factor, pan, pageSize) }
+    }
+    val zoomGestures = zoom?.let {
+        Modifier.transformable(transform, canPan = { _ -> it.value.zoomed })
+    } ?: Modifier
+    val direction = LocalLayoutDirection.current
+    val pageDirection = if (rightToLeft) LayoutDirection.Rtl else direction
 
     LaunchedEffect(pager.settledPage) {
         val settled = pager.settledPage
@@ -1105,30 +1222,40 @@ private fun Pages(
             .focusRequester(focus)
             .focusable()
             .onPreviewKeyEvent { event ->
-                val step = pageStep(event.key, state.volumeKeys)
+                val step = pageStep(event.key, state.volumeKeys, rightToLeft)
                 if (step != null && event.type == KeyEventType.KeyDown) {
                     turn(pager.currentPage + step)
                 }
                 step != null
             },
     ) {
-        HorizontalPager(
-            pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1,
-        ) { index ->
-            Box(
-                Modifier.fillMaxSize().pointerInput(Unit) {
-                    detectTapGestures(onLongPress = {}) { offset ->
-                        if (tapped(index, offset)) return@detectTapGestures
-                        when (tapAction(offset.x, size.width, chrome)) {
-                            TapAction.Previous -> turn(index - 1)
-                            TapAction.Next -> turn(index + 1)
-                            TapAction.Menu -> chrome = !chrome
-                        }
-                    }
-                },
-            ) {
-                page(index)
-                if (marks.on(index).isNotEmpty()) BookmarkRibbon()
+        CompositionLocalProvider(LocalLayoutDirection provides pageDirection) {
+            HorizontalPager(
+                pager,
+                Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1,
+                userScrollEnabled = zoom?.value?.zoomed != true,
+            ) { index ->
+                Box(
+                    Modifier.fillMaxSize()
+                        .onSizeChanged { pageSize = it.toSize() }
+                        .then(zoomGestures)
+                        .pointerInput(rightToLeft, zoom) {
+                            val toggleZoom = zoom?.let {
+                                { at: Offset ->
+                                    it.value =
+                                        it.value.toggled(at, size.toSize())
+                                }
+                            }
+                            detectTapGestures(onDoubleTap = toggleZoom, onLongPress = {
+                            }) {
+                                tap(index, it, size.width)
+                            }
+                        },
+                ) {
+                    page(index)
+                    if (marks.on(index).isNotEmpty()) BookmarkRibbon()
+                }
             }
         }
         Chrome(state.book) {
@@ -1158,6 +1285,8 @@ private fun Pages(
                             start()
                         }
                     },
+                    rightToLeft = rightToLeft,
+                    onDirection = onDirection,
                 )
             }
             AnimatedVisibility(
@@ -1166,7 +1295,7 @@ private fun Pages(
                 exit = chromeExit(reduced) { it },
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                ReaderBottomBar(pager, chapter?.first, state.onFontScale) {
+                ReaderBottomBar(pager, chapter?.first, state.onFontScale, pageDirection) {
                     scope.launch { pager.scrollToPage(it) }
                 }
             }
@@ -1239,6 +1368,8 @@ private fun ReaderTopBar(
     contents: SheetTab,
     onContents: () -> Unit,
     onListen: (() -> Unit)?,
+    rightToLeft: Boolean,
+    onDirection: (() -> Unit)?,
 ) {
     Row(
         Modifier.fillMaxWidth()
@@ -1275,6 +1406,14 @@ private fun ReaderTopBar(
             val listen = stringResource(R.string.listen)
             IconAction(Icons.Rounded.Headphones, listen, onClick = it)
         }
+        onDirection?.let {
+            IconAction(
+                Icons.Rounded.SwapHoriz,
+                stringResource(R.string.right_to_left),
+                tint = if (rightToLeft) Look.colors.accent else Look.colors.ink,
+                onClick = it,
+            )
+        }
         val mark = if (bookmarked) R.string.remove_bookmark else R.string.add_bookmark
         IconAction(
             if (bookmarked) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder,
@@ -1292,6 +1431,7 @@ private fun ReaderBottomBar(
     pager: PagerState,
     chapter: String?,
     onFontScale: ((Float) -> Unit)?,
+    pageDirection: LayoutDirection,
     onJump: (Int) -> Unit,
 ) {
     var dragging by rememberSaveable { mutableStateOf<Float?>(null) }
@@ -1303,15 +1443,17 @@ private fun ReaderBottomBar(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         chapter?.let { Eyebrow(it, color = Look.colors.accent) }
-        Scrubber(
-            value = dragging ?: pager.currentPage.toFloat(),
-            onChange = { dragging = it },
-            range = 0f..maxOf(1, pager.pageCount - 1).toFloat(),
-            onFinished = {
-                dragging?.let { onJump(it.roundToInt()) }
-                dragging = null
-            },
-        )
+        CompositionLocalProvider(LocalLayoutDirection provides pageDirection) {
+            Scrubber(
+                value = dragging ?: pager.currentPage.toFloat(),
+                onChange = { dragging = it },
+                range = 0f..maxOf(1, pager.pageCount - 1).toFloat(),
+                onFinished = {
+                    dragging?.let { onJump(it.roundToInt()) }
+                    dragging = null
+                },
+            )
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             val smaller = stringResource(R.string.smaller_text)
             onFontScale?.let {

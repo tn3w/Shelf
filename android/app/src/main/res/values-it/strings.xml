@@ -104,6 +104,7 @@
     <string name="reading">In lettura</string>
     <string name="recent">Ricerche recenti</string>
     <string name="remove_bookmark">Rimuovi segnalibro</string>
+    <string name="right_to_left">Leggi da destra a sinistra</string>
     <string name="remove_pack">Rimuovi %s</string>
     <string name="resume">Continua</string>
     <string name="retry_item">Riprova %s</string>

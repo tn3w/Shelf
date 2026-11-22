@@ -352,6 +352,7 @@
     <string name="no_bookmarks">Noch keine Lesezeichen. Tippe oben auf das Lesezeichen-Symbol, um eine Seite zu speichern.</string>
     <string name="no_matches">Keine Fundstellen in diesem Buch</string>
     <string name="remove_bookmark">Lesezeichen entfernen</string>
+    <string name="right_to_left">Von rechts nach links lesen</string>
     <string name="search_book">Im Buch suchen</string>
     <string name="search_book_hint">Gib mindestens zwei Buchstaben ein, um alle Kapitel zu durchsuchen.</string>
     <string name="many_matches">Mehr als %d Fundstellen</string>

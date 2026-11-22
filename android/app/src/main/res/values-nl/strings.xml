@@ -103,6 +103,7 @@
     <string name="reading">Aan het lezen</string>
     <string name="recent">Recente zoekopdrachten</string>
     <string name="remove_bookmark">Bladwijzer verwijderen</string>
+    <string name="right_to_left">Van rechts naar links lezen</string>
     <string name="remove_pack">%s verwijderen</string>
     <string name="resume">Hervatten</string>
     <string name="retry_item">%s opnieuw proberen</string>

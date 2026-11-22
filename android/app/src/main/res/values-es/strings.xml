@@ -362,6 +362,7 @@
     <string name="no_bookmarks">Aún no hay marcadores. Toca el icono de marcador arriba para guardar una página.</string>
     <string name="no_matches">No hay coincidencias en este libro</string>
     <string name="remove_bookmark">Quitar marcador</string>
+    <string name="right_to_left">Leer de derecha a izquierda</string>
     <string name="search_book">Buscar en el libro</string>
     <string name="search_book_hint">Escribe al menos dos letras para buscar en todos los capítulos.</string>
     <string name="many_matches">Más de %d coincidencias</string>

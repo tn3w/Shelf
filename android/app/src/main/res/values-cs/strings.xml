@@ -372,6 +372,7 @@
     <string name="no_bookmarks">Zatím žádné záložky. Klepnutím na ikonu záložky nahoře uložíte stránku.</string>
     <string name="no_matches">V této knize nic nenalezeno</string>
     <string name="remove_bookmark">Odebrat záložku</string>
+    <string name="right_to_left">Číst zprava doleva</string>
     <string name="search_book">Hledat v knize</string>
     <string name="search_book_hint">Zadejte alespoň dvě písmena pro hledání ve všech kapitolách.</string>
     <string name="many_matches">Více než %d shod</string>

@@ -175,6 +175,7 @@ data class Progress(
     val offset: Int = 0,
     val page: Int = 0,
     val pages: Int = 0,
+    val rightToLeft: Boolean? = null,
 ) {
     val fraction
         get() = if (pages > 0) (page + 1f) / pages else null
