@@ -15,6 +15,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import dev.tn3w.shelf.cover.CoverFetcher
 import dev.tn3w.shelf.cover.CoverKeyer
 import dev.tn3w.shelf.data.*
+import dev.tn3w.shelf.widget.refreshWidgetsOnChange
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -70,6 +71,7 @@ class ShelfApp :
         scope.launch {
             library.settings.collect { networkAllowed = !it.isOffline(this@ShelfApp) }
         }
+        scope.launch { refreshWidgetsOnChange(this@ShelfApp) }
         scope.launch {
             val settings = library.settings.first()
             packs.source = settings.catalogueSource

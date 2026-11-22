@@ -104,6 +104,13 @@ Daily goal, streaks and monthly stats, replayed as stories with a card to share.
 
 Books without a cover get one, drawn on your phone in the style of their genre.
 
+## Widgets
+
+<img src="android/design/widgets.png" width="100%" alt="Home screen widgets: continue reading, reading streak and reading shelf">
+
+Continue your book from the home screen, in the colours of its cover. Your streak and
+everything you are reading sit beside it in your phone's colours.
+
 ## Reads your files
 
 `EPUB` `MOBI` `AZW3` `PDF` `FB2` `CBZ` `CBR` `CB7` `DOCX` `ODT` `RTF` `HTML` `TXT` `MD`

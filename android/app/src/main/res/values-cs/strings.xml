@@ -542,4 +542,12 @@
     <string name="quality_high">Vysoká kvalita</string>
     <string name="other_languages">Další jazyky</string>
     <string name="found_in_catalogue">Nalezeno v katalogu</string>
+    <string name="widget_continue">Pokračovat ve čtení</string>
+    <string name="widget_continue_text">Vaše rozečtená kniha jako plakát její obálky</string>
+    <string name="widget_streak">Série čtení</string>
+    <string name="widget_streak_text">Denní cíl, série a váš týden</string>
+    <string name="widget_shelf">Rozečtené knihy</string>
+    <string name="widget_shelf_text">Všechny knihy, které čtete, na jedno klepnutí</string>
+    <string name="widget_empty">Začněte číst knihu v Shelf a uvidíte ji zde</string>
+    <string name="widget_no_goal">Nastavte si v Shelf denní cíl a sledujte svou sérii</string>
 </resources>

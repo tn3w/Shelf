@@ -512,4 +512,12 @@
     <string name="quality_high">Hög kvalitet</string>
     <string name="other_languages">Andra språk</string>
     <string name="found_in_catalogue">Hittades i katalogen</string>
+    <string name="widget_continue">Fortsätt läsa</string>
+    <string name="widget_continue_text">Din aktuella bok som en affisch av omslaget</string>
+    <string name="widget_streak">Lässvit</string>
+    <string name="widget_streak_text">Dagsmål, svit och din vecka</string>
+    <string name="widget_shelf">Läser</string>
+    <string name="widget_shelf_text">Alla böcker du läser, ett tryck bort</string>
+    <string name="widget_empty">Börja en bok i Shelf för att se den här</string>
+    <string name="widget_no_goal">Ställ in ett dagsmål i Shelf för att följa din svit</string>
 </resources>

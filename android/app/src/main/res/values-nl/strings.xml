@@ -511,4 +511,12 @@
     <string name="quality_high">Hoge kwaliteit</string>
     <string name="other_languages">Andere talen</string>
     <string name="found_in_catalogue">Gevonden in de catalogus</string>
+    <string name="widget_continue">Verder lezen</string>
+    <string name="widget_continue_text">Je huidige boek als poster van de omslag</string>
+    <string name="widget_streak">Leesreeks</string>
+    <string name="widget_streak_text">Dagdoel, reeks en je week</string>
+    <string name="widget_shelf">Aan het lezen</string>
+    <string name="widget_shelf_text">Alle boeken die je leest, één tik verderop</string>
+    <string name="widget_empty">Begin een boek in Shelf om het hier te zien</string>
+    <string name="widget_no_goal">Stel een dagdoel in Shelf in om je reeks te volgen</string>
 </resources>

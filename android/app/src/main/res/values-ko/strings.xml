@@ -497,4 +497,12 @@
     <string name="quality_high">고품질</string>
     <string name="other_languages">다른 언어</string>
     <string name="found_in_catalogue">카탈로그에서 찾음</string>
+    <string name="widget_continue">이어 읽기</string>
+    <string name="widget_continue_text">읽고 있는 책을 표지 포스터로</string>
+    <string name="widget_streak">독서 기록</string>
+    <string name="widget_streak_text">오늘 목표, 연속 기록, 이번 주</string>
+    <string name="widget_shelf">읽는 중</string>
+    <string name="widget_shelf_text">읽고 있는 모든 책을 한 번에</string>
+    <string name="widget_empty">Shelf에서 책을 시작하면 여기에 표시돼요</string>
+    <string name="widget_no_goal">Shelf에서 하루 목표를 정하면 기록을 볼 수 있어요</string>
 </resources>

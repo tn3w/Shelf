@@ -516,4 +516,12 @@
     <string name="quality_high">High quality</string>
     <string name="other_languages">Other languages</string>
     <string name="found_in_catalogue">Found in the catalogue</string>
+    <string name="widget_continue">Continue reading</string>
+    <string name="widget_continue_text">Your current book as a poster of its cover</string>
+    <string name="widget_streak">Reading streak</string>
+    <string name="widget_streak_text">Daily goal, streak and your week</string>
+    <string name="widget_shelf">Reading shelf</string>
+    <string name="widget_shelf_text">Every book you are reading, one tap away</string>
+    <string name="widget_empty">Start a book in Shelf to see it here</string>
+    <string name="widget_no_goal">Set a daily goal in Shelf to track your streak</string>
 </resources>

@@ -93,6 +93,43 @@
             android:name=".InstallReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".widget.ContinueWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_continue">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_continue" />
+        </receiver>
+
+
+        <receiver
+            android:name=".widget.StreakWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_streak">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_streak" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.ShelfWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_shelf">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shelf" />
+        </receiver>
+
         <service
             android:name=".TransferService"
             android:exported="false"

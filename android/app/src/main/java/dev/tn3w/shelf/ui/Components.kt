@@ -117,8 +117,9 @@ private val tones = mutableStateMapOf<Long, CoverTone>()
 private fun toneKey(book: Book) =
     book.work.toLong() shl 32 or book.cover.toUInt().toLong()
 
-private fun toneOf(image: Image): CoverTone? {
-    val source = (image as? BitmapImage)?.bitmap ?: return null
+private fun toneOf(image: Image) = (image as? BitmapImage)?.bitmap?.let(::toneOf)
+
+fun toneOf(source: Bitmap): CoverTone? {
     val hardware = source.config == Bitmap.Config.HARDWARE
     val readable = if (hardware) source.copy(Bitmap.Config.ARGB_8888, false) else source
     val small = Bitmap.createScaledBitmap(readable, TONE_WIDTH, TONE_HEIGHT, true)
@@ -151,9 +152,7 @@ private fun proxiedCover(book: Book, base: String?, pixels: Int): String? {
     if (base == null) return null
     val catalogue = shelfViewModel().loaded.collectAsStateWithLifecycle().value?.catalogue
     val language = remember(book.work, book.language, catalogue) {
-        book.language.ifEmpty {
-            catalogue?.language?.takeIf { catalogue.locate(book.work) != null }.orEmpty()
-        }
+        coverLanguage(book, catalogue)
     }
     if (language.isEmpty()) return null
     return proxyCoverUrl(base, language, book.work, pixels)
@@ -241,11 +240,26 @@ fun BookCover(
     }
 }
 
-fun frontCover(size: Size): Alignment {
-    if (size.width <= size.height) return Alignment.Center
-    val spread = size.width / size.height * 1.5f
-    return BiasAlignment(min(1f, 0.5f * spread / (spread - 1f)), 0f)
+fun coverLanguage(book: Book, catalogue: Catalogue?) = book.language.ifEmpty {
+    catalogue?.language?.takeIf { catalogue.locate(book.work) != null }.orEmpty()
 }
+
+fun coverRequest(book: Book, catalogue: Catalogue?): CoverRequest {
+    val tags = book.tags.ifEmpty {
+        catalogue?.facts(book.work)?.tags?.toList().orEmpty()
+    }
+    val slugs = tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
+    return CoverRequest(book.work, book.title, book.author, slugs)
+}
+
+/** Horizontal bias that shows the front of a wraparound cover [width] by [height]. */
+fun frontCoverBias(width: Float, height: Float): Float {
+    if (width <= height) return 0f
+    val spread = width / height * 1.5f
+    return min(1f, 0.5f * spread / (spread - 1f))
+}
+
+fun frontCover(size: Size) = BiasAlignment(frontCoverBias(size.width, size.height), 0f)
 
 private fun initials(name: String) = name
     .split(" ")
@@ -289,11 +303,7 @@ fun AuthorAvatar(author: Author, size: Dp, modifier: Modifier = Modifier) {
 private fun DrawnCover(book: Book, description: String, onShown: (Image) -> Unit) {
     val catalogue = shelfViewModel().loaded.collectAsStateWithLifecycle().value?.catalogue
     val request = remember(book.work, book.title, book.author, book.tags, catalogue) {
-        val tags = book.tags.ifEmpty {
-            catalogue?.facts(book.work)?.tags?.toList().orEmpty()
-        }
-        val slugs = tags.mapNotNull { catalogue?.tags?.getOrNull(it)?.slug }
-        CoverRequest(book.work, book.title, book.author, slugs)
+        coverRequest(book, catalogue)
     }
     AsyncImage(
         model = request,

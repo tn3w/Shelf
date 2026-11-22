@@ -527,4 +527,12 @@
     <string name="quality_high">Alta calidad</string>
     <string name="other_languages">Otros idiomas</string>
     <string name="found_in_catalogue">Encontrado en el catálogo</string>
+    <string name="widget_continue">Seguir leyendo</string>
+    <string name="widget_continue_text">Tu libro actual como póster de su portada</string>
+    <string name="widget_streak">Racha de lectura</string>
+    <string name="widget_streak_text">Meta diaria, racha y tu semana</string>
+    <string name="widget_shelf">Leyendo</string>
+    <string name="widget_shelf_text">Todos los libros que lees, a un toque</string>
+    <string name="widget_empty">Empieza un libro en Shelf para verlo aquí</string>
+    <string name="widget_no_goal">Fija una meta diaria en Shelf para seguir tu racha</string>
 </resources>

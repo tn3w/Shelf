@@ -512,4 +512,12 @@
     <string name="quality_high">Korkea laatu</string>
     <string name="other_languages">Muut kielet</string>
     <string name="found_in_catalogue">Löytyi luettelosta</string>
+    <string name="widget_continue">Jatka lukemista</string>
+    <string name="widget_continue_text">Nykyinen kirjasi kansikuvansa julisteena</string>
+    <string name="widget_streak">Lukuputki</string>
+    <string name="widget_streak_text">Päivätavoite, putki ja viikkosi</string>
+    <string name="widget_shelf">Luen</string>
+    <string name="widget_shelf_text">Kaikki lukemasi kirjat yhden napautuksen päässä</string>
+    <string name="widget_empty">Aloita kirja Shelfissä nähdäksesi sen tässä</string>
+    <string name="widget_no_goal">Aseta Shelfissä päivätavoite seurataksesi putkeasi</string>
 </resources>

@@ -512,4 +512,12 @@
     <string name="quality_high">Kõrge kvaliteet</string>
     <string name="other_languages">Teised keeled</string>
     <string name="found_in_catalogue">Leitud kataloogist</string>
+    <string name="widget_continue">Jätka lugemist</string>
+    <string name="widget_continue_text">Sinu praegune raamat kaanepildi plakatina</string>
+    <string name="widget_streak">Lugemisseeria</string>
+    <string name="widget_streak_text">Päeva eesmärk, seeria ja sinu nädal</string>
+    <string name="widget_shelf">Loen</string>
+    <string name="widget_shelf_text">Kõik raamatud, mida loed, ühe puudutuse kaugusel</string>
+    <string name="widget_empty">Alusta Shelfis raamatut, et seda siin näha</string>
+    <string name="widget_no_goal">Sea Shelfis päeva eesmärk, et seeriat jälgida</string>
 </resources>

@@ -527,4 +527,12 @@
     <string name="quality_high">Alta qualidade</string>
     <string name="other_languages">Outros idiomas</string>
     <string name="found_in_catalogue">Encontrado no catálogo</string>
+    <string name="widget_continue">Continuar lendo</string>
+    <string name="widget_continue_text">Seu livro atual como pôster da capa</string>
+    <string name="widget_streak">Sequência de leitura</string>
+    <string name="widget_streak_text">Meta diária, sequência e sua semana</string>
+    <string name="widget_shelf">Lendo</string>
+    <string name="widget_shelf_text">Todos os livros que você lê, a um toque</string>
+    <string name="widget_empty">Comece um livro no Shelf para vê-lo aqui</string>
+    <string name="widget_no_goal">Defina uma meta diária no Shelf para acompanhar sua sequência</string>
 </resources>

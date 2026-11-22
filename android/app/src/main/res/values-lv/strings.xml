@@ -527,4 +527,12 @@
     <string name="quality_high">Augsta kvalitāte</string>
     <string name="other_languages">Citas valodas</string>
     <string name="found_in_catalogue">Atrasts katalogā</string>
+    <string name="widget_continue">Turpināt lasīt</string>
+    <string name="widget_continue_text">Jūsu pašreizējā grāmata kā tās vāka plakāts</string>
+    <string name="widget_streak">Lasīšanas sērija</string>
+    <string name="widget_streak_text">Dienas mērķis, sērija un jūsu nedēļa</string>
+    <string name="widget_shelf">Lasu</string>
+    <string name="widget_shelf_text">Visas grāmatas, ko lasāt, viena pieskāriena attālumā</string>
+    <string name="widget_empty">Sāciet grāmatu lietotnē Shelf, lai to redzētu šeit</string>
+    <string name="widget_no_goal">Iestatiet dienas mērķi lietotnē Shelf, lai sekotu sērijai</string>
 </resources>

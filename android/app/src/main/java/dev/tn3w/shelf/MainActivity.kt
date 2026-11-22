@@ -55,6 +55,8 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_L
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import dev.tn3w.shelf.data.*
 import dev.tn3w.shelf.ui.*
+import dev.tn3w.shelf.widget.EXTRA_WORK
+import dev.tn3w.shelf.widget.OPEN_BOOK
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
@@ -209,6 +211,8 @@ class MainViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     fun openFile(uri: Uri) = app.openFile(uri)
 
+    fun openWork(work: Int) = app.open(work)
+
     fun consumeOpenedWork() = app.consumeOpenedWork()
 
     suspend fun hasText(work: Int) = library.hasFile(library.progressOf(work))
@@ -280,6 +284,8 @@ class MainActivity : ComponentActivity() {
 
     private fun open(intent: Intent) {
         if (intent.action == OPEN_PLAYER) viewModel.playerRequested = true
+        val work = intent.getIntExtra(EXTRA_WORK, 0)
+        if (intent.action == OPEN_BOOK) viewModel.openWork(work)
         openedFile(intent)?.let(viewModel::openFile)
     }
 

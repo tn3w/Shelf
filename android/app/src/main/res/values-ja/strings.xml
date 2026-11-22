@@ -496,4 +496,12 @@
     <string name="quality_high">高品質</string>
     <string name="other_languages">その他の言語</string>
     <string name="found_in_catalogue">カタログで見つかりました</string>
+    <string name="widget_continue">続きを読む</string>
+    <string name="widget_continue_text">読んでいる本を表紙のポスターで</string>
+    <string name="widget_streak">読書の記録</string>
+    <string name="widget_streak_text">今日の目標、連続記録、今週の記録</string>
+    <string name="widget_shelf">読書中</string>
+    <string name="widget_shelf_text">読んでいる本にワンタップで</string>
+    <string name="widget_empty">Shelf で本を読み始めるとここに表示されます</string>
+    <string name="widget_no_goal">Shelf で毎日の目標を設定すると記録を追えます</string>
 </resources>
