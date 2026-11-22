@@ -212,7 +212,7 @@
     <string name="privacy_requests_hint">Anfragen nur über https, ohne Kennungen oder Cookies.</string>
     <string name="black_theme">Reines Schwarz</string>
     <string name="black_theme_hint">Schwarzer Hintergrund im dunklen Design. Spart Strom auf OLED-Displays.</string>
-    <string name="wallpaper_colors">Farben vom Hintergrundbild</string>
+    <string name="wallpaper_colors">Systemakzentfarbe</string>
     <string name="e_ink">E-Ink-Modus</string>
     <string name="e_ink_hint">Schwarz auf Weiß, keine Animationen, sofortiges Umblättern, größere Tippflächen.</string>
     <string name="reader">Lesemodus</string>

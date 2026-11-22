@@ -221,7 +221,7 @@
     <string name="privacy_requests_hint">Requêtes en https uniquement, sans identifiant ni cookie.</string>
     <string name="black_theme">Noir pur</string>
     <string name="black_theme_hint">Fond noir en mode sombre. Économise la batterie sur écran OLED.</string>
-    <string name="wallpaper_colors">Couleurs du fond d\'écran</string>
+    <string name="wallpaper_colors">Couleur d\'accent du système</string>
     <string name="e_ink">Mode e-ink</string>
     <string name="e_ink_hint">Noir sur blanc, sans animations, pages tournées instantanément, zones tactiles plus grandes.</string>
     <string name="reader">Liseuse</string>

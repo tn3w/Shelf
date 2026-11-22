@@ -230,7 +230,7 @@
     <string name="privacy_requests_hint">Požadavky používají jen https a neobsahují identifikátory ani cookies.</string>
     <string name="black_theme">Čistě černá</string>
     <string name="black_theme_hint">Černé pozadí v tmavém režimu. Šetří energii na displejích OLED.</string>
-    <string name="wallpaper_colors">Barvy tapety</string>
+    <string name="wallpaper_colors">Systémová barva zvýraznění</string>
     <string name="e_ink">Režim e-ink</string>
     <string name="e_ink_hint">Černá na bílé, bez animací, okamžité otáčení stránek, větší dotykové plochy.</string>
     <string name="reader">Čtečka</string>

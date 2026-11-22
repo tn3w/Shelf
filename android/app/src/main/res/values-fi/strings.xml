@@ -212,7 +212,7 @@
     <string name="privacy_requests_hint">Pyynnöt käyttävät vain https:ää eivätkä sisällä tunnisteita tai evästeitä.</string>
     <string name="black_theme">Täysmusta</string>
     <string name="black_theme_hint">Musta tausta tummassa tilassa. Säästää virtaa OLED-näytöillä.</string>
-    <string name="wallpaper_colors">Taustakuvan värit</string>
+    <string name="wallpaper_colors">Järjestelmän korostusväri</string>
     <string name="e_ink">E-mustetila</string>
     <string name="e_ink_hint">Musta valkoisella, ei animaatioita, välitön sivunkääntö, suuremmat kosketusalueet.</string>
     <string name="reader">Lukija</string>

@@ -212,7 +212,7 @@
     <string name="privacy_requests_hint">Förfrågningar använder bara https och innehåller inga identifierare eller cookies.</string>
     <string name="black_theme">Helsvart</string>
     <string name="black_theme_hint">Svart bakgrund i mörkt läge. Sparar ström på OLED-skärmar.</string>
-    <string name="wallpaper_colors">Färger från bakgrundsbilden</string>
+    <string name="wallpaper_colors">Systemets accentfärg</string>
     <string name="e_ink">E-bläckläge</string>
     <string name="e_ink_hint">Svart på vitt, inga animationer, direkta sidbyten, större tryckytor.</string>
     <string name="reader">Läsare</string>

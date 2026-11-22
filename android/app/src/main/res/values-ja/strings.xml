@@ -214,7 +214,7 @@
     <string name="privacy_requests_hint">通信は https のみで、識別子や Cookie は含まれません。</string>
     <string name="black_theme">純粋な黒</string>
     <string name="black_theme_hint">ダークモードで背景を黒にします。有機 EL 画面で電力を節約できます。</string>
-    <string name="wallpaper_colors">壁紙の色</string>
+    <string name="wallpaper_colors">システムのアクセントカラー</string>
     <string name="e_ink">E Ink モード</string>
     <string name="e_ink_hint">白地に黒、アニメーションなし、即時ページめくり、大きなタッチ領域。</string>
     <string name="reader">リーダー</string>

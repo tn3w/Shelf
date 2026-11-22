@@ -230,7 +230,7 @@
     <string name="privacy_requests_hint">Запросы идут только по https и не содержат идентификаторов и cookie.</string>
     <string name="black_theme">Чисто чёрная</string>
     <string name="black_theme_hint">Чёрный фон в тёмном режиме. Экономит заряд на OLED-экранах.</string>
-    <string name="wallpaper_colors">Цвета обоев</string>
+    <string name="wallpaper_colors">Системный цвет акцента</string>
     <string name="e_ink">Режим e-ink</string>
     <string name="e_ink_hint">Чёрное на белом, без анимаций, мгновенное перелистывание, крупные элементы управления.</string>
     <string name="reader">Читалка</string>

@@ -300,7 +300,7 @@
     <string name="reading_hint">Objetivo diário, texto e mudança de página.</string>
     <string name="privacy_requests_hint">Os pedidos usam apenas https e não levam identificadores nem cookies.</string>
     <string name="black_theme">Preto puro</string>
-    <string name="wallpaper_colors">Cores do papel de parede</string>
+    <string name="wallpaper_colors">Cor de destaque do sistema</string>
     <string name="e_ink">Modo e-ink</string>
     <string name="e_ink_hint">Preto sobre branco, sem animações, páginas instantâneas, áreas de toque maiores.</string>
     <string name="reader">Leitor</string>

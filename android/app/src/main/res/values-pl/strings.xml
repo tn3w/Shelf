@@ -230,7 +230,7 @@
     <string name="privacy_requests_hint">Żądania używają tylko https i nie zawierają identyfikatorów ani ciasteczek.</string>
     <string name="black_theme">Czysta czerń</string>
     <string name="black_theme_hint">Czarne tło w trybie ciemnym. Oszczędza energię na ekranach OLED.</string>
-    <string name="wallpaper_colors">Kolory tapety</string>
+    <string name="wallpaper_colors">Systemowy kolor akcentu</string>
     <string name="e_ink">Tryb e-ink</string>
     <string name="e_ink_hint">Czarne na białym, bez animacji, natychmiastowe przewracanie stron, większe pola dotyku.</string>
     <string name="reader">Czytnik</string>

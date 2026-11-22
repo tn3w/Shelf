@@ -212,7 +212,7 @@
     <string name="privacy_requests_hint">Päringud kasutavad ainult https-i ega sisalda identifikaatoreid ega küpsiseid.</string>
     <string name="black_theme">Täismust</string>
     <string name="black_theme_hint">Must taust tumedas režiimis. Säästab OLED-ekraanidel energiat.</string>
-    <string name="wallpaper_colors">Taustapildi värvid</string>
+    <string name="wallpaper_colors">Süsteemi aktsentvärv</string>
     <string name="e_ink">E-tindi režiim</string>
     <string name="e_ink_hint">Must valgel, animatsioonideta, kohene lehepööre, suuremad puutealad.</string>
     <string name="reader">Lugeja</string>

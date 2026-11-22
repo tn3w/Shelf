@@ -235,7 +235,7 @@
     <string name="privacy_requests_hint">As requisições usam apenas https e não levam identificadores nem cookies.</string>
     <string name="black_theme">Preto puro</string>
     <string name="black_theme_hint">Fundo preto no modo escuro. Economiza bateria em telas OLED.</string>
-    <string name="wallpaper_colors">Cores do papel de parede</string>
+    <string name="wallpaper_colors">Cor de destaque do sistema</string>
     <string name="e_ink">Modo e-ink</string>
     <string name="e_ink_hint">Preto no branco, sem animações, páginas instantâneas, áreas de toque maiores.</string>
     <string name="reader">Leitor</string>

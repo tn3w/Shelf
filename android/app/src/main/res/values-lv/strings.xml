@@ -235,7 +235,7 @@
     <string name="privacy_requests_hint">Pieprasījumi izmanto tikai https un nesatur identifikatorus vai sīkdatnes.</string>
     <string name="black_theme">Tīri melns</string>
     <string name="black_theme_hint">Melns fons tumšajā režīmā. Taupa enerģiju OLED ekrānos.</string>
-    <string name="wallpaper_colors">Fona tapetes krāsas</string>
+    <string name="wallpaper_colors">Sistēmas akcenta krāsa</string>
     <string name="e_ink">E-tintes režīms</string>
     <string name="e_ink_hint">Melns uz balta, bez animācijām, tūlītēja lappušu pāršķiršana, lielāki skāriena laukumi.</string>
     <string name="reader">Lasītājs</string>

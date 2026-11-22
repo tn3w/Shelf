@@ -225,7 +225,7 @@
     <string name="privacy_requests_hint">Verzoeken gaan alleen via https, zonder identificatoren of cookies.</string>
     <string name="black_theme">Puur zwart</string>
     <string name="black_theme_hint">Zwarte achtergrond in donkere modus. Bespaart stroom op oled-schermen.</string>
-    <string name="wallpaper_colors">Kleuren van achtergrondafbeelding</string>
+    <string name="wallpaper_colors">Systeemaccentkleur</string>
     <string name="e_ink">E-inkmodus</string>
     <string name="e_ink_hint">Zwart op wit, geen animaties, direct omslaan, grotere aanraakvlakken.</string>
     <string name="reader">Lezer</string>

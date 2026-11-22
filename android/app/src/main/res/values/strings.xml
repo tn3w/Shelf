@@ -225,7 +225,7 @@
     <string name="privacy_requests_hint">Requests use https only and carry no identifiers or cookies.</string>
     <string name="black_theme">Pure black</string>
     <string name="black_theme_hint">Black background in dark mode. Saves power on OLED screens.</string>
-    <string name="wallpaper_colors">Wallpaper colours</string>
+    <string name="wallpaper_colors">System accent colour</string>
     <string name="e_ink">E-ink mode</string>
     <string name="e_ink_hint">Black on white, no animations, instant page turns, larger touch targets.</string>
     <string name="reader">Reader</string>
