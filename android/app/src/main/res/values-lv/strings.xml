@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="add_bookmark">Pievienot grāmatzīmi šai lapai</string>
     <string name="about">Par</string>
@@ -504,7 +505,7 @@
     <string name="model_speaker">Runātāja noteikšana</string>
     <string name="dictionaries">Vārdnīcas</string>
     <string name="dictionaries_hint">Meklējiet vārdus bezsaistē: lasot ilgi turiet vārdu un pieskarieties grāmatas ikonai.</string>
-    <string name="define">Meklēt</string>
+    <string name="define">Skatīt vārdnīcā</string>
     <string name="no_definition">Definīcija nav atrasta. Vārdnīcas var lejupielādēt iestatījumos.</string>
     <string name="not_enough_space">Nepietiek krātuves vietas.</string>
     <string name="listen_failed">Runas dzinējs nav pieejams</string>
