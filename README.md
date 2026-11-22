@@ -30,7 +30,7 @@ No account. No ads. No tracking. Free and open source.
 <picture><source media="(prefers-color-scheme: dark)" srcset="android/design/screenshots/dark/8_scan.jpg"><img src="android/app/fastlane/metadata/android/en-US/images/phoneScreenshots/8_scan.jpg" width="22%" alt="scan"></picture>
 </p>
 
-https://github.com/user-attachments/assets/fa9a46c5-e4d6-43cb-832f-4c964c9996f1
+https://github.com/user-attachments/assets/7264823b-87bf-42f3-b9d0-bf1d1927186a
 
 </div>
 
