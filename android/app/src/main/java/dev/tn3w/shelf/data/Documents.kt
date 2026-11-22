@@ -140,10 +140,9 @@ interface PagedDocument : Document {
 class PdfDocument(file: File) : PagedDocument {
     private val descriptor =
         ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-    private val renderer =
-        runCatching {
-            PdfRenderer(descriptor)
-        }.onFailure { descriptor.close() }.getOrThrow()
+    private val renderer = runCatching { PdfRenderer(descriptor) }
+        .onFailure { descriptor.close() }
+        .getOrThrow()
     override val pageCount = renderer.pageCount
 
     override fun page(index: Int, width: Int, height: Int): Bitmap =
@@ -580,9 +579,8 @@ private fun isCentered(element: Element) = generateSequence(element) { it.parent
     }
 
 internal fun htmlBlocks(root: Element, imagePath: (String) -> String?) =
-    HtmlReader(imagePath).apply {
-        read(root)
-    }.blocks.ifEmpty { plainBlocks(root.wholeText()) }
+    HtmlReader(imagePath).apply { read(root) }.blocks
+        .ifEmpty { plainBlocks(root.wholeText()) }
 
 private fun ZipFile.bytes(entry: ZipEntry): ByteArray {
     if (entry.size > MAX_ENTRY_BYTES) throw IOException("${entry.name} is too large")

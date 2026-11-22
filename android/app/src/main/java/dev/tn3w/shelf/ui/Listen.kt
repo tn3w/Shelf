@@ -323,9 +323,10 @@ private fun Options(state: Narration, playback: Playback) {
             playback.setRate(it)
         }
 
-        Choosing.Sleep -> Choices(SLEEP_OPTIONS, {
-            it == state.sleep
-        }, { sleepLabel(it) }) { playback.setSleep(it) }
+        Choosing.Sleep ->
+            Choices(SLEEP_OPTIONS, { it == state.sleep }, { sleepLabel(it) }) {
+                playback.setSleep(it)
+            }
 
         Choosing.Voice -> Choices(voices, { it.name == state.voice }, { it.label }) {
             (playback as? Narrator)?.setVoice(it.name)

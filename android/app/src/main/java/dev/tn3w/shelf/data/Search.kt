@@ -80,20 +80,11 @@ private fun isCjk(character: Char) = character >= KANA.first().first &&
     (KANJI.any { character in it } || (character != '・' && KANA.any { character in it }))
 
 private fun foldCharacter(character: Char): Char? {
-    val narrow =
-        if (character in
-            FULLWIDTH
-        ) {
-            (character.code - FULLWIDTH_OFFSET).toChar()
-        } else {
-            character
-        }
+    val narrow = if (character in FULLWIDTH) character - FULLWIDTH_OFFSET else character
     val lowered = if (narrow.code < 128) narrow.lowercaseChar() else narrow
     if (lowered.code < 128 && lowered.isLetterOrDigit()) return lowered
     if (character in HANGUL) return character
-    if (character in
-        CYRILLIC
-    ) {
+    if (character in CYRILLIC) {
         return character.lowercaseChar().takeIf { it != 'ё' } ?: 'е'
     }
     return FOLD[character]

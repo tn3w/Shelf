@@ -13,6 +13,10 @@ import java.time.temporal.ChronoUnit
 private const val PAGES_PER_HOUR = 40
 private const val SECONDS_PER_PAGE = 3600 / PAGES_PER_HOUR
 private const val MAX_HEARD_STEP = 5
+private const val MARATHON_DAYS = 21
+private const val EXPLORER_GENRES = 5
+private const val DEVOTED_BOOKS = 3
+private val WEEKEND = setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 
 /** Seconds of audio heard between two positions; seeks and skips count nothing. */
 fun heardSeconds(before: Int, after: Int) =
@@ -21,10 +25,6 @@ fun heardSeconds(before: Int, after: Int) =
 fun pagesHeard(seconds: Int) = seconds / SECONDS_PER_PAGE
 
 fun secondsOfPages(pages: Int) = pages * SECONDS_PER_PAGE
-private const val MARATHON_DAYS = 21
-private const val EXPLORER_GENRES = 5
-private const val DEVOTED_BOOKS = 3
-private val WEEKEND = setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
 
 enum class ReaderType(@StringRes val title: Int, @StringRes val description: Int) {
     Marathoner(R.string.type_marathoner, R.string.type_marathoner_text),

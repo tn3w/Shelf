@@ -135,6 +135,12 @@ class LibraryTest {
     }
 
     @Test
+    fun redirectMovesListening() {
+        val moved = ReadingState(listening = setOf(5, 9)).redirect(mapOf(5 to 42)::get)
+        assertEquals(setOf(42, 9), moved.listening)
+    }
+
+    @Test
     fun mergeKeepsNetworkAndPrivacySettings() {
         val current = Settings(
             offline = true,

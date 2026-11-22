@@ -1064,6 +1064,7 @@ internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(
     bookmarks = bookmarks.moved(alias),
     highlights = highlights.moved(alias),
     audiobooks = audiobooks.mapKeys { it.key.moved(alias) },
+    listening = listening.mapTo(HashSet()) { it.moved(alias) },
 )
 
 private fun <T> Map<Int, List<T>>.moved(alias: (Int) -> Int?) = entries

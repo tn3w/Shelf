@@ -46,9 +46,7 @@ class PocketText(
         val core = text.trimEnd { it in CLOSERS || it == ' ' }
         val closers = text.substring(core.length).trim()
         if (core.isEmpty() || core.last() in TERMINAL) return text
-        if (core.last() in
-            WEAK
-        ) {
+        if (core.last() in WEAK) {
             return core.trimEnd { it in WEAK || it == ' ' } + "." + closers
         }
         return "$text."

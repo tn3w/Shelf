@@ -329,9 +329,9 @@ internal fun digestAuthorization(
     val parameters = challenge.authParams
     val realm = parameters["realm"].orEmpty()
     val nonce = parameters["nonce"].orEmpty()
-    val qop = parameters["qop"]?.split(',')?.map {
-        it.trim()
-    }?.firstOrNull { it == "auth" }
+    val qop = parameters["qop"]?.split(',')
+        ?.map(String::trim)
+        ?.firstOrNull { it == "auth" }
     val secret = md5("${login.username}:$realm:${login.password}")
     val request = md5("$method:$path")
     val count = "00000001"

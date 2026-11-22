@@ -117,10 +117,8 @@ class Narrator(app: ShelfApp) :
             val result = tts.setLanguage(locale)
             val missing = result == TextToSpeech.LANG_MISSING_DATA ||
                 result == TextToSpeech.LANG_NOT_SUPPORTED
-            val voices = tts.voices.orEmpty().filter {
-                it.locale.language ==
-                    locale.language
-            }
+            val voices = tts.voices.orEmpty()
+                .filter { it.locale.language == locale.language }
             current.update { it.copy(missingVoice = missing) }
             ready(work, TtsOutput(tts, this, voices, settings.speechVoice), start)
         }
