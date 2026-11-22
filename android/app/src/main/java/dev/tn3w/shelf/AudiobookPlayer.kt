@@ -101,7 +101,6 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         val next = book.track + 1
         if (next > book.tracks.lastIndex) {
             book = book.copy(millis = book.tracks.last().millis)
-            reachedEnd()
             return finish()
         }
         load(next, 0)

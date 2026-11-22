@@ -3,6 +3,7 @@ package dev.tn3w.shelf.data
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.tn3w.shelf.Narration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -358,11 +359,22 @@ class LibraryTest {
     }
 
     @Test
-    fun remembersBooksLeftWhileListening() {
-        val started = ReadingState().listeningTo(7, listening = true)
+    fun remembersOnlyBooksLeftWhilePlaying() {
+        val started = ReadingState().listeningSwitched(from = null, to = 7)
         assertEquals(setOf(7), started.listening)
-        assertEquals(setOf(7, 8), started.listeningTo(8, listening = true).listening)
-        assertEquals(emptySet<Int>(), started.listeningTo(7, listening = false).listening)
+        assertEquals(setOf(8), started.listeningSwitched(from = 7, to = 8).listening)
+        val stopped = started.listeningSwitched(from = 7, to = null)
+        assertEquals(emptySet<Int>(), stopped.listening)
+    }
+
+    @Test
+    fun pausingForgetsTheBookSoOpeningItDoesNotReadAloud() {
+        val playing = Narration(work = 7, playing = true)
+        val paused = playing.copy(playing = false)
+        val started = ReadingState().listeningSwitched(from = null, to = playing.heard)
+        val left = started.listeningSwitched(from = playing.heard, to = paused.heard)
+        assertEquals(setOf(7), started.listening)
+        assertEquals(emptySet<Int>(), left.listening)
     }
 
     @Test

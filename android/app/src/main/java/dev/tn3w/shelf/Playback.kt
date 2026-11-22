@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -46,6 +48,7 @@ data class Narration(
 ) {
     val active get() = count > 0
     val busy get() = active || loading
+    val heard get() = work.takeIf { playing }
 }
 
 val SPEECH_ATTRIBUTES = AudioAttributes.Builder()
@@ -64,6 +67,16 @@ abstract class Playback(protected val app: ShelfApp) {
         .setAudioAttributes(SPEECH_ATTRIBUTES)
         .setOnAudioFocusChangeListener { if (it < 0) pause() }
         .build()
+
+    init {
+        var heard: Int? = null
+        app.scope.launch {
+            current.map { it.heard }.distinctUntilChanged().collect {
+                app.library.switchListening(from = heard, to = it)
+                heard = it
+            }
+        }
+    }
 
     protected val sleepLeftMillis get() = sleepEndsAt - SystemClock.elapsedRealtime()
 
@@ -100,19 +113,12 @@ abstract class Playback(protected val app: ShelfApp) {
         }
     }
 
-    protected fun reachedEnd() {
-        val work = current.value.work
-        app.scope.launch { app.library.markListening(work, false) }
-    }
-
     protected fun finish() {
         pause()
         setSleep(Sleep.Off)
     }
 
     protected fun startPlaying() {
-        val work = current.value.work
-        app.scope.launch { app.library.markListening(work, true) }
         idleJob?.cancel()
         audio.requestAudioFocus(focus)
         val service = Intent(app, NarrationService::class.java)

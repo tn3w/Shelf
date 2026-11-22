@@ -178,7 +178,6 @@ class Narrator(app: ShelfApp) :
 
     private fun finished(index: Int) {
         if (index + 1 >= passages.size) {
-            reachedEnd()
             return finishAt(passages.lastIndex)
         }
         if (current.value.sleep == Sleep.ChapterEnd && atChapterStart(index + 1, true)) {

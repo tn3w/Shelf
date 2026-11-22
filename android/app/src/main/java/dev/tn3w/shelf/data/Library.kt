@@ -372,8 +372,8 @@ data class ReadingState(
     val listening: Set<Int> = emptySet(),
 )
 
-internal fun ReadingState.listeningTo(work: Int, listening: Boolean) =
-    copy(listening = if (listening) this.listening + work else this.listening - work)
+internal fun ReadingState.listeningSwitched(from: Int?, to: Int?) =
+    copy(listening = listening - setOfNotNull(from) + setOfNotNull(to))
 
 internal class JsonSerializer<T>(
     override val defaultValue: T,
@@ -830,8 +830,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun isListening(work: Int) = work in reading.first().listening
 
-    suspend fun markListening(work: Int, listening: Boolean) =
-        readingStore.change { it.listeningTo(work, listening) }
+    suspend fun switchListening(from: Int?, to: Int?) =
+        readingStore.change { it.listeningSwitched(from, to) }
 
     suspend fun addPagesRead(pages: Int) = readingStore.change {
         it.copy(activity = it.activity.addedToday(pages))

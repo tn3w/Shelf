@@ -212,7 +212,11 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
         if (narration.playing && narration.work == work) return
         detached {
             library.saveProgress(work, progress, pagesRead)
-            if (pagesRead > 0 && !isHeard()) library.markListening(work, false)
+            if (pagesRead > 0 &&
+                !isHeard()
+            ) {
+                library.switchListening(from = work, to = null)
+            }
         }
     }
 
