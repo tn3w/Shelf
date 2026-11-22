@@ -527,4 +527,12 @@
     <string name="finding_speakers">A procurar falantes…</string>
     <string name="speakers_found">Falantes encontrados: %1$d</string>
     <string name="right_to_left">Ler da direita para a esquerda</string>
+    <string name="widget_continue">Continuar a ler</string>
+    <string name="widget_continue_text">O seu livro atual como cartaz da capa</string>
+    <string name="widget_streak">Sequência de leitura</string>
+    <string name="widget_streak_text">Objetivo diário, sequência e a sua semana</string>
+    <string name="widget_shelf">Estante de leitura</string>
+    <string name="widget_shelf_text">Todos os livros que está a ler, à distância de um toque</string>
+    <string name="widget_empty">Comece um livro no Shelf para o ver aqui</string>
+    <string name="widget_no_goal">Defina um objetivo diário no Shelf para acompanhar a sua sequência</string>
 </resources>
