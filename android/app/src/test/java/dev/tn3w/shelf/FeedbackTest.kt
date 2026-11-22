@@ -1,5 +1,7 @@
 package dev.tn3w.shelf
 
+import dev.tn3w.shelf.data.Progress
+import dev.tn3w.shelf.data.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -49,5 +51,54 @@ class FeedbackTest {
         val body = report("Dark covers", listOf("Shelf 3.14.15 (test)"), "  ")
 
         assertEquals("Dark covers\n\nShelf 3.14.15 (test)\nSent from Shelf", body)
+    }
+
+    @Test
+    fun redactHidesStoredDataInParserErrors() {
+        val error = "Unexpected token\nJSON input: {\"title\":\"My Diary\"}"
+
+        assertFalse(redact(error).contains("My Diary"))
+    }
+
+    @Test
+    fun changedSettingsListOnlyChangedNonIdentifyingSwitches() {
+        val settings = Settings(
+            eInk = true,
+            speechVoice = "rare-voice",
+            dailyGoal = 37,
+            backupFolder = "content://tree/private",
+            coverProxyUrl = "https://proxy.example",
+            catalogueSource = "https://mirror.example",
+        )
+
+        assertEquals("eInk=true", changedSettings(settings))
+        assertEquals("default", changedSettings(Settings()))
+    }
+
+    @Test
+    fun libraryShapeNamesFormatsWithoutCountsOrBooks() {
+        val progress =
+            listOf(Progress("12.epub"), Progress("34.EPUB"), Progress("56.pdf"))
+
+        assertEquals("Formats epub pdf, audiobooks true", libraryShape(progress, true))
+        assertEquals("Formats none, audiobooks false", libraryShape(emptyList(), false))
+    }
+
+    @Test
+    fun screenNameDropsPackageAndArguments() {
+        val route = "dev.tn3w.shelf.ReaderRoute/{work}?listen={listen}"
+
+        assertEquals("ReaderRoute", screenName(route))
+        assertEquals("", screenName(null))
+    }
+
+    @Test
+    fun playbackLogNamesEachPlayerState() {
+        val speech = Narration(count = 3, playing = true)
+
+        assertEquals(
+            "read aloud playing, audiobook idle",
+            playbackLog(speech, Narration()),
+        )
     }
 }

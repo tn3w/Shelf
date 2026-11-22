@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.*
 import androidx.activity.compose.setContent
@@ -333,6 +334,12 @@ private val FULL_SCREEN =
 
 private fun NavBackStackEntry.isReading() = FULL_SCREEN.any { destination.hasRoute(it) }
 
+private fun screenLog(entry: NavBackStackEntry): String {
+    val name = "screen ${screenName(entry.destination.route)}"
+    if (!entry.destination.hasRoute(ReaderRoute::class)) return name
+    return "$name listen=${entry.toRoute<ReaderRoute>().listen}"
+}
+
 private fun NavHostController.openBook() = currentBackStackEntry
     ?.takeIf { it.destination.hasRoute(BookRoute::class) }
     ?.toRoute<BookRoute>()
@@ -363,6 +370,12 @@ private fun ShelfNavigation(settings: Settings, viewModel: MainViewModel) {
     val speech by viewModel.narrator.state.collectAsStateWithLifecycle()
     val audio by viewModel.audiobooks.state.collectAsStateWithLifecycle()
     val playing = listOf(audio, speech).firstOrNull { it.busy }
+    val playbackChange = playbackLog(speech, audio)
+    LaunchedEffect(playbackChange) { Log.i(TRAIL_TAG, playbackChange) }
+    LaunchedEffect(entry) { entry?.let { Log.i(TRAIL_TAG, screenLog(it)) } }
+    LaunchedEffect(paneEntry) {
+        paneEntry?.let { Log.i(TRAIL_TAG, "pane ${screenLog(it)}") }
+    }
     val listening = !hidden && playing != null
     val scope = rememberCoroutineScope()
     fun openPlaying() {
