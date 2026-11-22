@@ -489,6 +489,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Nodaļas beigas</string>
     <string name="time_left">Atlicis %s</string>
+    <string name="chapter_time_left">Nodaļā atlicis %s</string>
+    <string name="book_time_left">Grāmatā atlicis %s</string>
     <string name="voice">Balss</string>
     <string name="voice_missing">Šīs grāmatas valodai nav instalēta balss.</string>
     <string name="voice_settings">Balss iestatījumi</string>

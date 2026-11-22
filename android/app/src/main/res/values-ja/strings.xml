@@ -459,6 +459,8 @@
     <string name="sleep_minutes">%d 分</string>
     <string name="sleep_chapter_end">章の終わり</string>
     <string name="time_left">残り %s</string>
+    <string name="chapter_time_left">章の残り %s</string>
+    <string name="book_time_left">本の残り %s</string>
     <string name="voice">音声</string>
     <string name="voice_missing">この本の言語の音声がインストールされていません。</string>
     <string name="voice_settings">音声設定</string>

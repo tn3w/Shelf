@@ -460,6 +460,8 @@
     <string name="sleep_minutes">%d분</string>
     <string name="sleep_chapter_end">장 끝</string>
     <string name="time_left">%s 남음</string>
+    <string name="chapter_time_left">장 %s 남음</string>
+    <string name="book_time_left">책 %s 남음</string>
     <string name="voice">음성</string>
     <string name="voice_missing">이 책의 언어에 설치된 음성이 없습니다.</string>
     <string name="voice_settings">음성 설정</string>

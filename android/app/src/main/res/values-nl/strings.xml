@@ -474,6 +474,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Einde van hoofdstuk</string>
     <string name="time_left">Nog %s</string>
+    <string name="chapter_time_left">Nog %s in hoofdstuk</string>
+    <string name="book_time_left">Nog %s in boek</string>
     <string name="voice">Stem</string>
     <string name="voice_missing">Geen stem geïnstalleerd voor de taal van dit boek.</string>
     <string name="voice_settings">Steminstellingen</string>

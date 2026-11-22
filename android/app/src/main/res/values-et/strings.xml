@@ -475,6 +475,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Peatüki lõpp</string>
     <string name="time_left">%s jäänud</string>
+    <string name="chapter_time_left">Peatükist %s jäänud</string>
+    <string name="book_time_left">Raamatust %s jäänud</string>
     <string name="voice">Hääl</string>
     <string name="voice_missing">Selle raamatu keele jaoks pole häält paigaldatud.</string>
     <string name="voice_settings">Hääleseaded</string>

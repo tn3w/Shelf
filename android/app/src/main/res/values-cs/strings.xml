@@ -505,6 +505,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Konec kapitoly</string>
     <string name="time_left">Zbývá %s</string>
+    <string name="chapter_time_left">V kapitole zbývá %s</string>
+    <string name="book_time_left">V knize zbývá %s</string>
     <string name="voice">Hlas</string>
     <string name="voice_missing">Pro jazyk této knihy není nainstalován žádný hlas.</string>
     <string name="voice_settings">Nastavení hlasu</string>

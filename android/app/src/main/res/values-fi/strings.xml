@@ -475,6 +475,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Luvun loppu</string>
     <string name="time_left">%s jäljellä</string>
+    <string name="chapter_time_left">Lukua %s jäljellä</string>
+    <string name="book_time_left">Kirjaa %s jäljellä</string>
     <string name="voice">Ääni</string>
     <string name="voice_missing">Tämän kirjan kielelle ei ole asennettu ääntä.</string>
     <string name="voice_settings">Puheäänen asetukset</string>

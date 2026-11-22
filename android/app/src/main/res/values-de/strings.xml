@@ -475,6 +475,8 @@
     <string name="sleep_minutes">%d Min</string>
     <string name="sleep_chapter_end">Ende des Kapitels</string>
     <string name="time_left">Noch %s</string>
+    <string name="chapter_time_left">Noch %s im Kapitel</string>
+    <string name="book_time_left">Noch %s im Buch</string>
     <string name="voice">Stimme</string>
     <string name="voice_missing">Für die Sprache dieses Buchs ist keine Stimme installiert.</string>
     <string name="voice_settings">Stimmeinstellungen</string>

@@ -7,6 +7,7 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import dev.tn3w.shelf.data.Settings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,6 +46,29 @@ class ReaderTest {
     fun ignoresRereadAndBackwardTurns() {
         assertEquals(0, newPagesRead(previous = 4, settled = 5, furthest = 9))
         assertEquals(0, newPagesRead(previous = 5, settled = 4, furthest = 5))
+    }
+
+    @Test
+    fun estimatesTimeLeftFromPageTurns() {
+        val pace = listOf(30L, 60L, 90L).fold(Pace()) { pace, seconds ->
+            pace.turned(seconds)
+        }
+
+        assertEquals(600L, pace.secondsFor(10))
+    }
+
+    @Test
+    fun waitsForEnoughTurnsAndIgnoresSkimmingAndBreaks() {
+        val pace = Pace().turned(60).turned(1).turned(3600).turned(60)
+
+        assertNull(pace.secondsFor(10))
+        assertEquals(600L, pace.turned(60).secondsFor(10))
+    }
+
+    @Test
+    fun chapterEndsAtNextChapterOrBookEnd() {
+        assertEquals(20, chapterEnd(listOf(0, 20, 40), page = 5, count = 60))
+        assertEquals(60, chapterEnd(listOf(0, 20, 40), page = 45, count = 60))
     }
 
     @Test

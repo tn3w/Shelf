@@ -5,8 +5,12 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.icu.text.MeasureFormat
+import android.icu.util.Measure
+import android.icu.util.MeasureUnit
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.view.Window
 import android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 import android.widget.Toast
@@ -75,6 +79,7 @@ import dev.tn3w.shelf.Source
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.util.Locale
 import kotlin.math.roundToInt
 import android.provider.Settings.System as SystemSettings
 
@@ -117,6 +122,9 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
     val narrator = app.narrator
     val audiobooks = app.audiobooks
     var query by mutableStateOf("")
+    var pace by mutableStateOf(Pace())
+        private set
+    private var settledAt = 0L
 
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     val hits = snapshotFlow { query.trim() }
@@ -237,8 +245,17 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
         }
     }
 
-    fun changeFont(change: Float) = updateSettings {
-        it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
+    fun settle(forward: Boolean) {
+        val now = SystemClock.elapsedRealtime()
+        if (forward && settledAt > 0) pace = pace.turned((now - settledAt) / 1000)
+        settledAt = now
+    }
+
+    fun changeFont(change: Float) {
+        pace = Pace()
+        updateSettings {
+            it.copy(fontScale = (it.fontScale + change).coerceIn(FONT_SCALES))
+        }
     }
 
     fun saveBrightness(brightness: Float) = updateSettings {
@@ -309,6 +326,51 @@ internal fun newPagesRead(previous: Int, settled: Int, furthest: Int) =
     } else {
         0
     }
+
+private const val MIN_PAGE_SECONDS = 2L
+private const val MAX_PAGE_SECONDS = 600L
+private const val PACE_PAGES = 3
+
+data class Pace(val seconds: Long = 0, val pages: Int = 0) {
+    fun turned(elapsed: Long) = if (elapsed in MIN_PAGE_SECONDS..MAX_PAGE_SECONDS) {
+        Pace(seconds + elapsed, pages + 1)
+    } else {
+        this
+    }
+
+    fun secondsFor(pagesLeft: Int) =
+        if (pages < PACE_PAGES) null else seconds * pagesLeft / pages
+}
+
+internal fun chapterEnd(starts: List<Int>, page: Int, count: Int) =
+    starts.filter { it > page }.minOrNull() ?: count
+
+private fun duration(seconds: Long, locale: Locale): String {
+    val minutes = maxOf(1, (seconds + 30) / 60)
+    val measures = listOfNotNull(
+        Measure(minutes / 60, MeasureUnit.HOUR).takeIf { minutes >= 60 },
+        Measure(minutes % 60, MeasureUnit.MINUTE).takeIf { minutes % 60 > 0 },
+    )
+    return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT)
+        .formatMeasures(*measures.toTypedArray())
+}
+
+@Composable
+private fun timeLeft(
+    pace: Pace,
+    chapters: List<Pair<String, Int>>,
+    page: Int,
+    count: Int,
+): String? {
+    val book = pace.secondsFor(count - page) ?: return null
+    val locale = LocalConfiguration.current.locales[0]
+    val bookLeft = stringResource(R.string.book_time_left, duration(book, locale))
+    if (chapters.isEmpty()) return bookLeft
+    val end = chapterEnd(chapters.map { it.second }, page, count)
+    val chapter = pace.secondsFor(end - page) ?: return bookLeft
+    return stringResource(R.string.chapter_time_left, duration(chapter, locale)) +
+        " · " + bookLeft
+}
 
 @Composable
 fun ReaderScreen(work: Int, listen: Boolean, navigator: Navigator) {
@@ -1260,6 +1322,7 @@ private fun Pages(
         val settled = pager.settledPage
         val read = newPagesRead(previous, settled, furthest)
         viewModel.save(save(settled), read)
+        viewModel.settle(forward = settled - previous == 1)
         furthest = maxOf(furthest, settled)
         previous = settled
     }
@@ -1369,7 +1432,14 @@ private fun Pages(
                 exit = chromeExit(reduced) { it },
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                ReaderBottomBar(pager, chapter?.first, state.onFontScale, pageDirection) {
+                val page = pager.currentPage
+                ReaderBottomBar(
+                    pager,
+                    chapter?.first,
+                    timeLeft(viewModel.pace, chapters, page, pager.pageCount),
+                    state.onFontScale,
+                    pageDirection,
+                ) {
                     scope.launch { pager.scrollToPage(it) }
                 }
             }
@@ -1504,6 +1574,7 @@ private fun ReaderTopBar(
 private fun ReaderBottomBar(
     pager: PagerState,
     chapter: String?,
+    timeLeft: String?,
     onFontScale: ((Float) -> Unit)?,
     pageDirection: LayoutDirection,
     onJump: (Int) -> Unit,
@@ -1544,6 +1615,7 @@ private fun ReaderBottomBar(
                 IconAction(Icons.Rounded.TextIncrease, larger) { it(0.1f) }
             }
         }
+        timeLeft?.let { Hint(it, textAlign = TextAlign.Center) }
     }
 }
 

@@ -490,6 +490,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Fine del capitolo</string>
     <string name="time_left">Restano %s</string>
+    <string name="chapter_time_left">Restano %s nel capitolo</string>
+    <string name="book_time_left">Restano %s nel libro</string>
     <string name="voice">Voce</string>
     <string name="voice_missing">Nessuna voce installata per la lingua di questo libro.</string>
     <string name="voice_settings">Impostazioni voce</string>

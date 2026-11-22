@@ -475,6 +475,8 @@
     <string name="sleep_minutes">%d min</string>
     <string name="sleep_chapter_end">Slutet av kapitlet</string>
     <string name="time_left">%s kvar</string>
+    <string name="chapter_time_left">%s kvar av kapitlet</string>
+    <string name="book_time_left">%s kvar av boken</string>
     <string name="voice">Röst</string>
     <string name="voice_missing">Ingen röst är installerad för bokens språk.</string>
     <string name="voice_settings">Röstinställningar</string>
