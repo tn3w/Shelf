@@ -63,14 +63,13 @@ CAMERA_KEYS = [
     (2.4, (-0.05, 0, 0.4, 10, 4, 5.0, 0, 85, 0.22)),
     (5.0, (0, 0, 0, -6, 3, 9.6, 0, 85, 0.2)),
     (8.5, (0, 0, 0.1, -18, 4, 9.2, 0, 85, 0.2)),
-    (11.8, (0, 0, 0.1, 12, -4, 8.8, 0, 85, 0.2)),
-    (13.6, (0, 0, 0.5, 30, 12, 6.4, 3, 85, 0.12)),
-    (15.4, (0, 0, 0.7, 5, 2, 3.0, 0, 85, 0.0)),
-    (17.6, (0, 0, 0.3, 8, 4, 4.2, 0, 85, 0.0)),
-    (19.2, (0, 0, 0.0, 22, 6, 8.2, 0, 85, 0.2)),
+    (11.8, (0, 0, 0.1, 12, -4, 9.2, 0, 85, 0.2)),
+    (14.2, (0, 0, 0.2, 18, 6, 6.8, 0, 85, 0.2)),
+    (16.4, (0, 0, 0.3, 6, 3, 4.6, 0, 85, 0.14)),
+    (19.2, (0, 0, 0, 18, 6, 8.0, 0, 85, 0.2)),
     (21.8, (0, 0, 0, 0, 8, 9.5, 0, 85, 0.2)),
     (24.6, (0, 0, 0.1, 14, 10, 8.8, 0, 85, 0.2)),
-    (27.4, (0, 0, 0.1, -12, 6, 8.4, 0, 85, 0.2)),
+    (27.4, (0, 0, 0.1, -12, 6, 8.0, 0, 85, 0.2)),
     (29.8, (0, 0, 0, 0, 4, 11.5, 0, 85, 0.2)),
     (32.2, (0, 0, 0, 24, 6, 11.5, 0, 85, 0.2)),
     (34.4, (0.1, 0, 0.3, 8, -2, 4.6, 0, 85, 0.0)),
@@ -82,7 +81,7 @@ CAMERA_KEYS = [
     (46.8, (0, 0, -0.1, 0, 2, 7.0, 0, 85, 0.1)),
     (47.6, (0, 0, -0.4, 0, 2, 5.0, 0, 85, 0.2)),
     (48.8, (0, 0, -0.4, -4, 2, 4.8, 0, 85, 0.2)),
-    (49.8, (0, 0, 0, -16, 3, 7.0, 0, 85, 0.2)),
+    (50.4, (0, 0, 0, -12, 3, 6.6, 0, 85, 0.2)),
     (53.0, (0, 0, 0, 0, 0, 11.0, 0, 85, 0.0)),
     (58.0, (0, 0, 0, 0, 0, 13.0, 0, 85, 0.0)),
 ]
@@ -92,42 +91,48 @@ DEVICE_KEYS = [
     (2.4, (0, 0, 0, -4, 2, 180), False),
     (5.0, (0, 0, 0, 0, 0, 0), True),
     (8.2, (0, 0, 0.05, -4, 0, -10), False),
-    (10.6, (0.05, 0, -0.05, 3, 0, 12), False),
-    (12.1, (0, 0, 0.15, 6, 0, 180), False),
-    (14.0, (-0.1, 0, 0.1, -14, 0, 374), False),
-    (16.0, (0, 0, 0, -3, 0, 356), False),
-    (19.0, (0, 0, 0.1, 6, 0, 378), False),
-    (21.6, (0, 0, 0, 0, 0, 360), True),
-    (23.3, (0, 0.2, 0.35, -8, 0, 540), False),
-    (24.9, (0, 0, 0.1, 4, 0, 720), False),
-    (26.6, (0.05, 0, 0.15, -4, 2, 712), False),
-    (28.9, (0, 0, 0.1, 3, 0, 730), False),
-    (32.0, (0, 0, 0.05, 0, 0, 1080), True),
-    (34.0, (0, 0, 0, -6, 0, 1078), False),
-    (36.5, (0.1, 0, 0, 4, 0, 1095), False),
-    (39.2, (0, 0, 0.1, 0, 0, 1080), True),
-    (41.5, (0, 0, 0.35, -8, 0, 1066), False),
-    (44.0, (0, 0, 0.2, 4, 0, 1100), False),
-    (45.2, (0, 0, 0.4, -8, 6, 1230), False),
-    (46.8, (0, 0, 0, 0, 0, 1440), True),
-    (49.5, (0, 0, 0.05, 2, 0, 1430), False),
-    (51.5, (0, 0, 0.1, -6, 0, 1450), False),
-    (52.4, (0, 0, 0.2, 0, 0, 1440), False),
-    (53.6, (0, 0, 0.9, 12, 0, 1620), False),
+    (10.6, (0.05, 0, -0.05, 3, 0, 8), False),
+    (14.4, (-0.1, 0, 0.1, -8, 0, 14), False),
+    (16.4, (0, 0, 0, -3, 0, -4), False),
+    (19.0, (0, 0, 0.1, 6, 0, 18), False),
+    (21.6, (0, 0, 0, 0, 0, 0), True),
+    (25.0, (0, 0, 0.05, 3, -2, -8), False),
+    (28.9, (0, 0, 0.1, 3, 0, 6), False),
+    (32.0, (0, 0, 0.05, 0, 0, 0), True),
+    (34.0, (0, 0, 0, -6, 0, -2), False),
+    (36.5, (0.1, 0, 0, 4, 0, 15), False),
+    (39.2, (0, 0, 0.1, 0, 0, 0), True),
+    (41.5, (0, 0, 0.35, -8, 0, -14), False),
+    (44.0, (0, 0, 0.2, 4, 0, 10), False),
+    (46.8, (0, 0, 0, 0, 0, 0), True),
+    (49.5, (0, 0, 0.05, 2, 0, -10), False),
+    (51.5, (0, 0, 0.1, -6, 0, 10), False),
+    (52.4, (0, 0, 0.2, 0, 0, 0), False),
+    (53.6, (0, 0, 0.9, 12, 0, 0), False),
+]
+
+FLIP_LENGTH = 2.8
+FLIPS = [
+    (12.3, (0, 0, 1), 360),
+    (23.35, (1, 0, 0), 360),
+    (30.9, (1, 0, 1), 360),
+    (45.6, (-1, 0, 1), 360),
+    (49.3, (-1, 0, 0), 360),
+    (53.4, (0, 0, 1), 180),
 ]
 
 CAPTIONS = [
     ("Books, offline.", 0.8, 3.6, -0.27, 0.0, 0.11),
     ("Your whole library.", 5.6, 9.4, -0.22, 0.05, 0.1),
-    ("Find anything.", 12.9, 14.9, -0.27, 0.05, 0.085),
+    ("Find anything.", 13.8, 16.2, -0.27, 0.05, 0.085),
     ("Typos included.", 18.6, 21.4, -0.27, 0.05, 0.085),
     ("But there is more.", 22.4, 25.6, -0.22, 0.05, 0.1),
-    ("Every genre. Every series.", 26.6, 29.6, -0.22, 0.05, 0.075),
+    ("Every genre. Every series.", 27.2, 29.8, -0.22, 0.05, 0.075),
     ("Read anything.", 32.0, 34.0, -0.26, 0.05, 0.09),
     ("EPUB  PDF  MOBI  FB2  CBZ  TXT", 37.6, 39.8, -0.22, 0.05, 0.05),
     ("Lights out.", 40.9, 44.6, -0.22, 0.05, 0.11),
     ("Listen in.", 46.9, 49.2, -0.22, 0.05, 0.11),
-    ("Your year, wrapped.", 49.6, 52.6, -0.22, 0.05, 0.085),
+    ("Your year, wrapped.", 50.0, 52.6, -0.22, 0.05, 0.085),
     ("Shelf", 54.0, 58.0, 0.0, -0.2, 0.13),
     ("Free. Open source. Offline.", 54.8, 58.0, 0.0, -0.31, 0.04),
     ("github.com/tn3w/Shelf", 55.4, 58.0, 0.0, -0.39, 0.036),
@@ -225,9 +230,18 @@ def smooth(track, sigma):
     return evaluate
 
 
-camera_track = smooth(flow([(time, values) for time, values in CAMERA_KEYS]), 0.3)
+camera_track = smooth(flow(CAMERA_KEYS), 0.3)
 device_track = smooth(flow(DEVICE_KEYS), 0.22)
 wall_track = stops([(time, srgb(code)[:3]) for time, code in WALL_COLORS])
+
+
+def flip_rotation(time):
+    rotation = Quaternion()
+    for center, axis, degrees in FLIPS:
+        progress = ease((time - center) / FLIP_LENGTH + 0.5)
+        turn = Quaternion(Vector(axis).normalized(), math.radians(degrees * progress))
+        rotation = rotation @ turn
+    return rotation
 
 
 def darkness(time):
@@ -235,11 +249,11 @@ def darkness(time):
 
 
 def morph(time):
-    return ramp(time, 30.0, 31.8) * (1 - ramp(time, 44.8, 46.6))
+    return ramp(time, 30.0, 31.8) * (1 - ramp(time, 44.9, 46.2))
 
 
 def screen_mix(time):
-    return ramp(time, 30.5, 31.6) * (1 - ramp(time, 45.0, 46.4))
+    return ramp(time, 30.5, 31.6) * (1 - ramp(time, 45.2, 46.0))
 
 
 def device_scale(time):
@@ -259,7 +273,7 @@ def device_pose(time):
     bob = math.sin(time * 1.45) * 0.025
     sway = math.sin(time * 0.9) * 1.2
     quaternion = rotation_matrix(pitch + sway, roll, yaw).to_quaternion()
-    return Vector((x, y, z + bob)), quaternion
+    return Vector((x, y, z + bob)), quaternion @ flip_rotation(time)
 
 
 def anchor(camera, gap, x, y):
@@ -635,6 +649,7 @@ class Show:
     def __init__(self, preview):
         configure_render(preview)
         self.device = Device()
+        self.last_turn = None
         self.camera = build_camera()
         self.background, self.wall = build_world_and_wall()
         self.lights = build_lights()
@@ -645,6 +660,9 @@ class Show:
 
     def pose(self, time):
         position, quaternion = device_pose(time)
+        if self.last_turn and self.last_turn.dot(quaternion) < 0:
+            quaternion.negate()
+        self.last_turn = quaternion.copy()
         self.device.root.location = position
         self.device.root.rotation_mode = "QUATERNION"
         self.device.root.rotation_quaternion = quaternion
