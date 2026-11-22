@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "out"
 FRAMES = OUT / os.environ.get("PROMO_FRAMES", "frames")
 FONTS = {
-    "bold": "/usr/share/fonts/gsfonts/NimbusSans-Bold.otf",
-    "regular": "/usr/share/fonts/gsfonts/NimbusSans-Regular.otf",
+    "bold": "/usr/share/fonts/noto/NotoSerifDisplay-SemiBold.ttf",
+    "regular": "/usr/share/fonts/noto/NotoSans-Regular.ttf",
     "symbols": "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
 }
 FPS = int(os.environ.get("PROMO_FPS", 30))
@@ -25,45 +25,53 @@ CAPTIONS_VISIBLE = os.environ.get("PROMO_CAPTIONS", "1") == "1"
 DURATION = 58
 LIGHTS_OUT = 40.0
 
-PHONE = dict(width=0.93, height=2.0, depth=0.1, corner=0.105, bezel=0.035)
-TABLET = dict(width=1.78, height=2.3, depth=0.075, corner=0.12, bezel=0.09)
+PHONE = dict(width=0.93, height=2.0, depth=0.085, corner=0.14, bezel=0.022)
+TABLET = dict(width=1.78, height=2.3, depth=0.07, corner=0.12, bezel=0.07)
 
-TITANIUM = (0.62, 0.6, 0.57, 1)
-TEAL = (0.045, 0.16, 0.17, 1)
+
+def srgb(code):
+    values = [int(code[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+    linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
+    return (*linear, 1)
+
+
+CHAMPAGNE = srgb("#CDB79E")
+TERRACOTTA = srgb("#B4533A")
 BLACK = (0.004, 0.004, 0.005, 1)
 GOLD = (1.0, 0.62, 0.16, 1)
 CREAM = (0.93, 0.85, 0.66, 1)
+INK = srgb("#2B2420")
 
 WALL_COLORS = [
-    (0.0, (0.93, 0.95, 0.94)),
-    (11.5, (0.93, 0.95, 0.94)),
-    (12.8, (0.84, 0.92, 0.83)),
-    (21.2, (0.84, 0.92, 0.83)),
-    (22.5, (0.95, 0.9, 0.8)),
-    (29.2, (0.95, 0.9, 0.8)),
-    (30.6, (0.82, 0.89, 0.95)),
-    (39.0, (0.82, 0.89, 0.95)),
-    (41.6, (0.012, 0.02, 0.05)),
-    (45.5, (0.012, 0.02, 0.05)),
-    (46.8, (0.05, 0.026, 0.014)),
-    (51.5, (0.05, 0.026, 0.014)),
-    (53.2, (0.012, 0.045, 0.05)),
+    (0.0, "#F5EDE4"),
+    (11.5, "#F5EDE4"),
+    (12.8, "#F4DCCD"),
+    (21.2, "#F4DCCD"),
+    (22.5, "#EFDDBF"),
+    (29.2, "#EFDDBF"),
+    (30.6, "#E3DCEB"),
+    (39.0, "#E3DCEB"),
+    (41.6, "#0B0D1A"),
+    (45.5, "#0B0D1A"),
+    (46.8, "#1F1110"),
+    (51.5, "#1F1110"),
+    (53.4, "#E9CDB6"),
 ]
 
 CAMERA_KEYS = [
-    (0.0, (0, 0, -0.8, 28, 8, 11.5, 0, 85, 0.2)),
-    (3.0, (0, 0, 0, 14, 5, 10.5, 0, 85, 0.2)),
-    (5.4, (0, 0, 0, -10, 3, 10.0, 0, 85, 0.2)),
-    (8.5, (0, 0, 0.1, -24, 4, 9.6, 0, 85, 0.2)),
+    (0.0, (-0.1, 0, 0.55, 20, 6, 4.2, 0, 85, 0.22)),
+    (2.4, (-0.05, 0, 0.4, 10, 4, 5.0, 0, 85, 0.22)),
+    (5.0, (0, 0, 0, -6, 3, 9.6, 0, 85, 0.2)),
+    (8.5, (0, 0, 0.1, -18, 4, 9.2, 0, 85, 0.2)),
     (11.8, (0, 0, 0.1, 12, -4, 8.8, 0, 85, 0.2)),
     (13.6, (0, 0, 0.5, 30, 12, 6.4, 3, 85, 0.12)),
     (15.4, (0, 0, 0.7, 5, 2, 3.0, 0, 85, 0.0)),
     (17.6, (0, 0, 0.3, 8, 4, 4.2, 0, 85, 0.0)),
     (19.2, (0, 0, 0.0, 22, 6, 8.2, 0, 85, 0.2)),
-    (21.8, (0, 0, 0, 0, 10, 9.5, 0, 85, 0.2)),
-    (24.2, (0, 0, 0, 20, 36, 9.8, 0, 70, 0.2)),
-    (27.2, (0, 0, 0, -30, 22, 8.2, -4, 70, 0.2)),
-    (29.6, (0, 0, 0, 0, 4, 12.0, 0, 85, 0.2)),
+    (21.8, (0, 0, 0, 0, 8, 9.5, 0, 85, 0.2)),
+    (24.6, (0, 0, 0.1, 14, 10, 8.8, 0, 85, 0.2)),
+    (27.4, (0, 0, 0.1, -12, 6, 8.4, 0, 85, 0.2)),
+    (29.8, (0, 0, 0, 0, 4, 11.5, 0, 85, 0.2)),
     (32.2, (0, 0, 0, 24, 6, 11.5, 0, 85, 0.2)),
     (34.4, (0.1, 0, 0.3, 8, -2, 4.6, 0, 85, 0.0)),
     (37.0, (0, 0, 0.4, -14, 4, 3.8, 0, 85, 0.0)),
@@ -71,63 +79,55 @@ CAMERA_KEYS = [
     (39.8, (0, 0, 0, -4, 2, 12.0, 0, 85, 0.2)),
     (42.2, (0, 0, 0, 20, 8, 13.5, 0, 85, 0.2)),
     (44.6, (0, 0, 0, 6, 4, 12.5, 0, 85, 0.2)),
-    (46.8, (0, 0, 0.3, 0, 2, 7.0, 0, 85, 0.0)),
-    (47.6, (0, 0, 0.45, 0, 2, 3.6, 0, 85, 0.0)),
-    (48.8, (0, 0, 0.45, -4, 2, 3.4, 0, 85, 0.0)),
+    (46.8, (0, 0, -0.1, 0, 2, 7.0, 0, 85, 0.1)),
+    (47.6, (0, 0, -0.4, 0, 2, 5.0, 0, 85, 0.2)),
+    (48.8, (0, 0, -0.4, -4, 2, 4.8, 0, 85, 0.2)),
     (49.8, (0, 0, 0, -16, 3, 7.0, 0, 85, 0.2)),
     (53.0, (0, 0, 0, 0, 0, 11.0, 0, 85, 0.0)),
     (58.0, (0, 0, 0, 0, 0, 13.0, 0, 85, 0.0)),
 ]
 
 DEVICE_KEYS = [
-    (0.0, (0, 0, -3.6, 16, -8, 232), False),
-    (1.4, (0, 0, -0.9, 8, -3, 196), False),
-    (2.6, (0, 0, 0.05, -3, 2, 181), True),
-    (3.1, (0, 0, 0.1, -4, 2, 180), True),
-    (4.0, (0.15, 0, 0.35, 10, -4, 78), False),
-    (5.0, (0, 0, 0.1, -3, 1, -6), False),
-    (5.8, (0, 0, 0, 0, 0, 0), True),
-    (8.2, (0, 0, 0.05, -4, 0, -16), False),
+    (0.0, (0, 0, -0.15, -8, 4, 196), False),
+    (2.4, (0, 0, 0, -4, 2, 180), False),
+    (5.0, (0, 0, 0, 0, 0, 0), True),
+    (8.2, (0, 0, 0.05, -4, 0, -10), False),
     (10.6, (0.05, 0, -0.05, 3, 0, 12), False),
-    (12.0, (0, 0, 0, 0, 0, 0), False),
-    (14.0, (-0.1, 0, 0.1, -14, 0, 14), False),
-    (16.0, (0, 0, 0, -3, 0, -4), False),
-    (19.0, (0, 0, 0.1, 6, 0, 18), False),
-    (21.4, (0, 0, 0, 0, 0, 0), True),
-    (22.0, (0, 0, 0, 0, 0, 0), True),
-    (23.2, (0, 0.4, 0.6, -20, 0, 180), False),
-    (24.6, (0, 0, 0.2, 8, 0, 360), False),
-    (25.4, (0, 0, 0.1, 0, 0, 360), True),
-    (26.6, (0, 0, 0.7, 190, 0, 360), False),
-    (27.9, (0, 0, 0, 360, 0, 360), True),
-    (29.2, (0, 0, 0.1, 360, 0, 360), True),
-    (30.4, (0, 0, 0.25, 368, -4, 540), False),
-    (31.7, (0, 0, 0.05, 360, 0, 720), True),
-    (34.0, (0, 0, 0, 354, 0, 718), False),
-    (36.5, (0.1, 0, 0, 364, 0, 735), False),
-    (39.2, (0, 0, 0.1, 360, 0, 720), True),
-    (41.5, (0, 0, 0.35, 352, 0, 706), False),
-    (44.2, (0, 0, 0.2, 364, 0, 728), False),
-    (45.8, (0, 0, 0.4, 350, 6, 900), False),
-    (46.8, (0, 0, 0, 360, 0, 1080), True),
-    (49.5, (0, 0, 0.05, 362, 0, 1070), False),
-    (51.5, (0, 0, 0.1, 354, 0, 1090), False),
-    (52.4, (0, 0, 0.2, 360, 0, 1080), False),
-    (53.6, (0, 0, 0.9, 372, 0, 1260), False),
+    (12.1, (0, 0, 0.15, 6, 0, 180), False),
+    (14.0, (-0.1, 0, 0.1, -14, 0, 374), False),
+    (16.0, (0, 0, 0, -3, 0, 356), False),
+    (19.0, (0, 0, 0.1, 6, 0, 378), False),
+    (21.6, (0, 0, 0, 0, 0, 360), True),
+    (23.3, (0, 0.2, 0.35, -8, 0, 540), False),
+    (24.9, (0, 0, 0.1, 4, 0, 720), False),
+    (26.6, (0.05, 0, 0.15, -4, 2, 712), False),
+    (28.9, (0, 0, 0.1, 3, 0, 730), False),
+    (32.0, (0, 0, 0.05, 0, 0, 1080), True),
+    (34.0, (0, 0, 0, -6, 0, 1078), False),
+    (36.5, (0.1, 0, 0, 4, 0, 1095), False),
+    (39.2, (0, 0, 0.1, 0, 0, 1080), True),
+    (41.5, (0, 0, 0.35, -8, 0, 1066), False),
+    (44.0, (0, 0, 0.2, 4, 0, 1100), False),
+    (45.2, (0, 0, 0.4, -8, 6, 1230), False),
+    (46.8, (0, 0, 0, 0, 0, 1440), True),
+    (49.5, (0, 0, 0.05, 2, 0, 1430), False),
+    (51.5, (0, 0, 0.1, -6, 0, 1450), False),
+    (52.4, (0, 0, 0.2, 0, 0, 1440), False),
+    (53.6, (0, 0, 0.9, 12, 0, 1620), False),
 ]
 
 CAPTIONS = [
-    ("Books, offline.", 0.9, 3.8, -0.22, 0.0, 0.11),
-    ("Your whole library.", 5.0, 8.8, -0.22, 0.05, 0.1),
-    ("Find anything.", 12.6, 14.8, -0.27, 0.05, 0.085),
+    ("Books, offline.", 0.8, 3.6, -0.27, 0.0, 0.11),
+    ("Your whole library.", 5.6, 9.4, -0.22, 0.05, 0.1),
+    ("Find anything.", 12.9, 14.9, -0.27, 0.05, 0.085),
     ("Typos included.", 18.6, 21.4, -0.27, 0.05, 0.085),
     ("But there is more.", 22.4, 25.6, -0.22, 0.05, 0.1),
-    ("Every genre. Every series.", 26.0, 29.4, -0.22, 0.05, 0.075),
-    ("Read anything.", 31.7, 33.5, -0.26, 0.05, 0.09),
-    ("EPUB  PDF  FB2  CBZ  TXT", 38.0, 39.8, -0.22, 0.05, 0.05),
+    ("Every genre. Every series.", 26.6, 29.6, -0.22, 0.05, 0.075),
+    ("Read anything.", 32.0, 34.0, -0.26, 0.05, 0.09),
+    ("EPUB  PDF  MOBI  FB2  CBZ  TXT", 37.6, 39.8, -0.22, 0.05, 0.05),
     ("Lights out.", 40.9, 44.6, -0.22, 0.05, 0.11),
-    ("One more page.", 49.2, 51.0, -0.22, 0.05, 0.09),
-    ("Every day.", 51.0, 52.8, -0.22, 0.05, 0.09),
+    ("Listen in.", 46.9, 49.2, -0.22, 0.05, 0.11),
+    ("Your year, wrapped.", 49.6, 52.6, -0.22, 0.05, 0.085),
     ("Shelf", 54.0, 58.0, 0.0, -0.2, 0.13),
     ("Free. Open source. Offline.", 54.8, 58.0, 0.0, -0.31, 0.04),
     ("github.com/tn3w/Shelf", 55.4, 58.0, 0.0, -0.39, 0.036),
@@ -210,13 +210,28 @@ def flow(keys):
     return evaluate
 
 
-camera_track = flow([(time, values) for time, values in CAMERA_KEYS])
-device_track = flow(DEVICE_KEYS)
-wall_track = stops(WALL_COLORS)
+def smooth(track, sigma):
+    offsets = [sigma * (index / 8 - 1) * 2.5 for index in range(17)]
+    weights = [math.exp(-0.5 * (offset / sigma) ** 2) for offset in offsets]
+    total = sum(weights)
+
+    def evaluate(time):
+        samples = [track(time + offset) for offset in offsets]
+        return tuple(
+            sum(weight * value for weight, value in zip(weights, channel)) / total
+            for channel in zip(*samples)
+        )
+
+    return evaluate
+
+
+camera_track = smooth(flow([(time, values) for time, values in CAMERA_KEYS]), 0.3)
+device_track = smooth(flow(DEVICE_KEYS), 0.22)
+wall_track = stops([(time, srgb(code)[:3]) for time, code in WALL_COLORS])
 
 
 def darkness(time):
-    return ramp(time, LIGHTS_OUT, LIGHTS_OUT + 1.6)
+    return ramp(time, LIGHTS_OUT, LIGHTS_OUT + 1.6) * (1 - ramp(time, 52.4, 53.6))
 
 
 def morph(time):
@@ -360,6 +375,10 @@ def emissive(name, color, strength=1.0):
     )
 
 
+def black_glass():
+    return principled("black glass", BLACK, Roughness=0.08, Coat_Weight=1.0)
+
+
 def glass(name, color, roughness=0.02):
     return principled(
         name, color, Transmission_Weight=1.0, Roughness=roughness, IOR=1.45
@@ -414,11 +433,9 @@ def box(name, material, size, parent=None, location=(0, 0, 0), bevel=0.0):
 class Device:
     def __init__(self):
         self.root = make_empty("device")
-        self.frame = principled(
-            "frame", TITANIUM, Metallic=1.0, Roughness=0.28
-        )
+        self.frame = principled("frame", CHAMPAGNE, Metallic=1.0, Roughness=0.22)
         self.back = principled(
-            "back", TEAL, Roughness=0.42, Coat_Weight=0.35, Coat_Roughness=0.2
+            "back", TERRACOTTA, Roughness=0.55, Coat_Weight=0.6, Coat_Roughness=0.35
         )
         self.front = principled("front", BLACK, Roughness=0.04, Specular_IOR_Level=0.8)
         self.body = bpy.data.meshes.new("body")
@@ -432,6 +449,13 @@ class Device:
         )
         self.bump_root = make_empty("bump", self.root)
         self.build_bump()
+        self.punch = primitive("cylinder", "punch", black_glass(), self.root,
+                               scale=(0.022, 0.022, 0.002), rotation=(90, 0, 0),
+                               vertices=32)
+        self.buttons = [
+            box("button", self.frame, (0.014, 0.05, length), self.root, bevel=0.006)
+            for length in (0.26, 0.13)
+        ]
         self.dims = None
 
     def screen_material_nodes(self):
@@ -460,19 +484,21 @@ class Device:
         return material
 
     def build_bump(self):
-        mesh = bpy.data.meshes.new("plateau")
-        fill_slab(mesh, 0.46, 0.46, 0.04, 0.11, 0.012)
-        plateau = make_mesh_object(
-            "plateau", mesh, [self.frame, self.frame, self.frame], self.bump_root
-        )
-        plateau.location = (0, 0.02, 0)
-        lens = principled("lens", BLACK, Roughness=0.05, Specular_IOR_Level=1.0)
-        ring = principled("ring", TITANIUM, Metallic=1.0, Roughness=0.2)
-        for x, z in ((-0.105, 0.105), (0.105, 0.105), (0.0, -0.105)):
-            primitive("cylinder", "lens", lens, self.bump_root, (x, 0.05, z),
-                      (0.085, 0.085, 0.02), (90, 0, 0), vertices=32)
-            primitive("torus", "ring", ring, self.bump_root, (x, 0.045, z),
-                      (1, 1, 1), (90, 0, 0), major_radius=0.092, minor_radius=0.012)
+        mesh = bpy.data.meshes.new("island")
+        fill_slab(mesh, 0.22, 0.5, 0.026, 0.11, 0.01)
+        island = black_glass()
+        make_mesh_object("island", mesh, [self.frame, island, island], self.bump_root)
+        lens = principled("lens", BLACK, Roughness=0.03, Specular_IOR_Level=1.0,
+                          Coat_Weight=1.0)
+        for z in (0.12, -0.04):
+            primitive("cylinder", "lens", lens, self.bump_root, (0, 0.016, z),
+                      (0.068, 0.068, 0.008), (90, 0, 0), vertices=48)
+            primitive("torus", "ring", self.frame, self.bump_root, (0, 0.016, z),
+                      rotation=(90, 0, 0), major_radius=0.074, minor_radius=0.008,
+                      major_segments=48)
+        flash = emissive("flash", srgb("#FFF2DC"), 0.3)
+        primitive("cylinder", "flash", flash, self.bump_root, (0, 0.016, -0.17),
+                  (0.022, 0.022, 0.006), (90, 0, 0), vertices=24)
 
     def rebuild(self, time):
         amount = morph(time)
@@ -482,14 +508,17 @@ class Device:
         self.dims = dims
         width, height, depth, corner, bezel = dims
         self.body.clear_geometry()
-        fill_slab(self.body, width, height, depth, corner, 0.03)
+        fill_slab(self.body, width, height, depth, corner, depth * 0.4)
         self.screen.clear_geometry()
         fill_screen(
             self.screen, width - 2 * bezel, height - 2 * bezel,
             max(corner - bezel, 0.02), -depth / 2 - 0.002,
         )
-        back_x = width / 2 - 0.37
-        self.bump_root.location = (back_x, depth / 2, height / 2 - 0.37)
+        self.bump_root.location = (width / 2 - 0.2, depth / 2, height / 2 - 0.33)
+        self.punch.location = (0, -depth / 2 - 0.004, height / 2 - bezel - 0.05)
+        self.punch.hide_render = amount > 0.2
+        for button, z in zip(self.buttons, (0.42, 0.08)):
+            button.location = (width / 2 + 0.004, 0, z)
         scale = 1 - ramp(amount, 0.0, 0.45)
         self.bump_root.scale = (scale,) * 3
         self.bump_root.hide_render = scale < 0.01
@@ -542,7 +571,7 @@ class Caption:
         alpha = pulse(time, self.start, self.end, 0.7)
         self.object.hide_render = alpha <= 0.001 or not CAPTIONS_VISIBLE
         self.fade.inputs[0].default_value = alpha
-        color = mix((0.07, 0.075, 0.08), (0.96, 0.96, 0.98), darkness(time))
+        color = mix(INK[:3], (0.96, 0.94, 0.9), darkness(time))
         self.emission.inputs["Color"].default_value = (*color, 1)
 
 
@@ -662,7 +691,7 @@ class Show:
         self.background.inputs["Strength"].default_value = mix(0.9, 0.12, amount)
         finale = ramp(time, 52.6, 54.0)
         for data, bright, dim in self.lights:
-            data.energy = mix(mix(bright, dim, amount), bright * 1.5, finale)
+            data.energy = mix(mix(bright, dim, amount), bright * 1.1, finale)
         self.device.update(time)
         for caption in self.captions:
             caption.update(time)
@@ -707,12 +736,6 @@ class Prop:
             obj.hide_render = not shown
         if self.effect and shown:
             self.effect(time)
-
-
-def srgb(code):
-    values = [int(code[index:index + 2], 16) / 255 for index in (1, 3, 5)]
-    linear = [v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in values]
-    return (*linear, 1)
 
 
 def place(obj, location, rotation=(0, 0, 0), scale=1.0):
@@ -1135,4 +1158,5 @@ def main():
             show.render(frame, path)
 
 
-main()
+if __name__ == "__main__":
+    main()

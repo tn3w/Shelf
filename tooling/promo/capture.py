@@ -76,7 +76,7 @@ def scroll_home():
 def search():
     app.tap("Search")
     time.sleep(1.2)
-    app.shell("input", "tap", "540", "435")
+    app.tap("Books and authors")
     time.sleep(1.0)
     for letter in "hobit":
         app.shell("input", "text", letter)
@@ -87,13 +87,31 @@ def search():
 def book():
     app.tap("Library")
     title, author = BOOKS["reading"][0][1:3]
-    app.wait(app.find(title))
     app.tap(title)
     app.wait(app.find(author))
     time.sleep(1.2)
     swipe("up")
     time.sleep(0.8)
     swipe("up")
+
+
+def listen():
+    time.sleep(1.0)
+    app.tap(READER)
+    time.sleep(2.4)
+    app.tap("Forward 10 seconds")
+    time.sleep(0.8)
+    app.tap("Forward 10 seconds")
+
+
+def wrapped():
+    app.tap("Reading stats")
+    time.sleep(1.0)
+    app.tap(app.fragment("en", "wrapped_banner"), exact=False)
+    time.sleep(2.6)
+    for _ in range(3):
+        app.shell("input", "tap", "900", "1200")
+        time.sleep(1.6)
 
 
 def explore():
@@ -109,7 +127,9 @@ def read_and_dim():
 
     def actions():
         app.shell("input", "tap", *card)
-        time.sleep(2.2)
+        time.sleep(1.4)
+        app.back()
+        time.sleep(1.0)
         for _ in range(3):
             app.shell("input", "swipe", "1050", "900", "200", "900", "200")
             time.sleep(1.5)
@@ -123,16 +143,21 @@ def read_and_dim():
     return actions
 
 
-def phone_clips():
+LIGHT_CLIPS = [("home", 11, scroll_home), ("search", 14, search), ("book", 14, book),
+               ("explore", 10, explore)]
+DARK_CLIPS = [("listen", 9, listen), ("wrapped", 13, wrapped)]
+
+
+def phone_clips(wanted):
     screen(PHONE)
-    seed("Light")
-    for name, seconds, actions in (("home", 11, scroll_home), ("search", 9, search),
-                                   ("book", 9, book), ("explore", 10, explore)):
-        home()
-        record(name, seconds, actions)
-    seed("Dark")
-    home()
-    record("dark_home_scroll", 9, scroll_home)
+    for theme, clips in (("Light", LIGHT_CLIPS), ("Dark", DARK_CLIPS)):
+        chosen = [clip for clip in clips if clip[0] in wanted]
+        if not chosen:
+            continue
+        seed(theme)
+        for name, seconds, actions in chosen:
+            home()
+            record(name, seconds, actions)
 
 
 def tablet_clip():
@@ -148,7 +173,10 @@ def tablet_clip():
 
 if __name__ == "__main__":
     CLIPS.mkdir(parents=True, exist_ok=True)
+    every = [clip[0] for clip in LIGHT_CLIPS + DARK_CLIPS] + ["tablet_take"]
+    wanted = sys.argv[1:] or every
     app.start_emulator()
-    phone_clips()
-    tablet_clip()
+    phone_clips(wanted)
+    if "tablet_take" in wanted:
+        tablet_clip()
     app.shell("am", "force-stop", app.PACKAGE)
