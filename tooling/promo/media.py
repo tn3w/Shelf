@@ -37,7 +37,8 @@ PHONE_LAYERS = [
 TABLET_LAYERS = [
     ("tablet_take.mp4", 2.5, 2.55, 0.0, 31.0, 0),
     ("tablet_take.mp4", 2.5, 9.9, 31.0, 39.6, 0),
-    ("tablet_take.mp4", 9.6, 15.9, 39.6, DURATION, 0),
+    ("tablet_take.mp4", 9.6, 9.99, 39.6, DURATION, 0),
+    ("tablet_take.mp4", 10.12, 15.9, 39.99, DURATION, 0.3),
 ]
 
 
