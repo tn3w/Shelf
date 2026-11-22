@@ -95,7 +95,7 @@ private fun LanguageRow(language: String, choices: List<Model>, offline: Boolean
     ModelRow(nativeName(language), choices, offline)
 
 @Composable
-private fun ModelRow(title: String, choices: List<Model>, offline: Boolean) {
+fun ModelRow(title: String, choices: List<Model>, offline: Boolean) {
     val viewModel = settingsViewModel()
     val installed by viewModel.models.installed.collectAsStateWithLifecycle()
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()

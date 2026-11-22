@@ -246,6 +246,9 @@
     <string name="margin_wide">Szerokie</string>
     <string name="typeface_serif">Szeryfowy</string>
     <string name="typeface_sans">Bezszeryfowy</string>
+    <string name="typeface_dyslexic">Dysleksja</string>
+    <string name="typeface_own">Własna</string>
+    <string name="font_unreadable">Ten plik nie jest czcionką, której Android może użyć</string>
     <string name="page_app">Aplikacja</string>
     <string name="page_paper">Papier</string>
     <string name="page_night">Noc</string>

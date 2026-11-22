@@ -35,6 +35,12 @@ Entries with `"kind": "dictionary"` and a `language` are offered under Settings 
 and looked up by long-pressing a word. Their `files` are one uncompressed StarDict pair
 (`.idx` with 32-bit offsets, `.dict`), e.g. a Wiktionary export (CC-BY-SA-4.0).
 
+## Fonts
+
+The `"kind": "font"` entry is OpenDyslexic (OFL-1.1), pinned to a commit and offered under
+Settings → Reading → Typeface. Its `files` are the regular, bold, italic and bold italic
+faces, in that order.
+
 ## Pocket TTS to GGUF
 
 `convert_pocket.py` turns each Pocket model plus its open voices into one GGUF

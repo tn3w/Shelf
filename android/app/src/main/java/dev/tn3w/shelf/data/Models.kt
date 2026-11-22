@@ -18,9 +18,11 @@ import java.security.MessageDigest
 private const val MODELS_FORMAT = 1
 private const val FREE_SPACE_MARGIN = 100L * 1024 * 1024
 private const val PART = ".part"
-val OPEN_LICENCES =
-    setOf("Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0")
-private val SUPPORTED_KINDS = setOf("speaker", "tts", "dictionary")
+val OPEN_LICENCES = setOf(
+    "Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0",
+    "OFL-1.1",
+)
+private val SUPPORTED_KINDS = setOf("speaker", "tts", "dictionary", "font")
 private val QUALITIES = listOf("standard", "high")
 private val SHA256 = Regex("[0-9a-f]{64}")
 private val NAME = Regex("[\\w-][\\w.-]*")

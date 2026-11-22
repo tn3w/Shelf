@@ -237,6 +237,9 @@
     <string name="margin_wide">Larges</string>
     <string name="typeface_serif">Serif</string>
     <string name="typeface_sans">Sans serif</string>
+    <string name="typeface_dyslexic">Dyslexie</string>
+    <string name="typeface_own">Perso</string>
+    <string name="font_unreadable">Ce fichier n’est pas une police utilisable par Android</string>
     <string name="page_app">App</string>
     <string name="page_paper">Papier</string>
     <string name="page_night">Nuit</string>

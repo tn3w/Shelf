@@ -7,6 +7,7 @@ uploaded to the same release. Every model and voice carries its licence; only OP
 licences are written.
 """
 
+import hashlib
 import json
 import re
 import sys
@@ -14,7 +15,9 @@ import urllib.request
 from pathlib import Path
 
 FORMAT = 1
-OPEN = {"Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0"}
+OPEN = {
+    "Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-SA-4.0", "CC0-1.0", "OFL-1.1"
+}
 RELEASE = "voices-2026-11"
 GITHUB = f"https://api.github.com/repos/tn3w/Shelf/releases/tags/{RELEASE}"
 SPEAKER = "shelf-speaker-qwen3-1.7b-q4_k_m.gguf"
@@ -79,6 +82,9 @@ TTS = [
     ("tts-en-24l", "en", "english_2026-09_24l", "high"),
 ]
 RUNTIME_RAM = 150_000_000
+FONT = "antijingoist/opendyslexic"
+FONT_COMMIT = "1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7"
+FONT_FACES = ["Regular", "Bold", "Italic", "Bold-Italic"]
 REVISIONS = {f"tts-{code}-24l": 2 for code in ("de", "en", "es", "nl", "pt")}
 
 
@@ -110,6 +116,30 @@ def speaker():
                 "sha256": checksum.decode(),
             }
         ],
+    }
+
+
+def font_file(face):
+    name = f"OpenDyslexic-{face}.otf"
+    url = f"https://raw.githubusercontent.com/{FONT}/{FONT_COMMIT}/compiled/{name}"
+    data = fetch(url)
+    return {
+        "name": name,
+        "url": url,
+        "size": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
+
+
+def font():
+    return {
+        "id": "opendyslexic",
+        "kind": "font",
+        "version": FONT_COMMIT[:7],
+        "licence": "OFL-1.1",
+        "attribution": "OpenDyslexic by Abbie Gonzalez, SIL Open Font License 1.1",
+        "source": f"https://github.com/{FONT}/tree/{FONT_COMMIT}",
+        "files": [font_file(face) for face in FONT_FACES],
     }
 
 
@@ -169,7 +199,7 @@ def check(model):
 
 
 def main():
-    models = [speaker(), *(tts(sys.argv[2], *spec) for spec in TTS)]
+    models = [speaker(), *(tts(sys.argv[2], *spec) for spec in TTS), font()]
     manifest = {"format": FORMAT, "models": [check(model) for model in models]}
     with open(sys.argv[1], "w") as output:
         json.dump(manifest, output, indent=1)

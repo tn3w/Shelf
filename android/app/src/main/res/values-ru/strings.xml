@@ -246,6 +246,9 @@
     <string name="margin_wide">Широкие</string>
     <string name="typeface_serif">С засечками</string>
     <string name="typeface_sans">Без засечек</string>
+    <string name="typeface_dyslexic">Дислексия</string>
+    <string name="typeface_own">Свой</string>
+    <string name="font_unreadable">Этот файл не является шрифтом, который может использовать Android</string>
     <string name="page_app">Как в приложении</string>
     <string name="page_paper">Бумага</string>
     <string name="page_night">Ночь</string>

@@ -246,6 +246,9 @@
     <string name="margin_wide">Široké</string>
     <string name="typeface_serif">Patkové</string>
     <string name="typeface_sans">Bezpatkové</string>
+    <string name="typeface_dyslexic">Dyslexie</string>
+    <string name="typeface_own">Vlastní</string>
+    <string name="font_unreadable">Tento soubor není písmo, které Android umí použít</string>
     <string name="page_app">Aplikace</string>
     <string name="page_paper">Papír</string>
     <string name="page_night">Noc</string>

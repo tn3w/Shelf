@@ -237,6 +237,9 @@
     <string name="margin_wide">Anchos</string>
     <string name="typeface_serif">Serif</string>
     <string name="typeface_sans">Sans serif</string>
+    <string name="typeface_dyslexic">Dislexia</string>
+    <string name="typeface_own">Propia</string>
+    <string name="font_unreadable">Este archivo no es una fuente que Android pueda usar</string>
     <string name="page_app">App</string>
     <string name="page_paper">Papel</string>
     <string name="page_night">Noche</string>

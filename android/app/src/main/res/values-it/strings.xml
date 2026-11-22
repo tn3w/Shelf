@@ -251,6 +251,9 @@
     <string name="margin_wide">Larghi</string>
     <string name="typeface_serif">Con grazie</string>
     <string name="typeface_sans">Senza grazie</string>
+    <string name="typeface_dyslexic">Dislessia</string>
+    <string name="typeface_own">Tuo</string>
+    <string name="font_unreadable">Questo file non è un carattere utilizzabile da Android</string>
     <string name="page_app">App</string>
     <string name="page_paper">Carta</string>
     <string name="page_night">Notte</string>

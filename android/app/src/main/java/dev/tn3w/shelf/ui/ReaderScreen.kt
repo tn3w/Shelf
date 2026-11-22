@@ -284,8 +284,16 @@ private data class ReaderState(
     val volumeKeys: Boolean,
 )
 
-fun readerStyle(settings: Settings, color: Color) = TextStyle(
-    fontFamily = if (settings.serif) FontFamily.Serif else FontFamily.SansSerif,
+@Composable
+fun readerFontFamily(font: ReaderFont): FontFamily {
+    val app = LocalContext.current.applicationContext as ShelfApp
+    val installed by app.models.installed.collectAsStateWithLifecycle()
+    val own by app.fonts.own.collectAsStateWithLifecycle()
+    return remember(font, installed, own) { app.fonts.familyOf(font) }
+}
+
+fun readerStyle(settings: Settings, color: Color, family: FontFamily) = TextStyle(
+    fontFamily = family,
     fontSize = (19 * settings.fontScale).sp,
     lineHeight = settings.lineSpacing.em,
     lineHeightStyle = LineHeightStyle(
@@ -677,7 +685,8 @@ private fun TextReader(
 ) {
     val viewModel = state.viewModel
     val measurer = rememberTextMeasurer(cacheSize = 0)
-    val style = readerStyle(settings, Look.colors.ink)
+    val style =
+        readerStyle(settings, Look.colors.ink, readerFontFamily(settings.readerFont))
     val margin = settings.margin.dp
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val highlights by viewModel.highlights.collectAsStateWithLifecycle()

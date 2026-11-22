@@ -230,6 +230,9 @@
     <string name="margin_wide">広い</string>
     <string name="typeface_serif">明朝体</string>
     <string name="typeface_sans">ゴシック体</string>
+    <string name="typeface_dyslexic">ディスレクシア</string>
+    <string name="typeface_own">独自</string>
+    <string name="font_unreadable">このファイルは Android で使えるフォントではありません</string>
     <string name="page_app">アプリ</string>
     <string name="page_paper">紙</string>
     <string name="page_night">夜間</string>

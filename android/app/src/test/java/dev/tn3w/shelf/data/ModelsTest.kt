@@ -52,6 +52,14 @@ class ModelsTest {
         runBlocking { runCatching { resume(file, partial, open) {} } }
 
     @Test
+    fun offersOpenLicensedFonts() {
+        val font = model(licence = "OFL-1.1").copy(id = "font", kind = "font")
+        val models = parseModels(manifest(font))
+        assertEquals(listOf(font), models)
+        assertTrue(isSupported(font))
+    }
+
+    @Test
     fun groupsVoicesByLanguageFromStandardToHigh() {
         fun tts(id: String, language: String, quality: String) =
             model().copy(id = id, kind = "tts", language = language, quality = quality)

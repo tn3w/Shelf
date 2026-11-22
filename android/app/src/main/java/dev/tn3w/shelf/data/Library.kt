@@ -214,6 +214,7 @@ data class Settings(
     val lineSpacing: Float = 1.55f,
     val margin: Int = 28,
     val serif: Boolean = true,
+    val font: ReaderFont? = null,
     val justify: Boolean = false,
     val pageColor: PageColor = PageColor.Theme,
     val keepScreenOn: Boolean = true,
@@ -237,7 +238,10 @@ data class Settings(
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
     val backupFolder: String = "",
-)
+) {
+    val readerFont
+        get() = font ?: if (serif) ReaderFont.Serif else ReaderFont.Sans
+}
 
 fun storedLanguage(chosen: String, system: String) = if (chosen == system) "" else chosen
 

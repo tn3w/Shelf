@@ -219,6 +219,9 @@
     <string name="margin_wide">넓게</string>
     <string name="typeface_serif">세리프</string>
     <string name="typeface_sans">산세리프</string>
+    <string name="typeface_dyslexic">난독증</string>
+    <string name="typeface_own">직접 선택</string>
+    <string name="font_unreadable">이 파일은 Android에서 사용할 수 있는 글꼴이 아닙니다</string>
     <string name="page_app">앱</string>
     <string name="page_paper">종이</string>
     <string name="page_night">야간</string>

@@ -6,6 +6,8 @@ import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.net.Uri
 import android.text.format.Formatter
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
@@ -54,9 +56,8 @@ private val SPACINGS = mapOf(
 )
 private val MARGINS =
     mapOf(16 to R.string.margin_narrow, 28 to R.string.normal, 44 to R.string.margin_wide)
-private val TYPEFACES = mapOf(
-    true to R.string.typeface_serif, false to R.string.typeface_sans,
-)
+private val FONT_TYPES = arrayOf("*/*")
+private const val DYSLEXIC_FONT = "OpenDyslexic"
 private val PAGE_COLORS = PageColor.entries.associateWith { it.label }
 private val THEMES = ThemeMode.entries.associateWith { it.label }
 
@@ -153,6 +154,12 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun pauseModel(model: Model) = app.pauseModel(model)
 
     fun removeModel(model: Model) = app.removeModel(model)
+
+    fun importFont(uri: Uri) = viewModelScope.launch {
+        val imported = app.readFrom(uri, app.fonts::import) == true
+        if (!imported) return@launch app.show(R.string.font_unreadable)
+        app.library.updateSettings { it.copy(font = ReaderFont.Own) }
+    }
 
     fun setCharacterVoices(enabled: Boolean) = app.narrator.setCharacterVoices(enabled)
 
@@ -404,9 +411,7 @@ private fun ReadingSettings() {
         OptionChoice(MARGINS, settings.margin, R.string.margins) { value ->
             update { it.copy(margin = value) }
         }
-        OptionChoice(TYPEFACES, settings.serif, R.string.typeface) { value ->
-            update { it.copy(serif = value) }
-        }
+        TypefaceChoice(settings, update)
         OptionChoice(PAGE_COLORS, settings.pageColor, R.string.page_color) { value ->
             update { it.copy(pageColor = value) }
         }
@@ -472,11 +477,37 @@ private fun GoalChoice(goal: Int, onChange: (Int) -> Unit) {
 }
 
 @Composable
+private fun TypefaceChoice(settings: Settings, update: SettingsUpdate) {
+    val viewModel = settingsViewModel()
+    val offline = settings.isOffline(LocalContext.current)
+    val dyslexic = usableModels().firstOrNull { it.kind == "font" }
+    val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
+        uri?.let(viewModel::importFont)
+    }
+    val fonts = ReaderFont.entries.filter {
+        it != ReaderFont.Dyslexic || dyslexic != null
+    }
+    fun select(font: ReaderFont) {
+        if (font == ReaderFont.Own) return picker.launch(FONT_TYPES)
+        update { it.copy(font = font) }
+        val missing = viewModel.models.installed("font") == null
+        if (font == ReaderFont.Dyslexic && missing && !offline) {
+            dyslexic?.let(viewModel::downloadModel)
+        }
+    }
+    Choice(fonts, settings.readerFont, ::select, R.string.typeface) {
+        stringResource(it.label)
+    }
+    if (settings.readerFont != ReaderFont.Dyslexic || dyslexic == null) return
+    ModelRow(DYSLEXIC_FONT, listOf(dyslexic), offline)
+}
+
+@Composable
 private fun ReaderPreview(settings: Settings) {
     val page = Look.colors.page(settings.pageColor)
     Text(
         stringResource(R.string.reader_sample),
-        style = readerStyle(settings, page.ink),
+        style = readerStyle(settings, page.ink, readerFontFamily(settings.readerFont)),
         maxLines = 4,
         overflow = TextOverflow.Ellipsis,
         modifier =

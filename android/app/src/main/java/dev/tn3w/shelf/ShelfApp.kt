@@ -43,6 +43,7 @@ class ShelfApp :
         get() = audiobooks.takeIf { it.state.value.busy } ?: narrator
     val packs by lazy { Packs(this) }
     val models by lazy { Models(this) }
+    val fonts by lazy { Fonts(this, models) }
     val sources by lazy { Sources(this) }
     val catalogs by lazy { Catalogs(this) }
     private val scanCopy by lazy { filesDir.resolve(SCAN_MODEL) }

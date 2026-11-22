@@ -251,6 +251,14 @@ class LibraryTest {
     }
 
     @Test
+    fun readerFontKeepsLegacyTypeface() {
+        assertEquals(ReaderFont.Serif, Settings().readerFont)
+        assertEquals(ReaderFont.Sans, Settings(serif = false).readerFont)
+        val chosen = Settings(serif = false, font = ReaderFont.Dyslexic)
+        assertEquals(ReaderFont.Dyslexic, chosen.readerFont)
+    }
+
+    @Test
     fun settingsSurviveUnknownValues() {
         val decoded = decode("""{"settings":{"theme":"Sepia","serif":false}}""")
         assertEquals(Settings(serif = false), decoded.settings)

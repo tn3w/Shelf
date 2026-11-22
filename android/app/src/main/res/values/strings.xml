@@ -241,6 +241,9 @@
     <string name="margin_wide">Wide</string>
     <string name="typeface_serif">Serif</string>
     <string name="typeface_sans">Sans serif</string>
+    <string name="typeface_dyslexic">Dyslexic</string>
+    <string name="typeface_own">Own</string>
+    <string name="font_unreadable">This file is not a font Android can use</string>
     <string name="page_app">App</string>
     <string name="page_paper">Paper</string>
     <string name="page_night">Night</string>

@@ -228,6 +228,9 @@
     <string name="margin_wide">Lai</string>
     <string name="typeface_serif">Seriifidega</string>
     <string name="typeface_sans">Seriifideta</string>
+    <string name="typeface_dyslexic">Düsleksia</string>
+    <string name="typeface_own">Oma</string>
+    <string name="font_unreadable">See fail pole font, mida Android kasutada saab</string>
     <string name="page_app">Rakendus</string>
     <string name="page_paper">Paber</string>
     <string name="page_night">Öö</string>

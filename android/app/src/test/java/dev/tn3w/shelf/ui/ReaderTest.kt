@@ -3,6 +3,7 @@ package dev.tn3w.shelf.ui
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import dev.tn3w.shelf.data.Settings
@@ -16,7 +17,7 @@ private val SCREEN = Size(1000f, 2000f)
 class ReaderTest {
     @Test
     fun keepsLineSpacingBetweenParagraphs() {
-        val style = readerStyle(Settings(), Color.Black)
+        val style = readerStyle(Settings(), Color.Black, FontFamily.Serif)
 
         assertEquals(LineHeightStyle.Trim.None, style.lineHeightStyle?.trim)
     }

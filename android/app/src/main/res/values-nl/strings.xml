@@ -240,6 +240,9 @@
     <string name="margin_wide">Breed</string>
     <string name="typeface_serif">Schreef</string>
     <string name="typeface_sans">Schreefloos</string>
+    <string name="typeface_dyslexic">Dyslexie</string>
+    <string name="typeface_own">Eigen</string>
+    <string name="font_unreadable">Dit bestand is geen lettertype dat Android kan gebruiken</string>
     <string name="page_app">App</string>
     <string name="page_paper">Papier</string>
     <string name="page_night">Nacht</string>

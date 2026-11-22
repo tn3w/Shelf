@@ -251,6 +251,9 @@
     <string name="margin_wide">Platas</string>
     <string name="typeface_serif">Ar serifiem</string>
     <string name="typeface_sans">Bez serifiem</string>
+    <string name="typeface_dyslexic">Disleksija</string>
+    <string name="typeface_own">Savs</string>
+    <string name="font_unreadable">Šis fails nav fonts, ko Android var izmantot</string>
     <string name="page_app">Lietotne</string>
     <string name="page_paper">Papīrs</string>
     <string name="page_night">Nakts</string>

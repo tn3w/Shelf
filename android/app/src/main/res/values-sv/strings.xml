@@ -228,6 +228,9 @@
     <string name="margin_wide">Bred</string>
     <string name="typeface_serif">Serif</string>
     <string name="typeface_sans">Sans serif</string>
+    <string name="typeface_dyslexic">Dyslexi</string>
+    <string name="typeface_own">Eget</string>
+    <string name="font_unreadable">Filen är inte ett typsnitt som Android kan använda</string>
     <string name="page_app">App</string>
     <string name="page_paper">Papper</string>
     <string name="page_night">Natt</string>

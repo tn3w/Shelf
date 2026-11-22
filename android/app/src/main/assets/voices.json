@@ -2822,6 +2822,40 @@
      "attribution": "VCTK p229, CSTR, University of Edinburgh, CC BY 4.0"
     }
    ]
+  },
+  {
+   "id": "opendyslexic",
+   "kind": "font",
+   "version": "1824da5",
+   "licence": "OFL-1.1",
+   "attribution": "OpenDyslexic by Abbie Gonzalez, SIL Open Font License 1.1",
+   "source": "https://github.com/antijingoist/opendyslexic/tree/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7",
+   "files": [
+    {
+     "name": "OpenDyslexic-Regular.otf",
+     "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Regular.otf",
+     "size": 175872,
+     "sha256": "32f5840fb2bf844bdabafe372591ddfb9286e98117f5b21950aaf54ea856919a"
+    },
+    {
+     "name": "OpenDyslexic-Bold.otf",
+     "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Bold.otf",
+     "size": 184472,
+     "sha256": "5d690ea4c87ccb0d5d5d81487826a395e9b20a6c1d606f1f262c060d2bef4f03"
+    },
+    {
+     "name": "OpenDyslexic-Italic.otf",
+     "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Italic.otf",
+     "size": 190448,
+     "sha256": "dfa0185bb0d47cb76cb5d082531822d0dca03152f5b6ec6c9f6e3f8d00b71782"
+    },
+    {
+     "name": "OpenDyslexic-Bold-Italic.otf",
+     "url": "https://raw.githubusercontent.com/antijingoist/opendyslexic/1824da5c0e41dc3e13ffc7f3a636dcaf695d61b7/compiled/OpenDyslexic-Bold-Italic.otf",
+     "size": 218224,
+     "sha256": "b50779f4f547917a648d38976a664cab8952563112ce03209ff568b1eb364090"
+    }
+   ]
   }
  ]
 }

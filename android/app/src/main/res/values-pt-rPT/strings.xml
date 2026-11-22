@@ -316,6 +316,9 @@
     <string name="margin_wide">Largas</string>
     <string name="typeface_serif">Com serifa</string>
     <string name="typeface_sans">Sem serifa</string>
+    <string name="typeface_dyslexic">Dislexia</string>
+    <string name="typeface_own">Própria</string>
+    <string name="font_unreadable">Este ficheiro não é um tipo de letra que o Android possa usar</string>
     <string name="page_app">App</string>
     <string name="page_paper">Papel</string>
     <string name="page_night">Noite</string>

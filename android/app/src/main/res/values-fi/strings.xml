@@ -228,6 +228,9 @@
     <string name="margin_wide">Leveä</string>
     <string name="typeface_serif">Antiikva</string>
     <string name="typeface_sans">Groteski</string>
+    <string name="typeface_dyslexic">Lukihäiriö</string>
+    <string name="typeface_own">Oma</string>
+    <string name="font_unreadable">Tämä tiedosto ei ole fontti, jota Android voi käyttää</string>
     <string name="page_app">Sovellus</string>
     <string name="page_paper">Paperi</string>
     <string name="page_night">Yö</string>
