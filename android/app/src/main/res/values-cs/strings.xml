@@ -93,6 +93,11 @@
     <string name="pack_update">Dostupná aktualizace</string>
     <string name="pack_young_adult">Pro mládež</string>
     <string name="page_of">Strana %1$d z %2$d</string>
+    <string name="toggle_controls">Zobrazit nebo skrýt ovládání</string>
+    <string name="next_page">Další strana</string>
+    <string name="previous_page">Předchozí strana</string>
+    <string name="next_slide">Další snímek</string>
+    <string name="previous_slide">Předchozí snímek</string>
     <string name="percent_read">Přečteno %d %%</string>
     <string name="popular">Oblíbené</string>
     <string name="privacy">Soukromí</string>

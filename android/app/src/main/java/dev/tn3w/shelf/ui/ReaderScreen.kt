@@ -51,6 +51,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
@@ -1257,8 +1264,28 @@ private fun Pages(
         previous = settled
     }
 
+    val pageLabel =
+        stringResource(R.string.page_of, pager.settledPage + 1, pager.pageCount)
+    val controls = stringResource(R.string.toggle_controls)
+    val nextPage = stringResource(R.string.next_page)
+    val previousPage = stringResource(R.string.previous_page)
+    fun pageActions(index: Int) = listOf(
+        CustomAccessibilityAction(nextPage) {
+            turn(index + 1)
+            true
+        },
+        CustomAccessibilityAction(previousPage) {
+            turn(index - 1)
+            true
+        },
+    )
+
     Box(
         Modifier.fillMaxSize()
+            .semantics {
+                contentDescription = pageLabel
+                liveRegion = LiveRegionMode.Polite
+            }
             .focusRequester(focus)
             .focusable()
             .onPreviewKeyEvent { event ->
@@ -1279,6 +1306,13 @@ private fun Pages(
                 Box(
                     Modifier.fillMaxSize()
                         .onSizeChanged { pageSize = it.toSize() }
+                        .semantics {
+                            onClick(controls) {
+                                chrome = !chrome
+                                true
+                            }
+                            customActions = pageActions(index)
+                        }
                         .then(zoomGestures)
                         .pointerInput(rightToLeft, zoom) {
                             val toggleZoom = zoom?.let {

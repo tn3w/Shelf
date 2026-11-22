@@ -182,6 +182,11 @@
     <string name="pack_update">Atualização disponível</string>
     <string name="pack_young_adult">Jovem adulto</string>
     <string name="page_of">Página %1$d de %2$d</string>
+    <string name="toggle_controls">Mostrar ou ocultar controlos</string>
+    <string name="next_page">Página seguinte</string>
+    <string name="previous_page">Página anterior</string>
+    <string name="next_slide">Diapositivo seguinte</string>
+    <string name="previous_slide">Diapositivo anterior</string>
     <string name="percent_read">%d%% lido</string>
     <string name="popular">Populares</string>
     <string name="privacy">Privacidade</string>

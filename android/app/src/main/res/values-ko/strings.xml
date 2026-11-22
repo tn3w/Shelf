@@ -93,6 +93,11 @@
     <string name="pack_update">업데이트 있음</string>
     <string name="pack_young_adult">청소년</string>
     <string name="page_of">%2$d쪽 중 %1$d쪽</string>
+    <string name="toggle_controls">컨트롤 표시 또는 숨기기</string>
+    <string name="next_page">다음 페이지</string>
+    <string name="previous_page">이전 페이지</string>
+    <string name="next_slide">다음 슬라이드</string>
+    <string name="previous_slide">이전 슬라이드</string>
     <string name="percent_read">%d%% 읽음</string>
     <string name="popular">인기</string>
     <string name="privacy">개인정보</string>

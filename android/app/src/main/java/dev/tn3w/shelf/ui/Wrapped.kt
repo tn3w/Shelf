@@ -33,6 +33,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.*
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -155,9 +156,23 @@ private fun Story(recap: Recap, author: Author?, onClose: () -> Unit) {
     }
     BackHandler(index > 0) { step(-1) }
     val slide = slides[index.coerceAtMost(slides.lastIndex)]
+    val next = stringResource(R.string.next_slide)
+    val previous = stringResource(R.string.previous_slide)
     Box(
         Modifier.fillMaxSize()
             .background(Color(Slide.Summary.top))
+            .semantics {
+                onClick(next) {
+                    step(1)
+                    true
+                }
+                customActions = listOf(
+                    CustomAccessibilityAction(previous) {
+                        step(-1)
+                        true
+                    },
+                )
+            }
             .pointerInput(slides) {
                 detectTapGestures(
                     onPress = {

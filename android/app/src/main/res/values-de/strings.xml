@@ -93,6 +93,11 @@
     <string name="pack_update">Update verfügbar</string>
     <string name="pack_young_adult">Jugendbuch</string>
     <string name="page_of">Seite %1$d von %2$d</string>
+    <string name="toggle_controls">Steuerelemente ein- oder ausblenden</string>
+    <string name="next_page">Nächste Seite</string>
+    <string name="previous_page">Vorherige Seite</string>
+    <string name="next_slide">Nächste Folie</string>
+    <string name="previous_slide">Vorherige Folie</string>
     <string name="percent_read">%d%% gelesen</string>
     <string name="popular">Beliebt</string>
     <string name="privacy">Datenschutz</string>

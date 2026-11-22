@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -165,7 +166,7 @@ fun OptionRow(
     val colors = Look.colors
     Row(
         Modifier.fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(selected, onClick = onClick)
             .heightIn(min = 54.dp)
             .padding(horizontal = ScreenPadding),
         horizontalArrangement = Arrangement.spacedBy(16.dp),

@@ -96,6 +96,11 @@
     <string name="pack_update">Update beschikbaar</string>
     <string name="pack_young_adult">Jongvolwassenen</string>
     <string name="page_of">Pagina %1$d van %2$d</string>
+    <string name="toggle_controls">Bediening tonen of verbergen</string>
+    <string name="next_page">Volgende pagina</string>
+    <string name="previous_page">Vorige pagina</string>
+    <string name="next_slide">Volgende dia</string>
+    <string name="previous_slide">Vorige dia</string>
     <string name="percent_read">%d%% gelezen</string>
     <string name="popular">Populair</string>
     <string name="privacy">Privacy</string>

@@ -93,6 +93,11 @@
     <string name="pack_update">Доступно обновление</string>
     <string name="pack_young_adult">Для подростков</string>
     <string name="page_of">Страница %1$d из %2$d</string>
+    <string name="toggle_controls">Показать или скрыть элементы управления</string>
+    <string name="next_page">Следующая страница</string>
+    <string name="previous_page">Предыдущая страница</string>
+    <string name="next_slide">Следующий слайд</string>
+    <string name="previous_slide">Предыдущий слайд</string>
     <string name="percent_read">Прочитано: %d%%</string>
     <string name="popular">Популярное</string>
     <string name="privacy">Конфиденциальность</string>

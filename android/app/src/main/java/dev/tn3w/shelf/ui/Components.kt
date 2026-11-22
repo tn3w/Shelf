@@ -35,6 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -416,7 +418,7 @@ private fun Modifier.bookClicks(
 ) = combinedClickable(
     onClick = { if (selection?.active == true) selection.toggle(book) else onOpen() },
     onLongClick = selection?.let { { it.toggle(book) } } ?: onLongClick,
-)
+).semantics { if (selection?.active == true) selected = book in selection }
 
 @Composable
 fun SelectableTitle(

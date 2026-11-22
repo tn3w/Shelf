@@ -93,6 +93,11 @@
     <string name="pack_update">Actualización disponible</string>
     <string name="pack_young_adult">Juvenil</string>
     <string name="page_of">Página %1$d de %2$d</string>
+    <string name="toggle_controls">Mostrar u ocultar controles</string>
+    <string name="next_page">Página siguiente</string>
+    <string name="previous_page">Página anterior</string>
+    <string name="next_slide">Diapositiva siguiente</string>
+    <string name="previous_slide">Diapositiva anterior</string>
     <string name="percent_read">%d%% leído</string>
     <string name="popular">Populares</string>
     <string name="privacy">Privacidad</string>

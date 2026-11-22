@@ -93,6 +93,11 @@
     <string name="pack_update">Uuendus saadaval</string>
     <string name="pack_young_adult">Noortele</string>
     <string name="page_of">Lehekülg %1$d / %2$d</string>
+    <string name="toggle_controls">Näita või peida juhtnupud</string>
+    <string name="next_page">Järgmine lehekülg</string>
+    <string name="previous_page">Eelmine lehekülg</string>
+    <string name="next_slide">Järgmine slaid</string>
+    <string name="previous_slide">Eelmine slaid</string>
     <string name="percent_read">%d%% loetud</string>
     <string name="popular">Populaarne</string>
     <string name="privacy">Privaatsus</string>

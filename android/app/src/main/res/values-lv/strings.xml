@@ -96,6 +96,11 @@
     <string name="pack_update">Pieejams atjauninājums</string>
     <string name="pack_young_adult">Jauniešiem</string>
     <string name="page_of">%1$d. lappuse no %2$d</string>
+    <string name="toggle_controls">Rādīt vai slēpt vadīklas</string>
+    <string name="next_page">Nākamā lapa</string>
+    <string name="previous_page">Iepriekšējā lapa</string>
+    <string name="next_slide">Nākamais slaids</string>
+    <string name="previous_slide">Iepriekšējais slaids</string>
     <string name="percent_read">Izlasīti %d%%</string>
     <string name="popular">Populāras</string>
     <string name="privacy">Privātums</string>

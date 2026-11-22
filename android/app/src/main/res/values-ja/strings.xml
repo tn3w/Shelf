@@ -96,6 +96,11 @@
     <string name="pack_update">更新があります</string>
     <string name="pack_young_adult">ヤングアダルト</string>
     <string name="page_of">%2$d ページ中 %1$d ページ</string>
+    <string name="toggle_controls">コントロールの表示/非表示</string>
+    <string name="next_page">次のページ</string>
+    <string name="previous_page">前のページ</string>
+    <string name="next_slide">次のスライド</string>
+    <string name="previous_slide">前のスライド</string>
     <string name="percent_read">%d%% 読了</string>
     <string name="popular">人気</string>
     <string name="privacy">プライバシー</string>

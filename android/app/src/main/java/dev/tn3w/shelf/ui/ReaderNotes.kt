@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
@@ -216,7 +217,10 @@ private fun ColorDot(
         Modifier.size(size.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick)
-            .semantics { contentDescription = label },
+            .semantics {
+                contentDescription = label
+                this.selected = selected
+            },
         contentAlignment = Alignment.Center,
     ) {
         Box(

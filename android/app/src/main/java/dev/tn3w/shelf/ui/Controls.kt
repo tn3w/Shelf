@@ -236,6 +236,7 @@ fun Check(checked: Boolean, modifier: Modifier = Modifier) {
     val fill = if (checked) colors.accent else Color.Transparent
     Box(
         modifier.size(24.dp)
+            .semantics { selected = checked }
             .background(fill, CircleShape)
             .border(1.5.dp, if (checked) fill else colors.faint, CircleShape),
         contentAlignment = Alignment.Center,
