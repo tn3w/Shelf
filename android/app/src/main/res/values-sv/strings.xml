@@ -508,6 +508,8 @@
     <string name="pause_item">Pausa %s</string>
     <string name="resume_item">Återuppta %s</string>
     <string name="character_voices">Röster för figurer</string>
+    <string name="skip_silence">Hoppa över tystnad</string>
+    <string name="volume_boost">Volymförstärkning</string>
     <string name="finding_speakers">Letar efter talare…</string>
     <string name="speakers_found">Hittade talare: %1$d</string>
     <string name="listening">Lyssnande</string>

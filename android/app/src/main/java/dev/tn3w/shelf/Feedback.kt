@@ -36,6 +36,8 @@ private val REPORTED_SETTINGS = setOf(
     "volumeKeys",
     "speechRate",
     "characterVoices",
+    "skipSilence",
+    "volumeBoost",
     "offline",
     "onlineCovers",
     "coverProxy",

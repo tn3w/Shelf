@@ -538,6 +538,8 @@
     <string name="pause_item">Приостановить: %s</string>
     <string name="resume_item">Продолжить: %s</string>
     <string name="character_voices">Голоса персонажей</string>
+    <string name="skip_silence">Пропускать тишину</string>
+    <string name="volume_boost">Усиление громкости</string>
     <string name="finding_speakers">Поиск говорящих…</string>
     <string name="speakers_found">Найдено говорящих: %1$d</string>
     <string name="listening">Прослушивание</string>

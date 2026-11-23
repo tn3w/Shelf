@@ -1,19 +1,27 @@
 package dev.tn3w.shelf
 
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.media.MediaPlayer
+import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import androidx.core.net.toUri
 import dev.tn3w.shelf.data.Audiobook
+import dev.tn3w.shelf.data.Level
 import dev.tn3w.shelf.data.Sleep
 import dev.tn3w.shelf.data.fadeVolume
 import dev.tn3w.shelf.data.heardSeconds
 import dev.tn3w.shelf.data.pagesHeard
+import dev.tn3w.shelf.data.peak
 import dev.tn3w.shelf.data.secondsOfPages
+import dev.tn3w.shelf.data.silences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -21,6 +29,9 @@ private const val SKIP_SECONDS = 10
 private const val RESTART_SECONDS = 3
 private const val SAVE_EVERY_SECONDS = 15
 private const val POSITION_MILLIS = 1000L
+private const val SILENCE_CHECK_MILLIS = 100L
+private const val BOOST_MILLIBELS = 800
+private const val CODEC_TIMEOUT_MICROS = 10_000L
 
 class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var book = Audiobook(emptyList())
@@ -29,12 +40,15 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var ticker: Job? = null
     private var loading: Job? = null
     private var heard = 0
+    private var enhancer: LoudnessEnhancer? = null
+    private var silences = mutableListOf<LongRange>()
+    private var scanning: Job? = null
 
     suspend fun open(work: Int, title: String): Boolean {
         val audiobook = app.library.audiobooks.first()[work] ?: return false
         val now = current.value
         if (now.work == work && now.active && !now.failed) return true
-        val rate = app.library.settings.first().speechRate
+        val settings = app.library.settings.first()
         withContext(Dispatchers.Main) {
             stop()
             app.stopOthers(this@AudiobookPlayer)
@@ -44,7 +58,9 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
                 title,
                 count = book.seconds + 1,
                 loading = true,
-                rate = rate,
+                rate = settings.speechRate,
+                skipSilence = settings.skipSilence,
+                boost = settings.volumeBoost,
             )
             load(book.track, book.millis)
         }
@@ -67,9 +83,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
 
     private fun load(track: Int, millis: Long) {
         loading?.cancel()
-        player?.release()
-        player = null
-        ready = false
+        releasePlayer()
         book = book.copy(track = track, millis = millis)
         moved()
         val uri = book.tracks[track].uri
@@ -86,6 +100,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
                 }
                 if (started.isFailure) failed()
             }
+            boost()
         }
     }
 
@@ -94,6 +109,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         ready = true
         media.seekTo(book.millis.toInt())
         current.update { it.copy(loading = false) }
+        scanSilences()
         if (current.value.playing) begin()
     }
 
@@ -119,7 +135,121 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         media.start()
         media.playbackParams = media.playbackParams.setSpeed(current.value.rate)
         ticker?.cancel()
-        ticker = app.scope.launch(Dispatchers.Main) { tick() }
+        ticker = app.scope.launch(Dispatchers.Main) {
+            launch { skipSilences() }
+            tick()
+        }
+    }
+
+    private suspend fun skipSilences() {
+        while (true) {
+            delay(SILENCE_CHECK_MILLIS)
+            val position = position()
+            val silence = silences.firstOrNull { position in it } ?: continue
+            player?.seekTo(silence.last, MediaPlayer.SEEK_CLOSEST)
+        }
+    }
+
+    private fun scanSilences() {
+        scanning?.cancel()
+        val found = mutableListOf<LongRange>()
+        silences = found
+        if (!current.value.skipSilence || !ready) return
+        val uri = book.tracks[book.track].uri
+        val from = book.millis
+        scanning = app.scope.launch(Dispatchers.IO) {
+            val headers = app.catalogs.streamHeaders(uri)
+            runCatching {
+                val levels = decodedLevels(uri.toUri(), headers, from) { isActive }
+                silences(levels).forEach { withContext(Dispatchers.Main) { found += it } }
+            }
+        }
+    }
+
+    private fun decodedLevels(
+        uri: Uri,
+        headers: Map<String, String>,
+        fromMillis: Long,
+        active: () -> Boolean,
+    ) = sequence {
+        val extractor = MediaExtractor()
+        var codec: MediaCodec? = null
+        try {
+            extractor.setDataSource(app, uri, headers)
+            val track = (0 until extractor.trackCount).first {
+                extractor.getTrackFormat(it).mime.startsWith("audio/")
+            }
+            val format = extractor.getTrackFormat(track)
+            extractor.selectTrack(track)
+            extractor.seekTo(fromMillis * 1000, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+            val decoder = MediaCodec.createDecoderByType(format.mime)
+            codec = decoder
+            decoder.configure(format, null, null, 0)
+            decoder.start()
+            val info = MediaCodec.BufferInfo()
+            while (active()) {
+                feed(extractor, decoder)
+                val index = decoder.dequeueOutputBuffer(info, CODEC_TIMEOUT_MICROS)
+                if (index < 0) continue
+                val pcm = decoder.getOutputBuffer(index)!!
+                val level = Level(info.presentationTimeUs / 1000, peak(pcm))
+                decoder.releaseOutputBuffer(index, false)
+                if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
+                yield(level)
+            }
+        } finally {
+            codec?.release()
+            extractor.release()
+        }
+    }
+
+    private val MediaFormat.mime get() = getString(MediaFormat.KEY_MIME).orEmpty()
+
+    private fun feed(extractor: MediaExtractor, codec: MediaCodec) {
+        val index = codec.dequeueInputBuffer(CODEC_TIMEOUT_MICROS)
+        if (index < 0) return
+        val size = extractor.readSampleData(codec.getInputBuffer(index)!!, 0)
+        if (size < 0) {
+            codec.queueInputBuffer(index, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            return
+        }
+        codec.queueInputBuffer(index, 0, size, extractor.sampleTime, 0)
+        extractor.advance()
+    }
+
+    private fun boost() {
+        enhancer?.release()
+        enhancer = null
+        val media = player ?: return
+        if (!current.value.boost) return
+        enhancer = runCatching {
+            LoudnessEnhancer(media.audioSessionId).apply {
+                setTargetGain(BOOST_MILLIBELS)
+                enabled = true
+            }
+        }.getOrNull()
+    }
+
+    fun setSkipSilence(enabled: Boolean) {
+        current.update { it.copy(skipSilence = enabled) }
+        scanSilences()
+        app.scope.launch { app.library.updateSettings { it.copy(skipSilence = enabled) } }
+    }
+
+    fun setBoost(enabled: Boolean) {
+        current.update { it.copy(boost = enabled) }
+        boost()
+        app.scope.launch { app.library.updateSettings { it.copy(volumeBoost = enabled) } }
+    }
+
+    private fun releasePlayer() {
+        scanning?.cancel()
+        silences = mutableListOf()
+        enhancer?.release()
+        enhancer = null
+        player?.release()
+        player = null
+        ready = false
     }
 
     private suspend fun tick() {
@@ -187,6 +317,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
             book = target
             player?.seekTo(target.millis.toInt())
             moved()
+            scanSilences()
         }
         if (!current.value.playing) save()
     }
@@ -228,9 +359,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
             book = book.copy(millis = position())
             save()
         }
-        player?.release()
-        player = null
-        ready = false
+        releasePlayer()
         book = Audiobook(emptyList())
         release()
     }

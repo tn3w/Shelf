@@ -40,6 +40,8 @@ data class Narration(
     val preparing: Boolean = false,
     val speakers: Int = 0,
     val rate: Float = 1f,
+    val skipSilence: Boolean = false,
+    val boost: Boolean = false,
     val voice: String = "",
     val voices: List<SpeechVoice> = emptyList(),
     val sleep: Sleep = Sleep.Off,

@@ -508,6 +508,8 @@
     <string name="pause_item">%s pauzeren</string>
     <string name="resume_item">%s hervatten</string>
     <string name="character_voices">Stemmen per personage</string>
+    <string name="skip_silence">Stilte overslaan</string>
+    <string name="volume_boost">Volume versterken</string>
     <string name="finding_speakers">Sprekers zoeken…</string>
     <string name="speakers_found">Sprekers gevonden: %1$d</string>
     <string name="listening">Audio</string>

@@ -512,6 +512,8 @@
     <string name="pause_item">Pause %s</string>
     <string name="resume_item">Resume %s</string>
     <string name="character_voices">Character voices</string>
+    <string name="skip_silence">Skip silence</string>
+    <string name="volume_boost">Volume boost</string>
     <string name="finding_speakers">Finding speakers…</string>
     <string name="speakers_found">Speakers found: %1$d</string>
     <string name="listening">Listening</string>

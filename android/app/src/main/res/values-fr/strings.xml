@@ -523,6 +523,8 @@
     <string name="pause_item">Mettre en pause %s</string>
     <string name="resume_item">Reprendre %s</string>
     <string name="character_voices">Voix des personnages</string>
+    <string name="skip_silence">Passer les silences</string>
+    <string name="volume_boost">Amplifier le volume</string>
     <string name="finding_speakers">Recherche des locuteurs…</string>
     <string name="speakers_found">Locuteurs trouvés : %1$d</string>
     <string name="listening">Écoute</string>

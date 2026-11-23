@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -309,6 +310,7 @@ private fun Options(state: Narration, playback: Playback) {
         Tag(sleep, selected = choosing == Choosing.Sleep, icon = Icons.Rounded.Bedtime) {
             toggle(Choosing.Sleep)
         }
+        if (playback is AudiobookPlayer) AudioToggles(state, playback)
         if (voices.isNotEmpty()) {
             val current = voices.firstOrNull { it.name == state.voice }
             val label = current?.label ?: stringResource(R.string.voice)
@@ -334,6 +336,17 @@ private fun Options(state: Narration, playback: Playback) {
 
         null -> Unit
     }
+}
+
+@Composable
+private fun AudioToggles(state: Narration, player: AudiobookPlayer) {
+    val skip = stringResource(R.string.skip_silence)
+    Tag(skip, selected = state.skipSilence, icon = Icons.Rounded.ContentCut) {
+        player.setSkipSilence(!state.skipSilence)
+    }
+    val boost = stringResource(R.string.volume_boost)
+    val loud = Icons.AutoMirrored.Rounded.VolumeUp
+    Tag(boost, selected = state.boost, icon = loud) { player.setBoost(!state.boost) }
 }
 
 /** The values of one option, opened in place under the option itself. */

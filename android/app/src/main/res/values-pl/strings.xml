@@ -538,6 +538,8 @@
     <string name="pause_item">Wstrzymaj: %s</string>
     <string name="resume_item">Wznów: %s</string>
     <string name="character_voices">Głosy postaci</string>
+    <string name="skip_silence">Pomijaj ciszę</string>
+    <string name="volume_boost">Wzmocnienie głośności</string>
     <string name="finding_speakers">Szukanie mówiących…</string>
     <string name="speakers_found">Znalezieni mówiący: %1$d</string>
     <string name="listening">Słuchanie</string>

@@ -225,6 +225,8 @@ data class Settings(
     val speechRate: Float = 1f,
     val speechVoice: String = "",
     val characterVoices: Boolean = true,
+    val skipSilence: Boolean = false,
+    val volumeBoost: Boolean = false,
     val readerBrightness: Float? = null,
     val offline: Boolean = false,
     val onlineCovers: Boolean = true,

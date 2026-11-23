@@ -493,6 +493,8 @@
     <string name="pause_item">%s 일시정지</string>
     <string name="resume_item">%s 재개</string>
     <string name="character_voices">등장인물 목소리</string>
+    <string name="skip_silence">무음 건너뛰기</string>
+    <string name="volume_boost">볼륨 증폭</string>
     <string name="finding_speakers">화자를 찾는 중…</string>
     <string name="speakers_found">찾은 화자: %1$d</string>
     <string name="listening">듣기</string>

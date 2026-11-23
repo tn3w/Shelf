@@ -508,6 +508,8 @@
     <string name="pause_item">%s pausieren</string>
     <string name="resume_item">%s fortsetzen</string>
     <string name="character_voices">Stimmen der Figuren</string>
+    <string name="skip_silence">Stille überspringen</string>
+    <string name="volume_boost">Lautstärke anheben</string>
     <string name="finding_speakers">Sprecher werden gesucht…</string>
     <string name="speakers_found">Gefundene Sprecher: %1$d</string>
     <string name="listening">Hören</string>

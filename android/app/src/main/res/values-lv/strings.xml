@@ -523,6 +523,8 @@
     <string name="pause_item">Pauzēt %s</string>
     <string name="resume_item">Turpināt %s</string>
     <string name="character_voices">Tēlu balsis</string>
+    <string name="skip_silence">Izlaist klusumu</string>
+    <string name="volume_boost">Skaļuma pastiprināšana</string>
     <string name="finding_speakers">Meklē runātājus…</string>
     <string name="speakers_found">Atrasti runātāji: %1$d</string>
     <string name="listening">Klausīšanās</string>

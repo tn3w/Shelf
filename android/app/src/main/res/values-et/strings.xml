@@ -508,6 +508,8 @@
     <string name="pause_item">Peata: %s</string>
     <string name="resume_item">Jätka: %s</string>
     <string name="character_voices">Tegelaste hääled</string>
+    <string name="skip_silence">Jäta vaikus vahele</string>
+    <string name="volume_boost">Helitugevuse võimendus</string>
     <string name="finding_speakers">Otsin kõnelejaid…</string>
     <string name="speakers_found">Leitud kõnelejaid: %1$d</string>
     <string name="listening">Kuulamine</string>

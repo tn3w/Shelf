@@ -508,6 +508,8 @@
     <string name="pause_item">Keskeytä: %s</string>
     <string name="resume_item">Jatka: %s</string>
     <string name="character_voices">Hahmojen äänet</string>
+    <string name="skip_silence">Ohita hiljaisuus</string>
+    <string name="volume_boost">Äänenvoimakkuuden tehostus</string>
     <string name="finding_speakers">Etsitään puhujia…</string>
     <string name="speakers_found">Puhujia löydetty: %1$d</string>
     <string name="listening">Kuuntelu</string>

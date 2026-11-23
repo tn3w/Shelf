@@ -492,6 +492,8 @@
     <string name="pause_item">%s を一時停止</string>
     <string name="resume_item">%s を再開</string>
     <string name="character_voices">登場人物の声</string>
+    <string name="skip_silence">無音をスキップ</string>
+    <string name="volume_boost">音量ブースト</string>
     <string name="finding_speakers">話者を探しています…</string>
     <string name="speakers_found">見つかった話者: %1$d</string>
     <string name="listening">聴く</string>

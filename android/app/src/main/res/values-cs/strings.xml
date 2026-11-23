@@ -538,6 +538,8 @@
     <string name="pause_item">Pozastavit: %s</string>
     <string name="resume_item">Pokračovat: %s</string>
     <string name="character_voices">Hlasy postav</string>
+    <string name="skip_silence">Přeskočit ticho</string>
+    <string name="volume_boost">Zesílení hlasitosti</string>
     <string name="finding_speakers">Hledám mluvčí…</string>
     <string name="speakers_found">Nalezení mluvčí: %1$d</string>
     <string name="listening">Poslech</string>
