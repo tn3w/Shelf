@@ -451,6 +451,21 @@ impl Segment {
         &self.bytes[self.sections[name].clone()]
     }
 
+    pub fn raw_sections(&self) -> Vec<(&str, &[u8])> {
+        (0..u32_at(&self.bytes, 8) as usize)
+            .map(|index| {
+                let entry = 12 + index * (NAME_BYTES + 8);
+                let name = std::str::from_utf8(&self.bytes[entry..entry + NAME_BYTES]);
+                let name = name.unwrap_or_default().trim_end_matches('\0');
+                (name, self.section(name))
+            })
+            .collect()
+    }
+
+    pub fn text_dictionary(&self) -> &[u8] {
+        self.section("text_dictionary")
+    }
+
     pub fn is_base(&self) -> bool {
         self.base == self.month
     }

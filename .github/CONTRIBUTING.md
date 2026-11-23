@@ -403,7 +403,15 @@ target/release/builder <dumps> <out> [--previous <dir>] [--base-url <url>] \
 target/release/builder links|extras|people <out.bin> <kind-xx.bin>...
 target/release/builder unify <works.bin> <release dir> [previous works.bin]
 target/release/builder qa <release dir> [qa dir]
+target/release/builder pool <release dir> <pool dir>
+target/release/builder patch <release dir> <language> <pool dir>
 ```
+
+`pool` joins the language versions of each `works.bin` work: their original descriptions
+(machine translations skipped) and themes, plus themes named by series names. It writes
+`requests-<language>.jsonl` (works without a description, sources by language order) and
+`themes-<language>.tsv`. `patch` puts stored translations and pooled themes into that
+language's segments in place (same format) and updates `manifest-<language>.json`.
 
 Source helpers: `tooling/wikidata.sh <dir>` (QLever, one TSV per `tooling/wikidata/*.rq`,
 labels per language), `tar -xjOf rdf-files.tar.bz2 | gzip -1 > gutenberg.rdf.gz`.
@@ -411,8 +419,7 @@ labels per language), `tar -xjOf rdf-files.tar.bz2 | gzip -1 > gutenberg.rdf.gz`
 BNE (Cloudflare blocks CI) and CiNii (multi-day OpenSearch crawl) come from a snapshot
 release `sources-<YYYY-MM>`: `tooling/snapshot.sh <bne dir> <cinii pages dir> <out>`
 zstd -19's them into ≤ 1.9 GB parts, prints the `gh release create` command and uploads only
-after confirmation. The workflow takes the newest `sources-*`; prune only touches
-`catalogue-*`.
+after confirmation. The workflow takes the newest `sources-*`.
 
 `--languages` builds only those catalogues: other languages' editions, titles and
 eligibility are skipped (faster, less RAM); `manifest.json` lists only them. Libraries
@@ -427,8 +434,10 @@ score, pack, title, alternate, authors, series, year, ISBNs) for review.
 | `dumps` | Open Library dumps from archive.org → artifact `openlibrary` (1 day) |
 | `enrichment` | Wikidata TSVs (`tooling/wikidata.sh`) + Gutenberg RDF → artifact `enrichment` (1 day) |
 | `tools` | builder binary → artifact `builder`; NLLB 3.3B → int8 model cache (converted only on cache miss) |
-| `build` × 12 | one per language, in parallel: artifacts + cached model + its library dump (BnF via `tooling/bnf.py`, `BNF_LINK`/`BNF_FOLDERS` change yearly; NLK and Fennica names discovered; BNE, CiNii from `sources-*`) → `--languages <lang>` build and translation |
-| `publish` | merge per-language manifests, links, extras, people; download the chain's older segments, `unify` (with previous `works.bin`) + `qa` → job summary; create release (+ `works.bin`), prune `catalogue-*` |
+| `build` × 15 | one per language, in parallel: artifacts + cached model + its library dump (BnF via `tooling/bnf.py`, `BNF_LINK`/`BNF_FOLDERS` change yearly; NLK and Fennica names discovered; BNE, CiNii from `sources-*`) → `--languages <lang>` build and translation |
+| `pool` | merge links, extras, people; download the chain's older segments, `unify` (with previous `works.bin`) + `qa` → job summary; `pool` → artifacts `pool`, `sidecars` |
+| `supplement` × 15 | per language: translate pooled requests into `translations-<lang>.bin`, `patch` its segments |
+| `publish` | merge per-language manifests; create release (+ `works.bin`) |
 
 Flavors, set in `distributions` (`app/build.gradle.kts`):
 

@@ -1,4 +1,5 @@
 mod qa;
+mod supplement;
 
 use builder::{Built, LANGUAGE_COUNT, LANGUAGES, catalog, dumps, enrichment};
 use builder::{language_index, works::Works};
@@ -47,6 +48,8 @@ fn usage() -> ! {
          builder show <links|extras file> <language> [work]\n       \
          builder unify <works.bin> <release dir> [previous works.bin]\n       \
          builder qa <release dir> [qa dir]\n       \
+         builder pool <release dir> <pool dir>\n       \
+         builder patch <release dir> <language> <pool dir>\n       \
          builder <dumps-source> <out-dir> \
          [--rebase] [--previous <dir>] [--month YYYY-MM-DD[-N]] \
          [--translations <dir>] [--requests <dir>] [--translator <command>] \
@@ -197,9 +200,6 @@ fn description<'a>(job: &Job<'a>, book: &'a Book) -> (&'a str, bool) {
     if let Some(text) = native_description(job, book) {
         return (text, false);
     }
-    if book.description.is_empty() {
-        return ("", false);
-    }
     let translated = job.translations.get(book.work);
     let native = |text: &&str| {
         catalog::detect_language(text).is_none_or(|language| language == job.language)
@@ -254,15 +254,23 @@ fn export_requests(job: &Job, placed: &[Placed]) {
     let Some(directory) = job.requests else {
         return;
     };
-    let untranslated = placed.iter().filter(|placed| {
-        placed.work.description.is_empty()
-            && placed
-                .book
-                .description_language
-                .is_some_and(|source| source != job.language)
-            && placed.book.scores[job.language] >= DESCRIPTION_MIN_SCORE
+    let mut untranslated: Vec<&Placed> = placed
+        .iter()
+        .filter(|placed| {
+            placed.work.description.is_empty()
+                && placed
+                    .book
+                    .description_language
+                    .is_some_and(|source| source != job.language)
+                && placed.book.scores[job.language] >= DESCRIPTION_MIN_SCORE
+        })
+        .collect();
+    untranslated.sort_by(|left, right| {
+        let score = |placed: &Placed| placed.book.scores[job.language];
+        score(right).total_cmp(&score(left))
     });
     let requests: Vec<Request> = untranslated
+        .into_iter()
         .map(|placed| translations::request(placed.book, placed.work.title, job.authors))
         .collect();
     let file = directory.join(format!("requests-{}.jsonl", LANGUAGES[job.language]));
@@ -910,6 +918,8 @@ fn main() {
         Some("show") => return show(&arguments[1..]),
         Some("unify") => return unify_command(&arguments[1..]),
         Some("qa") => return qa::command(&arguments[1..]),
+        Some("pool") => return supplement::pool(&arguments[1..]),
+        Some("patch") => return supplement::patch(&arguments[1..]),
         _ => {}
     }
     let merged = ["links", "extras", "people"];

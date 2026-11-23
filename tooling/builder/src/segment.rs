@@ -1,5 +1,6 @@
 use crate::catalog::tokenize;
 use crate::dumps::Authors;
+use crate::reader::{Description, Facts, Segment};
 use crate::release::Series;
 use crate::tags;
 use flate2::{Compress, Compression, FlushCompress, Status};
@@ -195,24 +196,34 @@ fn heads(work: &Work) -> Vec<u8> {
 }
 
 fn facts(work: &Work, author_slots: &[u32], series_slot: Option<u32>) -> Vec<u8> {
-    let mut record = Vec::with_capacity(24 + work.tags.len());
-    put_varint(&mut record, author_slots.len() as u32);
-    author_slots
+    fact_record(&Facts {
+        authors: author_slots.to_vec(),
+        year: u32::from(work.year),
+        cover: work.cover,
+        tags: work.tags.to_vec(),
+        series: series_slot.map(|slot| slot as usize),
+        position: work.series.map_or(0, |(_, order)| u32::from(order)),
+        themes: tags::chosen_themes(work.tags, work.themes),
+    })
+}
+
+fn fact_record(facts: &Facts) -> Vec<u8> {
+    let mut record = Vec::with_capacity(24 + facts.tags.len());
+    put_varint(&mut record, facts.authors.len() as u32);
+    facts
+        .authors
         .iter()
         .for_each(|&slot| put_varint(&mut record, slot));
-    put_varint(&mut record, (work.year as u32).saturating_sub(YEAR_EPOCH));
-    put_varint(&mut record, work.cover);
-    put_varint(&mut record, work.tags.len() as u32);
-    record.extend_from_slice(work.tags);
-    put_varint(&mut record, series_slot.map_or(0, |slot| slot + 1));
-    put_varint(
-        &mut record,
-        work.series.map_or(0, |(_, order)| order as u32),
-    );
-    let themes = tags::chosen_themes(work.tags, work.themes);
-    if !themes.is_empty() {
-        put_varint(&mut record, themes.len() as u32);
-        themes
+    put_varint(&mut record, facts.year.saturating_sub(YEAR_EPOCH));
+    put_varint(&mut record, facts.cover);
+    put_varint(&mut record, facts.tags.len() as u32);
+    record.extend_from_slice(&facts.tags);
+    put_varint(&mut record, facts.series.map_or(0, |slot| slot as u32 + 1));
+    put_varint(&mut record, facts.position);
+    if !facts.themes.is_empty() {
+        put_varint(&mut record, facts.themes.len() as u32);
+        facts
+            .themes
             .iter()
             .for_each(|&theme| put_varint(&mut record, u32::from(theme)));
     }
@@ -380,21 +391,21 @@ fn completion_section(terms: &BTreeMap<String, Postings>) -> Vec<u8> {
     offset_table(&records)
 }
 
-fn description_section(works: &[Work], dictionary: &[u8]) -> Vec<u8> {
+fn description_section(descriptions: &[(&str, bool)], dictionary: &[u8]) -> Vec<u8> {
     let mut firsts = Vec::new();
     let mut blocks = Vec::new();
     let mut raw = Vec::new();
-    let described = works
+    let described = descriptions
         .iter()
         .enumerate()
-        .filter(|(_, work)| !work.description.is_empty());
-    for (index, work) in described {
+        .filter(|(_, (text, _))| !text.is_empty());
+    for (index, &(text, translated)) in described {
         if raw.is_empty() {
             firsts.push(index as u32);
         }
         let offset = index as u32 - firsts.last().expect("block started");
-        put_varint(&mut raw, offset << 1 | u32::from(work.translated));
-        put_text(&mut raw, work.description);
+        put_varint(&mut raw, offset << 1 | u32::from(translated));
+        put_text(&mut raw, text);
         if raw.len() >= DESCRIPTION_BLOCK_BYTES {
             blocks.push(deflate(&std::mem::take(&mut raw), dictionary));
         }
@@ -470,10 +481,10 @@ fn tag_section(works: &[Work], language: usize) -> Vec<u8> {
     tag_table(tags::rules(), &tagged, language)
 }
 
-fn theme_section(works: &[Work], language: usize) -> Vec<u8> {
+fn theme_section(chosen: &[Vec<u16>], language: usize) -> Vec<u8> {
     let mut tagged: Vec<Vec<u32>> = vec![Vec::new(); tags::themes().len()];
-    for (index, work) in works.iter().enumerate() {
-        for theme in tags::chosen_themes(work.tags, work.themes) {
+    for (index, themes) in chosen.iter().enumerate() {
+        for &theme in themes {
             tagged[theme as usize].push(index as u32);
         }
     }
@@ -602,6 +613,14 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         .map(|work| work.description.as_bytes().to_vec())
         .collect();
     let text_dictionary = dictionary(&descriptions);
+    let described: Vec<(&str, bool)> = works
+        .iter()
+        .map(|work| (work.description, work.translated))
+        .collect();
+    let chosen: Vec<Vec<u16>> = works
+        .iter()
+        .map(|work| tags::chosen_themes(work.tags, work.themes))
+        .collect();
     let terms = collect_terms(works, &order, authors);
     let meta_lines = [
         ("format", VERSION.to_string()),
@@ -625,16 +644,57 @@ pub fn segment(meta: &Meta, works: &[Work], tombstones: &[u32], authors: &Author
         ("heads", record_blocks(&head_records, &head_dictionary)),
         ("authors", author_section(works, &order, &slots, authors)),
         ("tags", tag_section(works, meta.language)),
-        ("themes", theme_section(works, meta.language)),
+        ("themes", theme_section(&chosen, meta.language)),
         ("series", series_section(&series)),
         ("terms", term_blocks(&terms, true)),
         ("completions", completion_section(&terms)),
         ("grams", gram_section(&terms)),
-        ("descriptions", description_section(works, &text_dictionary)),
+        (
+            "descriptions",
+            description_section(&described, &text_dictionary),
+        ),
         ("isbns", isbn_section(works)),
     ];
     let covers = library_cover_section(works);
     sections.extend(covers.map(|section| ("library_covers", section)));
+    assemble(sections)
+}
+
+/// The segment with new descriptions and themes; every other section is copied as is.
+pub fn rewrite(
+    segment: &Segment,
+    descriptions: &[Option<Description>],
+    themes: &[Vec<u16>],
+) -> Vec<u8> {
+    let language = crate::language_index(&segment.language);
+    let facts: Vec<Vec<u8>> = (0..segment.work_count())
+        .map(|local| Facts {
+            themes: themes[local].clone(),
+            ..segment.facts(local)
+        })
+        .map(|facts| fact_record(&facts))
+        .collect();
+    let described: Vec<(&str, bool)> = descriptions
+        .iter()
+        .map(|found| {
+            found
+                .as_ref()
+                .map_or(("", false), |found| (&found.text, found.translated))
+        })
+        .collect();
+    let sections = segment
+        .raw_sections()
+        .into_iter()
+        .map(|(name, bytes)| {
+            let replaced = match name {
+                "facts" => record_blocks(&facts, &[]),
+                "themes" => theme_section(themes, language),
+                "descriptions" => description_section(&described, segment.text_dictionary()),
+                _ => bytes.to_vec(),
+            };
+            (name, replaced)
+        })
+        .collect();
     assemble(sections)
 }
 
@@ -755,6 +815,44 @@ mod tests {
             base: "month",
         };
         segment(&meta, works, &[], &Authors::default())
+    }
+
+    fn own_content(segment: &Segment) -> (Vec<Option<Description>>, Vec<Vec<u16>>) {
+        let locals = 0..segment.work_count();
+        let descriptions = locals.clone().map(|local| segment.description(local));
+        let themes = locals.map(|local| segment.facts(local).themes);
+        (descriptions.collect(), themes.collect())
+    }
+
+    #[test]
+    fn rewrite_supplements_descriptions_and_themes() {
+        let genre = [tags::tag("fantasy")];
+        let described = Work {
+            tags: &genre,
+            themes: &[(27, 1)],
+            description: "Dax kann sich in einen Fuchs verwandeln.",
+            ..work(4, Some((1, 7)))
+        };
+        let bare = Work {
+            tags: &genre,
+            ..work(9, None)
+        };
+        let file = built(&[described, bare]);
+        let segment = Segment::parse(file.clone()).expect("segment");
+        let (mut descriptions, mut themes) = own_content(&segment);
+        assert_eq!(rewrite(&segment, &descriptions, &themes), file);
+
+        descriptions[1] = Some(Description {
+            text: "Gideons Schwester will besondere Gaben.".to_string(),
+            translated: true,
+        });
+        themes[0].push(2);
+        themes[1].push(2);
+        let patched = Segment::parse(rewrite(&segment, &descriptions, &themes)).expect("patched");
+        assert_eq!(own_content(&patched), (descriptions, themes));
+        assert_eq!(patched.library_cover(0), segment.library_cover(0));
+        assert_eq!(patched.heads(1).title, "Jetzt reicht's!");
+        assert_eq!(patched.themes[2].slug, "shapeshifters");
     }
 
     #[test]

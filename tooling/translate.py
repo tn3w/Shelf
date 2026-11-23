@@ -32,12 +32,19 @@ NLLB_CODES = {
     "ja": "jpn_Jpan",
     "lv": "lvs_Latn",
     "ru": "rus_Cyrl",
+    "lt": "lit_Latn",
 }
 UNSPACED = {"ja"}
 OPUS_CODES = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "et": "est"}
 MULTI_TARGET_SUFFIXES = ("-ine", "-gem", "-gmw", "-itc", "-mul")
 PLACEHOLDER = "@{}@"
 PLACEHOLDER_PATTERN = re.compile(r"@\s?(\d{1,2})\s?@")
+AGE_NOTE = re.compile(
+    r"[\s(]*\b(?:vanaf|ab|dès|à partir de|a partir de|från|from|ages?|od|alates)\s+"
+    r"(?:ca\.|ungefähr|about|circa)?\s*\d{1,2}(?:\s*[-–]\s*\d{1,2})?\s*\+?\s*"
+    r"(?:jaar|jahren?|j\.|ans|años|år|years?|lat|let|aastat|aastast|and up)?[.)]*\s*$",
+    re.IGNORECASE,
+)
 CITATION = re.compile(r"\s?\[\d{1,3}\]")
 QUOTES = "\"\u201c\u201d\u201e"
 SENTENCE_BREAK = re.compile(r"(?<=[.!?…])[ \t]+(?=[\"'“„(\[]?[A-Z0-9])")
@@ -315,6 +322,7 @@ def write_segment(path, translations):
 def prepare(requests):
     prepared = []
     for request in requests:
+        request["text"] = AGE_NOTE.sub("", request["text"]).strip()
         masked, replacements = protect(request["text"], request)
         prepared.append((request, masked, replacements, layout(masked)))
     return prepared

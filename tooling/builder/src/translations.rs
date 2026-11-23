@@ -10,13 +10,13 @@ const MAGIC: &[u8; 4] = b"SHLT";
 const VERSION: u32 = 1;
 
 #[derive(Serialize)]
-pub struct Request<'a> {
+pub struct Request {
     pub work: u32,
-    pub title: &'a str,
-    pub source_title: &'a str,
-    pub authors: Vec<&'a str>,
+    pub title: String,
+    pub source_title: String,
+    pub authors: Vec<String>,
     pub source_language: Option<&'static str>,
-    pub text: &'a str,
+    pub text: String,
 }
 
 #[derive(Default)]
@@ -85,21 +85,21 @@ impl Translations {
     }
 }
 
-pub fn request<'a>(book: &'a Book, title: &'a str, authors: &'a Authors) -> Request<'a> {
+pub fn request(book: &Book, title: &str, authors: &Authors) -> Request {
     Request {
         work: book.work,
-        title,
-        source_title: &book.title,
+        title: title.to_string(),
+        source_title: book.title.clone(),
         authors: book
             .authors
             .iter()
             .filter_map(|&id| authors.get(id))
-            .map(|author| author.name)
+            .map(|author| author.name.to_string())
             .collect(),
         source_language: book
             .description_language
             .map(|index| SOURCE_LANGUAGES[index]),
-        text: &book.description,
+        text: book.description.clone(),
     }
 }
 
