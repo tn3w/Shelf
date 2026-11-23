@@ -612,4 +612,23 @@ class LibraryTest {
             )
         assertEquals("Lent\n\n• Dune — Frank Herbert\n• Emma", listText("Lent", books))
     }
+
+    @Test
+    fun reimportingKnownContentKeepsTheBooksName() {
+        val known = Saved(7, Shelf.Reading, 0, title = "River Song", author = "Ann Lee")
+        val metadata = Metadata("Copy", "Someone")
+
+        val name = importedName(known, metadata, "copy-of-river.txt", "")
+
+        assertEquals(Metadata("River Song", "Ann Lee"), name)
+    }
+
+    @Test
+    fun namesNewImportsFromMetadataOrFileName() {
+        val tagged = importedName(null, Metadata("Harbour", "Bo"), "file.epub", "")
+        val untagged = importedName(null, null, "harbour_lights.txt", "Cy")
+
+        assertEquals(Metadata("Harbour", "Bo"), tagged)
+        assertEquals(Metadata("harbour lights", "Cy"), untagged)
+    }
 }

@@ -473,6 +473,17 @@ internal fun importedProgress(progress: Map<Int, Progress>, work: Int, name: Str
 
 private const val MAX_LISTENED_TURN = 3
 
+internal fun importedName(
+    known: Saved?,
+    metadata: Metadata?,
+    fileName: String,
+    fallbackAuthor: String,
+): Metadata {
+    if (known != null) return Metadata(known.title, known.author)
+    val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
+    return Metadata(title, metadata?.author ?: fallbackAuthor)
+}
+
 internal fun listenedPages(before: Progress?, after: Progress): Int {
     val turned = after.page - (before?.page ?: return 0)
     return if (turned in 1..MAX_LISTENED_TURN) turned else 0
@@ -629,11 +640,10 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             temporary.delete()
             return null
         }
-        val metadata = readMetadata(written)
-        val title = metadata?.title ?: fileName.substringBeforeLast('.').replace('_', ' ')
-        val author = metadata?.author ?: fallbackAuthor
         val entries = saved.first()
         val known = entries.firstOrNull { it.work == hashed }
+        val metadata = readMetadata(written)
+        val (title, author) = importedName(known, metadata, fileName, fallbackAuthor)
         val book = find(title, author)
             ?: known?.let { bookOf(hashed, title, author, it.cover) }
             ?: bookOf(hashed, title, author)
