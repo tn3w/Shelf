@@ -19,9 +19,24 @@ import android.graphics.drawable.Icon
 import android.media.AudioManager
 import android.media.MediaDescription
 import android.media.MediaMetadata
+import android.media.MediaMetadata.METADATA_KEY_DURATION
 import android.media.browse.MediaBrowser.MediaItem
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.media.session.PlaybackState.ACTION_FAST_FORWARD
+import android.media.session.PlaybackState.ACTION_PAUSE
+import android.media.session.PlaybackState.ACTION_PLAY
+import android.media.session.PlaybackState.ACTION_PLAY_FROM_MEDIA_ID
+import android.media.session.PlaybackState.ACTION_PLAY_FROM_SEARCH
+import android.media.session.PlaybackState.ACTION_REWIND
+import android.media.session.PlaybackState.ACTION_SEEK_TO
+import android.media.session.PlaybackState.ACTION_SKIP_TO_NEXT
+import android.media.session.PlaybackState.ACTION_SKIP_TO_PREVIOUS
+import android.media.session.PlaybackState.ACTION_STOP
+import android.media.session.PlaybackState.PLAYBACK_POSITION_UNKNOWN
+import android.media.session.PlaybackState.STATE_BUFFERING
+import android.media.session.PlaybackState.STATE_ERROR
+import android.media.session.PlaybackState.STATE_NONE
 import android.media.session.PlaybackState.STATE_PAUSED
 import android.media.session.PlaybackState.STATE_PLAYING
 import android.net.Uri
@@ -37,11 +52,16 @@ import dev.tn3w.shelf.data.openDocument
 import dev.tn3w.shelf.data.toBook
 import dev.tn3w.shelf.widget.coverOf
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -58,6 +78,11 @@ private const val ROOT = "books"
 private const val HIDDEN = "hidden"
 private const val COVER_WIDTH = 256
 private const val COVER_QUALITY = 85
+private const val LISTED_BOOKS = 30
+private const val IDLE_ACTIONS = ACTION_PLAY or ACTION_PLAY_FROM_MEDIA_ID or
+    ACTION_PLAY_FROM_SEARCH
+private const val PLAYER_ACTIONS = IDLE_ACTIONS or ACTION_PAUSE or ACTION_STOP or
+    ACTION_SKIP_TO_NEXT or ACTION_SKIP_TO_PREVIOUS or ACTION_FAST_FORWARD or ACTION_REWIND
 private val CAR_BROWSERS = setOf(
     "com.google.android.projection.gearhead",
     "com.google.android.carassistant",
@@ -70,18 +95,29 @@ fun bestMatch(books: List<Saved>, query: String): Saved? {
         ?: books.firstOrNull { it.author.contains(wanted, ignoreCase = true) }
 }
 
+fun sessionState(state: Narration) = when {
+    !state.busy -> STATE_NONE
+    state.loading -> STATE_BUFFERING
+    state.playing -> STATE_PLAYING
+    else -> STATE_PAUSED
+}
+
+fun sessionActions(state: Narration, timed: Boolean) = when {
+    !state.busy -> IDLE_ACTIONS
+    timed -> PLAYER_ACTIONS or ACTION_SEEK_TO
+    else -> PLAYER_ACTIONS
+}
+
 class NarrationService : MediaBrowserService() {
     private val app get() = application as ShelfApp
-    private val narrator get() = app.playback
+    private val playback get() = app.playback
+    private val scope = MainScope()
     private lateinit var session: MediaSession
-    private var watching: Job? = null
     private val browsers = mutableSetOf<String>()
     private var art: Pair<Int, Bitmap?> = 0 to null
-    private val idle = PlaybackState.Builder()
-        .setActions(PlaybackState.ACTION_PLAY_FROM_MEDIA_ID)
-        .build()
+    private var shown: List<Any?> = emptyList()
     private val unplugged = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = narrator.pause()
+        override fun onReceive(context: Context, intent: Intent) = playback.pause()
     }
 
     override fun onCreate() {
@@ -89,19 +125,21 @@ class NarrationService : MediaBrowserService() {
         session = MediaSession(this, "shelf-narration").apply {
             setCallback(
                 object : MediaSession.Callback() {
-                    override fun onPlay() = narrator.play()
+                    override fun onPlay() = resume()
 
-                    override fun onPause() = narrator.pause()
+                    override fun onPause() = playback.pause()
 
-                    override fun onSkipToNext() = narrator.skipChapter(1)
+                    override fun onSkipToNext() = playback.skipChapter(1)
 
-                    override fun onSkipToPrevious() = narrator.skipChapter(-1)
+                    override fun onSkipToPrevious() = playback.skipChapter(-1)
 
-                    override fun onStop() = narrator.stop()
+                    override fun onStop() = playback.stop()
 
-                    override fun onFastForward() = narrator.skip(1)
+                    override fun onFastForward() = playback.skip(1)
 
-                    override fun onRewind() = narrator.skip(-1)
+                    override fun onRewind() = playback.skip(-1)
+
+                    override fun onSeekTo(position: Long) = seek(position)
 
                     override fun onPlayFromSearch(query: String?, extras: Bundle?) =
                         search(query)
@@ -114,29 +152,36 @@ class NarrationService : MediaBrowserService() {
             setSessionActivity(playerIntent())
             isActive = true
         }
-        session.setPlaybackState(idle)
         sessionToken = session.sessionToken
         val noisy = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         registerReceiver(unplugged, noisy)
+        scope.launch {
+            combine(app.audiobooks.state, app.narrator.state) { _, _ -> playback }
+                .collect { update(it) }
+        }
+        scope.launch {
+            app.library.saved.map { books -> books.map(Saved::work) }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { notifyChildrenChanged(ROOT) }
+        }
     }
 
     @SuppressLint("InlinedApi")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            TOGGLE -> narrator.toggle()
-            PREVIOUS -> narrator.skipChapter(-1)
-            NEXT -> narrator.skipChapter(1)
-            CLOSE -> narrator.stop()
+            TOGGLE -> playback.toggle()
+            PREVIOUS -> playback.skipChapter(-1)
+            NEXT -> playback.skipChapter(1)
+            CLOSE -> playback.stop()
             INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> search(intent.getStringExtra(QUERY))
         }
+        val state = playback.state.value
+        val cover = art.second.takeIf { art.first == state.work }
         ServiceCompat.startForeground(
-            this, NOTIFICATION, notification(narrator.state.value),
+            this, NOTIFICATION, notification(state, cover),
             FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
-        watching?.cancel()
-        watching = app.scope.launch {
-            narrator.state.collect { update(it) }
-        }
         return START_NOT_STICKY
     }
 
@@ -152,8 +197,9 @@ class NarrationService : MediaBrowserService() {
 
     override fun onLoadChildren(parent: String, result: Result<MutableList<MediaItem>>) {
         result.detach()
-        app.scope.launch {
-            val items = if (parent == ROOT) books() else emptyList()
+        scope.launch {
+            if (parent != ROOT) return@launch result.sendResult(mutableListOf())
+            val items = withContext(Dispatchers.Default) { books() }
             result.sendResult(items.toMutableList())
         }
     }
@@ -165,7 +211,7 @@ class NarrationService : MediaBrowserService() {
     }
 
     private suspend fun books() = coroutineScope {
-        listenable().map { async { book(it) } }.awaitAll()
+        listenable().take(LISTED_BOOKS).map { async { book(it) } }.awaitAll()
     }
 
     private suspend fun book(saved: Saved): MediaItem {
@@ -203,25 +249,34 @@ class NarrationService : MediaBrowserService() {
         return cover
     }
 
+    private fun seek(millis: Long) {
+        if (playback is AudiobookPlayer) playback.seek((millis / 1000).toInt())
+    }
+
+    private fun resume() {
+        val state = playback.state.value
+        when {
+            state.failed -> listen(state.work)
+            state.busy -> playback.play()
+            else -> search(null)
+        }
+    }
+
     private fun search(query: String?) {
-        app.scope.launch {
+        app.scope.launch(Dispatchers.Main) {
             val found = bestMatch(listenable(), query.orEmpty())
             if (found == null) return@launch fail(R.string.no_results)
             listen(found.work)
         }
     }
 
-    private fun listen(work: Int) = app.scope.launch {
+    private fun listen(work: Int) = app.scope.launch(Dispatchers.Main) {
         val saved = app.library.saved.first().find { it.work == work } ?: return@launch
-        if (app.audiobooks.open(work, saved.title)) {
-            return@launch withContext(Dispatchers.Main) { app.audiobooks.play() }
-        }
+        if (app.audiobooks.open(work, saved.title)) return@launch app.audiobooks.play()
         val source = withContext(Dispatchers.IO) { readAloud(work) }
-        withContext(Dispatchers.Main) {
-            if (source == null) return@withContext fail(R.string.no_text)
-            app.narrator.open(work, saved.title, source)
-            app.narrator.play()
-        }
+        if (source == null) return@launch fail(R.string.no_text)
+        app.narrator.open(work, saved.title, source)
+        app.narrator.play()
     }
 
     private suspend fun readAloud(work: Int): Source? = runCatching {
@@ -229,41 +284,52 @@ class NarrationService : MediaBrowserService() {
         openDocument(app.library.bookFile(progress.file)).use { sourceOf(it, progress) }
     }.getOrNull()
 
-    private fun fail(message: Int) = session.setPlaybackState(
-        PlaybackState.Builder()
-            .setState(PlaybackState.STATE_ERROR, 0, 0f)
-            .setErrorMessage(getString(message))
-            .build(),
-    )
+    private fun failure(message: Int) = PlaybackState.Builder()
+        .setActions(IDLE_ACTIONS)
+        .setState(STATE_ERROR, PLAYBACK_POSITION_UNKNOWN, 0f)
+        .setErrorMessage(getString(message))
+        .build()
 
-    private suspend fun update(state: Narration) {
+    private fun fail(message: Int) = session.setPlaybackState(failure(message))
+
+    private suspend fun update(playback: Playback) {
+        val state = playback.state.value
+        val timed = playback is AudiobookPlayer
+        session.setPlaybackState(playbackState(state, timed))
         if (!state.busy) {
-            session.setPlaybackState(idle)
+            shown = emptyList()
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            getSystemService(NotificationManager::class.java).cancel(NOTIFICATION)
             return stopSelf()
         }
         val cover = artOf(state.work)
-        session.setPlaybackState(playback(state))
-        session.setMetadata(
-            MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, state.title)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, state.chapter)
-                .putBitmap(MediaMetadata.METADATA_KEY_ART, cover)
-                .build(),
-        )
+        val showing = listOf(state.title, state.chapter, state.playing, cover)
+        if (showing == shown) return
+        shown = showing
+        session.setMetadata(metadata(state, timed, cover))
         getSystemService(NotificationManager::class.java)
             .notify(NOTIFICATION, notification(state, cover))
     }
 
-    private fun playback(state: Narration): PlaybackState {
-        val mode = if (state.playing) STATE_PLAYING else STATE_PAUSED
-        val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
-            PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-            PlaybackState.ACTION_STOP or PlaybackState.ACTION_FAST_FORWARD or
-            PlaybackState.ACTION_REWIND or PlaybackState.ACTION_PLAY_FROM_MEDIA_ID
+    private fun metadata(state: Narration, timed: Boolean, cover: Bitmap?) =
+        MediaMetadata.Builder()
+            .putString(MediaMetadata.METADATA_KEY_TITLE, state.title)
+            .putString(MediaMetadata.METADATA_KEY_ARTIST, state.chapter)
+            .putBitmap(MediaMetadata.METADATA_KEY_ART, cover)
+            .apply {
+                if (timed) putLong(METADATA_KEY_DURATION, (state.count - 1) * 1000L)
+            }
+            .build()
+
+    private fun playbackState(state: Narration, timed: Boolean): PlaybackState {
+        val error = if (timed) R.string.no_audio else R.string.listen_failed
+        if (state.failed) return failure(error)
+        val mode = sessionState(state)
+        val position = if (timed) state.index * 1000L else PLAYBACK_POSITION_UNKNOWN
+        val speed = if (timed && mode == STATE_PLAYING) state.rate else 0f
         return PlaybackState.Builder()
-            .setActions(actions)
-            .setState(mode, state.index.toLong(), 0f)
+            .setActions(sessionActions(state, timed))
+            .setState(mode, position, speed)
             .build()
     }
 
@@ -316,10 +382,10 @@ class NarrationService : MediaBrowserService() {
             .build()
     }
 
-    override fun onTimeout(startId: Int, fgsType: Int) = narrator.stop()
+    override fun onTimeout(startId: Int, fgsType: Int) = playback.stop()
 
     override fun onDestroy() {
-        watching?.cancel()
+        scope.cancel()
         unregisterReceiver(unplugged)
         session.release()
         super.onDestroy()

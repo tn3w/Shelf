@@ -1,11 +1,14 @@
 package dev.tn3w.shelf
 
+import android.media.session.PlaybackState
 import dev.tn3w.shelf.data.Progress
 import dev.tn3w.shelf.data.Saved
 import dev.tn3w.shelf.data.Shelf
 import dev.tn3w.shelf.data.textDocument
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CarLibraryTest {
@@ -57,5 +60,38 @@ class CarLibraryTest {
     @Test
     fun voiceSearchFindsNothingForUnknownBooks() {
         assertNull(bestMatch(books, "cookbook"))
+    }
+
+    private val idle = Narration()
+    private val loading = Narration(work = 1, loading = true)
+    private val paused = Narration(work = 1, count = 60)
+    private val playing = paused.copy(playing = true)
+
+    private fun allows(actions: Long, action: Long) = actions and action == action
+
+    @Test
+    fun voiceSearchAndResumeWorkBeforeAnythingPlays() {
+        val actions = sessionActions(idle, timed = false)
+
+        assertTrue(allows(actions, PlaybackState.ACTION_PLAY_FROM_SEARCH))
+        assertTrue(allows(actions, PlaybackState.ACTION_PLAY))
+        assertFalse(allows(actions, PlaybackState.ACTION_PAUSE))
+    }
+
+    @Test
+    fun onlyAudiobooksCanBeSeekedByTime() {
+        val actions = sessionActions(playing, timed = true)
+
+        assertTrue(allows(actions, PlaybackState.ACTION_SEEK_TO))
+        assertTrue(allows(actions, PlaybackState.ACTION_PLAY_FROM_SEARCH))
+        assertFalse(allows(sessionActions(playing, false), PlaybackState.ACTION_SEEK_TO))
+    }
+
+    @Test
+    fun showsLoadingPlayingAndPausedToTheCar() {
+        assertEquals(PlaybackState.STATE_NONE, sessionState(idle))
+        assertEquals(PlaybackState.STATE_BUFFERING, sessionState(loading))
+        assertEquals(PlaybackState.STATE_PLAYING, sessionState(playing))
+        assertEquals(PlaybackState.STATE_PAUSED, sessionState(paused))
     }
 }
