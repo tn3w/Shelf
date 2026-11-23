@@ -47,6 +47,7 @@ private val HEADING = Regex("h([1-6])")
 private val FRONT_MATTER =
     Regex("(?<!\\p{L})(copyright|colophon|imprint|toc|contents|titlepage)(?!\\p{L})")
 private val WHITESPACE = Regex("\\s+")
+private val NOTE_MARK = Regex("[\\[(]?(\\d{1,3}[a-z]?|[*†‡§]+)[\\])]?")
 private const val JP2_SIGNATURE = "\u0000\u0000\u0000\u000CjP  \r\n\u0087\n"
 private const val CHUNK_SIZE = 1 shl 22
 private const val ICC_PROFILE_METHOD: Byte = 2
@@ -104,12 +105,15 @@ val READABLE_EXTENSIONS = CONTAINERS.values.flatten() + "fb2" + HTML + PLAIN_TEX
 
 data class Span(val start: Int, val end: Int, val bold: Boolean, val italic: Boolean)
 
+data class Note(val start: Int, val end: Int, val text: String)
+
 class Block(
     val text: String,
     val heading: Int = 0,
     val centered: Boolean = false,
     val spans: List<Span> = emptyList(),
     val image: String? = null,
+    val notes: List<Note> = emptyList(),
 )
 
 data class Chapter(val title: String, val section: Int)
@@ -536,18 +540,20 @@ private fun collapseSpaces(text: String): String {
 private class HtmlReader(
     private val imagePath: (String) -> String?,
     private val anchors: Set<String> = emptySet(),
+    private val noteOf: (Element) -> String? = { null },
 ) {
     val blocks = mutableListOf<Block>()
     val marks = mutableMapOf<String, Int>()
     private val text = StringBuilder()
     private val spans = mutableListOf<Span>()
+    private val notes = mutableListOf<Note>()
 
     fun read(block: Element, bold: Boolean = false, italic: Boolean = false) {
         block.childNodes().forEach { visit(it, block, bold, italic) }
         flush(block)
     }
 
-    fun inline(element: Element): Pair<String, List<Span>> {
+    fun inline(element: Element): Triple<String, List<Span>, List<Note>> {
         element.childNodes().forEach { visit(it, element, bold = false, italic = false) }
         return take()
     }
@@ -562,13 +568,23 @@ private class HtmlReader(
 
             tag in IMAGE_TAGS -> addImage(node, block)
 
+            tag == "aside" && "footnote" in node.attr("epub:type") -> Unit
+
             node.isBlock -> {
                 flush(block)
                 read(node, bold, italic)
             }
 
-            else -> node.childNodes().forEach {
-                visit(it, block, bold || tag in BOLD_TAGS, italic || tag in ITALIC_TAGS)
+            else -> {
+                val start = text.length
+                node.childNodes().forEach {
+                    visit(
+                        it, block, bold || tag in BOLD_TAGS,
+                        italic || tag in ITALIC_TAGS,
+                    )
+                }
+                val note = if (tag == "a" && text.length > start) noteOf(node) else null
+                note?.let { notes += Note(start, text.length, it) }
             }
         }
     }
@@ -592,22 +608,26 @@ private class HtmlReader(
     }
 
     private fun flush(block: Element) {
-        val (content, styles) = take()
+        val (content, styles, linked) = take()
         if (content.isEmpty()) return
         val level = HEADING.matchEntire(block.tagName().lowercase())
             ?.groupValues
             ?.get(1)
             ?.toInt() ?: 0
-        blocks += Block(content, level, level > 0 || isCentered(block), styles)
+        val centered = level > 0 || isCentered(block)
+        blocks += Block(content, level, centered, styles, notes = linked)
     }
 
-    private fun take(): Pair<String, List<Span>> {
+    private fun take(): Triple<String, List<Span>, List<Note>> {
         val trimmed = text.trimEnd().toString()
         val kept = spans.filter { it.start < trimmed.length }
             .map { it.copy(end = minOf(it.end, trimmed.length)) }
+        val linked = notes.filter { it.start < trimmed.length }
+            .map { it.copy(end = minOf(it.end, trimmed.length)) }
         text.clear()
         spans.clear()
-        return trimmed to kept
+        notes.clear()
+        return Triple(trimmed, kept, linked)
     }
 }
 
@@ -685,16 +705,38 @@ private fun target(base: String, href: String): String {
     return resolvePath(base, href) + if (fragment.isEmpty()) "" else "#$fragment"
 }
 
+private fun isNoteReference(link: Element) = "noteref" in link.attr("epub:type") ||
+    link.attr("role") == "doc-noteref" ||
+    NOTE_MARK.matches(link.text().trim())
+
+private fun noteOf(link: Element, path: String, page: (String) -> Element?): String? {
+    val href = link.attr("href")
+    val id = href.substringAfter('#', "")
+    if (id.isEmpty() || !isNoteReference(link)) return null
+    val file = if (href.startsWith("#")) path else resolvePath(path, href)
+    val target = page(file)?.getElementById(id) ?: return null
+    val block = generateSequence(target) { it.parent() }.firstOrNull { it.isBlock }
+    val note = (block ?: target).clone()
+    note.select("a[href]")
+        .filter {
+            "backlink" in it.attr("epub:type") ||
+                it.attr("href").endsWith("#${link.id()}")
+        }
+        .forEach(Element::remove)
+    return note.text().trim().ifEmpty { null }
+}
+
 private fun readEpub(epub: ZipBook, opfPath: String): TextDocument {
     val opf = epub.xml(opfPath) ?: return assemble(emptyList(), epub)
     val manifest = opf.select("manifest > item").associateBy { it.attr("id") }
     val contents = epub.tableOfContents(manifest.values.toList(), opfPath)
+    val noteFiles = mutableMapOf<String, Element?>()
+    fun page(path: String) =
+        epub.bytes(path)?.let { Jsoup.parse(it.inputStream(), null, "").body() }
     val parts = opf.select("spine > itemref").flatMap { reference ->
         val item = manifest[reference.attr("idref")] ?: return@flatMap emptyList()
         val path = resolvePath(opfPath, item.attr("href"))
-        val body =
-            epub.bytes(path)?.let { Jsoup.parse(it.inputStream(), null, "").body() }
-                ?: return@flatMap emptyList()
+        val body = page(path) ?: return@flatMap emptyList()
         val entries = contents.filter { it.first.substringBefore('#') == path }
             .map { it.first.substringAfter('#', "") to it.second }
         val title = entries.firstOrNull()?.second.orEmpty()
@@ -702,7 +744,16 @@ private fun readEpub(epub: ZipBook, opfPath: String): TextDocument {
         val isFrontMatter =
             FRONT_MATTER.containsMatchIn(hints) && body.text().length < 3000
         if (isFrontMatter) return@flatMap emptyList()
-        anchoredParts(body, entries) { resolvePath(path, it).takeIf(epub::has) }
+        anchoredParts(
+            body,
+            entries,
+            imagePath = { resolvePath(path, it).takeIf(epub::has) },
+            noteOf = { link ->
+                noteOf(link, path) { file ->
+                    if (file == path) body else noteFiles.getOrPut(file) { page(file) }
+                }
+            },
+        )
     }
     return assemble(parts, epub)
 }
@@ -711,9 +762,10 @@ private fun anchoredParts(
     body: Element,
     entries: List<Pair<String, String>>,
     imagePath: (String) -> String?,
+    noteOf: (Element) -> String?,
 ): List<Pair<String?, List<Block>>> {
     val anchors = entries.map { it.first }.filter { it.isNotEmpty() }.toSet()
-    val reader = HtmlReader(imagePath, anchors).apply { read(body) }
+    val reader = HtmlReader(imagePath, anchors, noteOf).apply { read(body) }
     val starts = entries
         .map { (anchor, title) -> (reader.marks[anchor] ?: 0) to title }
         .plus(0 to null)

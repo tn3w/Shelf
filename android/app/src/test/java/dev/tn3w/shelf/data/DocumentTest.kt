@@ -115,6 +115,45 @@ class DocumentTest {
     }
 
     @Test
+    fun epubLinksFootnoteMarksToTheirNoteText() {
+        val body = """
+            <p>Call me<a id="ref1" href="#note1">[1]</a> Ishmael.</p>
+            <p><a href="https://example.org/">2</a> and <a href="#gone">3</a></p>
+            <div><p id="note1"><a href="#ref1">[1]</a> A sailor's name.</p></div>
+        """
+        val blocks = blocks(openDocument(epub(folder.newFile("notes.epub"), body)))
+        assertEquals("Call me[1] Ishmael.", blocks[0].text)
+        assertEquals(listOf(Note(7, 10, "A sailor's name.")), blocks[0].notes)
+        assertEquals(emptyList<Note>(), blocks[1].notes)
+    }
+
+    @Test
+    fun epubReadsEndnotesFromOtherFilesAndHidesFootnoteAsides() {
+        val opf = """
+            <manifest>
+              <item id="text" href="text.xhtml"/><item id="end" href="end.xhtml"/>
+            </manifest>
+            <spine><itemref idref="text"/></spine>
+        """
+        val text = """
+            <p>Word<a href="end.xhtml#n1" epub:type="noteref">a</a></p>
+            <aside epub:type="footnote"><p>Hidden</p></aside>
+        """
+        val end = """
+            <ol><li id="n1">
+              <p>Far note <a href="text.xhtml" epub:type="backlink">↩</a></p>
+            </li></ol>
+        """
+        val files = mapOf(
+            "text.xhtml" to "<html><body>$text</body></html>".toByteArray(),
+            "end.xhtml" to "<html><body>$end</body></html>".toByteArray(),
+        )
+        val blocks = blocks(openDocument(epubOf(folder.newFile("end.epub"), opf, files)))
+        assertEquals(listOf("Worda"), blocks.map { it.text })
+        assertEquals(listOf(Note(4, 5, "Far note")), blocks.single().notes)
+    }
+
+    @Test
     fun epubSkipsFrontMatterByWholeWordOnly() {
         val body = "<p>Short</p>"
         val skipped = epub(folder.newFile("toc.epub"), body, chapter = "toc")

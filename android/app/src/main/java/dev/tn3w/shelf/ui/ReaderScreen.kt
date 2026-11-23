@@ -88,6 +88,7 @@ private val PAGE_PADDING = 28.dp
 private val HEADING_SCALE = mapOf(1 to 1.6f, 2 to 1.4f, 3 to 1.25f, 4 to 1.1f)
 private const val SEARCH_DELAY = 250L
 private const val SPOKEN_ALPHA = 0.22f
+private const val NOTE = "note"
 private val SEARCH_MATCH = Color(0x669575CD)
 
 private data class TextPage(
@@ -159,6 +160,7 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
     var editing by mutableStateOf<Editing?>(null)
     var removed by mutableStateOf<Highlight?>(null)
     var defining by mutableStateOf<String?>(null)
+    var footnote by mutableStateOf<String?>(null)
 
     suspend fun define(word: String, language: String) = withContext(Dispatchers.IO) {
         runCatching { app.define(word, language) }.getOrNull()
@@ -512,7 +514,8 @@ private fun OpenFailed(navigator: Navigator) {
     }
 }
 
-private fun AnnotatedString.Builder.appendBlock(block: Block, fontSize: Float) {
+private fun AnnotatedString.Builder.appendBlock(block: Block, layout: PageLayout) {
+    val fontSize = layout.style.fontSize.value
     val alignment = if (block.centered) TextAlign.Center else TextAlign.Unspecified
     withStyle(ParagraphStyle(textAlign = alignment)) {
         val start = length
@@ -531,12 +534,20 @@ private fun AnnotatedString.Builder.appendBlock(block: Block, fontSize: Float) {
             )
             addStyle(style, start + span.start, start + span.end)
         }
+        block.notes.forEach { note ->
+            addStyle(
+                SpanStyle(color = layout.noteColor), start + note.start,
+                start + note.end,
+            )
+            addStringAnnotation(NOTE, note.text, start + note.start, start + note.end)
+        }
     }
 }
 
 private class PageLayout(
     val measurer: TextMeasurer,
     val style: TextStyle,
+    val noteColor: Color,
     val width: Int,
     val height: Int,
 )
@@ -548,7 +559,7 @@ private fun textPages(
     layout: PageLayout,
 ) = buildList {
     val text = buildAnnotatedString {
-        blocks.forEach { appendBlock(it, layout.style.fontSize.value) }
+        blocks.forEach { appendBlock(it, layout) }
     }
     val measured = layout.measurer.measure(
         text, layout.style, constraints = Constraints(maxWidth = layout.width),
@@ -705,8 +716,11 @@ private fun TextReader(
         val width = constraints.maxWidth - 2 * horizontal
         val height = constraints.maxHeight - 2 * vertical
         val padding = PaddingValues(horizontal = side, vertical = margin)
-        val pages by produceState<Pagination?>(null, document, width, height, style) {
-            val layout = PageLayout(measurer, style, width, height)
+        val noteColor = Look.colors.accent
+        val pages by produceState<Pagination?>(
+            null, document, width, height, style, noteColor,
+        ) {
+            val layout = PageLayout(measurer, style, noteColor, width, height)
             val section = position.section
             val opened = withContext(Dispatchers.Default) {
                 sectionPages(document, section, layout)
@@ -766,9 +780,12 @@ private fun TextReader(
                 save = { index -> pageProgress(index).also { position = it } },
                 notes = { onSelect -> NotesTab(state, current, export, onSelect) },
                 onTap = { index, offset ->
-                    annotator.tap(index, offset, highlights) {
-                        viewModel.editing = Editing(it.created)
-                    }
+                    annotator.tap(
+                        index,
+                        offset,
+                        highlights,
+                        onNote = { viewModel.footnote = it },
+                    ) { viewModel.editing = Editing(it.created) }
                 },
                 onListen = {
                     position = pageProgress(pager.currentPage)
@@ -797,6 +814,7 @@ private fun TextReader(
             }
             HighlightEditor(state)
             DefinitionSheet(state)
+            FootnoteSheet(viewModel)
             UndoRemove(viewModel, Modifier.align(Alignment.BottomCenter))
         }
     }
@@ -846,6 +864,7 @@ private class Annotator(
         index: Int,
         offset: Offset,
         highlights: List<Highlight>,
+        onNote: (String) -> Unit,
         onEdit: (Highlight) -> Unit,
     ): Boolean {
         if (selection != null) {
@@ -854,6 +873,11 @@ private class Annotator(
         }
         val char = layouts[index]?.charAt(offset - origin) ?: return false
         val page = pages[index]
+        val note = page.text.getStringAnnotations(NOTE, maxOf(0, char - 1), char + 1)
+        note.firstOrNull()?.let {
+            onNote(it.item)
+            return true
+        }
         val hit = highlights.at(page.section, page.start + char) ?: return false
         onEdit(hit)
         return true
@@ -1002,6 +1026,14 @@ private fun DefinitionSheet(state: ReaderState) {
         Pill(stringResource(R.string.wikipedia), kind = PillKind.Bare) {
             uri.openUri("https://$language.wikipedia.org/wiki/${Uri.encode(word)}")
         }
+    }
+}
+
+@Composable
+private fun FootnoteSheet(viewModel: ReaderViewModel) {
+    val note = viewModel.footnote ?: return
+    Sheet(onDismiss = { viewModel.footnote = null }) {
+        Text(note, style = Look.type.body)
     }
 }
 
