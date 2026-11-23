@@ -335,6 +335,9 @@
     <string name="online_library_add">Добавить библиотеку</string>
     <string name="online_library_edit">Изменить библиотеку</string>
     <string name="online_library_url">Адрес OPDS</string>
+    <string name="online_library_server_url">Адрес сервера</string>
+    <string name="online_library_stream">Слушать онлайн</string>
+    <string name="online_library_download_audio">Скачать аудиокнигу</string>
     <string name="online_library_url_invalid">Начинается с https:// или http://</string>
     <string name="online_library_username">Имя пользователя или e-mail</string>
     <string name="online_library_password">Пароль</string>

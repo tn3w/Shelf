@@ -330,6 +330,9 @@
     <string name="online_library_add">Bibliotheek toevoegen</string>
     <string name="online_library_edit">Bibliotheek bewerken</string>
     <string name="online_library_url">OPDS-adres</string>
+    <string name="online_library_server_url">Serveradres</string>
+    <string name="online_library_stream">Streamen</string>
+    <string name="online_library_download_audio">Luisterboek downloaden</string>
     <string name="online_library_url_invalid">Begint met https:// of http://</string>
     <string name="online_library_username">Gebruikersnaam of e-mail</string>
     <string name="online_library_password">Wachtwoord</string>

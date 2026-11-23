@@ -317,6 +317,9 @@
     <string name="online_library_add">Lägg till bibliotek</string>
     <string name="online_library_edit">Redigera bibliotek</string>
     <string name="online_library_url">OPDS-adress</string>
+    <string name="online_library_server_url">Serveradress</string>
+    <string name="online_library_stream">Strömma</string>
+    <string name="online_library_download_audio">Ladda ner ljudbok</string>
     <string name="online_library_url_invalid">Börjar med https:// eller http://</string>
     <string name="online_library_username">Användarnamn eller e-post</string>
     <string name="online_library_password">Lösenord</string>

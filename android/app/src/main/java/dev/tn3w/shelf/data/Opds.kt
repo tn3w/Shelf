@@ -83,6 +83,9 @@ data class Login(
 )
 
 @Serializable
+enum class Server { Opds, Audiobookshelf }
+
+@Serializable
 data class Catalog(
     val name: String,
     val url: String,
@@ -90,9 +93,12 @@ data class Catalog(
     val search: String = "",
     val languages: Set<String> = emptySet(),
     val id: String = UUID.randomUUID().toString(),
+    val server: Server = Server.Opds,
 ) {
     val host
         get() = runCatching { URI(url).host }.getOrNull().orEmpty()
+    val isAudiobookshelf
+        get() = server == Server.Audiobookshelf
     val isBundled
         get() = BUNDLED_CATALOGS.any { it.id == id }
 
@@ -130,7 +136,11 @@ data class Entry(
     val cover: String? = null,
     val link: String? = null,
     val files: List<Acquisition> = emptyList(),
-)
+    val tracks: List<AudioFile> = emptyList(),
+) {
+    val isDownloadable
+        get() = files.isNotEmpty() || tracks.isNotEmpty()
+}
 
 data class Feed(
     val title: String,
@@ -251,11 +261,11 @@ private class Link(
     val bytes: Long,
 )
 
-private fun JsonElement?.objects() =
+internal fun JsonElement?.objects() =
     (this as? JsonArray)?.mapNotNull { it as? JsonObject }
         ?: listOfNotNull(this as? JsonObject)
 
-private fun JsonObject.text(key: String) =
+internal fun JsonObject.text(key: String) =
     (this[key] as? JsonPrimitive)?.content.orEmpty()
 
 private fun JsonObject.links(base: String) = this["links"].objects().map { link ->
@@ -267,7 +277,7 @@ private fun JsonObject.links(base: String) = this["links"].objects().map { link 
     Link(rels, link.text("type"), href, link.text("title"), bytes)
 }
 
-private fun names(element: JsonElement?): List<String> = when (element) {
+internal fun names(element: JsonElement?): List<String> = when (element) {
     is JsonPrimitive -> listOf(element.content)
     is JsonArray -> element.flatMap(::names)
     is JsonObject -> listOf(element.text("name"))
@@ -353,6 +363,7 @@ internal fun digestAuthorization(
 }
 
 class CatalogClient(private val catalog: Catalog) {
+    private val audiobookshelf = Audiobookshelf(catalog.url)
     private val basicHosts = ConcurrentHashMap.newKeySet<String>()
     private val descriptions = ConcurrentHashMap<String, String>()
 
@@ -380,6 +391,7 @@ class CatalogClient(private val catalog: Catalog) {
     private fun answer(response: Response): Request? {
         val request = response.request
         val login = catalog.logins[request.url.host] ?: return null
+        if (catalog.isAudiobookshelf) return null
         if (request.header("Authorization") != null) return null
         val challenges = response.challenges()
         val digest = challenges.firstOrNull {
@@ -409,14 +421,25 @@ class CatalogClient(private val catalog: Catalog) {
 
     private fun Response.check(text: String) {
         val type = header("Content-Type").orEmpty()
+        if (code == 401 && catalog.isAudiobookshelf) throw audiobookshelfLogin(this)
         if (code == 401 || "opds-authentication" in type) throw loginNeeded(this, text)
         if (!isSuccessful) throw HttpException(code, request.url.toString())
     }
 
+    private fun audiobookshelfLogin(response: Response) = LoginNeeded(
+        response.request.url.host,
+        catalog.name,
+        audiobookshelf.login,
+        failed = response.request.header("Authorization") != null,
+    )
+
     suspend fun feed(url: String = catalog.url): Feed = withContext(Dispatchers.IO) {
-        val feed = get(url).use { response ->
+        val shelf = catalog.isAudiobookshelf
+        val target = if (shelf && url == catalog.url) audiobookshelf.libraries else url
+        val feed = get(target).use { response ->
             val text = response.text()
             response.check(text)
+            if (shelf) return@withContext audiobookshelf.feed(text, target)
             parseFeed(text, response.request.url.toString())
         }
         val description = feed.searchDescription ?: return@withContext feed
@@ -450,36 +473,55 @@ class CatalogClient(private val catalog: Catalog) {
 
     suspend fun signIn(needed: LoginNeeded, username: String, password: String): Login {
         val tokenUrl = needed.tokenUrl ?: return Login(username, password)
-        val form = FormBody.Builder()
-            .add("grant_type", "password")
-            .add("username", username)
-            .add("password", password)
-            .build()
-        val request = Request.Builder().url(tokenUrl).post(form).build()
+        val shelf = catalog.isAudiobookshelf
+        val body = if (shelf) {
+            audiobookshelfCredentials(username, password)
+        } else {
+            FormBody.Builder()
+                .add("grant_type", "password")
+                .add("username", username)
+                .add("password", password)
+                .build()
+        }
+        val request = Request.Builder().url(tokenUrl).post(body).build()
         val token = withContext(Dispatchers.IO) {
             http.newCall(request).executeAsync().use { response ->
                 if (!response.isSuccessful) throw needed.failed()
-                val body = json.parseToJsonElement(response.text()).jsonObject
-                body.text("access_token")
+                val text = response.text()
+                if (shelf) return@use audiobookshelfToken(text)
+                json.parseToJsonElement(text).jsonObject.text("access_token")
             }
         }
         check(token.isNotEmpty()) { "no access token" }
-        return Login(username, token = token)
+        return Login(username, if (shelf) password else "", token)
     }
 
-    suspend fun download(file: Acquisition, target: File, onProgress: (Float) -> Unit) =
-        withContext(Dispatchers.IO) {
-            val request = Request.Builder().url(file.url).build()
-            downloads.newCall(request).executeAsync().use { response ->
-                if (response.code == 401) throw loginNeeded(response, "")
-                if (!response.isSuccessful) throw HttpException(response.code, file.url)
-                download(response, target) { progress ->
-                    ensureActive()
-                    onProgress(progress)
-                }
+    fun streamUrl(url: String): String {
+        val token = catalog.logins[catalog.host]?.token.orEmpty()
+        return "$url?token=${encode(token)}"
+    }
+
+    suspend fun download(file: Acquisition, target: File, onProgress: (Float) -> Unit) {
+        download(file.url, target, MAX_BOOK_BYTES, onProgress)
+        check(isFormat(target, file.format)) { "not an ${file.format} file" }
+    }
+
+    suspend fun download(
+        url: String,
+        target: File,
+        limit: Long,
+        onProgress: (Float) -> Unit,
+    ) = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(url).build()
+        downloads.newCall(request).executeAsync().use { response ->
+            if (response.code == 401) throw loginNeeded(response, "")
+            if (!response.isSuccessful) throw HttpException(response.code, url)
+            download(response, target, limit) { progress ->
+                ensureActive()
+                onProgress(progress)
             }
-            check(isFormat(target, file.format)) { "not an ${file.format} file" }
         }
+    }
 }
 
 private fun loginNeeded(response: Response, text: String): LoginNeeded {

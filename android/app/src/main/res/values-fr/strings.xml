@@ -326,6 +326,9 @@
     <string name="online_library_add">Ajouter une bibliothèque</string>
     <string name="online_library_edit">Modifier la bibliothèque</string>
     <string name="online_library_url">Adresse OPDS</string>
+    <string name="online_library_server_url">Adresse du serveur</string>
+    <string name="online_library_stream">Écouter en streaming</string>
+    <string name="online_library_download_audio">Télécharger le livre audio</string>
     <string name="online_library_url_invalid">Commence par https:// ou http://</string>
     <string name="online_library_username">Nom d’utilisateur ou e-mail</string>
     <string name="online_library_password">Mot de passe</string>

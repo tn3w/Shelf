@@ -340,6 +340,9 @@
     <string name="online_library_add">Pievienot bibliotēku</string>
     <string name="online_library_edit">Rediģēt bibliotēku</string>
     <string name="online_library_url">OPDS adrese</string>
+    <string name="online_library_server_url">Servera adrese</string>
+    <string name="online_library_stream">Straumēt</string>
+    <string name="online_library_download_audio">Lejupielādēt audiogrāmatu</string>
     <string name="online_library_url_invalid">Sākas ar https:// vai http://</string>
     <string name="online_library_username">Lietotājvārds vai e-pasts</string>
     <string name="online_library_password">Parole</string>

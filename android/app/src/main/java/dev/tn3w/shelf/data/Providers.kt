@@ -350,13 +350,18 @@ suspend fun fetchBook(offer: Offer, target: File, onProgress: (Float) -> Unit) =
         check(isFormat(target, offer.format)) { "not an ${offer.format} file" }
     }
 
-internal fun download(response: Response, target: File, onProgress: (Float) -> Unit) {
+internal fun download(
+    response: Response,
+    target: File,
+    limit: Long = MAX_BOOK_BYTES,
+    onProgress: (Float) -> Unit,
+) {
     val total = response.body.contentLength()
-    check(total <= MAX_BOOK_BYTES) { "book too large" }
+    check(total <= limit) { "book too large" }
     response.stream.use { input ->
         target.outputStream().use { output ->
             copyWithProgress(input, output) { copied ->
-                check(copied <= MAX_BOOK_BYTES) { "book too large" }
+                check(copied <= limit) { "book too large" }
                 onProgress(if (total > 0) copied.toFloat() / total else 0f)
             }
         }

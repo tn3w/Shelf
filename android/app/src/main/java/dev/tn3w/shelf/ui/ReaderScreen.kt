@@ -353,7 +353,7 @@ data class Pace(val seconds: Long = 0, val pages: Int = 0) {
 internal fun chapterEnd(starts: List<Int>, page: Int, count: Int) =
     starts.filter { it > page }.minOrNull() ?: count
 
-private fun duration(seconds: Long, locale: Locale): String {
+internal fun duration(seconds: Long, locale: Locale): String {
     val minutes = maxOf(1, (seconds + 30) / 60)
     val measures = listOfNotNull(
         Measure(minutes / 60, MeasureUnit.HOUR).takeIf { minutes >= 60 },

@@ -643,6 +643,27 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     private suspend fun importAudio(uri: Uri, find: BookFinder): Int? {
         val files = listOfNotNull(keptAudio(uri)).ifEmpty { return null }
+        return importAudio(files, find)
+    }
+
+    suspend fun downloadAudio(
+        files: List<AudioFile>,
+        find: BookFinder,
+        fetch: suspend (AudioFile, File) -> Unit,
+    ): Int = withContext(Dispatchers.IO) {
+        val folder = audioDir.resolve(UUID.randomUUID().toString()).apply { mkdirs() }
+        val local = runSuspendCatching {
+            files.mapIndexed { index, file ->
+                val target = folder.resolve("$index-${file.name.replace('/', '_')}")
+                fetch(file, target)
+                file.copy(uri = Uri.fromFile(target).toString())
+            }
+        }
+        if (local.isFailure) folder.deleteRecursively()
+        importAudio(local.getOrThrow(), find)
+    }
+
+    suspend fun importAudio(files: List<AudioFile>, find: BookFinder): Int {
         val title = titleOf(files)
         val author = authorOf(files)
         val match = matchingBook(saved.first(), title, author)

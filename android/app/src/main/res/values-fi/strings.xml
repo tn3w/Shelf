@@ -317,6 +317,9 @@
     <string name="online_library_add">Lisää kirjasto</string>
     <string name="online_library_edit">Muokkaa kirjastoa</string>
     <string name="online_library_url">OPDS-osoite</string>
+    <string name="online_library_server_url">Palvelimen osoite</string>
+    <string name="online_library_stream">Suoratoista</string>
+    <string name="online_library_download_audio">Lataa äänikirja</string>
     <string name="online_library_url_invalid">Alkaa https:// tai http://</string>
     <string name="online_library_username">Käyttäjänimi tai sähköposti</string>
     <string name="online_library_password">Salasana</string>

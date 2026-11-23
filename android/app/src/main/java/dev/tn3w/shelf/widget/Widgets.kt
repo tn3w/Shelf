@@ -87,12 +87,15 @@ class StreakWidget : ShelfAppWidget(books = 0, width = 0) {
                     Text(
                         habitMessage(habit),
                         style = TextStyle(GlanceTheme.colors.onSurfaceVariant, 12.sp),
-                        maxLines = 2,
+                        maxLines = 1,
                     )
                 }
                 Spacer(GlanceModifier.height(12.dp))
-                val header = if (message) 128.dp else 80.dp
-                WeekBars(habit, size.width - Pad * 2, inner - header)
+                val header = if (message) 96.dp else 72.dp
+                val bottom = Alignment.BottomStart
+                Box(GlanceModifier.defaultWeight(), contentAlignment = bottom) {
+                    WeekBars(habit, size.width - Pad * 2, inner - header)
+                }
             }
         }
     }

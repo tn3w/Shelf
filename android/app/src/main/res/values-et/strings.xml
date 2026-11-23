@@ -315,6 +315,9 @@
     <string name="online_library_add">Lisa raamatukogu</string>
     <string name="online_library_edit">Muuda raamatukogu</string>
     <string name="online_library_url">OPDS-aadress</string>
+    <string name="online_library_server_url">Serveri aadress</string>
+    <string name="online_library_stream">Voogesita</string>
+    <string name="online_library_download_audio">Laadi audioraamat alla</string>
     <string name="online_library_url_invalid">Algab https:// või http://</string>
     <string name="online_library_username">Kasutajanimi või e-post</string>
     <string name="online_library_password">Parool</string>

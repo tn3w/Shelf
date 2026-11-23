@@ -319,6 +319,9 @@
     <string name="online_library_add">図書館を追加</string>
     <string name="online_library_edit">図書館を編集</string>
     <string name="online_library_url">OPDS アドレス</string>
+    <string name="online_library_server_url">サーバーアドレス</string>
+    <string name="online_library_stream">ストリーミング再生</string>
+    <string name="online_library_download_audio">オーディオブックをダウンロード</string>
     <string name="online_library_url_invalid">https:// または http:// で始まります</string>
     <string name="online_library_username">ユーザー名またはメールアドレス</string>
     <string name="online_library_password">パスワード</string>

@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,7 +35,9 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.net.URI
 
+private const val AUDIOBOOKSHELF = "Audiobookshelf"
 private val SERVER_PRESETS = listOf(
+    AUDIOBOOKSHELF to "https://server:13378",
     "Calibre-Web" to "https://server:8083/opds",
     "Calibre" to "http://server:8080/opds",
     "Kavita" to "https://server:5000/api/opds/API-KEY",
@@ -79,6 +82,13 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
 
     fun load() {
         val client = client() ?: return
+        val catalog = saved() ?: return
+        val login = catalog.logins[catalog.host]
+        if (catalog.isAudiobookshelf && login != null && login.token.isEmpty()) {
+            val needed =
+                LoginNeeded(catalog.host, catalog.name, Audiobookshelf(catalog.url).login)
+            return signIn(needed, login.username, login.password)
+        }
         val shown = _feed.value
         val target = if (shown == null) {
             url.ifEmpty { saved()?.url.orEmpty() }
@@ -113,14 +123,36 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
         }
     }
 
+    fun stream(entry: Entry) {
+        val client = client() ?: return
+        val tracks = entry.tracks.map { it.copy(uri = client.streamUrl(it.uri)) }
+        detached { app.open(library.importAudio(tracks, app::findInCatalogue)) }
+    }
+
     fun download(entry: Entry, file: Acquisition) {
         val client = client() ?: return
-        if (!_files.claim(file.url)) return
+        save(file.url) { fetch(client, entry, file, it) }
+    }
+
+    fun downloadAudio(entry: Entry) {
+        val client = client() ?: return
+        save(entry.audioKey) { onProgress ->
+            library.downloadAudio(entry.tracks, app::findInCatalogue) { file, target ->
+                val index = entry.tracks.indexOf(file)
+                client.download(file.uri, target, MAX_AUDIO_BYTES) {
+                    onProgress((index + it) / entry.tracks.size)
+                }
+            }
+        }
+    }
+
+    private fun save(key: String, fetch: suspend (onProgress: (Float) -> Unit) -> Int) {
+        if (!_files.claim(key)) return
         fun report(progress: Float) =
-            _files.update { it + (file.url to Download.Running(progress)) }
+            _files.update { it + (key to Download.Running(progress)) }
         viewModelScope.launch {
             val work = transfer(::report) { onProgress ->
-                runSuspendCatching { fetch(client, entry, file, onProgress) }
+                runSuspendCatching { fetch(onProgress) }
             }
             work.exceptionOrNull()?.takeIf {
                 it is LoginNeeded
@@ -130,9 +162,7 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
                 report(1f)
                 delay(DOWNLOAD_SETTLE_MILLIS)
             }
-            _files.update {
-                if (done) it - file.url else it + (file.url to Download.Failed)
-            }
+            _files.update { if (done) it - key else it + (key to Download.Failed) }
             work.getOrNull()?.let(app::open)
         }
     }
@@ -154,6 +184,9 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
         }
     }
 }
+
+private val Entry.audioKey
+    get() = "audio:${link ?: title}"
 
 private fun Feed.plus(page: Feed) =
     copy(entries = entries + page.entries, next = page.next)
@@ -179,7 +212,7 @@ fun CatalogRows(
             catalog.host,
             enabled = enabled,
             onClick = { navigator.catalog(catalog.id) },
-        ) { Toggle(on, ::toggle, enabled) }
+        ) { if (!catalog.isAudiobookshelf) Toggle(on, ::toggle, enabled) }
     }
 }
 
@@ -223,6 +256,7 @@ private fun CatalogDialog(
     val login = initial.logins[initial.host]
     var name by rememberSaveable { mutableStateOf(initial.name) }
     var url by rememberSaveable { mutableStateOf(initial.url) }
+    var server by rememberSaveable { mutableStateOf(initial.server) }
     var username by rememberSaveable { mutableStateOf(login?.username.orEmpty()) }
     var password by rememberSaveable { mutableStateOf(login?.password.orEmpty()) }
     val validUrl = WEB_ADDRESS.matches(url.trim())
@@ -231,9 +265,10 @@ private fun CatalogDialog(
     fun pick(preset: String, address: String) {
         name = preset
         url = address
+        server = if (preset == AUDIOBOOKSHELF) Server.Audiobookshelf else Server.Opds
     }
     fun save() {
-        val draft = initial.copy(name = name.trim(), url = url.trim())
+        val draft = initial.copy(name = name.trim(), url = url.trim(), server = server)
         val others = initial.logins - draft.host
         val credentials = Login(username.trim(), password).takeIf {
             username.isNotBlank()
@@ -253,8 +288,12 @@ private fun CatalogDialog(
             Presets(R.string.online_library_free, FREE_PRESETS, ::pick)
         }
         Input(R.string.free_books_name, name) { name = it }
+        val address = when (server) {
+            Server.Opds -> R.string.online_library_url
+            Server.Audiobookshelf -> R.string.online_library_server_url
+        }
         Input(
-            R.string.online_library_url,
+            address,
             url,
             KeyboardType.Uri,
             error = R.string.online_library_url_invalid.takeIf {
@@ -421,7 +460,7 @@ private fun Entries(
             EntryRow(entry, cover, viewModel.authorization(cover)) {
                 val link = entry.link
                 when {
-                    entry.files.isNotEmpty() -> onOpen(index)
+                    entry.isDownloadable -> onOpen(index)
                     link != null -> navigator.catalog(route.id, link, entry.title)
                 }
             }
@@ -449,7 +488,7 @@ private fun EntryRow(
         details,
         onClick,
         leading = {
-            if (cover != null || entry.files.isNotEmpty()) {
+            if (cover != null || entry.isDownloadable) {
                 RemoteCover(cover, authorization)
             } else {
                 Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
@@ -458,7 +497,7 @@ private fun EntryRow(
             }
         },
     ) {
-        val icon = if (entry.files.isEmpty()) {
+        val icon = if (!entry.isDownloadable) {
             Icons.AutoMirrored.Rounded.KeyboardArrowRight
         } else {
             Icons.Rounded.Download
@@ -492,9 +531,42 @@ private fun EntrySheet(entry: Entry, viewModel: CatalogViewModel, onDismiss: () 
             )
         }
         Column {
+            if (entry.tracks.isNotEmpty()) {
+                AudioRows(entry, files[entry.audioKey], viewModel)
+            }
             entry.files.forEach { file ->
                 FileRow(file, files[file.url]) { viewModel.download(entry, file) }
             }
+        }
+    }
+}
+
+@Composable
+private fun AudioRows(entry: Entry, download: Download?, viewModel: CatalogViewModel) {
+    val length =
+        duration(
+            entry.tracks.sumOf {
+                it.millis
+            } / 1000,
+            LocalConfiguration.current.locales[0],
+        )
+    val accent = Look.colors.accent
+    val stream = stringResource(R.string.online_library_stream)
+    SettingRow(stream, length, onClick = { viewModel.stream(entry) }) {
+        Icon(Icons.Rounded.PlayArrow, stream, tint = accent)
+    }
+    val failed = download is Download.Failed
+    val summary = if (failed) stringResource(R.string.free_books_failed) else length
+    val save = stringResource(R.string.online_library_download_audio)
+    SettingRow(save, summary, onClick = { viewModel.downloadAudio(entry) }) {
+        when (download) {
+            is Download.Running -> DownloadProgress(download.progress)
+
+            else -> Icon(
+                if (failed) Icons.Rounded.ErrorOutline else Icons.Rounded.Download,
+                save,
+                tint = accent,
+            )
         }
     }
 }
