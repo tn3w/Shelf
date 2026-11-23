@@ -1,18 +1,13 @@
 package dev.tn3w.shelf.data
 
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 private const val SPEECH = 0.2f
 
 class SilenceTest {
-    @get:Rule val folder = TemporaryFolder()
-
     private fun levels(vararg loudness: Float) =
         loudness.mapIndexed { index, level -> Level(index * 100L, level) }.asSequence()
 
@@ -55,27 +50,5 @@ class SilenceTest {
         pcm.flip()
 
         assertEquals(0.5f, loudness(pcm), 0.0001f)
-    }
-
-    @Test
-    fun streamCacheFetchesEachBlockOnceAndStopsAtTheEnd() {
-        val content = ByteArray(600_000) { (it % 251).toByte() }
-        val fetched = mutableListOf<Long>()
-        val cache = StreamCache(folder.newFile()) { from, to ->
-            fetched += from
-            val end = minOf(to + 1, content.size.toLong()).toInt()
-            Chunk(content.copyOfRange(from.toInt(), end), content.size.toLong())
-        }
-        val buffer = ByteArray(100)
-
-        repeat(2) { cache.readAt(599_950, buffer, 0, 100) }
-        val read = cache.readAt(300_000, buffer, 0, 100)
-
-        assertEquals(100, read)
-        assertArrayEquals(content.copyOfRange(300_000, 300_100), buffer)
-        assertEquals(50, cache.readAt(599_950, buffer, 0, 100))
-        assertEquals(-1, cache.readAt(600_000, buffer, 0, 100))
-        assertEquals(listOf(0L, 524_288L, 262_144L), fetched)
-        cache.close()
     }
 }

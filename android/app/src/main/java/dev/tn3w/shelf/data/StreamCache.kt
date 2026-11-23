@@ -6,40 +6,62 @@ import java.io.Closeable
 import java.io.File
 import java.io.IOException
 import java.io.RandomAccessFile
-import java.util.BitSet
 
 private const val BLOCK_BYTES = 256 * 1024
+private const val MAX_BLOCKS = 128
 
 class Chunk(val bytes: ByteArray, val total: Long)
 
-class StreamCache(file: File, private val fetch: (Long, Long) -> Chunk) : Closeable {
+class StreamCache(
+    private val file: File,
+    private val blockBytes: Int = BLOCK_BYTES,
+    private val maxBlocks: Int = MAX_BLOCKS,
+    private val fetch: (Long, Long) -> Chunk,
+) : Closeable {
     private val data = RandomAccessFile(file, "rw")
-    private val loaded = BitSet()
-    val size = load(0)
+    private val slots = LinkedHashMap<Long, Int>(maxBlocks, 0.75f, true)
+    private var usedSlots = 0
+    val size = runCatching { load(0).total }.getOrElse {
+        close()
+        throw it
+    }
 
-    private fun load(block: Int): Long {
-        val from = block.toLong() * BLOCK_BYTES
-        val chunk = fetch(from, from + BLOCK_BYTES - 1)
-        data.seek(from)
-        data.write(chunk.bytes)
-        loaded.set(block)
-        return chunk.total
+    private fun freeSlot(): Int {
+        if (usedSlots < maxBlocks) return usedSlots++
+        val oldest = slots.keys.first()
+        return slots.remove(oldest)!!
+    }
+
+    private fun load(block: Long): Chunk {
+        val from = block * blockBytes
+        val chunk = fetch(from, from + blockBytes - 1)
+        val expected = minOf(blockBytes.toLong(), chunk.total - from)
+        if (chunk.bytes.size < expected) throw IOException("short block at $from")
+        val slot = freeSlot()
+        data.seek(slot.toLong() * blockBytes)
+        data.write(chunk.bytes, 0, expected.toInt())
+        slots[block] = slot
+        return chunk
     }
 
     @Synchronized
     fun readAt(position: Long, buffer: ByteArray, offset: Int, length: Int): Int {
         if (position >= size) return -1
-        val block = (position / BLOCK_BYTES).toInt()
-        val blockEnd = (block + 1L) * BLOCK_BYTES
-        val count = minOf(length.toLong(), size - position, blockEnd - position).toInt()
-        if (!loaded[block]) load(block)
-        data.seek(position)
+        val block = position / blockBytes
+        val inBlock = position - block * blockBytes
+        val count = minOf(length.toLong(), size - position, blockBytes - inBlock).toInt()
+        if (block !in slots) load(block)
+        val slot = slots.getValue(block)
+        data.seek(slot.toLong() * blockBytes + inBlock)
         data.readFully(buffer, offset, count)
         return count
     }
 
     @Synchronized
-    override fun close() = data.close()
+    override fun close() {
+        data.close()
+        file.delete()
+    }
 }
 
 fun httpChunks(url: String, headers: Map<String, String>) = { from: Long, to: Long ->
