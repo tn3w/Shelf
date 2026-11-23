@@ -74,7 +74,8 @@ private const val ICON_PREVIOUS = android.R.drawable.ic_media_previous
 private const val ICON_NEXT = android.R.drawable.ic_media_next
 private const val ICON_CLOSE = android.R.drawable.ic_menu_close_clear_cancel
 private const val CLOSE = "dev.tn3w.shelf.narration.CLOSE"
-private const val ROOT = "books"
+private const val ROOT = "root"
+private const val BOOKS = "books"
 private const val HIDDEN = "hidden"
 private const val COVER_WIDTH = 256
 private const val COVER_QUALITY = 85
@@ -115,6 +116,7 @@ class NarrationService : MediaBrowserService() {
     private lateinit var session: MediaSession
     private val browsers = mutableSetOf<String>()
     private var art: Pair<Int, Bitmap?> = 0 to null
+    private var artUri: Uri? = null
     private var shown: List<Any?> = emptyList()
     private val unplugged = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = playback.pause()
@@ -163,7 +165,7 @@ class NarrationService : MediaBrowserService() {
             app.library.saved.map { books -> books.map(Saved::work) }
                 .distinctUntilChanged()
                 .drop(1)
-                .collect { notifyChildrenChanged(ROOT) }
+                .collect { notifyChildrenChanged(BOOKS) }
         }
     }
 
@@ -186,22 +188,28 @@ class NarrationService : MediaBrowserService() {
     }
 
     override fun onGetRoot(client: String, uid: Int, hints: Bundle?): BrowserRoot {
-        if (client != packageName &&
-            client !in CAR_BROWSERS
-        ) {
-            return BrowserRoot(HIDDEN, null)
-        }
+        val trusted = client == packageName || client in CAR_BROWSERS
+        if (!trusted) return BrowserRoot(HIDDEN, null)
         browsers += client
         return BrowserRoot(ROOT, null)
     }
 
     override fun onLoadChildren(parent: String, result: Result<MutableList<MediaItem>>) {
+        if (parent == ROOT) return result.sendResult(mutableListOf(folder()))
+        if (parent != BOOKS) return result.sendResult(mutableListOf())
         result.detach()
         scope.launch {
-            if (parent != ROOT) return@launch result.sendResult(mutableListOf())
             val items = withContext(Dispatchers.Default) { books() }
             result.sendResult(items.toMutableList())
         }
+    }
+
+    private fun folder(): MediaItem {
+        val description = MediaDescription.Builder()
+            .setMediaId(BOOKS)
+            .setTitle(getString(R.string.library))
+            .build()
+        return MediaItem(description, MediaItem.FLAG_BROWSABLE)
     }
 
     private suspend fun listenable(): List<Saved> {
@@ -229,9 +237,10 @@ class NarrationService : MediaBrowserService() {
         return coverOf(app, saved.toBook(), settings, COVER_WIDTH)
     }
 
-    private suspend fun coverUri(saved: Saved): Uri {
-        val bitmap = cover(saved)
-        val file = cacheDir.resolve("shared/car/${saved.work}.jpg")
+    private suspend fun coverUri(saved: Saved) = share(saved.work, cover(saved))
+
+    private suspend fun share(work: Int, bitmap: Bitmap): Uri {
+        val file = cacheDir.resolve("shared/car/$work.jpg")
         withContext(Dispatchers.IO) {
             file.parentFile?.mkdirs()
             file.outputStream().use { bitmap.compress(JPEG, COVER_QUALITY, it) }
@@ -245,6 +254,7 @@ class NarrationService : MediaBrowserService() {
         if (art.first == work) return art.second
         val saved = app.library.saved.first().find { it.work == work }
         val cover = saved?.let { runCatching { cover(it) }.getOrNull() }
+        artUri = cover?.let { runCatching { share(work, it) }.getOrNull() }
         art = work to cover
         return cover
     }
@@ -316,6 +326,7 @@ class NarrationService : MediaBrowserService() {
             .putString(MediaMetadata.METADATA_KEY_TITLE, state.title)
             .putString(MediaMetadata.METADATA_KEY_ARTIST, state.chapter)
             .putBitmap(MediaMetadata.METADATA_KEY_ART, cover)
+            .putString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI, artUri?.toString())
             .apply {
                 if (timed) putLong(METADATA_KEY_DURATION, (state.count - 1) * 1000L)
             }
