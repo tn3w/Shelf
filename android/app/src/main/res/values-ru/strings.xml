@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">Раз в день при выходе из Shelf в эту папку записывается zip с датой, хранятся 7 последних. Выберите папку Syncthing, чтобы копия попадала на другие устройства.</string>
     <string name="auto_backup_folder">Папка резервных копий</string>
     <string name="auto_backup_off">Выключено</string>
+    <string name="watch_folder">Отслеживаемая папка</string>
+    <string name="watch_folder_hint">Электронные и аудиокниги, появившиеся в этой папке, добавляются в библиотеку при каждом открытии Shelf. Аудиофайлы из одной подпапки становятся одной аудиокнигой. Выберите папку Syncthing, чтобы отправлять книги с других устройств.</string>
+    <string name="watch_folder_row">Папка импорта</string>
+    <string name="watch_imported">Новые книги из отслеживаемой папки добавлены в библиотеку</string>
     <string name="born">Род. %d</string>
     <string name="catalogue">Каталог</string>
     <string name="catalogue_hint">Офлайн-пакеты, обновления и собственные источники.</string>

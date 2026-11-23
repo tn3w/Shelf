@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">Una vez al día, al salir de Shelf se guarda un zip con fecha en esta carpeta y se conservan los 7 más recientes. Elige una carpeta de Syncthing para copiarlo a otros dispositivos.</string>
     <string name="auto_backup_folder">Carpeta de copias</string>
     <string name="auto_backup_off">Desactivada</string>
+    <string name="watch_folder">Carpeta vigilada</string>
+    <string name="watch_folder_hint">Los ebooks y audiolibros que aparezcan en esta carpeta se añaden a tu biblioteca cada vez que abres Shelf. Los archivos de audio de una misma subcarpeta forman un audiolibro. Elige una carpeta de Syncthing para enviar libros desde otros dispositivos.</string>
+    <string name="watch_folder_row">Carpeta de importación</string>
+    <string name="watch_imported">Los libros nuevos de tu carpeta vigilada ya están en tu biblioteca</string>
     <string name="born">Nació en %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Paquetes sin conexión, actualizaciones y fuentes propias.</string>

@@ -25,6 +25,10 @@
     <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é salvo nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos.</string>
     <string name="auto_backup_folder">Pasta de backup</string>
     <string name="auto_backup_off">Desativado</string>
+    <string name="watch_folder">Pasta monitorada</string>
+    <string name="watch_folder_hint">Ebooks e audiolivros que aparecem nesta pasta são adicionados à sua biblioteca sempre que você abre o Shelf. Arquivos de áudio na mesma subpasta formam um audiolivro. Escolha uma pasta do Syncthing para enviar livros de outros dispositivos.</string>
+    <string name="watch_folder_row">Pasta de importação</string>
+    <string name="watch_imported">Os livros novos da pasta monitorada estão na sua biblioteca</string>
     <string name="born">Nascimento: %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Pacotes offline, atualizações e fontes próprias.</string>

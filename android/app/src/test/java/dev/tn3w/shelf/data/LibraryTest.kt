@@ -168,6 +168,36 @@ class LibraryTest {
     }
 
     @Test
+    fun watchedFolderImportsNewBooksAndWholeAudiobookFolders() {
+        fun file(name: String, folder: String = "") =
+            FolderFile("$folder/$name", name, folder)
+        val epub = file("Dune.epub")
+        val known = file("Old.pdf")
+        val loose = file("Solo.mp3")
+        val chapterOne = file("01.mp3", "/Hobbit")
+        val chapterTwo = file("02.mp3", "/Hobbit")
+        val finished = file("01.mp3", "/Done")
+        val boxed = listOf(file("One.m4b", "/Box"), file("Two.m4b", "/Box"))
+        val audio = listOf(loose, chapterOne, chapterTwo, finished)
+        val files = listOf(epub, known, file("cover.jpg")) + audio + boxed
+        val seen = setOf(known.uri, chapterOne.uri, finished.uri)
+        val groups = folderImports(files, seen)
+        val expected =
+            listOf(listOf(epub), listOf(loose), listOf(chapterOne, chapterTwo)) +
+                boxed.map(::listOf)
+        assertEquals(expected.toSet(), groups.toSet())
+    }
+
+    @Test
+    fun restoredBackupKeepsTheWatchedFolder() {
+        val current =
+            LibraryState(settings = Settings(watchFolder = "content://tree/books"))
+        val imported = Backup(settings = Settings(watchFolder = "content://x"))
+        val restored = current.merge(imported)
+        assertEquals("content://tree/books", restored.settings.watchFolder)
+    }
+
+    @Test
     fun failedBookExtractionLeavesNoFileAndRetries() {
         val directory = Files.createTempDirectory("books").toFile()
         val broken = object : InputStream() {

@@ -24,6 +24,10 @@
     <string name="auto_backup_hint">1 日 1 回、Shelf を閉じるときに日付入りの zip をこのフォルダーに書き込み、最新の 7 件を残します。Syncthing のフォルダーを選ぶと他の端末にもコピーされます。</string>
     <string name="auto_backup_folder">バックアップフォルダー</string>
     <string name="auto_backup_off">オフ</string>
+    <string name="watch_folder">監視フォルダー</string>
+    <string name="watch_folder_hint">このフォルダーに現れた電子書籍とオーディオブックは、Shelf を開くたびにライブラリーに追加されます。同じサブフォルダー内の音声ファイルは 1 冊のオーディオブックになります。Syncthing のフォルダーを選ぶと他の端末から本を送れます。</string>
+    <string name="watch_folder_row">インポートフォルダー</string>
+    <string name="watch_imported">監視フォルダーの新しい本がライブラリーに追加されました</string>
     <string name="born">%d年生まれ</string>
     <string name="catalogue">カタログ</string>
     <string name="catalogue_hint">オフラインパック、更新、独自のソース。</string>

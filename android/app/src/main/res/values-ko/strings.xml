@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">하루에 한 번 Shelf를 나갈 때 날짜가 붙은 zip 파일을 이 폴더에 쓰고 최신 7개를 유지합니다. Syncthing 폴더를 고르면 다른 기기로도 복사됩니다.</string>
     <string name="auto_backup_folder">백업 폴더</string>
     <string name="auto_backup_off">끔</string>
+    <string name="watch_folder">감시 폴더</string>
+    <string name="watch_folder_hint">이 폴더에 새로 생긴 전자책과 오디오북은 Shelf를 열 때마다 서재에 추가됩니다. 같은 하위 폴더의 오디오 파일은 하나의 오디오북이 됩니다. Syncthing 폴더를 고르면 다른 기기에서 책을 보낼 수 있습니다.</string>
+    <string name="watch_folder_row">가져오기 폴더</string>
+    <string name="watch_imported">감시 폴더의 새 책이 서재에 추가되었습니다</string>
     <string name="born">%d년 출생</string>
     <string name="catalogue">카탈로그</string>
     <string name="catalogue_hint">오프라인 팩, 업데이트, 직접 지정한 소스.</string>

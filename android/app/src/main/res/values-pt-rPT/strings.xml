@@ -127,6 +127,10 @@
     <string name="auto_backup">Cópia de segurança automática</string>
     <string name="auto_backup_folder">Pasta das cópias de segurança</string>
     <string name="auto_backup_off">Desativada</string>
+    <string name="watch_folder">Pasta vigiada</string>
+    <string name="watch_folder_hint">Os ebooks e audiolivros que aparecem nesta pasta são adicionados à sua biblioteca sempre que abre o Shelf. Os ficheiros de áudio na mesma subpasta formam um audiolivro. Escolha uma pasta do Syncthing para enviar livros de outros dispositivos.</string>
+    <string name="watch_folder_row">Pasta de importação</string>
+    <string name="watch_imported">Os livros novos da pasta vigiada estão na sua biblioteca</string>
     <string name="born">Nascimento: %d</string>
     <string name="catalogue">Catálogo</string>
     <string name="catalogue_hint">Pacotes offline, atualizações e fontes próprias.</string>

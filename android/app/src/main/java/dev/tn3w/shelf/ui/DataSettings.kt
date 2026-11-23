@@ -32,6 +32,9 @@ fun DataSettings() {
     SettingsGroup(
         stringResource(R.string.auto_backup), stringResource(R.string.auto_backup_hint),
     ) { AutomaticBackupRow() }
+    SettingsGroup(
+        stringResource(R.string.watch_folder), stringResource(R.string.watch_folder_hint),
+    ) { WatchFolderRow() }
     SettingsGroup(stringResource(R.string.csv), stringResource(R.string.csv_hint)) {
         CsvRows()
     }
@@ -88,19 +91,34 @@ private fun BackupRows() {
 private fun AutomaticBackupRow() {
     val viewModel = settingsViewModel()
     val settings = loadedSettings() ?: return
-    val folder = settings.backupFolder
+    FolderRow(
+        R.string.auto_backup_folder,
+        settings.backupFolder,
+        viewModel::chooseBackupFolder,
+    )
+}
+
+@Composable
+private fun WatchFolderRow() {
+    val viewModel = settingsViewModel()
+    val settings = loadedSettings() ?: return
+    FolderRow(
+        R.string.watch_folder_row,
+        settings.watchFolder,
+        viewModel::chooseWatchFolder,
+    )
+}
+
+@Composable
+private fun FolderRow(@StringRes title: Int, folder: String, choose: (Uri?) -> Unit) {
     val picker = rememberLauncherForActivityResult(OpenDocumentTree()) { uri ->
-        uri?.let(viewModel::chooseBackupFolder)
+        uri?.let(choose)
     }
     val summary = folder.ifEmpty { null }?.let(::folderName)
         ?: stringResource(R.string.auto_backup_off)
-    SettingRow(
-        stringResource(R.string.auto_backup_folder),
-        summary,
-        onClick = { picker.launch(null) },
-    ) {
+    SettingRow(stringResource(title), summary, onClick = { picker.launch(null) }) {
         Toggle(folder.isNotEmpty(), { on ->
-            if (on) picker.launch(null) else viewModel.chooseBackupFolder(null)
+            if (on) picker.launch(null) else choose(null)
         })
     }
 }

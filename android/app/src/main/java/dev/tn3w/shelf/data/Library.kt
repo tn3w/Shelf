@@ -238,6 +238,7 @@ data class Settings(
     val librarySort: LibrarySort = LibrarySort.Added,
     val libraryList: Boolean = false,
     val backupFolder: String = "",
+    val watchFolder: String = "",
 ) {
     val readerFont
         get() = font ?: if (serif) ReaderFont.Serif else ReaderFont.Sans
@@ -365,6 +366,7 @@ data class LibraryState(
     val recent: List<String> = emptyList(),
     val dismissed: Set<Int> = emptySet(),
     val settings: Settings = Settings(),
+    val watched: Set<String> = emptySet(),
 )
 
 @Serializable
@@ -639,6 +641,25 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         val shelf = entries.firstOrNull { it.work == book.work }?.shelf
         place(book, shelf ?: Shelf.Reading)
         return book.work
+    }
+
+    suspend fun importFromFolder(find: BookFinder): Int = withContext(Dispatchers.IO) {
+        val folder = settings.first().watchFolder.ifEmpty { return@withContext 0 }
+        val files = runCatching { context.filesIn(folder.toUri()) }
+            .getOrElse { return@withContext 0 }
+        val groups = folderImports(files, state.first().watched)
+        val imported = groups.count { importGroup(it, find) != null }
+        val seen = groups.flatten().map(FolderFile::uri)
+        libraryStore.change { it.copy(watched = it.watched + seen) }
+        imported
+    }
+
+    private suspend fun importGroup(group: List<FolderFile>, find: BookFinder): Int? {
+        val first = group.first()
+        val audio = first.extension in AUDIO_EXTENSIONS
+        if (!audio) return importFile(first.uri.toUri(), find)
+        val files = group.mapNotNull { context.audioFile(it.uri.toUri()) }
+        return if (files.isEmpty()) null else importAudio(files, find)
     }
 
     private suspend fun importAudio(uri: Uri, find: BookFinder): Int? {
@@ -964,6 +985,50 @@ private fun Context.documentsIn(tree: Uri): Map<String, Uri> {
     }.orEmpty()
 }
 
+data class FolderFile(val uri: String, val name: String, val folder: String) {
+    val extension get() = name.substringAfterLast('.', "").lowercase()
+}
+
+private fun Context.filesIn(
+    tree: Uri,
+    parent: String = getTreeDocumentId(tree),
+    folder: String = "",
+): List<FolderFile> {
+    val children = buildChildDocumentsUriUsingTree(tree, parent)
+    val columns = arrayOf(
+        Document.COLUMN_DOCUMENT_ID,
+        Document.COLUMN_DISPLAY_NAME,
+        Document.COLUMN_MIME_TYPE,
+    )
+    val rows = contentResolver.query(children, columns, null, null, null)?.use { cursor ->
+        generateSequence { cursor.takeIf { it.moveToNext() } }
+            .map { Triple(it.getString(0), it.getString(1), it.getString(2)) }
+            .toList()
+    }.orEmpty()
+    val visible = rows.filterNot { (_, name) -> name.startsWith('.') }
+    return visible.flatMap { (id, name, type) ->
+        val isFolder = type == Document.MIME_TYPE_DIR
+        if (isFolder) return@flatMap filesIn(tree, id, "$folder/$name")
+        listOf(FolderFile(buildDocumentUriUsingTree(tree, id).toString(), name, folder))
+    }
+}
+
+private fun audiobookKey(file: FolderFile) =
+    if (file.folder.isEmpty() || file.extension == "m4b") file.uri else file.folder
+
+internal fun folderImports(
+    files: List<FolderFile>,
+    known: Set<String>,
+): List<List<FolderFile>> {
+    val books = files.filter { it.uri !in known && it.extension in READABLE_EXTENSIONS }
+    val audiobooks = files
+        .filter { it.extension in AUDIO_EXTENSIONS }
+        .groupBy(::audiobookKey)
+        .values
+        .filter { tracks -> tracks.any { it.uri !in known } }
+    return books.map(::listOf) + audiobooks
+}
+
 internal fun automaticBackupName(day: LocalDate) = "shelf-$day.zip"
 
 internal fun staleBackups(names: Collection<String>, kept: Int = KEPT_BACKUPS) =
@@ -1074,6 +1139,7 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     catalogueSource = current.catalogueSource,
     providers = current.providers,
     backupFolder = current.backupFolder,
+    watchFolder = current.watchFolder,
 )
 
 private fun Int.moved(alias: (Int) -> Int?) = alias(this) ?: this

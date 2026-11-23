@@ -25,6 +25,10 @@
     <string name="auto_backup_hint">Reizi dienā, aizverot Shelf, šajā mapē tiek ierakstīts datēts zip fails, un tiek paturēti 7 jaunākie. Izvēlieties Syncthing mapi, lai to kopētu uz citām ierīcēm.</string>
     <string name="auto_backup_folder">Dublējumu mape</string>
     <string name="auto_backup_off">Izslēgts</string>
+    <string name="watch_folder">Uzraudzītā mape</string>
+    <string name="watch_folder_hint">E-grāmatas un audiogrāmatas, kas parādās šajā mapē, tiek pievienotas bibliotēkai katru reizi, kad atverat Shelf. Audio faili vienā apakšmapē veido vienu audiogrāmatu. Izvēlieties Syncthing mapi, lai sūtītu grāmatas no citām ierīcēm.</string>
+    <string name="watch_folder_row">Importa mape</string>
+    <string name="watch_imported">Jaunās grāmatas no uzraudzītās mapes ir jūsu bibliotēkā</string>
     <string name="born">Dzimis %d</string>
     <string name="catalogue">Katalogs</string>
     <string name="catalogue_hint">Bezsaistes pakas, atjauninājumi un savi avoti.</string>

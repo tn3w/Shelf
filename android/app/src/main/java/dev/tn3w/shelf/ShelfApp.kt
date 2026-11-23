@@ -64,6 +64,7 @@ class ShelfApp :
     private val _messages = Channel<Int>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
     private val backup = Mutex()
+    private val folderImport = Mutex()
 
     override fun onCreate() {
         super.onCreate()
@@ -154,6 +155,15 @@ class ShelfApp :
 
     fun backUp() = scope.launch(Dispatchers.IO) {
         backup.withLock { library.backUpToFolder() }
+    }
+
+    fun importFromFolder() = scope.launch(Dispatchers.IO) {
+        if (library.settings.first().watchFolder.isEmpty()) return@launch
+        loaded.filterNotNull().first()
+        val imported = folderImport.withLock {
+            library.importFromFolder(::findInCatalogue)
+        }
+        if (imported > 0) show(R.string.watch_imported)
     }
 
     fun <T> transfer(work: suspend CoroutineScope.() -> T) = scope.async(Dispatchers.IO) {

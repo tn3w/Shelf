@@ -30,6 +30,7 @@ import androidx.compose.ui.res.*
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dev.tn3w.shelf.*
@@ -240,12 +241,23 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
     fun chooseBackupFolder(folder: Uri?) = detached {
         val resolver = app.contentResolver
         val access = FLAG_GRANT_READ_URI_PERMISSION or FLAG_GRANT_WRITE_URI_PERMISSION
-        resolver.persistedUriPermissions.forEach {
-            resolver.releasePersistableUriPermission(it.uri, access)
+        val previous = library.settings.first()
+        if (previous.backupFolder !in setOf("", previous.watchFolder)) {
+            val old = previous.backupFolder.toUri()
+            runCatching { resolver.releasePersistableUriPermission(old, access) }
         }
         folder?.let { resolver.takePersistableUriPermission(it, access) }
         library.updateSettings { it.copy(backupFolder = folder?.toString().orEmpty()) }
         app.backUp()
+    }
+
+    fun chooseWatchFolder(folder: Uri?) = detached {
+        val resolver = app.contentResolver
+        folder?.let {
+            resolver.takePersistableUriPermission(it, FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        library.updateSettings { it.copy(watchFolder = folder?.toString().orEmpty()) }
+        app.importFromFolder()
     }
 
     fun importCsv(uri: Uri) = runAction(SettingsAction.CsvImport) {

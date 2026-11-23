@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">Kord päevas kirjutab Shelf sulgemisel sellesse kausta kuupäevaga zip-faili ja hoiab alles 7 uusimat. Vali Syncthingi kaust, et see jõuaks ka teistesse seadmetesse.</string>
     <string name="auto_backup_folder">Varukoopiate kaust</string>
     <string name="auto_backup_off">Väljas</string>
+    <string name="watch_folder">Jälgitav kaust</string>
+    <string name="watch_folder_hint">Sellesse kausta ilmuvad e-raamatud ja audioraamatud lisatakse Shelfi avamisel sinu raamatukokku. Sama alamkausta helifailid moodustavad ühe audioraamatu. Vali Syncthingi kaust, et saata raamatuid teistest seadmetest.</string>
+    <string name="watch_folder_row">Impordikaust</string>
+    <string name="watch_imported">Uued raamatud jälgitavast kaustast on sinu raamatukogus</string>
     <string name="born">Sündinud %d</string>
     <string name="catalogue">Kataloog</string>
     <string name="catalogue_hint">Võrguühenduseta paketid, uuendused ja omad allikad.</string>

@@ -25,6 +25,10 @@
     <string name="auto_backup_hint">Eén keer per dag schrijft Shelf bij het afsluiten een zip met datum naar deze map en bewaart de nieuwste 7. Kies een Syncthing-map om hem naar andere apparaten te kopiëren.</string>
     <string name="auto_backup_folder">Back-upmap</string>
     <string name="auto_backup_off">Uit</string>
+    <string name="watch_folder">Gevolgde map</string>
+    <string name="watch_folder_hint">E-books en luisterboeken die in deze map verschijnen, worden aan je bibliotheek toegevoegd zodra je Shelf opent. Audiobestanden in dezelfde submap worden één luisterboek. Kies een Syncthing-map om boeken vanaf andere apparaten te sturen.</string>
+    <string name="watch_folder_row">Importmap</string>
+    <string name="watch_imported">Nieuwe boeken uit je gevolgde map staan in je bibliotheek</string>
     <string name="born">Geboren %d</string>
     <string name="catalogue">Catalogus</string>
     <string name="catalogue_hint">Offline pakketten, updates en eigen bronnen.</string>

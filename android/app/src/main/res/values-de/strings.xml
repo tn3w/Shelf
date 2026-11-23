@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">Einmal täglich schreibt Shelf beim Verlassen eine datierte Zip-Datei in diesen Ordner und behält die neuesten 7. Mit einem Syncthing-Ordner landet sie auch auf anderen Geräten.</string>
     <string name="auto_backup_folder">Sicherungsordner</string>
     <string name="auto_backup_off">Aus</string>
+    <string name="watch_folder">Überwachter Ordner</string>
+    <string name="watch_folder_hint">E-Books und Hörbücher, die in diesem Ordner auftauchen, landen beim Öffnen von Shelf in deiner Bibliothek. Audiodateien im selben Unterordner werden ein Hörbuch. Mit einem Syncthing-Ordner schickst du Bücher von anderen Geräten.</string>
+    <string name="watch_folder_row">Importordner</string>
+    <string name="watch_imported">Neue Bücher aus deinem überwachten Ordner sind in deiner Bibliothek</string>
     <string name="born">Geboren %d</string>
     <string name="catalogue">Katalog</string>
     <string name="catalogue_hint">Offline-Pakete, Updates und eigene Quellen.</string>

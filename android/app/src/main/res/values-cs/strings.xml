@@ -23,6 +23,10 @@
     <string name="auto_backup_hint">Jednou denně při opuštění Shelf zapíše do této složky zip s datem a ponechá nejnovějších 7. Se složkou Syncthing se zkopíruje i na další zařízení.</string>
     <string name="auto_backup_folder">Složka zálohy</string>
     <string name="auto_backup_off">Vypnuto</string>
+    <string name="watch_folder">Sledovaná složka</string>
+    <string name="watch_folder_hint">E-knihy a audioknihy, které se v této složce objeví, se při otevření Shelf přidají do knihovny. Zvukové soubory ve stejné podsložce tvoří jednu audioknihu. Se složkou Syncthing můžete posílat knihy z jiných zařízení.</string>
+    <string name="watch_folder_row">Složka pro import</string>
+    <string name="watch_imported">Nové knihy ze sledované složky jsou v knihovně</string>
     <string name="born">Nar. %d</string>
     <string name="catalogue">Katalog</string>
     <string name="catalogue_hint">Offline balíčky, aktualizace a vlastní zdroje.</string>

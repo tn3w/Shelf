@@ -25,6 +25,10 @@
     <string name="auto_backup_hint">Once a day, leaving Shelf writes a dated zip to this folder and keeps the newest 7. Pick a Syncthing folder to copy it to other devices.</string>
     <string name="auto_backup_folder">Backup folder</string>
     <string name="auto_backup_off">Off</string>
+    <string name="watch_folder">Watched folder</string>
+    <string name="watch_folder_hint">Ebooks and audiobooks that appear in this folder are added to your library whenever you open Shelf. Audio files that share a subfolder become one audiobook. Pick a Syncthing folder to send books from other devices.</string>
+    <string name="watch_folder_row">Import folder</string>
+    <string name="watch_imported">New books from your watched folder are in your library</string>
     <string name="born">Born %d</string>
     <string name="catalogue">Catalogue</string>
     <string name="catalogue_hint">Offline packs, updates and own sources.</string>

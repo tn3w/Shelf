@@ -289,6 +289,11 @@ class MainActivity : ComponentActivity() {
         openedFile(intent)?.let(viewModel::openFile)
     }
 
+    override fun onStart() {
+        super.onStart()
+        (application as ShelfApp).importFromFolder()
+    }
+
     override fun onStop() {
         super.onStop()
         (application as ShelfApp).backUp()
