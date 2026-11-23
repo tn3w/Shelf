@@ -58,6 +58,12 @@ class CarLibraryTest {
     }
 
     @Test
+    fun resumingTriesTheLastPlayedBookBeforeNewerOnes() {
+        assertEquals(listOf(2, 1), resumeOrder(books, last = 2).map { it.work })
+        assertEquals(listOf(1, 2), resumeOrder(books, last = 0).map { it.work })
+    }
+
+    @Test
     fun voiceSearchFindsNothingForUnknownBooks() {
         assertNull(bestMatch(books, "cookbook"))
     }

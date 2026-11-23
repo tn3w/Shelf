@@ -96,6 +96,11 @@ fun bestMatch(books: List<Saved>, query: String): Saved? {
         ?: books.firstOrNull { it.author.contains(wanted, ignoreCase = true) }
 }
 
+fun resumeOrder(books: List<Saved>, last: Int) = books.sortedByDescending {
+    it.work ==
+        last
+}
+
 fun sessionState(state: Narration) = when {
     !state.busy -> STATE_NONE
     state.loading -> STATE_BUFFERING
@@ -117,6 +122,7 @@ class NarrationService : MediaBrowserService() {
     private val browsers = mutableSetOf<String>()
     private var art: Pair<Int, Bitmap?> = 0 to null
     private var artUri: Uri? = null
+    private var lastWork = 0
     private var shown: List<Any?> = emptyList()
     private val unplugged = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = playback.pause()
@@ -162,7 +168,7 @@ class NarrationService : MediaBrowserService() {
                 .collect { update(it) }
         }
         scope.launch {
-            app.library.saved.map { books -> books.map(Saved::work) }
+            listenableBooks().map { books -> books.map(Saved::work) }
                 .distinctUntilChanged()
                 .drop(1)
                 .collect { notifyChildrenChanged(BOOKS) }
@@ -212,11 +218,13 @@ class NarrationService : MediaBrowserService() {
         return MediaItem(description, MediaItem.FLAG_BROWSABLE)
     }
 
-    private suspend fun listenable(): List<Saved> {
-        val library = app.library
-        val works = library.audiobooks.first().keys + library.progress.first().keys
-        return library.saved.first().filter { it.work in works }
+    private fun listenableBooks() = app.library.run {
+        combine(saved, audiobooks, progress) { books, audio, read ->
+            books.filter { it.work in audio || it.work in read }
+        }
     }
+
+    private suspend fun listenable() = listenableBooks().first()
 
     private suspend fun books() = coroutineScope {
         listenable().take(LISTED_BOOKS).map { async { book(it) } }.awaitAll()
@@ -274,19 +282,31 @@ class NarrationService : MediaBrowserService() {
 
     private fun search(query: String?) {
         app.scope.launch(Dispatchers.Main) {
-            val found = bestMatch(listenable(), query.orEmpty())
-            if (found == null) return@launch fail(R.string.no_results)
-            listen(found.work)
+            val books = resumeOrder(listenable(), lastWork)
+            val wanted = query.orEmpty()
+            val found = bestMatch(books, wanted)
+            val matches = if (wanted.isBlank()) books else listOfNotNull(found)
+            if (matches.isEmpty()) return@launch fail(R.string.no_results)
+            if (matches.none { play(it) }) fail(R.string.no_text)
         }
     }
 
     private fun listen(work: Int) = app.scope.launch(Dispatchers.Main) {
         val saved = app.library.saved.first().find { it.work == work } ?: return@launch
-        if (app.audiobooks.open(work, saved.title)) return@launch app.audiobooks.play()
-        val source = withContext(Dispatchers.IO) { readAloud(work) }
-        if (source == null) return@launch fail(R.string.no_text)
-        app.narrator.open(work, saved.title, source)
-        app.narrator.play()
+        if (!play(saved)) fail(R.string.no_text)
+    }
+
+    private suspend fun play(saved: Saved): Boolean {
+        val work = saved.work
+        if (app.audiobooks.open(work, saved.title)) {
+            app.audiobooks.play()
+        } else {
+            val source = withContext(Dispatchers.IO) { readAloud(work) } ?: return false
+            app.narrator.open(work, saved.title, source)
+            app.narrator.play()
+        }
+        lastWork = work
+        return true
     }
 
     private suspend fun readAloud(work: Int): Source? = runCatching {
