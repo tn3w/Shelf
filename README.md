@@ -48,7 +48,8 @@ launch.
 <td width="25%" valign="top">
 
 ### 🎧 Listen
-Play your own audiobooks with chapters, or let your phone read any ebook aloud.
+Play your own audiobooks with chapters, or let your phone read any ebook aloud, also
+in Android Auto.
 
 </td>
 <td width="25%" valign="top">
@@ -110,6 +111,13 @@ Books without a cover get one, drawn on your phone in the style of their genre.
 
 Continue your book from the home screen, in the colours of its cover. Your streak and
 everything you are reading sit beside it in your phone's colours.
+
+## Android Auto
+
+<img src="android/design/android-auto.png" width="100%" alt="Android Auto: library with covers and an audiobook playing with chapter and progress">
+
+Pick up your audiobook or have any ebook read aloud in the car, with covers, chapters
+and voice search.
 
 ## Reads your files
 
