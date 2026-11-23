@@ -1,6 +1,7 @@
 package dev.tn3w.shelf
 
 import android.media.MediaCodec
+import android.media.MediaDataSource
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaPlayer
@@ -10,10 +11,12 @@ import androidx.core.net.toUri
 import dev.tn3w.shelf.data.Audiobook
 import dev.tn3w.shelf.data.Level
 import dev.tn3w.shelf.data.Sleep
+import dev.tn3w.shelf.data.StreamCache
 import dev.tn3w.shelf.data.fadeVolume
 import dev.tn3w.shelf.data.heardSeconds
+import dev.tn3w.shelf.data.httpChunks
+import dev.tn3w.shelf.data.loudness
 import dev.tn3w.shelf.data.pagesHeard
-import dev.tn3w.shelf.data.peak
 import dev.tn3w.shelf.data.secondsOfPages
 import dev.tn3w.shelf.data.silences
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +35,9 @@ private const val POSITION_MILLIS = 1000L
 private const val SILENCE_CHECK_MILLIS = 100L
 private const val BOOST_MILLIBELS = 800
 private const val CODEC_TIMEOUT_MICROS = 10_000L
+private const val SCAN_LEAD_MILLIS = 10 * 60 * 1000L
+private const val SCAN_WAIT_MILLIS = 1000L
+private const val STREAM_CACHE = "streamed-audio"
 
 class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var book = Audiobook(emptyList())
@@ -43,6 +49,8 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var enhancer: LoudnessEnhancer? = null
     private var silences = mutableListOf<LongRange>()
     private var scanning: Job? = null
+    private var stream: StreamCache? = null
+    private val streamFile get() = app.cacheDir.resolve(STREAM_CACHE)
 
     suspend fun open(work: Int, title: String): Boolean {
         val audiobook = app.library.audiobooks.first()[work] ?: return false
@@ -89,13 +97,16 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         val uri = book.tracks[track].uri
         loading = app.scope.launch(Dispatchers.Main) {
             val headers = app.catalogs.streamHeaders(uri)
+            val cached = openStream(uri, headers)
+            stream = cached
             player = MediaPlayer().apply {
                 setAudioAttributes(SPEECH_ATTRIBUTES)
                 setOnPreparedListener { prepared() }
                 setOnCompletionListener { completed() }
                 setOnErrorListener { _, _, _ -> failed() }
                 val started = runCatching {
-                    setDataSource(app, uri.toUri(), headers)
+                    if (cached != null) setDataSource(cached.asMediaSource())
+                    if (cached == null) setDataSource(app, uri.toUri(), headers)
                     prepareAsync()
                 }
                 if (started.isFailure) failed()
@@ -103,6 +114,15 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
             boost()
         }
     }
+
+    private suspend fun openStream(uri: String, headers: Map<String, String>) =
+        withContext(Dispatchers.IO) {
+            if (!current.value.skipSilence || !uri.isStreamed()) return@withContext null
+            streamFile.delete()
+            runCatching { StreamCache(streamFile, httpChunks(uri, headers)) }.getOrNull()
+        }
+
+    private fun String.isStreamed() = startsWith("http://") || startsWith("https://")
 
     private fun prepared() {
         val media = player ?: return
@@ -156,26 +176,38 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         silences = found
         if (!current.value.skipSilence || !ready) return
         val uri = book.tracks[book.track].uri
+        val cached = stream
+        if (cached == null && uri.isStreamed()) return
         val from = book.millis
         scanning = app.scope.launch(Dispatchers.IO) {
             val headers = app.catalogs.streamHeaders(uri)
+            val active = { isActive }
             runCatching {
-                val levels = decodedLevels(uri.toUri(), headers, from) { isActive }
+                val levels = decodedLevels(uri.toUri(), headers, cached, from, active)
+                    .onEach { waitForPlayback(it.millis, active) }
                 silences(levels).forEach { withContext(Dispatchers.Main) { found += it } }
             }
+        }
+    }
+
+    private fun waitForPlayback(millis: Long, active: () -> Boolean) {
+        while (active() && millis > book.millis + SCAN_LEAD_MILLIS) {
+            Thread.sleep(SCAN_WAIT_MILLIS)
         }
     }
 
     private fun decodedLevels(
         uri: Uri,
         headers: Map<String, String>,
+        cached: StreamCache?,
         fromMillis: Long,
         active: () -> Boolean,
     ) = sequence {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
-            extractor.setDataSource(app, uri, headers)
+            if (cached != null) extractor.setDataSource(cached.asMediaSource())
+            if (cached == null) extractor.setDataSource(app, uri, headers)
             val track = (0 until extractor.trackCount).first {
                 extractor.getTrackFormat(it).mime.startsWith("audio/")
             }
@@ -192,7 +224,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
                 val index = decoder.dequeueOutputBuffer(info, CODEC_TIMEOUT_MICROS)
                 if (index < 0) continue
                 val pcm = decoder.getOutputBuffer(index)!!
-                val level = Level(info.presentationTimeUs / 1000, peak(pcm))
+                val level = Level(info.presentationTimeUs / 1000, loudness(pcm))
                 decoder.releaseOutputBuffer(index, false)
                 if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
                 yield(level)
@@ -201,6 +233,15 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
             codec?.release()
             extractor.release()
         }
+    }
+
+    private fun StreamCache.asMediaSource() = object : MediaDataSource() {
+        override fun readAt(position: Long, buffer: ByteArray, offset: Int, size: Int) =
+            this@asMediaSource.readAt(position, buffer, offset, size)
+
+        override fun getSize() = this@asMediaSource.size
+
+        override fun close() = Unit
     }
 
     private val MediaFormat.mime get() = getString(MediaFormat.KEY_MIME).orEmpty()
@@ -232,7 +273,12 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
 
     fun setSkipSilence(enabled: Boolean) {
         current.update { it.copy(skipSilence = enabled) }
-        scanSilences()
+        val streamed = book.tracks.getOrNull(book.track)?.uri?.isStreamed() == true
+        if (enabled && streamed && stream == null && player != null) {
+            load(book.track, position())
+        } else {
+            scanSilences()
+        }
         app.scope.launch { app.library.updateSettings { it.copy(skipSilence = enabled) } }
     }
 
@@ -250,6 +296,9 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
         player?.release()
         player = null
         ready = false
+        stream?.close()
+        stream = null
+        streamFile.delete()
     }
 
     private suspend fun tick() {
