@@ -1606,7 +1606,9 @@ fn best_descriptions(records: &[&Record]) -> Vec<(usize, String)> {
         .filter_map(|record| {
             let text = catalog::clean_description(&record.description);
             let score = catalog::description_score(&text, &record.title)?;
-            let language = catalog::detect_language(&text).unwrap_or(record.language);
+            let cataloguing = record.source.language();
+            let fallback = (record.language == cataloguing).then_some(cataloguing);
+            let language = catalog::detect_language(&text).or(fallback)?;
             Some((score, language, text))
         })
         .collect();
@@ -2221,6 +2223,28 @@ mod tests {
         let (french, english_index) = (crate::language_index("fr"), crate::language_index("en"));
         assert_eq!(languages, [french, english_index]);
         assert!(descriptions[0].1.starts_with("Le Petit Prince raconte"));
+    }
+
+    #[test]
+    fn library_descriptions_take_a_language_the_text_or_library_shows() {
+        let record = |edition: &str, description: &str| Record {
+            title: "Begin Again".to_string(),
+            source: Source::Nkp,
+            language: crate::language_index(edition),
+            description: description.to_string(),
+            ..Record::default()
+        };
+        let czech = "YA romantický příběh dvou vysokoškolských studentů, kteří ve snaze \
+                     překlenout fyzickou vzdálenost svých škol způsobí nejeden zmatek.";
+        let detected = best_descriptions(&[&record("es", czech)]);
+        assert_eq!(detected[0].0, crate::language_index("cs"));
+
+        let unplaced = "Romantický příběh dvou vysokoškolských studentů způsobí nejeden \
+                        zmatek a smích na obou kolejích daleko od domova.";
+        assert_eq!(catalog::detect_language(unplaced), None);
+        let cataloguing = best_descriptions(&[&record("cs", unplaced)]);
+        assert_eq!(cataloguing[0].0, crate::language_index("cs"));
+        assert!(best_descriptions(&[&record("es", unplaced)]).is_empty());
     }
 
     const HEADER: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<rdf:RDF\n\

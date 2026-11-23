@@ -225,7 +225,7 @@ const STOP_WORDS: [&str; SOURCE_LANGUAGES.len()] = [
     "się jest przez są był była było oraz tylko już ich jego jej który która które gdy \
      dla bardzo może",
     "jsem pro jako není jsou byl byla bylo jeho její které který také když při jsme \
-     však nebo",
+     však nebo kteří ve svých své svou jejich aby této tento tato mezi až už jen či",
     "",
     "että hän mutta kun niin jos tai myös kuin ovat olla mitä joka jotka sen hänen \
      ole",

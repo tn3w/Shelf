@@ -60,6 +60,8 @@ ABBREVIATIONS = {
 MIN_LENGTH_RATIO = 0.5
 MAX_LENGTH_RATIO = 2.5
 REPEAT_LIMIT = 3
+COPIED_SHARE = 0.3
+WORD = re.compile(r"\w+")
 
 
 def load_requests(path):
@@ -177,6 +179,16 @@ def repeats(text):
     return runs
 
 
+def quadgrams(text):
+    words = WORD.findall(text.lower())
+    return {tuple(words[index : index + 4]) for index in range(len(words) - 3)}
+
+
+def copied(source, target):
+    grams = quadgrams(source)
+    return bool(grams) and len(grams & quadgrams(target)) > COPIED_SHARE * len(grams)
+
+
 def rejection(source, target, replacements):
     if not target.strip():
         return "empty"
@@ -187,7 +199,7 @@ def rejection(source, target, replacements):
         return "placeholder lost"
     if repeats(target) >= REPEAT_LIMIT:
         return "repetition"
-    if target.strip() == source.strip():
+    if target.strip() == source.strip() or copied(source, target):
         return "untranslated"
     return None
 
