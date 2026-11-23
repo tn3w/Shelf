@@ -10,8 +10,11 @@ import android.app.SearchManager.QUERY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat.JPEG
 import android.graphics.drawable.Icon
 import android.media.AudioManager
 import android.media.MediaDescription
@@ -21,16 +24,23 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PAUSED
 import android.media.session.PlaybackState.STATE_PLAYING
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH
 import android.service.media.MediaBrowserService
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.FileProvider
 import dev.tn3w.shelf.data.Saved
 import dev.tn3w.shelf.data.openDocument
+import dev.tn3w.shelf.data.toBook
+import dev.tn3w.shelf.widget.coverOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,6 +56,8 @@ private const val ICON_CLOSE = android.R.drawable.ic_menu_close_clear_cancel
 private const val CLOSE = "dev.tn3w.shelf.narration.CLOSE"
 private const val ROOT = "books"
 private const val HIDDEN = "hidden"
+private const val COVER_WIDTH = 256
+private const val COVER_QUALITY = 85
 private val CAR_BROWSERS = setOf(
     "com.google.android.projection.gearhead",
     "com.google.android.carassistant",
@@ -63,6 +75,8 @@ class NarrationService : MediaBrowserService() {
     private val narrator get() = app.playback
     private lateinit var session: MediaSession
     private var watching: Job? = null
+    private val browsers = mutableSetOf<String>()
+    private var art: Pair<Int, Bitmap?> = 0 to null
     private val idle = PlaybackState.Builder()
         .setActions(PlaybackState.ACTION_PLAY_FROM_MEDIA_ID)
         .build()
@@ -127,8 +141,13 @@ class NarrationService : MediaBrowserService() {
     }
 
     override fun onGetRoot(client: String, uid: Int, hints: Bundle?): BrowserRoot {
-        val browses = client == packageName || client in CAR_BROWSERS
-        return BrowserRoot(if (browses) ROOT else HIDDEN, null)
+        if (client != packageName &&
+            client !in CAR_BROWSERS
+        ) {
+            return BrowserRoot(HIDDEN, null)
+        }
+        browsers += client
+        return BrowserRoot(ROOT, null)
     }
 
     override fun onLoadChildren(parent: String, result: Result<MutableList<MediaItem>>) {
@@ -145,13 +164,43 @@ class NarrationService : MediaBrowserService() {
         return library.saved.first().filter { it.work in works }
     }
 
-    private suspend fun books() = listenable().map {
+    private suspend fun books() = coroutineScope {
+        listenable().map { async { book(it) } }.awaitAll()
+    }
+
+    private suspend fun book(saved: Saved): MediaItem {
         val description = MediaDescription.Builder()
-            .setMediaId(it.work.toString())
-            .setTitle(it.title)
-            .setSubtitle(it.author)
+            .setMediaId(saved.work.toString())
+            .setTitle(saved.title)
+            .setSubtitle(saved.author)
+            .setIconUri(runCatching { coverUri(saved) }.getOrNull())
             .build()
-        MediaItem(description, MediaItem.FLAG_PLAYABLE)
+        return MediaItem(description, MediaItem.FLAG_PLAYABLE)
+    }
+
+    private suspend fun cover(saved: Saved): Bitmap {
+        val settings = app.library.settings.first()
+        return coverOf(app, saved.toBook(), settings, COVER_WIDTH)
+    }
+
+    private suspend fun coverUri(saved: Saved): Uri {
+        val bitmap = cover(saved)
+        val file = cacheDir.resolve("shared/car/${saved.work}.jpg")
+        withContext(Dispatchers.IO) {
+            file.parentFile?.mkdirs()
+            file.outputStream().use { bitmap.compress(JPEG, COVER_QUALITY, it) }
+        }
+        val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
+        browsers.forEach { grantUriPermission(it, uri, FLAG_GRANT_READ_URI_PERMISSION) }
+        return uri
+    }
+
+    private suspend fun artOf(work: Int): Bitmap? {
+        if (art.first == work) return art.second
+        val saved = app.library.saved.first().find { it.work == work }
+        val cover = saved?.let { runCatching { cover(it) }.getOrNull() }
+        art = work to cover
+        return cover
     }
 
     private fun search(query: String?) {
@@ -187,21 +236,23 @@ class NarrationService : MediaBrowserService() {
             .build(),
     )
 
-    private fun update(state: Narration) {
+    private suspend fun update(state: Narration) {
         if (!state.busy) {
             session.setPlaybackState(idle)
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             return stopSelf()
         }
+        val cover = artOf(state.work)
         session.setPlaybackState(playback(state))
         session.setMetadata(
             MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, state.title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, state.chapter)
+                .putBitmap(MediaMetadata.METADATA_KEY_ART, cover)
                 .build(),
         )
         getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION, notification(state))
+            .notify(NOTIFICATION, notification(state, cover))
     }
 
     private fun playback(state: Narration): PlaybackState {
@@ -234,7 +285,7 @@ class NarrationService : MediaBrowserService() {
         ).build()
     }
 
-    private fun notification(state: Narration): Notification {
+    private fun notification(state: Narration, cover: Bitmap? = null): Notification {
         val channel = NotificationChannelCompat
             .Builder(CHANNEL, NotificationManagerCompat.IMPORTANCE_LOW)
             .setName(getString(R.string.listen))
@@ -249,6 +300,7 @@ class NarrationService : MediaBrowserService() {
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle(state.title)
             .setContentText(state.chapter)
+            .setLargeIcon(cover)
             .setContentIntent(playerIntent())
             .setOngoing(state.playing)
             .setVisibility(Notification.VISIBILITY_PUBLIC)

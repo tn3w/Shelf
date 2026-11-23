@@ -85,12 +85,7 @@ private suspend fun widgetBook(
     )
 }
 
-private suspend fun coverOf(
-    app: ShelfApp,
-    book: Book,
-    settings: Settings,
-    width: Int,
-): Bitmap {
+suspend fun coverOf(app: ShelfApp, book: Book, settings: Settings, width: Int): Bitmap {
     val loader = SingletonImageLoader.get(app)
     val drawn = coverRequest(book, app.loaded.value?.catalogue)
     return coverSources(app, book, settings).firstNotNullOfOrNull { source ->
