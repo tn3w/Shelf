@@ -52,8 +52,14 @@ class AudiobookshelfTest {
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         server.createContext("/") { exchange ->
             val (code, body) = when {
-                exchange.requestURI.path == "/login" ->
-                    200 to """{"user": {"token": "secret", "accessToken": "short"}}"""
+                exchange.requestURI.path == "/login" -> {
+                    val sent = exchange.requestBody.readBytes().decodeToString()
+                    if ("\"pass\"" !in sent) {
+                        401 to ""
+                    } else {
+                        200 to """{"user": {"token": "secret", "accessToken": "short"}}"""
+                    }
+                }
 
                 exchange.requestHeaders.getFirst("Authorization") != "Bearer secret" ->
                     401 to ""
@@ -90,7 +96,8 @@ class AudiobookshelfTest {
         assertEquals(listOf("Ada Writer", "B"), feed.entries.map { it.author })
         assertEquals("$BASE/api/items/i1/cover", feed.entries[0].cover)
         assertNull(feed.entries[1].cover)
-        assertEquals("$BASE/api/items/i1?expanded=1", feed.entries[0].link)
+        assertEquals("$BASE/api/items/i1?expanded=1", feed.entries[0].details)
+        assertTrue(feed.entries.all { it.isBook && !it.isDownloadable })
         assertTrue("page=2" in feed.next.orEmpty())
         val search = searchUrl(feed.search.orEmpty(), "walk")
         assertEquals("$BASE/api/libraries/l1/search?q=walk&limit=50", search)
@@ -145,6 +152,24 @@ class AudiobookshelfTest {
         val signedIn = catalog.copy(logins = mapOf("127.0.0.1" to login))
         val client = CatalogClient(signedIn)
         assertEquals(listOf("Audiobooks"), client.feed().entries.map { it.title })
-        assertEquals("$root/x?token=secret", client.streamUrl("$root/x"))
+    }
+
+    @Test
+    fun renewsARejectedTokenWithTheSavedPassword() = runBlocking {
+        val expired = mapOf("127.0.0.1" to Login("reader", "pass", "expired"))
+        val catalog = Catalog("Home", root, expired, server = Server.Audiobookshelf)
+        val client = CatalogClient(catalog)
+
+        assertEquals(listOf("Audiobooks"), client.feed().entries.map { it.title })
+        assertEquals(mapOf("Authorization" to "Bearer secret"), client.streamHeaders())
+    }
+
+    @Test
+    fun wrongSavedPasswordAsksToSignInAgain() = runBlocking {
+        val wrong = mapOf("127.0.0.1" to Login("reader", "nope", "expired"))
+        val catalog = Catalog("Home", root, wrong, server = Server.Audiobookshelf)
+
+        val error = runCatching { CatalogClient(catalog).feed() }.exceptionOrNull()
+        assertTrue(error is LoginNeeded)
     }
 }

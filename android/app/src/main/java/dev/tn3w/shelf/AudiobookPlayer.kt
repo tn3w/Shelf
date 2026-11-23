@@ -27,6 +27,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     private var player: MediaPlayer? = null
     private var ready = false
     private var ticker: Job? = null
+    private var loading: Job? = null
     private var heard = 0
 
     suspend fun open(work: Int, title: String): Boolean {
@@ -65,20 +66,26 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
     }
 
     private fun load(track: Int, millis: Long) {
+        loading?.cancel()
         player?.release()
+        player = null
         ready = false
         book = book.copy(track = track, millis = millis)
         moved()
-        player = MediaPlayer().apply {
-            setAudioAttributes(SPEECH_ATTRIBUTES)
-            setOnPreparedListener { prepared() }
-            setOnCompletionListener { completed() }
-            setOnErrorListener { _, _, _ -> failed() }
-            val started = runCatching {
-                setDataSource(app, book.tracks[track].uri.toUri())
-                prepareAsync()
+        val uri = book.tracks[track].uri
+        loading = app.scope.launch(Dispatchers.Main) {
+            val headers = app.catalogs.streamHeaders(uri)
+            player = MediaPlayer().apply {
+                setAudioAttributes(SPEECH_ATTRIBUTES)
+                setOnPreparedListener { prepared() }
+                setOnCompletionListener { completed() }
+                setOnErrorListener { _, _, _ -> failed() }
+                val started = runCatching {
+                    setDataSource(app, uri.toUri(), headers)
+                    prepareAsync()
+                }
+                if (started.isFailure) failed()
             }
-            if (started.isFailure) failed()
         }
     }
 
@@ -216,6 +223,7 @@ class AudiobookPlayer(app: ShelfApp) : Playback(app) {
 
     override fun stop() {
         ticker?.cancel()
+        loading?.cancel()
         if (current.value.active) {
             book = book.copy(millis = position())
             save()

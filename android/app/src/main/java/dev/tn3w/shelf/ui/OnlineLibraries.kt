@@ -82,13 +82,6 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
 
     fun load() {
         val client = client() ?: return
-        val catalog = saved() ?: return
-        val login = catalog.logins[catalog.host]
-        if (catalog.isAudiobookshelf && login != null && login.token.isEmpty()) {
-            val needed =
-                LoginNeeded(catalog.host, catalog.name, Audiobookshelf(catalog.url).login)
-            return signIn(needed, login.username, login.password)
-        }
         val shown = _feed.value
         val target = if (shown == null) {
             url.ifEmpty { saved()?.url.orEmpty() }
@@ -123,11 +116,25 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
         }
     }
 
-    fun stream(entry: Entry) {
+    fun details(index: Int, onLoaded: () -> Unit) {
         val client = client() ?: return
-        val tracks = entry.tracks.map { it.copy(uri = client.streamUrl(it.uri)) }
-        detached { app.open(library.importAudio(tracks, app::findInCatalogue)) }
+        val url = _feed.value?.entries?.getOrNull(index)?.details ?: return
+        viewModelScope.launch {
+            val found = runSuspendCatching { client.feed(url).entries.single() }
+            val entry = found.getOrElse {
+                if (it is LoginNeeded) _error.value = it
+                return@launch app.show(R.string.free_books_unreachable)
+            }
+            _feed.update { feed ->
+                val entries = feed?.entries?.toMutableList() ?: return@update feed
+                feed.copy(entries = entries.apply { set(index, entry) })
+            }
+            onLoaded()
+        }
     }
+
+    fun stream(entry: Entry) =
+        detached { app.open(library.importAudio(entry.tracks, app::findInCatalogue)) }
 
     fun download(entry: Entry, file: Acquisition) {
         val client = client() ?: return
@@ -139,7 +146,8 @@ class CatalogViewModel(app: ShelfApp, private val id: String, private val url: S
         save(entry.audioKey) { onProgress ->
             library.downloadAudio(entry.tracks, app::findInCatalogue) { file, target ->
                 val index = entry.tracks.indexOf(file)
-                client.download(file.uri, target, MAX_AUDIO_BYTES) {
+                val space = checkNotNull(target.parentFile).usableSpace
+                client.download(file.uri, target, space) {
                     onProgress((index + it) / entry.tracks.size)
                 }
             }
@@ -461,6 +469,7 @@ private fun Entries(
                 val link = entry.link
                 when {
                     entry.isDownloadable -> onOpen(index)
+                    entry.details != null -> viewModel.details(index) { onOpen(index) }
                     link != null -> navigator.catalog(route.id, link, entry.title)
                 }
             }
@@ -488,7 +497,7 @@ private fun EntryRow(
         details,
         onClick,
         leading = {
-            if (cover != null || entry.isDownloadable) {
+            if (cover != null || entry.isBook) {
                 RemoteCover(cover, authorization)
             } else {
                 Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
@@ -497,7 +506,7 @@ private fun EntryRow(
             }
         },
     ) {
-        val icon = if (!entry.isDownloadable) {
+        val icon = if (!entry.isBook) {
             Icons.AutoMirrored.Rounded.KeyboardArrowRight
         } else {
             Icons.Rounded.Download

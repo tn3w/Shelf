@@ -10,7 +10,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 
-const val MAX_AUDIO_BYTES = 4L * 1024 * 1024 * 1024
 private const val PAGE_SIZE = 50
 private val LIBRARY_ITEMS = Regex("""/api/libraries/([^/]+)/items\?.*page=(\d+)""")
 
@@ -34,6 +33,7 @@ class Audiobookshelf(url: String) {
     private val base = url.trim().trimEnd('/')
     val libraries = "$base/api/libraries"
     val login = "$base/login"
+    val me = "$base/api/me"
 
     private fun items(library: String, page: Int) =
         "$libraries/$library/items?limit=$PAGE_SIZE&page=$page&minified=1" +
@@ -84,7 +84,7 @@ class Audiobookshelf(url: String) {
             cover = "$base/api/items/$id/cover".takeIf {
                 media.text("coverPath").isNotEmpty()
             },
-            link = "$base/api/items/$id?expanded=1",
+            details = "$base/api/items/$id?expanded=1",
             files = ebook(media, id),
             tracks = tracks(media, id, title, author),
         )
