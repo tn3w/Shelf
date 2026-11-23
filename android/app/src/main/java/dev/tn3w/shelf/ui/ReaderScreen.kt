@@ -77,6 +77,7 @@ import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
 import dev.tn3w.shelf.Source
 import dev.tn3w.shelf.data.*
+import dev.tn3w.shelf.sourceOf
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.util.Locale
@@ -203,14 +204,14 @@ class ReaderViewModel(app: ShelfApp, val work: Int, listen: Boolean) :
     private fun toast(@StringRes message: Int) =
         Toast.makeText(app, message, Toast.LENGTH_SHORT).show()
 
-    fun listen(title: String, build: suspend () -> Source) {
+    fun listen(title: String, build: suspend () -> Source?) {
         showListen = true
         viewModelScope.launch {
             if (audiobooks.open(work, title)) return@launch audiobooks.play()
             val current = narrator.state.value
             if (current.work == work && current.busy) return@launch
             val source = withContext(Dispatchers.Default) { build() }
-            if (source.passages.isEmpty()) {
+            if (source == null) {
                 showListen = false
                 return@launch toast(R.string.no_text)
             }
@@ -771,17 +772,7 @@ private fun TextReader(
                 },
                 onListen = {
                     position = pageProgress(pager.currentPage)
-                    viewModel.listen(state.title) {
-                        val passages = speechOf(document)
-                        val chapters = document.chapters
-                        Source(passages, chapters, position) { passage, fraction ->
-                            position.copy(
-                                section = passage.section,
-                                offset = passage.offset,
-                                page = (fraction * position.pages).toInt(),
-                            )
-                        }
-                    }
+                    viewModel.listen(state.title) { sourceOf(document, position) }
                 },
             ) { index ->
                 val page = current[index]
@@ -1137,11 +1128,7 @@ private fun PagedReader(state: ReaderState, document: PagedDocument, progress: P
             onListen = (document as? PdfDocument)?.let { pdf ->
                 {
                     state.viewModel.listen(state.title) {
-                        val start = progress.copy(section = progress.page)
-                        val pages = pdf.texts().orEmpty()
-                        Source(speechOf(pages), emptyList(), start) { passage, _ ->
-                            progressAt(passage.section)
-                        }
+                        sourceOf(pdf, progressAt(pager.currentPage))
                     }
                 }
             },

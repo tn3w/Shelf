@@ -6,7 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.PendingIntent.FLAG_IMMUTABLE
 import android.app.PendingIntent.FLAG_UPDATE_CURRENT
-import android.app.Service
+import android.app.SearchManager.QUERY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -14,15 +14,26 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
 import android.graphics.drawable.Icon
 import android.media.AudioManager
+import android.media.MediaDescription
+import android.media.MediaMetadata
+import android.media.browse.MediaBrowser.MediaItem
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.media.session.PlaybackState.STATE_PAUSED
 import android.media.session.PlaybackState.STATE_PLAYING
+import android.os.Bundle
+import android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH
+import android.service.media.MediaBrowserService
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import dev.tn3w.shelf.data.Saved
+import dev.tn3w.shelf.data.openDocument
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val CHANNEL = "narration"
 private const val NOTIFICATION = 2
@@ -33,16 +44,31 @@ private const val ICON_PREVIOUS = android.R.drawable.ic_media_previous
 private const val ICON_NEXT = android.R.drawable.ic_media_next
 private const val ICON_CLOSE = android.R.drawable.ic_menu_close_clear_cancel
 private const val CLOSE = "dev.tn3w.shelf.narration.CLOSE"
+private const val ROOT = "books"
+private const val HIDDEN = "hidden"
+private val CAR_BROWSERS = setOf(
+    "com.google.android.projection.gearhead",
+    "com.google.android.carassistant",
+    "com.android.car.media",
+)
 
-class NarrationService : Service() {
-    private val narrator get() = (application as ShelfApp).playback
+fun bestMatch(books: List<Saved>, query: String): Saved? {
+    val wanted = query.trim()
+    return books.firstOrNull { it.title.contains(wanted, ignoreCase = true) }
+        ?: books.firstOrNull { it.author.contains(wanted, ignoreCase = true) }
+}
+
+class NarrationService : MediaBrowserService() {
+    private val app get() = application as ShelfApp
+    private val narrator get() = app.playback
     private lateinit var session: MediaSession
     private var watching: Job? = null
+    private val idle = PlaybackState.Builder()
+        .setActions(PlaybackState.ACTION_PLAY_FROM_MEDIA_ID)
+        .build()
     private val unplugged = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) = narrator.pause()
     }
-
-    override fun onBind(intent: Intent?) = null
 
     override fun onCreate() {
         super.onCreate()
@@ -58,11 +84,24 @@ class NarrationService : Service() {
                     override fun onSkipToPrevious() = narrator.skipChapter(-1)
 
                     override fun onStop() = narrator.stop()
+
+                    override fun onFastForward() = narrator.skip(1)
+
+                    override fun onRewind() = narrator.skip(-1)
+
+                    override fun onPlayFromSearch(query: String?, extras: Bundle?) =
+                        search(query)
+
+                    override fun onPlayFromMediaId(mediaId: String, extras: Bundle?) {
+                        mediaId.toIntOrNull()?.let(::listen)
+                    }
                 },
             )
             setSessionActivity(playerIntent())
             isActive = true
         }
+        session.setPlaybackState(idle)
+        sessionToken = session.sessionToken
         val noisy = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         registerReceiver(unplugged, noisy)
     }
@@ -74,21 +113,93 @@ class NarrationService : Service() {
             PREVIOUS -> narrator.skipChapter(-1)
             NEXT -> narrator.skipChapter(1)
             CLOSE -> narrator.stop()
+            INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> search(intent.getStringExtra(QUERY))
         }
         ServiceCompat.startForeground(
             this, NOTIFICATION, notification(narrator.state.value),
             FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
         )
         watching?.cancel()
-        watching = (application as ShelfApp).scope.launch {
+        watching = app.scope.launch {
             narrator.state.collect { update(it) }
         }
         return START_NOT_STICKY
     }
 
+    override fun onGetRoot(client: String, uid: Int, hints: Bundle?): BrowserRoot {
+        val browses = client == packageName || client in CAR_BROWSERS
+        return BrowserRoot(if (browses) ROOT else HIDDEN, null)
+    }
+
+    override fun onLoadChildren(parent: String, result: Result<MutableList<MediaItem>>) {
+        result.detach()
+        app.scope.launch {
+            val items = if (parent == ROOT) books() else emptyList()
+            result.sendResult(items.toMutableList())
+        }
+    }
+
+    private suspend fun listenable(): List<Saved> {
+        val library = app.library
+        val works = library.audiobooks.first().keys + library.progress.first().keys
+        return library.saved.first().filter { it.work in works }
+    }
+
+    private suspend fun books() = listenable().map {
+        val description = MediaDescription.Builder()
+            .setMediaId(it.work.toString())
+            .setTitle(it.title)
+            .setSubtitle(it.author)
+            .build()
+        MediaItem(description, MediaItem.FLAG_PLAYABLE)
+    }
+
+    private fun search(query: String?) {
+        app.scope.launch {
+            val found = bestMatch(listenable(), query.orEmpty())
+            if (found == null) return@launch fail(R.string.no_results)
+            listen(found.work)
+        }
+    }
+
+    private fun listen(work: Int) = app.scope.launch {
+        val saved = app.library.saved.first().find { it.work == work } ?: return@launch
+        if (app.audiobooks.open(work, saved.title)) {
+            return@launch withContext(Dispatchers.Main) { app.audiobooks.play() }
+        }
+        val source = withContext(Dispatchers.IO) { readAloud(work) }
+        withContext(Dispatchers.Main) {
+            if (source == null) return@withContext fail(R.string.no_text)
+            app.narrator.open(work, saved.title, source)
+            app.narrator.play()
+        }
+    }
+
+    private suspend fun readAloud(work: Int): Source? = runCatching {
+        val progress = app.library.progressOf(work) ?: return null
+        openDocument(app.library.bookFile(progress.file)).use { sourceOf(it, progress) }
+    }.getOrNull()
+
+    private fun fail(message: Int) = session.setPlaybackState(
+        PlaybackState.Builder()
+            .setState(PlaybackState.STATE_ERROR, 0, 0f)
+            .setErrorMessage(getString(message))
+            .build(),
+    )
+
     private fun update(state: Narration) {
-        if (!state.busy) return stopSelf()
+        if (!state.busy) {
+            session.setPlaybackState(idle)
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            return stopSelf()
+        }
         session.setPlaybackState(playback(state))
+        session.setMetadata(
+            MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, state.title)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, state.chapter)
+                .build(),
+        )
         getSystemService(NotificationManager::class.java)
             .notify(NOTIFICATION, notification(state))
     }
@@ -97,7 +208,8 @@ class NarrationService : Service() {
         val mode = if (state.playing) STATE_PLAYING else STATE_PAUSED
         val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
             PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-            PlaybackState.ACTION_STOP
+            PlaybackState.ACTION_STOP or PlaybackState.ACTION_FAST_FORWARD or
+            PlaybackState.ACTION_REWIND or PlaybackState.ACTION_PLAY_FROM_MEDIA_ID
         return PlaybackState.Builder()
             .setActions(actions)
             .setState(mode, state.index.toLong(), 0f)

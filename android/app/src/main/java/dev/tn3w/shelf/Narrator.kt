@@ -3,19 +3,23 @@ package dev.tn3w.shelf
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import dev.tn3w.shelf.data.Chapter
+import dev.tn3w.shelf.data.Document
 import dev.tn3w.shelf.data.Passage
+import dev.tn3w.shelf.data.PdfDocument
 import dev.tn3w.shelf.data.PocketModel
 import dev.tn3w.shelf.data.PocketText
 import dev.tn3w.shelf.data.Progress
 import dev.tn3w.shelf.data.Settings
 import dev.tn3w.shelf.data.Sleep
 import dev.tn3w.shelf.data.Spoken
+import dev.tn3w.shelf.data.TextDocument
 import dev.tn3w.shelf.data.chapterStarts
 import dev.tn3w.shelf.data.fadeVolume
 import dev.tn3w.shelf.data.ggufMetadata
 import dev.tn3w.shelf.data.languageOf
 import dev.tn3w.shelf.data.pocketVoices
 import dev.tn3w.shelf.data.secondsLeft
+import dev.tn3w.shelf.data.speechOf
 import dev.tn3w.shelf.data.voicePool
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,6 +39,26 @@ class Source(
     val progress: Progress,
     val progressAt: (Passage, Float) -> Progress,
 )
+
+fun sourceOf(document: Document, progress: Progress): Source? = when (document) {
+    is TextDocument ->
+        Source(speechOf(document), document.chapters, progress) { passage, fraction ->
+            progress.copy(
+                section = passage.section,
+                offset = passage.offset,
+                page = (fraction * progress.pages).toInt(),
+            )
+        }
+
+    is PdfDocument -> {
+        val start = progress.copy(section = progress.page)
+        Source(speechOf(document.texts().orEmpty()), emptyList(), start) { passage, _ ->
+            progress.copy(page = passage.section)
+        }
+    }
+
+    else -> null
+}?.takeIf { it.passages.isNotEmpty() }
 
 class Narrator(app: ShelfApp) :
     Playback(app),
