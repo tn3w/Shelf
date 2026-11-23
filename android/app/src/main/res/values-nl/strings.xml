@@ -22,7 +22,7 @@
     <string name="bookmarks">Bladwijzers</string>
     <string name="export_failed">Dat bestand kon niet worden geschreven.</string>
     <string name="auto_backup">Automatische back-up</string>
-    <string name="auto_backup_hint">Eén keer per dag schrijft Shelf bij het afsluiten een zip met datum naar deze map en bewaart de nieuwste 7. Kies een Syncthing-map om hem naar andere apparaten te kopiëren.</string>
+    <string name="auto_backup_hint">Eén keer per dag schrijft Shelf bij het afsluiten een zip met datum naar deze map en bewaart de nieuwste 7. Kies een Syncthing-map om hem naar andere apparaten te kopiëren. Shelf synchroniseert ook voortgang, planken en notities met andere apparaten die dezelfde map gebruiken.</string>
     <string name="auto_backup_folder">Back-upmap</string>
     <string name="auto_backup_off">Uit</string>
     <string name="watch_folder">Gevolgde map</string>

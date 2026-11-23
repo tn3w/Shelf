@@ -154,7 +154,14 @@ class ShelfApp :
     }
 
     fun backUp() = scope.launch(Dispatchers.IO) {
-        backup.withLock { library.backUpToFolder() }
+        backup.withLock {
+            library.syncToFolder()
+            library.backUpToFolder()
+        }
+    }
+
+    fun syncFromFolder() = scope.launch(Dispatchers.IO) {
+        backup.withLock { library.syncFromFolder() }
     }
 
     fun importFromFolder() = scope.launch(Dispatchers.IO) {

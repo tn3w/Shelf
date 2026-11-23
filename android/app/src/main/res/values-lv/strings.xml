@@ -22,7 +22,7 @@
     <string name="bookmarks">Grāmatzīmes</string>
     <string name="export_failed">Šo failu nevarēja ierakstīt.</string>
     <string name="auto_backup">Automātisks dublējums</string>
-    <string name="auto_backup_hint">Reizi dienā, aizverot Shelf, šajā mapē tiek ierakstīts datēts zip fails, un tiek paturēti 7 jaunākie. Izvēlieties Syncthing mapi, lai to kopētu uz citām ierīcēm.</string>
+    <string name="auto_backup_hint">Reizi dienā, aizverot Shelf, šajā mapē tiek ierakstīts datēts zip fails, un tiek paturēti 7 jaunākie. Izvēlieties Syncthing mapi, lai to kopētu uz citām ierīcēm. Shelf arī sinhronizē progresu, plauktus un piezīmes ar citām ierīcēm, kas izmanto to pašu mapi.</string>
     <string name="auto_backup_folder">Dublējumu mape</string>
     <string name="auto_backup_off">Izslēgts</string>
     <string name="watch_folder">Uzraudzītā mape</string>

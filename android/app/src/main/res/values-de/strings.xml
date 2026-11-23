@@ -20,7 +20,7 @@
     <string name="backup_exported">Sicherung gespeichert.</string>
     <string name="export_failed">Diese Datei konnte nicht geschrieben werden.</string>
     <string name="auto_backup">Automatische Sicherung</string>
-    <string name="auto_backup_hint">Einmal täglich schreibt Shelf beim Verlassen eine datierte Zip-Datei in diesen Ordner und behält die neuesten 7. Mit einem Syncthing-Ordner landet sie auch auf anderen Geräten.</string>
+    <string name="auto_backup_hint">Einmal täglich schreibt Shelf beim Verlassen eine datierte Zip-Datei in diesen Ordner und behält die neuesten 7. Mit einem Syncthing-Ordner landet sie auch auf anderen Geräten. Shelf gleicht außerdem Fortschritt, Regale und Notizen mit anderen Geräten ab, die denselben Ordner nutzen.</string>
     <string name="auto_backup_folder">Sicherungsordner</string>
     <string name="auto_backup_off">Aus</string>
     <string name="watch_folder">Überwachter Ordner</string>

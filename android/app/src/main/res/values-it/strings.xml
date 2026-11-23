@@ -22,7 +22,7 @@
     <string name="bookmarks">Segnalibri</string>
     <string name="export_failed">Impossibile scrivere questo file.</string>
     <string name="auto_backup">Backup automatico</string>
-    <string name="auto_backup_hint">Una volta al giorno, uscendo da Shelf, viene salvato uno zip datato in questa cartella e vengono conservati i 7 più recenti. Scegli una cartella di Syncthing per copiarlo su altri dispositivi.</string>
+    <string name="auto_backup_hint">Una volta al giorno, uscendo da Shelf, viene salvato uno zip datato in questa cartella e vengono conservati i 7 più recenti. Scegli una cartella di Syncthing per copiarlo su altri dispositivi. Shelf sincronizza anche progressi, scaffali e note con gli altri dispositivi che usano la stessa cartella.</string>
     <string name="auto_backup_folder">Cartella di backup</string>
     <string name="auto_backup_off">Disattivato</string>
     <string name="watch_folder">Cartella osservata</string>

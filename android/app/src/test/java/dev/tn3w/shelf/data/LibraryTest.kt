@@ -126,6 +126,38 @@ class LibraryTest {
     }
 
     @Test
+    fun syncTakesNewerReadingPerBook() {
+        val current = ReadingState(
+            progress = mapOf(1 to Progress("1.epub", page = 3), 2 to Progress("2.epub")),
+            highlights = mapOf(2 to listOf(Highlight(0, 1, 2, "deleted elsewhere"))),
+            edited = mapOf(1 to 10, 2 to 5),
+        )
+        val peer = Backup(
+            progress = mapOf(
+                1 to Progress("1.epub", page = 1),
+                2 to Progress("2.epub", 0, 9),
+            ),
+            edited = mapOf(1 to 4, 2 to 8),
+        )
+        val synced = current.synced(peer)
+        assertEquals(Progress("1.epub", page = 3), synced.progress[1])
+        assertEquals(Progress("2.epub", 0, 9), synced.progress[2])
+        assertEquals(emptyMap<Int, List<Highlight>>(), synced.highlights)
+        assertEquals(mapOf(1 to 10L, 2 to 8L), synced.edited)
+    }
+
+    @Test
+    fun syncKeepsRemovedBooksRemoved() {
+        val current = LibraryState(removed = mapOf(1 to 20))
+        val peer =
+            Backup(entries = listOf(Saved(1, Shelf.Read, 10), Saved(2, Shelf.Want, 10)))
+        val synced = current.synced(peer)
+        assertEquals(listOf(Saved(2, Shelf.Want, 10)), synced.entries)
+        val readded = LibraryState(entries = listOf(Saved(1, Shelf.Want, 30)))
+        assertEquals(1, readded.synced(Backup(removed = mapOf(1 to 20))).entries.size)
+    }
+
+    @Test
     fun redirectMovesBookmarks() {
         val (first, second) = Bookmark(page = 2) to Bookmark(page = 9)
         val stored = mapOf(5 to listOf(first), 42 to listOf(second))

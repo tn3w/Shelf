@@ -20,7 +20,7 @@
     <string name="backup_exported">Резервная копия сохранена.</string>
     <string name="export_failed">Не удалось записать этот файл.</string>
     <string name="auto_backup">Автоматическое копирование</string>
-    <string name="auto_backup_hint">Раз в день при выходе из Shelf в эту папку записывается zip с датой, хранятся 7 последних. Выберите папку Syncthing, чтобы копия попадала на другие устройства.</string>
+    <string name="auto_backup_hint">Раз в день при выходе из Shelf в эту папку записывается zip с датой, хранятся 7 последних. Выберите папку Syncthing, чтобы копия попадала на другие устройства. Shelf также синхронизирует прогресс, полки и заметки с другими устройствами, использующими эту папку.</string>
     <string name="auto_backup_folder">Папка резервных копий</string>
     <string name="auto_backup_off">Выключено</string>
     <string name="watch_folder">Отслеживаемая папка</string>

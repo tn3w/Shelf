@@ -22,7 +22,7 @@
     <string name="bookmarks">Bookmarks</string>
     <string name="export_failed">That file could not be written.</string>
     <string name="auto_backup">Automatic backup</string>
-    <string name="auto_backup_hint">Once a day, leaving Shelf writes a dated zip to this folder and keeps the newest 7. Pick a Syncthing folder to copy it to other devices.</string>
+    <string name="auto_backup_hint">Once a day, leaving Shelf writes a dated zip to this folder and keeps the newest 7. Pick a Syncthing folder to copy it to other devices. Shelf also syncs progress, shelves and notes with other devices that use the same folder.</string>
     <string name="auto_backup_folder">Backup folder</string>
     <string name="auto_backup_off">Off</string>
     <string name="watch_folder">Watched folder</string>

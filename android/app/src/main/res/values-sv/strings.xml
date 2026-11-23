@@ -20,7 +20,7 @@
     <string name="backup_exported">Säkerhetskopian har sparats.</string>
     <string name="export_failed">Filen kunde inte skrivas.</string>
     <string name="auto_backup">Automatisk säkerhetskopia</string>
-    <string name="auto_backup_hint">En gång om dagen skriver Shelf en daterad zip-fil till mappen när du lämnar appen och behåller de 7 senaste. Välj en Syncthing-mapp för att kopiera den till andra enheter.</string>
+    <string name="auto_backup_hint">En gång om dagen skriver Shelf en daterad zip-fil till mappen när du lämnar appen och behåller de 7 senaste. Välj en Syncthing-mapp för att kopiera den till andra enheter. Shelf synkar också framsteg, hyllor och anteckningar med andra enheter som använder samma mapp.</string>
     <string name="auto_backup_folder">Mapp för säkerhetskopior</string>
     <string name="auto_backup_off">Av</string>
     <string name="watch_folder">Bevakad mapp</string>

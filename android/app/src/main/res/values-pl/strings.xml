@@ -20,7 +20,7 @@
     <string name="backup_exported">Kopia zapasowa zapisana.</string>
     <string name="export_failed">Nie można zapisać tego pliku.</string>
     <string name="auto_backup">Automatyczna kopia</string>
-    <string name="auto_backup_hint">Raz dziennie przy wyjściu Shelf zapisuje w tym folderze plik zip z datą i zachowuje 7 najnowszych. Wybierz folder Syncthing, aby skopiować go na inne urządzenia.</string>
+    <string name="auto_backup_hint">Raz dziennie przy wyjściu Shelf zapisuje w tym folderze plik zip z datą i zachowuje 7 najnowszych. Wybierz folder Syncthing, aby skopiować go na inne urządzenia. Shelf synchronizuje też postęp, półki i notatki z innymi urządzeniami korzystającymi z tego samego folderu.</string>
     <string name="auto_backup_folder">Folder kopii</string>
     <string name="auto_backup_off">Wyłączona</string>
     <string name="watch_folder">Obserwowany folder</string>

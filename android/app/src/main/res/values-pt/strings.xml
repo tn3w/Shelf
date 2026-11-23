@@ -22,7 +22,7 @@
     <string name="bookmarks">Marcadores</string>
     <string name="export_failed">Não foi possível gravar esse arquivo.</string>
     <string name="auto_backup">Backup automático</string>
-    <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é salvo nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos.</string>
+    <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é salvo nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos. O Shelf também sincroniza progresso, estantes e notas com outros dispositivos que usam a mesma pasta.</string>
     <string name="auto_backup_folder">Pasta de backup</string>
     <string name="auto_backup_off">Desativado</string>
     <string name="watch_folder">Pasta monitorada</string>

@@ -12,6 +12,7 @@ import android.provider.DocumentsContract.createDocument
 import android.provider.DocumentsContract.deleteDocument
 import android.provider.DocumentsContract.getTreeDocumentId
 import android.provider.OpenableColumns
+import android.provider.Settings.Secure
 import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.annotation.StringRes
@@ -53,6 +54,7 @@ private const val LEGACY_FILE = "datastore/library.preferences_pb"
 private const val BACKUP_ENTRY = "library.json"
 private const val BOOKS_PREFIX = "books/"
 private const val KEPT_BACKUPS = 7
+private val SYNC_FILE = Regex("""shelf-sync-\w+\.json""")
 private val AUTOMATIC_BACKUP = Regex("""shelf-\d{4}-\d{2}-\d{2}\.zip""")
 private val BOOK_FILE = Regex("""(-?\d+)(\.\w+|-cover-\d+)""")
 val FONT_SCALES = 0.7f..1.8f
@@ -260,6 +262,8 @@ data class Backup(
     val settings: Settings = Settings(),
     val bookmarks: Map<Int, List<Bookmark>> = emptyMap(),
     val highlights: Map<Int, List<Highlight>> = emptyMap(),
+    val edited: Map<Int, Long> = emptyMap(),
+    val removed: Map<Int, Long> = emptyMap(),
 )
 
 data class Habit(
@@ -367,6 +371,7 @@ data class LibraryState(
     val dismissed: Set<Int> = emptySet(),
     val settings: Settings = Settings(),
     val watched: Set<String> = emptySet(),
+    val removed: Map<Int, Long> = emptyMap(),
 )
 
 @Serializable
@@ -377,7 +382,11 @@ data class ReadingState(
     val highlights: Map<Int, List<Highlight>> = emptyMap(),
     val audiobooks: Map<Int, Audiobook> = emptyMap(),
     val listening: Set<Int> = emptySet(),
+    val edited: Map<Int, Long> = emptyMap(),
 )
+
+internal fun ReadingState.touched(work: Int, time: Long = System.currentTimeMillis()) =
+    copy(edited = edited + (work to time))
 
 internal fun ReadingState.listeningSwitched(from: Int?, to: Int?) =
     copy(listening = listening - setOfNotNull(from) + setOfNotNull(to))
@@ -479,7 +488,7 @@ internal fun keptPosition(stored: Progress?, start: Progress, next: Progress?): 
 }
 
 private fun ReadingState.withProgress(work: Int, progress: Progress, pagesRead: Int) =
-    copy(
+    touched(work).copy(
         progress = this.progress + (work to progress),
         activity = if (pagesRead > 0) activity.addedToday(pagesRead) else activity,
     )
@@ -800,7 +809,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             detachAudio(work)
             voiceCache(work).delete()
             readingStore.change {
-                it.copy(
+                it.touched(work).copy(
                     progress = it.progress - work,
                     bookmarks = it.bookmarks - work,
                     highlights = it.highlights - work,
@@ -810,7 +819,10 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             if (keepShelves) return@withContext
             deleteCovers(work)
             libraryStore.change { library ->
-                library.copy(entries = library.entries.filter { it.work != work })
+                library.copy(
+                    entries = library.entries.filter { it.work != work },
+                    removed = library.removed + (work to System.currentTimeMillis()),
+                )
             }
         }
 
@@ -889,15 +901,22 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     }
 
     suspend fun changeBookmarks(work: Int, change: (List<Bookmark>) -> List<Bookmark>) =
-        readingStore.change { it.copy(bookmarks = it.bookmarks.changed(work, change)) }
+        readingStore.change {
+            it.touched(work).copy(bookmarks = it.bookmarks.changed(work, change))
+        }
 
     suspend fun changeHighlights(
         work: Int,
         change: (List<Highlight>) -> List<Highlight>,
-    ) = readingStore.change { it.copy(highlights = it.highlights.changed(work, change)) }
+    ) = readingStore.change {
+        it.touched(work).copy(highlights = it.highlights.changed(work, change))
+    }
 
     private suspend fun forgetMarks(work: Int) = readingStore.change {
-        it.copy(bookmarks = it.bookmarks - work, highlights = it.highlights - work)
+        it.touched(work).copy(
+            bookmarks = it.bookmarks - work,
+            highlights = it.highlights - work,
+        )
     }
 
     suspend fun exportNotes(uri: Uri, format: NotesFormat, work: Int? = null): Boolean {
@@ -953,6 +972,33 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                 deleteDocument(resolver, backups.getValue(it))
             }
         }
+
+    suspend fun syncFromFolder() = withContext(Dispatchers.IO) {
+        val folder = settings.first().backupFolder.ifEmpty { return@withContext }
+        val own = syncFileName(context.deviceId())
+        val peers = context.documentsIn(folder.toUri())
+            .filterKeys { SYNC_FILE.matches(it) && it != own }
+            .values
+            .mapNotNull { uri -> context.readFrom(uri, ::readSyncFile) }
+        if (peers.isEmpty()) return@withContext
+        libraryStore.change { peers.fold(it, LibraryState::synced) }
+        readingStore.change { peers.fold(it, ReadingState::synced) }
+    }
+
+    suspend fun syncToFolder() = withContext(Dispatchers.IO) {
+        val folder = settings.first().backupFolder.ifEmpty { return@withContext }
+        val tree = folder.toUri()
+        val resolver = context.contentResolver
+        val name = syncFileName(context.deviceId())
+        val parent = buildDocumentUriUsingTree(tree, getTreeDocumentId(tree))
+        val file = context.documentsIn(tree)[name]
+            ?: createDocument(resolver, parent, "application/json", name)
+            ?: return@withContext
+        val text = json.encodeToString(backupOf(state.first(), reading.first()))
+        runCatching {
+            resolver.openOutputStream(file, "wt")?.use { it.write(text.toByteArray()) }
+        }
+    }
 
     private fun writeArchive(output: OutputStream, backup: Backup) =
         ZipOutputStream(output).use { archive ->
@@ -1029,6 +1075,14 @@ internal fun folderImports(
     return books.map(::listOf) + audiobooks
 }
 
+private fun Context.deviceId() =
+    Secure.getString(contentResolver, Secure.ANDROID_ID).orEmpty().ifEmpty { "device" }
+
+private fun readSyncFile(input: InputStream) =
+    json.decodeFromString<Backup>(input.readAtMost(MAX_ENTRY_BYTES).decodeToString())
+
+internal fun syncFileName(device: String) = "shelf-sync-$device.json"
+
 internal fun automaticBackupName(day: LocalDate) = "shelf-$day.zip"
 
 internal fun staleBackups(names: Collection<String>, kept: Int = KEPT_BACKUPS) =
@@ -1084,6 +1138,8 @@ internal fun backupOf(library: LibraryState, reading: ReadingState) = Backup(
     library.settings,
     reading.bookmarks,
     reading.highlights,
+    reading.edited,
+    library.removed,
 )
 
 internal fun LibraryState.merge(imported: Backup) = copy(
@@ -1142,11 +1198,36 @@ private fun restoredSettings(imported: Settings, current: Settings) = imported.c
     watchFolder = current.watchFolder,
 )
 
+internal fun LibraryState.synced(peer: Backup): LibraryState {
+    val removed = latest(removed, peer.removed)
+    val kept = newestPerWork(entries + peer.entries)
+        .filter { it.updated > (removed[it.work] ?: 0) }
+    return copy(entries = kept, dismissed = dismissed + peer.dismissed, removed = removed)
+}
+
+internal fun ReadingState.synced(peer: Backup): ReadingState {
+    val newer = peer.edited.filter { (work, time) -> time > (edited[work] ?: 0) }.keys
+    fun <T> taken(current: Map<Int, T>, theirs: Map<Int, T>) =
+        current - newer + theirs.filterKeys { it in newer }
+    val peerProgress = peer.progress.filterValues { BOOK_FILE.matches(it.file) }
+    return copy(
+        progress = taken(progress, peerProgress),
+        activity = maxPerDay(peer.activity, activity),
+        bookmarks = taken(bookmarks, peer.bookmarks),
+        highlights = taken(highlights, peer.highlights),
+        edited = latest(edited, peer.edited),
+    )
+}
+
+private fun latest(first: Map<Int, Long>, second: Map<Int, Long>) =
+    (first.keys + second.keys).associateWith { maxOf(first[it] ?: 0, second[it] ?: 0) }
+
 private fun Int.moved(alias: (Int) -> Int?) = alias(this) ?: this
 
 internal fun LibraryState.redirect(alias: (Int) -> Int?) = copy(
     entries = newestPerWork(entries.map { it.copy(work = it.work.moved(alias)) }),
     dismissed = dismissed.mapTo(HashSet()) { it.moved(alias) },
+    removed = removed.mapKeys { it.key.moved(alias) },
 )
 
 internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(
@@ -1157,6 +1238,7 @@ internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(
     highlights = highlights.moved(alias),
     audiobooks = audiobooks.mapKeys { it.key.moved(alias) },
     listening = listening.mapTo(HashSet()) { it.moved(alias) },
+    edited = edited.mapKeys { it.key.moved(alias) },
 )
 
 private fun <T> Map<Int, List<T>>.moved(alias: (Int) -> Int?) = entries

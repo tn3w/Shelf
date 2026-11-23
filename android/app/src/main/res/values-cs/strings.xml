@@ -20,7 +20,7 @@
     <string name="backup_exported">Záloha uložena.</string>
     <string name="export_failed">Tento soubor nelze zapsat.</string>
     <string name="auto_backup">Automatická záloha</string>
-    <string name="auto_backup_hint">Jednou denně při opuštění Shelf zapíše do této složky zip s datem a ponechá nejnovějších 7. Se složkou Syncthing se zkopíruje i na další zařízení.</string>
+    <string name="auto_backup_hint">Jednou denně při opuštění Shelf zapíše do této složky zip s datem a ponechá nejnovějších 7. Se složkou Syncthing se zkopíruje i na další zařízení. Shelf také synchronizuje postup, police a poznámky s dalšími zařízeními, která používají stejnou složku.</string>
     <string name="auto_backup_folder">Složka zálohy</string>
     <string name="auto_backup_off">Vypnuto</string>
     <string name="watch_folder">Sledovaná složka</string>

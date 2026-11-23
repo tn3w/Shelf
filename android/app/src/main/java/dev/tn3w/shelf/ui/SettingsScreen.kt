@@ -248,6 +248,7 @@ class SettingsViewModel(app: ShelfApp) : ShelfViewModel(app) {
         }
         folder?.let { resolver.takePersistableUriPermission(it, access) }
         library.updateSettings { it.copy(backupFolder = folder?.toString().orEmpty()) }
+        app.syncFromFolder()
         app.backUp()
     }
 

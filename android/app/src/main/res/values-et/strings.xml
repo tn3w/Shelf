@@ -20,7 +20,7 @@
     <string name="backup_exported">Varukoopia on salvestatud.</string>
     <string name="export_failed">Seda faili ei saanud kirjutada.</string>
     <string name="auto_backup">Automaatne varukoopia</string>
-    <string name="auto_backup_hint">Kord päevas kirjutab Shelf sulgemisel sellesse kausta kuupäevaga zip-faili ja hoiab alles 7 uusimat. Vali Syncthingi kaust, et see jõuaks ka teistesse seadmetesse.</string>
+    <string name="auto_backup_hint">Kord päevas kirjutab Shelf sulgemisel sellesse kausta kuupäevaga zip-faili ja hoiab alles 7 uusimat. Vali Syncthingi kaust, et see jõuaks ka teistesse seadmetesse. Shelf sünkroonib ka edenemise, riiulid ja märkmed teiste seadmetega, mis kasutavad sama kausta.</string>
     <string name="auto_backup_folder">Varukoopiate kaust</string>
     <string name="auto_backup_off">Väljas</string>
     <string name="watch_folder">Jälgitav kaust</string>

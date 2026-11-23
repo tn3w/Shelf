@@ -7,7 +7,7 @@
     <string name="backup_failed">Não foi possível usar esse ficheiro.</string>
     <string name="backup_exported">Cópia de segurança guardada.</string>
     <string name="export_failed">Não foi possível gravar esse ficheiro.</string>
-    <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é guardado nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos.</string>
+    <string name="auto_backup_hint">Uma vez por dia, ao sair do Shelf, um zip com data é guardado nesta pasta e os 7 mais recentes são mantidos. Escolha uma pasta do Syncthing para copiá-lo para outros dispositivos. O Shelf também sincroniza o progresso, as estantes e as notas com outros dispositivos que usam a mesma pasta.</string>
     <string name="check_updates">Atualizações da app</string>
     <string name="continue_reading">Continuar a ler</string>
     <string name="download">Transferir</string>

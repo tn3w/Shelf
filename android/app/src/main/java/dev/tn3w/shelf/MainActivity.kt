@@ -292,6 +292,7 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         (application as ShelfApp).importFromFolder()
+        (application as ShelfApp).syncFromFolder()
     }
 
     override fun onStop() {

@@ -21,7 +21,7 @@
     <string name="bookmarks">ブックマーク</string>
     <string name="export_failed">このファイルに書き込めませんでした。</string>
     <string name="auto_backup">自動バックアップ</string>
-    <string name="auto_backup_hint">1 日 1 回、Shelf を閉じるときに日付入りの zip をこのフォルダーに書き込み、最新の 7 件を残します。Syncthing のフォルダーを選ぶと他の端末にもコピーされます。</string>
+    <string name="auto_backup_hint">1 日 1 回、Shelf を閉じるときに日付入りの zip をこのフォルダーに書き込み、最新の 7 件を残します。Syncthing のフォルダーを選ぶと他の端末にもコピーされます。同じフォルダーを使う他の端末とも、進捗・本棚・メモを同期します。</string>
     <string name="auto_backup_folder">バックアップフォルダー</string>
     <string name="auto_backup_off">オフ</string>
     <string name="watch_folder">監視フォルダー</string>
