@@ -46,6 +46,7 @@
     <string name="download_item">Lataa %s</string>
     <string name="explore">Tutki</string>
     <string name="finished">Luettu</string>
+    <string name="did_not_finish">Kesken jätetty</string>
     <string name="for_you">Sinulle</string>
     <string name="formats">Kirjatyypit</string>
     <string name="wish_suggestion">Kirjat: %s</string>

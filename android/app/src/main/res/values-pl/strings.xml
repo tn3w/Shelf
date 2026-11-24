@@ -46,6 +46,7 @@
     <string name="download_item">Pobierz %s</string>
     <string name="explore">Odkrywaj</string>
     <string name="finished">Przeczytane</string>
+    <string name="did_not_finish">Porzucone</string>
     <string name="for_you">Dla ciebie</string>
     <string name="formats">Rodzaje książek</string>
     <string name="wish_suggestion">Książki: %s</string>

@@ -48,6 +48,7 @@
     <string name="download_item">Lejupielādēt %s</string>
     <string name="explore">Atklāt</string>
     <string name="finished">Izlasīta</string>
+    <string name="did_not_finish">Neizlasīta</string>
     <string name="for_you">Jums</string>
     <string name="formats">Grāmatu veidi</string>
     <string name="wish_suggestion">Grāmatas: %s</string>

@@ -12,7 +12,12 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 private val SHELF_WEIGHT =
-    mapOf(Shelf.Read to 0.8, Shelf.Reading to 1.0, Shelf.Want to 0.5)
+    mapOf(
+        Shelf.Read to 0.8,
+        Shelf.Reading to 1.0,
+        Shelf.Want to 0.5,
+        Shelf.Abandoned to 0.2,
+    )
 private val FORM_TAGS = setOf("fiction", "nonfiction")
 internal val AUDIENCE_TAGS =
     setOf("picture-book", "childrens", "middle-grade", "young-adult")

@@ -46,6 +46,7 @@
     <string name="download_item">%s 다운로드</string>
     <string name="explore">둘러보기</string>
     <string name="finished">다 읽음</string>
+    <string name="did_not_finish">읽다 그만둠</string>
     <string name="for_you">추천</string>
     <string name="formats">책 종류</string>
     <string name="wish_suggestion">%s 책</string>

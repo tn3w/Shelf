@@ -114,7 +114,7 @@ private fun YourChips(
     val dates = when (entry.shelf) {
         Shelf.Want -> emptyMap()
 
-        Shelf.Reading -> mapOf(ReadingDate.Started to entry.startedOn())
+        Shelf.Reading, Shelf.Abandoned -> mapOf(ReadingDate.Started to entry.startedOn())
 
         Shelf.Read -> mapOf(
             ReadingDate.Started to entry.startedOn(),

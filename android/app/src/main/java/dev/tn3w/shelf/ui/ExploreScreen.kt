@@ -60,7 +60,7 @@ data class Start(val name: String, val route: SimilarRoute, val book: Book)
 
 private fun Loaded.starts(saved: List<Saved>): List<Start> {
     val recent = saved
-        .filter { it.shelf != Shelf.Want && it.rating !in DISLIKED }
+        .filter { it.shelf in setOf(Shelf.Reading, Shelf.Read) && it.rating !in DISLIKED }
         .sortedByDescending { max(it.updated, it.added) }
     val counts = recent.groupingBy { it.author }.eachCount()
     return recent

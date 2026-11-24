@@ -48,6 +48,7 @@
     <string name="download_item">%s downloaden</string>
     <string name="explore">Ontdekken</string>
     <string name="finished">Gelezen</string>
+    <string name="did_not_finish">Gestopt</string>
     <string name="for_you">Voor jou</string>
     <string name="formats">Boeksoorten</string>
     <string name="wish_suggestion">Boeken met %s</string>

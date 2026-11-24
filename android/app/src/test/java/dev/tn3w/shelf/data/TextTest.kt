@@ -92,11 +92,16 @@ class TextTest {
     }
 
     @Test
-    fun importsDidNotFinishAsRead() {
-        val csv = "Title,Read Status,Last Date Read\nDropped,did-not-finish,2022/12/31"
-        val book = csvBooks(csv).single()
-        assertEquals(Shelf.Read, book.shelf)
+    fun keepsDidNotFinish() {
+        val storyGraph = "Title,Read Status,Date Added\nDropped,did-not-finish,2022/12/31"
+        val book = csvBooks(storyGraph).single()
+        assertEquals(Shelf.Abandoned, book.shelf)
         assertEquals(millis("2022-12-31"), book.date)
+        val goodreads = "Title,Exclusive Shelf,Bookshelves\nDune,dnf,\"dnf, sci-fi\""
+        val dune = csvBooks(goodreads).single()
+        assertEquals(Shelf.Abandoned to listOf("sci-fi"), dune.shelf to dune.lists)
+        val saved = Saved(1, Shelf.Abandoned, millis("2023-04-05"), "T", "A")
+        assertEquals(Shelf.Abandoned, csvBooks(csvOf(listOf(saved))).single().shelf)
     }
 
     @Test

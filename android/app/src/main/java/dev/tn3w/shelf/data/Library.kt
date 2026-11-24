@@ -65,6 +65,7 @@ enum class Shelf(@StringRes val label: Int) {
     Reading(R.string.reading),
     Want(R.string.want_to_read),
     Read(R.string.finished),
+    Abandoned(R.string.did_not_finish),
 }
 
 @Serializable

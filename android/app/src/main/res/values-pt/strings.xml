@@ -48,6 +48,7 @@
     <string name="download_item">Baixar %s</string>
     <string name="explore">Explorar</string>
     <string name="finished">Lidos</string>
+    <string name="did_not_finish">Abandonados</string>
     <string name="for_you">Para você</string>
     <string name="formats">Tipos de livro</string>
     <string name="wish_suggestion">Livros com %s</string>

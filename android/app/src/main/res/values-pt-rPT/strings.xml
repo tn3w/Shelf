@@ -146,6 +146,7 @@
     <string name="download_all">Tudo (%s)</string>
     <string name="explore">Explorar</string>
     <string name="finished">Lidos</string>
+    <string name="did_not_finish">Abandonados</string>
     <string name="formats">Tipos de livro</string>
     <string name="goal_reached">Objetivo diário alcançado. Até amanhã!</string>
     <string name="home">Início</string>

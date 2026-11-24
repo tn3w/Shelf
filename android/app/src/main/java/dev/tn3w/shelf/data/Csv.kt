@@ -18,11 +18,12 @@ private val READWISE_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 private val LINE_BREAK = Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE)
 private val STATUS_NAMES =
-    setOf("read", "currently-reading", "to-read", "did-not-finish", "paused")
+    setOf("read", "currently-reading", "to-read", "did-not-finish", "dnf", "paused")
 private val SHELF_NAMES = mapOf(
     Shelf.Read to "read",
     Shelf.Reading to "currently-reading",
     Shelf.Want to "to-read",
+    Shelf.Abandoned to "did-not-finish",
 )
 
 data class CsvBook(
@@ -121,7 +122,8 @@ private fun listsIn(column: String) = column.split(',')
     .fold(emptyList(), ::withList)
 
 private fun shelfOf(status: String) = when (status.lowercase()) {
-    "read", "did-not-finish" -> Shelf.Read
+    "read" -> Shelf.Read
+    "did-not-finish", "dnf" -> Shelf.Abandoned
     "currently-reading", "paused" -> Shelf.Reading
     else -> Shelf.Want
 }

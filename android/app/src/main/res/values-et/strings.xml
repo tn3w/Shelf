@@ -46,6 +46,7 @@
     <string name="download_item">Laadi alla %s</string>
     <string name="explore">Avasta</string>
     <string name="finished">Loetud</string>
+    <string name="did_not_finish">Pooleli jäetud</string>
     <string name="for_you">Sinule</string>
     <string name="formats">Raamatutüübid</string>
     <string name="wish_suggestion">Raamatud: %s</string>

@@ -46,6 +46,7 @@
     <string name="download_item">Скачать %s</string>
     <string name="explore">Обзор</string>
     <string name="finished">Прочитано</string>
+    <string name="did_not_finish">Брошено</string>
     <string name="for_you">Для вас</string>
     <string name="formats">Типы книг</string>
     <string name="wish_suggestion">Книги: %s</string>

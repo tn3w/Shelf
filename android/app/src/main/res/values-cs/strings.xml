@@ -46,6 +46,7 @@
     <string name="download_item">Stáhnout %s</string>
     <string name="explore">Objevovat</string>
     <string name="finished">Přečteno</string>
+    <string name="did_not_finish">Nedočteno</string>
     <string name="for_you">Pro vás</string>
     <string name="formats">Typy knih</string>
     <string name="wish_suggestion">Knihy: %s</string>

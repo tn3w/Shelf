@@ -47,6 +47,7 @@
     <string name="download_item">%s をダウンロード</string>
     <string name="explore">探す</string>
     <string name="finished">読了</string>
+    <string name="did_not_finish">読むのをやめた</string>
     <string name="for_you">あなたへのおすすめ</string>
     <string name="formats">本の種類</string>
     <string name="wish_suggestion">%s の本</string>

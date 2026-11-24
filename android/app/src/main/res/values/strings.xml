@@ -48,6 +48,7 @@
     <string name="download_item">Download %s</string>
     <string name="explore">Explore</string>
     <string name="finished">Finished</string>
+    <string name="did_not_finish">Did not finish</string>
     <string name="for_you">For you</string>
     <string name="formats">Book types</string>
     <string name="wish_suggestion">Books with %s</string>

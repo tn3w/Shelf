@@ -46,6 +46,7 @@
     <string name="download_item">Ladda ner %s</string>
     <string name="explore">Utforska</string>
     <string name="finished">Läst</string>
+    <string name="did_not_finish">Avbruten</string>
     <string name="for_you">För dig</string>
     <string name="formats">Boktyper</string>
     <string name="wish_suggestion">Böcker med %s</string>
