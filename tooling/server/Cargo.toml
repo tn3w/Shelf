@@ -26,7 +26,7 @@ tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal",
 
 [build-dependencies]
 brotli = "9"
-lightningcss = "1.0.0-alpha.72"
+lightningcss = { version = "1.0.0-alpha.72", default-features = false }
 oxc = { version = "0.156", features = ["minifier", "codegen"] }
 sha2 = "0.11.1"
 
