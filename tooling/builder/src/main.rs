@@ -526,7 +526,8 @@ fn localize_titles(job: &Job, entries: &mut [Entry]) {
 
 fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let language = job.language;
-    let mut entries = catalog::candidates(job.books, titles, job.authors, language, job.previous);
+    let previous = job.previous;
+    let mut entries = catalog::candidates(job.books, titles, job.authors, language, previous);
     localize_titles(job, &mut entries);
     eprintln!("{}: {} candidates", LANGUAGES[language], entries.len());
     let (limit, core_limit, merged) = fit(job, &entries);
