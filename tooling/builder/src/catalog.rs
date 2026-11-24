@@ -1099,6 +1099,23 @@ pub fn is_foreign_title(title: &str, language: usize) -> bool {
     words >= FOREIGN_TITLE_WORDS && hits[language] == 0 && foreign
 }
 
+/// A Wikidata label in the catalogue's language for a title that is still English:
+/// `The Hobbit` → `Le Hobbit`, without a trailing `(…)` disambiguation.
+pub fn localized_title(title: &str, label: &str, language: usize) -> Option<String> {
+    let english = crate::language_index("en");
+    if language == english || detect_language(title) != Some(english) {
+        return None;
+    }
+    let disambiguated = label
+        .ends_with(')')
+        .then(|| label.rsplit_once(" ("))
+        .flatten();
+    let label = disambiguated.map_or(label, |(head, _)| head).trim();
+    let english_label = detect_language(label) == Some(english);
+    let same = title_key(label, &[]) == title_key(title, &[]);
+    (!label.is_empty() && !english_label && !same).then(|| label.to_string())
+}
+
 pub fn detect_language(text: &str) -> Option<usize> {
     if is_mostly_hangul(text) {
         return Some(crate::language_index("ko"));
@@ -1846,6 +1863,28 @@ pub fn candidates(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn english_titles_take_the_wikidata_label_of_their_catalogue() {
+        let french = crate::language_index("fr");
+        let polish = crate::language_index("pl");
+        let english = crate::language_index("en");
+        let localized = |title, label, language| localized_title(title, label, language);
+        assert_eq!(
+            localized("The Hobbit", "Le Hobbit", french).as_deref(),
+            Some("Le Hobbit")
+        );
+        assert_eq!(
+            localized("The years", "Lata (powieść Virginii Woolf)", polish).as_deref(),
+            Some("Lata")
+        );
+        assert_eq!(
+            localized("The Danish Girl", "The Danish Girl", french),
+            None
+        );
+        assert_eq!(localized("Le Hobbit", "Bilbo le Hobbit", french), None);
+        assert_eq!(localized("The Hobbit", "Le Hobbit", english), None);
+    }
 
     #[test]
     fn publisher_placeholders_dropped() {
