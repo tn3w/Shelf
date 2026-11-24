@@ -805,9 +805,59 @@ impl Titles {
 pub struct Isbns {
     keys: Vec<(u32, u8)>,
     codes: Vec<u32>,
+    imprints: Vec<(u32, u16, u32)>,
+    publishers: Vec<String>,
+}
+
+#[derive(Default)]
+struct Imprints {
+    rows: Vec<(u32, u16, u32)>,
+    publishers: Vec<String>,
+    known: HashMap<String, u32>,
+}
+
+impl Imprints {
+    fn add(&mut self, isbns: &[u32], year: u16, publisher: &str) {
+        if self.publishers.is_empty() {
+            self.publishers.push(String::new());
+            self.known.insert(String::new(), 0);
+        }
+        let name = catalog::publisher_name(publisher);
+        if year == 0 && name.is_empty() {
+            return;
+        }
+        let next = self.publishers.len() as u32;
+        let index = *self.known.entry(name.clone()).or_insert(next);
+        if index == next {
+            self.publishers.push(name);
+        }
+        self.rows
+            .extend(isbns.iter().map(|&isbn| (isbn, year, index)));
+    }
+
+    fn into_isbns(mut self, isbns: Isbns) -> Isbns {
+        self.rows
+            .sort_unstable_by_key(|&(isbn, year, name)| (isbn, name == 0, year == 0));
+        self.rows.dedup_by_key(|row| row.0);
+        self.rows.shrink_to_fit();
+        Isbns {
+            imprints: self.rows,
+            publishers: self.publishers,
+            ..isbns
+        }
+    }
 }
 
 impl Isbns {
+    pub fn imprint(&self, isbn: u32) -> Option<(u16, &str)> {
+        let found = self
+            .imprints
+            .binary_search_by_key(&isbn, |row| row.0)
+            .ok()?;
+        let (_, year, publisher) = self.imprints[found];
+        Some((year, &self.publishers[publisher as usize]))
+    }
+
     pub fn from_rows(mut rows: Vec<(u32, u8, u32)>) -> Isbns {
         rows.sort_unstable();
         rows.dedup();
@@ -817,6 +867,7 @@ impl Isbns {
                 .map(|&(work, language, _)| (work, language))
                 .collect(),
             codes: rows.iter().map(|&(.., isbn)| isbn).collect(),
+            ..Isbns::default()
         }
     }
 
@@ -831,7 +882,12 @@ impl Isbns {
         let keys = std::mem::take(&mut self.keys).into_iter();
         let known = keys.zip(std::mem::take(&mut self.codes));
         let known = known.map(|((work, language), isbn)| (work, language, isbn));
-        *self = Isbns::from_rows(known.chain(rows).collect());
+        let merged = Isbns::from_rows(known.chain(rows).collect());
+        *self = Isbns {
+            imprints: std::mem::take(&mut self.imprints),
+            publishers: std::mem::take(&mut self.publishers),
+            ..merged
+        };
     }
 
     pub fn of(&self, work: u32, language: usize) -> &[u32] {
@@ -852,6 +908,7 @@ struct Edition {
     title: String,
     series: Option<(String, u16)>,
     publisher: u32,
+    imprint: String,
     covers: Vec<u32>,
     isbns: Vec<u32>,
     contributors: Vec<(&'static str, String)>,
@@ -1037,6 +1094,10 @@ fn edition_from(edition: &Value, shapes: &Shapes, readers: &HashMap<u32, u16>) -
         title: catalog::edition_title(text(edition, "title"), text(edition, "subtitle")),
         series: release::parse_series(&strings(edition, "series").collect::<Vec<_>>()),
         publisher: publisher_key(edition),
+        imprint: strings(edition, "publishers")
+            .next()
+            .unwrap_or_default()
+            .to_string(),
         readers: ol_id(text(edition, "key").as_bytes())
             .and_then(|id| readers.get(&id).copied())
             .unwrap_or(0),
@@ -1053,6 +1114,7 @@ pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isb
     let mut facts: Vec<Facts> = Vec::new();
     let mut titles = Titles::default();
     let mut isbns: Vec<(u32, u8, u32)> = Vec::new();
+    let mut imprints = Imprints::default();
     let shapes = Shapes::load(source);
     let readers = edition_readers(source);
     scan(
@@ -1072,6 +1134,9 @@ pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isb
             }
             let languages = edition.facts.language_editions.iter().enumerate();
             let wanted = |(language, count): &(usize, &u16)| **count > 0 && built[*language];
+            if languages.clone().any(|entry| wanted(&entry)) {
+                imprints.add(&edition.isbns, edition.facts.first_year, &edition.imprint);
+            }
             for (language, _) in languages.filter(wanted) {
                 let language = language as u8;
                 isbns.extend(
@@ -1105,7 +1170,12 @@ pub fn editions(source: &str, built: &Built) -> (Vec<Facts>, Titles, Shapes, Isb
         .sort_unstable_by_key(|record| (record.work, record.language));
     titles.records.shrink_to_fit();
     titles.text.shrink_to_fit();
-    (facts, titles, shapes, Isbns::from_rows(isbns))
+    (
+        facts,
+        titles,
+        shapes,
+        imprints.into_isbns(Isbns::from_rows(isbns)),
+    )
 }
 
 #[derive(Default)]
@@ -1360,4 +1430,23 @@ pub fn works(source: &str, context: &Context) -> Works {
     scan(source, "works", |line| work_line(line, context), absorb);
     works.books.sort_unstable_by_key(|book| book.work);
     works
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn imprints_prefer_named_publishers_and_survive_extension() {
+        let mut imprints = Imprints::default();
+        imprints.add(&[7], 2001, "");
+        imprints.add(&[7, 8], 1999, "Carlsen,");
+        imprints.add(&[9], 0, "[s.n.]");
+        let mut isbns = imprints.into_isbns(Isbns::from_rows(vec![(1, 0, 7)]));
+        isbns.extend(vec![(2, 0, 8)]);
+        assert_eq!(isbns.imprint(7), Some((1999, "Carlsen")));
+        assert_eq!(isbns.imprint(8), Some((1999, "Carlsen")));
+        assert_eq!(isbns.imprint(9), None);
+        assert_eq!(isbns.of(2, 0), &[8]);
+    }
 }

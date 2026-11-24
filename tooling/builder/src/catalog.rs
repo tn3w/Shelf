@@ -549,6 +549,16 @@ pub fn edition_title(title: &str, subtitle: &str) -> String {
     if fits { labelled } else { title.to_string() }
 }
 
+pub fn publisher_name(text: &str) -> String {
+    let name = text.trim().trim_end_matches([',', ':', ';', '/', ' ']);
+    let unknown = name.starts_with('[') || name.eq_ignore_ascii_case("s.n.");
+    if unknown {
+        String::new()
+    } else {
+        name.to_string()
+    }
+}
+
 pub fn is_reprinter(publisher: &str) -> bool {
     let lowered = publisher.to_ascii_lowercase();
     PRINT_ON_DEMAND
@@ -1836,6 +1846,13 @@ pub fn candidates(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn publisher_placeholders_dropped() {
+        assert_eq!(publisher_name(" Carlsen, "), "Carlsen");
+        assert_eq!(publisher_name("[Verlag nicht ermittelbar]"), "");
+        assert_eq!(publisher_name("S.n."), "");
+    }
 
     #[test]
     fn new_scripts_tokenized_like_the_app() {

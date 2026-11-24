@@ -932,6 +932,7 @@ struct Fields<'a> {
     citations: Vec<&'a str>,
     authors: Vec<&'a str>,
     statement: &'a str,
+    publisher: &'a str,
     issued: &'a str,
     carrier: &'a str,
     contents: Vec<&'a str>,
@@ -969,6 +970,7 @@ impl<'a> Fields<'a> {
                 self.authors.push(resource);
             }
             ("rdau:P60327", _) => self.statement = text,
+            ("dc:publisher", _) if self.publisher.is_empty() => self.publisher = text,
             ("dcterms:issued", _) => self.issued = text,
             ("dcterms:medium", _) => self.carrier = last_segment(resource),
             ("rdau:P60049", _) if resource.contains("RDAContentType") => {
@@ -1176,6 +1178,7 @@ impl<'a> Fields<'a> {
             authorities: gnd.into_iter().collect(),
             name: author_name(self.statement),
             year: dumps::year_of(self.issued),
+            publisher: self.publisher.to_string(),
             format,
             classes,
             subjects: self.subjects(&reader),
@@ -1569,7 +1572,7 @@ impl Details {
             record.isbns.iter().map(|&isbn| {
                 let edition = Edition {
                     year: record.year,
-                    publisher: record.publisher.clone(),
+                    publisher: catalog::publisher_name(&record.publisher),
                     isbn: catalog::isbn13(isbn),
                     format: record.format,
                     identifier: record.identifier.clone(),
@@ -2311,6 +2314,7 @@ mod tests {
              \t\t</rdf:Description>\n\t</schema:genre>\n\
              \t<dcterms:subject rdf:resource=\"{THEMA_URI}/YFQ\"/>\n\
              \t<dcterms:subject rdf:resource=\"{THEMA_URI}/5AL\"/>\n\
+             \t<dc:publisher rdf:datatype=\"x#string\">Carlsen</dc:publisher>\n\
              \t<dcterms:issued rdf:datatype=\"x#string\">2024</dcterms:issued>\n",
             id = edition.id,
             medium = edition.medium,
@@ -2354,7 +2358,10 @@ mod tests {
         assert!(Source::Dnb.parse(untitled.as_bytes()).is_none());
         let puzzles = rdf(&STRAW).replace(">250<", ">290<");
         assert!(Source::Dnb.parse(puzzles.as_bytes()).is_none());
-        assert!(Source::Dnb.parse(rdf(&STRAW).as_bytes()).is_some());
+        let parsed = Source::Dnb
+            .parse(rdf(&STRAW).as_bytes())
+            .expect("straw parses");
+        assert_eq!(parsed.publisher, "Carlsen");
     }
 
     #[test]

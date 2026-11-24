@@ -64,6 +64,7 @@ const NLK_SUBJECTS: [(&str, &str); 11] = [
 const NLK_KIDS: [&str; 4] = ["동화", "그림책", "어린이", "아동"];
 const BNB_RESOURCE: &str = "http://bnb.data.bl.uk/id/resource/";
 const BNB_SERIES: &str = "http://bnb.data.bl.uk/id/series/";
+const BNB_AGENT: &str = "http://bnb.data.bl.uk/id/agent/";
 const BNB_SERIES_KINDS: [&str; 6] = [
     " novel",
     " mystery",
@@ -399,10 +400,15 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
                 .map(|title| text(&title["mainTitle"]))
         });
     let original = originals.into_iter().next().map(clean).unwrap_or_default();
-    let published = items(&instance["publication"]).into_iter();
+    let published = items(&instance["publication"]);
     let year = published
+        .iter()
         .map(|event| dumps::year_of(text(&event["year"])))
         .max();
+    let publisher = published
+        .iter()
+        .map(|event| text(&event["agent"]["label"]))
+        .find(|label| !label.is_empty());
     let traits = Traits {
         kid,
         teen,
@@ -424,6 +430,7 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
         author: source.author_id(&name),
         name,
         year: year.unwrap_or(0),
+        publisher: publisher.unwrap_or_default().to_string(),
         format,
         classes,
         subjects,
@@ -533,6 +540,7 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
         author: source.author_id(&name),
         name,
         year: dumps::year_of(text(&value["issuedYear"])),
+        publisher: text(&value["publisher"]).to_string(),
         format: PAPERBACK,
         classes,
         subjects,
@@ -549,6 +557,7 @@ struct BnbDraft {
     statement: String,
     isbns: Vec<u32>,
     series: String,
+    agent: String,
     year: u16,
     english: bool,
     subjects: Vec<String>,
@@ -596,7 +605,7 @@ impl BnbDraft {
         literary && self.english && !self.isbns.is_empty() && !self.title.is_empty()
     }
 
-    fn record(self, series_labels: &HashMap<String, String>) -> Record {
+    fn record(self, labels: &Labels) -> Record {
         let form = self.form();
         let has = |stem: &str| self.has(stem);
         let fiction = self.is_fiction();
@@ -616,7 +625,8 @@ impl BnbDraft {
             fiction,
         };
         let (subjects, classes) = finished(subjects, &traits);
-        let label = series_labels
+        let label = labels
+            .series
             .get(&self.series)
             .map(|label| bnb_series(label));
         let (series, _) = label
@@ -644,6 +654,7 @@ impl BnbDraft {
             author: source.author_id(&name),
             name,
             year: self.year,
+            publisher: labels.agents.get(&self.agent).cloned().unwrap_or_default(),
             format: PAPERBACK,
             classes,
             subjects,
@@ -709,9 +720,15 @@ fn literal(object: &str) -> String {
 }
 
 #[derive(Default)]
+struct Labels {
+    series: HashMap<String, String>,
+    agents: HashMap<String, String>,
+}
+
+#[derive(Default)]
 struct BnbScan {
     drafts: Vec<BnbDraft>,
-    series_labels: HashMap<String, String>,
+    labels: Labels,
     draft: BnbDraft,
 }
 
@@ -719,8 +736,17 @@ impl BnbScan {
     fn line(&mut self, subject: &str, predicate: &str, object: &str) {
         if let Some(series) = subject.strip_prefix(BNB_SERIES) {
             if tail(predicate) == "label" {
-                self.series_labels
+                self.labels
+                    .series
                     .insert(series.to_string(), literal(object));
+            }
+            return;
+        }
+        if let Some(agent) = subject.strip_prefix(BNB_AGENT) {
+            if tail(predicate) == "label" {
+                self.labels
+                    .agents
+                    .insert(agent.to_string(), literal(object));
             }
             return;
         }
@@ -734,6 +760,9 @@ impl BnbScan {
         match event.is_empty() {
             true => self.draft.absorb(predicate, object),
             false if tail(predicate) == "time" => self.draft.year = dumps::year_of(uri(object)),
+            false if tail(predicate) == "agent" && event.starts_with("publication") => {
+                self.draft.agent = uri(object).trim_start_matches(BNB_AGENT).to_string();
+            }
             false => {}
         }
     }
@@ -765,7 +794,7 @@ pub fn bnb_records(location: &str) -> Vec<Record> {
         line.clear();
     }
     scan.flush("");
-    let labels = &scan.series_labels;
+    let labels = &scan.labels;
     scan.drafts
         .into_iter()
         .map(|draft| draft.record(labels))
@@ -871,7 +900,11 @@ mod tests {
         let event = format!(
             "<{BNB_RESOURCE}011022431/publicationevent/LondonScholastic1997> \
              <http://purl.org/NET/c4dm/event.owl#time> \
-             <http://reference.data.gov.uk/id/year/1997> .\n"
+             <http://reference.data.gov.uk/id/year/1997> .\n\
+             <{BNB_RESOURCE}011022431/publicationevent/LondonScholastic1997> \
+             <http://purl.org/NET/c4dm/event.owl#agent> <{BNB_AGENT}Scholastic> .\n\
+             <{BNB_AGENT}Scholastic> <http://www.w3.org/2000/01/rdf-schema#label> \
+             \"Scholastic\" .\n"
         );
         let fiction = triples(
             "011022431",
@@ -919,6 +952,7 @@ mod tests {
         assert_eq!(record.name, "Philip Pullman");
         assert_eq!(record.series, "His dark materials");
         assert_eq!(record.year, 1997);
+        assert_eq!(record.publisher, "Scholastic");
         assert_eq!(record.language, crate::language_index("en"));
     }
 
@@ -948,11 +982,47 @@ mod tests {
             english: true,
             ..BnbDraft::default()
         };
-        let labels = HashMap::from([("Reddwarf".to_string(), "Red dwarf".to_string())]);
+        let labels = Labels {
+            series: HashMap::from([("Reddwarf".to_string(), "Red dwarf".to_string())]),
+            ..Labels::default()
+        };
         assert_eq!(
             draft.record(&labels).title,
             "Infinity welcomes careful drivers"
         );
+    }
+
+    #[test]
+    fn libris_and_national_library_of_korea_publishers_read() {
+        let libris = serde_json::json!({"@graph": [
+            {"controlNumber": "123"},
+            {
+                "@type": "Print",
+                "instanceOf": {
+                    "language": [{"@id": "https://id.kb.se/language/swe"}],
+                    "genreForm": [{"@id": "https://id.kb.se/term/saogf/Romaner"}],
+                },
+                "identifiedBy": [{"@type": "ISBN", "value": "9789100123451"}],
+                "hasTitle": [{"@type": "Title", "mainTitle": "Mio, min Mio"}],
+                "publication": [
+                    {"year": "1954", "agent": {"label": ["Rabén & Sjögren"]}},
+                ],
+            },
+        ]});
+        let line = libris.to_string();
+        let names = HashMap::new();
+        let record = libris_record(line.as_bytes(), &names).expect("libris record");
+        assert_eq!(record.publisher, "Rabén & Sjögren");
+        assert_eq!(record.year, 1954);
+
+        let korean = concat!(
+            r#"{"@id": "http://lod.nl.go.kr/resource/KMO1","#,
+            r#""http://id.loc.gov/ontologies/bibframe/language": "language/kor","#,
+            r#""kdc": "813.6", "title": "채식주의자", "isbn": "9788936433598","#,
+            r#""publisher": "창비", "issuedYear": "2007"}"#,
+        );
+        let record = nlk_record(korean).expect("national library of korea record");
+        assert_eq!(record.publisher, "창비");
     }
 
     #[test]

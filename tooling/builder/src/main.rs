@@ -693,6 +693,19 @@ fn descriptions(job: &Job, placed: &Placed, details: Option<&Details>) -> Vec<(S
     chosen
 }
 
+fn imprinted(isbns: &Isbns, edition: &mut Edition) {
+    let found = catalog::isbn_key(&edition.isbn).and_then(|key| isbns.imprint(key));
+    let Some((year, publisher)) = found else {
+        return;
+    };
+    if edition.publisher.is_empty() {
+        edition.publisher = publisher.to_string();
+    }
+    if edition.year == 0 {
+        edition.year = year;
+    }
+}
+
 fn extras_of(job: &Job, placed: &Placed) -> Extras {
     let work = &placed.work;
     let details = job.details.get(&work.id);
@@ -724,6 +737,9 @@ fn extras_of(job: &Job, placed: &Placed) -> Extras {
         }
     }
     editions.truncate(EDITION_CAP);
+    editions
+        .iter_mut()
+        .for_each(|edition| imprinted(job.isbns, edition));
     Extras {
         work: work.id,
         descriptions: descriptions(job, placed, details),
