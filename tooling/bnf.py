@@ -7,6 +7,7 @@ import http.cookiejar
 import os
 import re
 import shutil
+import time
 import urllib.parse
 import urllib.request
 
@@ -15,6 +16,8 @@ ACTION = BASE + "/webclient/godrive/PublicGoDrive.xhtml"
 AJAX = {"Faces-Request": "partial/ajax", "X-Requested-With": "XMLHttpRequest"}
 AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Firefox/140.0"
 TIMEOUT = 300
+RETRIES = 6
+RETRY_WAIT = 60
 ROW = re.compile(r'data-ri="(\d+)" data-rk="([^"]*)".*?class="NameColumn">(.*?)</td>', re.S)
 VIEW_STATE = re.compile(r'ViewState[^>]*value="([^"]+)"|ViewState[^>]*><!\[CDATA\[([^\]]+)')
 BUTTON = re.compile(r'<form id="([^"]+)".*?<button id="([^"]+)"', re.S)
@@ -81,20 +84,36 @@ def entries(page):
     return [(int(row), key, re.sub(r"<[^>]+>", "", name).strip()) for row, key, name in rows]
 
 
+def retried(action):
+    for attempt in range(1, RETRIES + 1):
+        try:
+            return action()
+        except OSError as error:
+            if attempt == RETRIES:
+                raise
+            print(f"attempt {attempt} failed: {error}", flush=True)
+            time.sleep(RETRY_WAIT * attempt)
+
+
+def fetch(chosen, name, target):
+    share = Share(chosen.link, chosen.path)
+    key = next(key for _, key, entry in entries(share.folder()) if entry == name)
+    share.download(key, target)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("link", help="share id from https://transfert.bnf.fr/link/<id>")
     parser.add_argument("directory", help="where the zip files go")
     parser.add_argument("path", nargs="*", help="folder names inside the share")
     chosen = parser.parse_args()
-    share = Share(chosen.link, chosen.path)
     os.makedirs(chosen.directory, exist_ok=True)
-    for _, _, name in entries(share.folder()):
+    listing = retried(lambda: Share(chosen.link, chosen.path).folder())
+    for _, _, name in entries(listing):
         target = os.path.join(chosen.directory, name + ".zip")
         if os.path.exists(target):
             continue
-        key = next(key for _, key, entry in entries(share.folder()) if entry == name)
-        share.download(key, target)
+        retried(lambda: fetch(chosen, name, target))
         print("got", target, flush=True)
 
 
