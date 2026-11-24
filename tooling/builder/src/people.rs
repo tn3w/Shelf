@@ -64,7 +64,8 @@ pub fn role_of(text: &str) -> Option<&'static str> {
 }
 
 pub fn same_name(left: &str, right: &str) -> bool {
-    left.to_lowercase() == right.to_lowercase()
+    let key = |name: &str| name.to_lowercase().replace('-', " ");
+    key(left) == key(right)
 }
 
 pub fn push_unique(found: &mut Vec<Credit>, role: &'static str, name: &str) {
@@ -146,12 +147,25 @@ fn first_sentence(text: &str) -> &str {
     &text[..sentence_end.unwrap_or(text.len())]
 }
 
+const NAME_PARTICLES: [&str; 12] = [
+    "von", "van", "der", "den", "de", "du", "da", "di", "la", "le", "zu", "ten",
+];
+
+fn name_words(text: &str) -> String {
+    let mut words = text.split_whitespace();
+    let first = words.next().into_iter();
+    let lowercase = |word: &&str| word.chars().next().is_some_and(char::is_lowercase);
+    let rest = words.take_while(|word| !lowercase(word) || NAME_PARTICLES.contains(word));
+    first.chain(rest).collect::<Vec<_>>().join(" ")
+}
+
 fn push_names(found: &mut Vec<Credit>, role: &'static str, text: &str) {
     let mut names = vec![text];
     for join in NAME_JOINS {
         names = names.iter().flat_map(|name| name.split(join)).collect();
     }
-    for name in names.into_iter().map(str::trim) {
+    for name in names.into_iter().map(name_words) {
+        let name = name.as_str();
         let capitalized = name
             .chars()
             .next()
@@ -319,6 +333,14 @@ mod tests {
                 vec![credit("translator", "데보라 스미스")],
             ),
             ("Charles Dickens", vec![]),
+            (
+                "Saint-Exupéry. Übers. von Hans Reisiger neu bearb. von Annette-Lallemand",
+                vec![credit("translator", "Hans Reisiger")],
+            ),
+            (
+                "Ill. von Ursula von der Leyen",
+                vec![credit("illustrator", "Ursula von der Leyen")],
+            ),
             ("[Märchenspiel in 3 Bildern von Adelheid Wette]", vec![]),
             (
                 "hrsg. von d. Internationalen Lenau-Gesellschaft in Zsarb. mit d. F.",
