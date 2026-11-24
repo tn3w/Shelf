@@ -1,5 +1,6 @@
 use crate::dumps::{self, Authors, Book};
 use crate::libraries::{SYNTHETIC, clean, match_key, normalized_name, writer_key};
+use crate::tags;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -15,6 +16,7 @@ pub struct WikidataWork {
     pub language: String,
     pub gutenberg: Vec<u32>,
     pub labels: Vec<(String, String)>,
+    pub subjects: Vec<String>,
 }
 
 #[derive(Default)]
@@ -115,6 +117,11 @@ impl Wikidata {
                 linked.labels.push((language.to_string(), clean(text)));
             }
         });
+        rows(&directory.join("subject.tsv"), |item, text, _| {
+            if let Some(linked) = items.get_mut(&item) {
+                linked.subjects.push(text.to_string());
+            }
+        });
         for (item, ids) in works {
             let Some(linked) = items.remove(&item) else {
                 continue;
@@ -125,6 +132,7 @@ impl Wikidata {
                     language: linked.language.clone(),
                     gutenberg: linked.gutenberg.clone(),
                     labels: linked.labels.clone(),
+                    subjects: linked.subjects.clone(),
                 };
                 wikidata.works.insert(work, copy);
             }
@@ -153,6 +161,21 @@ impl Wikidata {
             wikidata.authors.len()
         );
         wikidata
+    }
+
+    /// Adds the themes a work's Wikidata main subjects and genres name to its book.
+    pub fn add_subject_themes(&self, books: &mut [Book]) {
+        for book in books.iter_mut() {
+            let Some(linked) = self.works.get(&book.work) else {
+                continue;
+            };
+            for theme in tags::themes_of(&linked.subjects) {
+                match book.themes.iter_mut().find(|(known, _)| *known == theme) {
+                    Some(entry) => entry.1 = entry.1.saturating_add(1),
+                    None => book.themes.push((theme, 1)),
+                }
+            }
+        }
     }
 }
 
@@ -314,6 +337,10 @@ mod tests {
                 entity(170583, "\"高慢と偏見\"@ja") + &entity(170583, "\"Stolz\"@de"),
             ),
             ("viaf", entity(36322, "\"102333412\"")),
+            (
+                "subject",
+                entity(170583, "\"vampire\"@en") + &entity(170583, "\"novel\"@en"),
+            ),
         ];
         for (name, content) in files {
             std::fs::write(directory.join(format!("{name}.tsv")), content).unwrap();
@@ -327,6 +354,14 @@ mod tests {
             wikidata.authors[&21594],
             ["wikidata:Q36322", "viaf:102333412"]
         );
+        let vampires = tags::themes_of(["Vampires"]);
+        let mut books = vec![Book {
+            work: 66554,
+            themes: vec![(vampires[0], 2)],
+            ..Book::default()
+        }];
+        wikidata.add_subject_themes(&mut books);
+        assert_eq!(books[0].themes, [(vampires[0], 3)]);
         std::fs::remove_dir_all(directory).unwrap();
     }
 }

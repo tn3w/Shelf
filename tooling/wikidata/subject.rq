@@ -1,0 +1,8 @@
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?item ?value WHERE {
+  ?item wdt:P648 ?openlibrary .
+  { ?item wdt:P921 ?subject } UNION { ?item wdt:P136 ?subject }
+  ?subject rdfs:label ?value .
+  FILTER(LANG(?value) = "en")
+}

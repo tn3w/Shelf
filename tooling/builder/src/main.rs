@@ -1005,6 +1005,7 @@ fn main() {
     let (mut books, mut claimants): (Vec<Book>, Vec<Book>) =
         works.books.into_iter().partition(is_listed);
     eprintln!("month {month}, {} books", books.len());
+    wikidata.add_subject_themes(&mut books);
     tags::fill_author_tags(&mut books);
     tags::rank_themes(&mut books);
     let gutenberg = enrichment::match_gutenberg(gutenberg, &books, &authors, &wikidata);
