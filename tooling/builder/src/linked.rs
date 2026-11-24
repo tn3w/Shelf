@@ -4,6 +4,7 @@ use crate::libraries::{
     EBOOK, HARDCOVER, MAX_VOLUME, PAPERBACK, Record, Source, author_name, capitalized, clean,
     first_number, normalized_name,
 };
+use crate::people;
 use crate::release;
 use crate::tags::{self, Classes};
 use serde_json::Value;
@@ -332,6 +333,35 @@ fn libris_author(work: &Value, instance: &Value, names: &HashMap<String, String>
     }
 }
 
+fn libris_credits(
+    work: &Value,
+    instance: &Value,
+    names: &HashMap<String, String>,
+) -> Vec<people::Credit> {
+    let mut credits = Vec::new();
+    for contribution in items(&work["contribution"]) {
+        let roles = items(&contribution["role"]);
+        let Some(role) = roles
+            .iter()
+            .find_map(|role| people::role_of(tail(text(&role["@id"]))))
+        else {
+            continue;
+        };
+        let Some(agent) = items(&contribution["agent"]).first().copied() else {
+            continue;
+        };
+        let linked = names.get(text(&agent["@id"])).cloned();
+        let name = Some(person_name(agent))
+            .filter(|name| !name.is_empty())
+            .or(linked);
+        people::push_unique(&mut credits, role, &name.unwrap_or_default());
+    }
+    if credits.is_empty() {
+        return people::statement_credits(text(&instance["responsibilityStatement"]));
+    }
+    credits
+}
+
 fn libris_series(instance: &Value) -> (String, u16) {
     let memberships = items(&instance["seriesMembership"]);
     let parsed = memberships.iter().find_map(|membership| {
@@ -416,6 +446,7 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
     };
     let (subjects, classes) = finished(subjects, &traits);
     let name = libris_author(work, instance, names);
+    let contributors = libris_credits(work, instance, names);
     let control = text(&meta["controlNumber"]);
     let source = Source::Libris;
     Some(Record {
@@ -431,6 +462,8 @@ pub fn libris_record(line: &[u8], names: &HashMap<String, String>) -> Option<Rec
         name,
         year: year.unwrap_or(0),
         publisher: publisher.unwrap_or_default().to_string(),
+        translators: people::translators(&contributors),
+        contributors,
         format,
         classes,
         subjects,
@@ -512,6 +545,11 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
     let volume = first_number(text(&value["volumeOfSeries"]))
         .filter(|volume| (1..=MAX_VOLUME).contains(volume))
         .unwrap_or(0);
+    let statement = text(&value["label"])
+        .split_once(" / ")
+        .unwrap_or_default()
+        .1;
+    let contributors = people::statement_credits(statement);
     let title = clean(text(&value["title"]));
     let title = match title
         .strip_prefix('(')
@@ -541,6 +579,8 @@ pub fn nlk_record(chunk: &str) -> Option<Record> {
         name,
         year: dumps::year_of(text(&value["issuedYear"])),
         publisher: text(&value["publisher"]).to_string(),
+        translators: people::translators(&contributors),
+        contributors,
         format: PAPERBACK,
         classes,
         subjects,
@@ -641,6 +681,7 @@ impl BnbDraft {
             main.to_string()
         });
         let name = author_name(&self.statement);
+        let contributors = people::statement_credits(&self.statement);
         let source = Source::Bnb;
         Record {
             source,
@@ -655,6 +696,8 @@ impl BnbDraft {
             name,
             year: self.year,
             publisher: labels.agents.get(&self.agent).cloned().unwrap_or_default(),
+            translators: people::translators(&contributors),
+            contributors,
             format: PAPERBACK,
             classes,
             subjects,
@@ -1001,6 +1044,10 @@ mod tests {
                 "instanceOf": {
                     "language": [{"@id": "https://id.kb.se/language/swe"}],
                     "genreForm": [{"@id": "https://id.kb.se/term/saogf/Romaner"}],
+                    "contribution": [{
+                        "role": [{"@id": "https://id.kb.se/relator/illustrator"}],
+                        "agent": {"givenName": "Ilon", "familyName": "Wikland"},
+                    }],
                 },
                 "identifiedBy": [{"@type": "ISBN", "value": "9789100123451"}],
                 "hasTitle": [{"@type": "Title", "mainTitle": "Mio, min Mio"}],
@@ -1014,15 +1061,21 @@ mod tests {
         let record = libris_record(line.as_bytes(), &names).expect("libris record");
         assert_eq!(record.publisher, "Rabén & Sjögren");
         assert_eq!(record.year, 1954);
+        assert_eq!(
+            record.contributors,
+            [("illustrator", "Ilon Wikland".to_string())]
+        );
 
         let korean = concat!(
             r#"{"@id": "http://lod.nl.go.kr/resource/KMO1","#,
             r#""http://id.loc.gov/ontologies/bibframe/language": "language/kor","#,
             r#""kdc": "813.6", "title": "채식주의자", "isbn": "9788936433598","#,
+            r#""label": "채식주의자 / 한강 지음 ; 데보라 스미스 옮김","#,
             r#""publisher": "창비", "issuedYear": "2007"}"#,
         );
         let record = nlk_record(korean).expect("national library of korea record");
         assert_eq!(record.publisher, "창비");
+        assert_eq!(record.translators, ["데보라 스미스"]);
     }
 
     #[test]

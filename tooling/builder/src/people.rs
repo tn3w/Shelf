@@ -7,6 +7,7 @@ use crate::sidecar::Person;
 use regex::Regex;
 use serde_json::Value;
 use std::sync::LazyLock;
+use unicode_normalization::UnicodeNormalization;
 
 /// A role and a name: `("illustrator", "Mary GrandPré")`.
 pub type Credit = (&'static str, String);
@@ -50,7 +51,8 @@ const AUTHORITIES: [(&str, &str); 4] = [
 
 /// The role a relator term or code names: `ill`, `Illustrator`, `Übers.`, `traducción`.
 pub fn role_of(text: &str) -> Option<&'static str> {
-    let text = text
+    let composed: String = text.nfc().collect();
+    let text = composed
         .trim()
         .trim_matches(['(', ')', '[', ']', ',', ' '])
         .to_lowercase();
@@ -65,12 +67,125 @@ pub fn same_name(left: &str, right: &str) -> bool {
     left.to_lowercase() == right.to_lowercase()
 }
 
-fn push_unique(found: &mut Vec<(&'static str, String)>, role: &'static str, name: &str) {
+pub fn push_unique(found: &mut Vec<Credit>, role: &'static str, name: &str) {
     let name = normalized_name(name);
     let known = found.iter().any(|(_, known)| same_name(known, &name));
     if !name.is_empty() && !known && found.len() < MAX_CONTRIBUTORS {
         found.push((role, name));
     }
+}
+
+pub fn translators(credits: &[Credit]) -> Vec<String> {
+    let translating = credits.iter().filter(|(role, _)| *role == "translator");
+    translating.map(|(_, name)| name.clone()).collect()
+}
+
+const LANGUAGE_WORD: &str = r"[\p{L}.]+";
+const STATEMENT_CUES: [(&str, &[&str]); 4] = [
+    (
+        "translator",
+        &[
+            r"aus dem {L}(?: übersetzt| übertragen)? von",
+            r"übersetzt(?: aus dem {L})? von",
+            r"(?:übersetzung|übers\.)(?: aus dem {L})?(?: von|:)",
+            r"deutsch von",
+            r"translat(?:ed|ion)(?: from(?: the)? {L})? by",
+            r"(?:svensk )?översättning(?: från {L})?:?",
+            r"översatt(?: från {L})? av",
+            r"suomentanut|suomentaneet|suomennos:?",
+        ],
+    ),
+    (
+        "illustrator",
+        &[
+            r"ill\.(?: von|:)?",
+            r"illustr(?:iert|ationen|ated|ations|erad|ationer)(?: von| by| av|:)?",
+            r"mit (?:farbigen |vielen |zahlreichen )?(?:bildern|zeichnungen) von",
+            r"zeichnungen von|bilder von",
+            r"bilder(?: av|:)|(?:pictures|drawings) by|kuvittanut|kuvitus:?",
+        ],
+    ),
+    (
+        "editor",
+        &[
+            r"herausgegeben von|hrsg\. von|edited by",
+            r"redigerad av|toimittanut|toimittaneet",
+        ],
+    ),
+    (
+        "narrator",
+        &[r"gelesen von|(?:read|narrated) by|uppläsare:?|lukija:?"],
+    ),
+];
+const SUFFIX_CUES: [(&str, &str); 6] = [
+    ("translator", "옮김"),
+    ("translator", "번역"),
+    ("translator", "역"),
+    ("illustrator", "그림"),
+    ("editor", "엮음"),
+    ("editor", "편"),
+];
+const NAME_JOINS: [&str; 6] = [" und ", " u. ", " and ", " och ", " ja ", " & "];
+const MAX_NAME_WORDS: usize = 4;
+
+static CUES: LazyLock<Vec<(&str, Regex)>> = LazyLock::new(|| {
+    let compiled = STATEMENT_CUES.iter().map(|(role, cues)| {
+        let cues = cues.join("|").replace("{L}", LANGUAGE_WORD);
+        let pattern = format!(r"(?i)(?:^|[^\p{{L}}])(?:{cues})\s*");
+        (*role, Regex::new(&pattern).expect("statement cue pattern"))
+    });
+    compiled.collect()
+});
+
+fn first_sentence(text: &str) -> &str {
+    let mut ends = text.match_indices(". ").map(|(index, _)| index);
+    let sentence_end = ends.find(|&index| {
+        let word = text[..index].rsplit(' ').next().unwrap_or_default();
+        word.chars().count() > 1
+    });
+    &text[..sentence_end.unwrap_or(text.len())]
+}
+
+fn push_names(found: &mut Vec<Credit>, role: &'static str, text: &str) {
+    let mut names = vec![text];
+    for join in NAME_JOINS {
+        names = names.iter().flat_map(|name| name.split(join)).collect();
+    }
+    for name in names.into_iter().map(str::trim) {
+        let capitalized = name
+            .chars()
+            .next()
+            .is_some_and(|first| !first.is_lowercase());
+        if capitalized && name.split_whitespace().count() <= MAX_NAME_WORDS {
+            push_unique(found, role, name);
+        }
+    }
+}
+
+/// Translators, illustrators, editors and narrators a statement of responsibility names:
+/// `Jeff Kinney ; aus dem Englischen von Collin McMahon`, `한강 지음 ; 데보라 스미스 옮김`.
+pub fn statement_credits(statement: &str) -> Vec<Credit> {
+    let statement: &str = &statement.nfc().collect::<String>();
+    let mut found = Vec::new();
+    for (role, cue) in CUES.iter() {
+        for matched in cue.find_iter(statement) {
+            let rest = &statement[matched.end()..];
+            let end = rest
+                .find([';', '[', ']', '/', ',', '(', '='])
+                .unwrap_or(rest.len());
+            push_names(&mut found, role, first_sentence(&rest[..end]));
+        }
+    }
+    for clause in statement.split([';', ',']).map(str::trim) {
+        let suffixed = SUFFIX_CUES.iter().find_map(|(role, cue)| {
+            let name = clause.strip_suffix(cue)?.strip_suffix(' ')?;
+            Some((*role, name))
+        });
+        if let Some((role, name)) = suffixed {
+            push_names(&mut found, role, name);
+        }
+    }
+    found
 }
 
 static TRAILING_ROLE: LazyLock<Regex> =
@@ -161,6 +276,62 @@ pub fn person_from(number: u32, author: &Value, name: &str) -> Option<Person> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn statements_credit_translators_illustrators_and_editors() {
+        let credit = |role: &'static str, name: &str| (role, name.to_string());
+        for (statement, expected) in [
+            (
+                "Jeff Kinney ; aus dem Englischen von Collin McMahon",
+                vec![credit("translator", "Collin McMahon")],
+            ),
+            (
+                "T. Ferriss. Aus dem Engl. von Heike Schlatterer und Henning Dedekind",
+                vec![
+                    credit("translator", "Heike Schlatterer"),
+                    credit("translator", "Henning Dedekind"),
+                ],
+            ),
+            (
+                "Hrsg. von Agnes Husslein. [U\u{308}bers. aus dem Engl.: Uta Hasekamp]",
+                vec![
+                    credit("translator", "Uta Hasekamp"),
+                    credit("editor", "Agnes Husslein"),
+                ],
+            ),
+            (
+                "Astrid Lindgren; translated by Edna Hurup, illustrated by Tony Ross",
+                vec![
+                    credit("translator", "Edna Hurup"),
+                    credit("illustrator", "Tony Ross"),
+                ],
+            ),
+            (
+                "John Grisham ; översättning: Kjell Waltman",
+                vec![credit("translator", "Kjell Waltman")],
+            ),
+            (
+                "Siegfried Lenz. [Ill. von J. K. Hellmessen]",
+                vec![credit("illustrator", "J. K. Hellmessen")],
+            ),
+            (
+                "한강 지음 ; 데보라 스미스 옮김",
+                vec![credit("translator", "데보라 스미스")],
+            ),
+            ("Charles Dickens", vec![]),
+            ("[Märchenspiel in 3 Bildern von Adelheid Wette]", vec![]),
+            (
+                "hrsg. von d. Internationalen Lenau-Gesellschaft in Zsarb. mit d. F.",
+                vec![],
+            ),
+        ] {
+            assert_eq!(statement_credits(statement), expected, "{statement}");
+        }
+        assert_eq!(
+            role_of("ka\u{308}a\u{308}nta\u{308}ja\u{308}"),
+            Some("translator")
+        );
+    }
 
     #[test]
     fn roles_from_codes_and_terms() {

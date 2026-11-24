@@ -1143,6 +1143,7 @@ impl<'a> Fields<'a> {
             .map(|author| format!("gnd:{}", last_segment(author)));
         let reader = self.reader();
         let format = self.format();
+        let contributors = people::statement_credits(self.statement);
         let classes = Classes {
             classified: 1,
             picture: u16::from(reader.picture),
@@ -1177,6 +1178,8 @@ impl<'a> Fields<'a> {
             authority: gnd.as_ref().map_or(0, |id| hash(&[id.as_bytes()])),
             authorities: gnd.into_iter().collect(),
             name: author_name(self.statement),
+            translators: people::translators(&contributors),
+            contributors,
             year: dumps::year_of(self.issued),
             publisher: self.publisher.to_string(),
             format,
