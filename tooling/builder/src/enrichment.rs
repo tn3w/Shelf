@@ -1,6 +1,7 @@
 use crate::dumps::{self, Authors, Book};
 use crate::libraries::{SYNTHETIC, clean, match_key, normalized_name, writer_key};
 use crate::tags;
+use std::cmp::Reverse;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
@@ -10,7 +11,7 @@ const GUTENBERG_SEPARATOR: &[u8] = b"</rdf:RDF>";
 const SUMMARY_NOTE: &str = "(This is an automatically generated summary.)";
 const AUTHORITIES: [&str; 3] = ["gnd", "viaf", "isni"];
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct WikidataWork {
     pub item: u32,
     pub language: String,
@@ -122,21 +123,17 @@ impl Wikidata {
                 linked.subjects.push(text.to_string());
             }
         });
+        let rank = |linked: &WikidataWork| (linked.labels.len(), Reverse(linked.item));
         for (item, ids) in works {
             let Some(linked) = items.remove(&item) else {
                 continue;
             };
-            for &work in &ids[1..] {
-                let copy = WikidataWork {
-                    item,
-                    language: linked.language.clone(),
-                    gutenberg: linked.gutenberg.clone(),
-                    labels: linked.labels.clone(),
-                    subjects: linked.subjects.clone(),
-                };
-                wikidata.works.insert(work, copy);
+            for work in ids {
+                let known = wikidata.works.get(&work);
+                if known.is_none_or(|known| rank(&linked) > rank(known)) {
+                    wikidata.works.insert(work, linked.clone());
+                }
             }
-            wikidata.works.insert(ids[0], linked);
         }
         let mut ids: HashMap<u32, Vec<String>> = HashMap::new();
         for scheme in AUTHORITIES {
@@ -325,7 +322,9 @@ mod tests {
         let files = [
             (
                 "openlibrary",
-                entity(170583, "\"OL66554W\"") + &entity(36322, "\"OL21594A\""),
+                entity(99, "\"OL66554W\"")
+                    + &entity(170583, "\"OL66554W\"")
+                    + &entity(36322, "\"OL21594A\""),
             ),
             (
                 "language",
@@ -334,7 +333,9 @@ mod tests {
             ("gutenberg", entity(170583, "\"1342\"")),
             (
                 "label",
-                entity(170583, "\"高慢と偏見\"@ja") + &entity(170583, "\"Stolz\"@de"),
+                entity(170583, "\"高慢と偏見\"@ja")
+                    + &entity(170583, "\"Stolz\"@de")
+                    + &entity(99, "\"Stolz (Ausgabe)\"@de"),
             ),
             ("viaf", entity(36322, "\"102333412\"")),
             (
