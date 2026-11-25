@@ -116,7 +116,8 @@ private fun LazyListScope.readingLog(recap: Recap, navigator: Navigator) {
                 Look.colors.accent,
             )
         }
-        items(month.books.reversed(), key = { it.work }) { saved ->
+        val books = month.books.reversed()
+        items(books, key = { "${it.work}-${it.pastReads.size}" }) { saved ->
             BookListItem(
                 saved.toBook(),
                 "stats-${recap.year}",

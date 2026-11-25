@@ -488,6 +488,9 @@
     <string name="your_book">Tu libro</string>
     <string name="add_started">Añadir fecha de inicio</string>
     <string name="add_finished">Añadir fecha de fin</string>
+    <string name="earlier_read">Lectura anterior</string>
+    <string name="remove_read">Quitar lectura anterior</string>
+    <string name="remove_read_confirm">¿Quitar la lectura que terminaste el %s? Dejará de contar en tus estadísticas.</string>
     <string name="format">Formato</string>
     <string name="add_format">Añadir formato</string>
     <string name="format_paper">Papel</string>

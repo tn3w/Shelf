@@ -473,6 +473,9 @@
     <string name="your_book">Din bok</string>
     <string name="add_started">Lägg till startdatum</string>
     <string name="add_finished">Lägg till slutdatum</string>
+    <string name="earlier_read">Tidigare läsning</string>
+    <string name="remove_read">Ta bort tidigare läsning</string>
+    <string name="remove_read_confirm">Ta bort läsningen du avslutade %s? Den räknas inte längre i din statistik.</string>
     <string name="format">Format</string>
     <string name="add_format">Lägg till format</string>
     <string name="format_paper">Papper</string>

@@ -58,6 +58,7 @@ fun YourBookCard(
     var writing by rememberSaveable { mutableStateOf<Writing?>(null) }
     var picking by rememberSaveable { mutableStateOf<ReadingDate?>(null) }
     var addingList by rememberSaveable { mutableStateOf(false) }
+    var removingRead by rememberSaveable { mutableStateOf<Int?>(null) }
     val reading = entry.shelf != Shelf.Want
 
     Column(
@@ -76,6 +77,7 @@ fun YourBookCard(
             onOpenList,
             onWrite = { writing = it },
             onPick = { picking = it },
+            onRemoveRead = { removingRead = it },
             onFormat = { choosingFormat = true },
             onLogPage = { loggingPage = true },
         ) { addingList = true }
@@ -98,6 +100,7 @@ fun YourBookCard(
         )
     }
     picking?.let { DatePicking(it, entry, onEdit) { picking = null } }
+    removingRead?.let { RemoveRead(entry, it, onEdit) { removingRead = null } }
     if (addingList) {
         ListSheet(
             entry.lists,
@@ -152,6 +155,7 @@ private fun YourChips(
     onOpenList: (String) -> Unit,
     onWrite: (Writing) -> Unit,
     onPick: (ReadingDate) -> Unit,
+    onRemoveRead: (Int) -> Unit,
     onFormat: () -> Unit,
     onLogPage: () -> Unit,
     onAddList: () -> Unit,
@@ -174,6 +178,11 @@ private fun YourChips(
             val label = day?.let { "${stringResource(date.label)} · ${dateLabel(it)}" }
                 ?: stringResource(date.empty)
             Tag(label, icon = Icons.Rounded.Event) { onPick(date) }
+        }
+        entry.reads().dropLast(1).forEachIndexed { index, read ->
+            val day = read.finishedOn()?.let { dateLabel(it) }
+            val label = "${stringResource(R.string.earlier_read)} · $day"
+            Tag(label, icon = Icons.Rounded.History) { onRemoveRead(index) }
         }
         FormatChips(entry, onFormat, onLogPage)
         entry.lists.forEach { name ->
@@ -246,6 +255,27 @@ private fun DatePicking(
             (started ?: LocalDate.of(1900, 1, 1))..today,
             onDismiss,
         ) { day -> onEdit { it.copy(finished = millisOf(day)) } }
+    }
+}
+
+@Composable
+private fun RemoveRead(
+    entry: Saved,
+    index: Int,
+    onEdit: ((Saved) -> Saved) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (index >= entry.pastReads.size) return
+    val day = entry.reads()[index].finishedOn()?.let { dateLabel(it) }
+    ConfirmSheet(
+        stringResource(R.string.remove_read),
+        stringResource(R.string.remove_read_confirm, day.orEmpty()),
+        stringResource(R.string.remove),
+        onDismiss,
+    ) {
+        onEdit {
+            it.copy(pastReads = it.pastReads.filterIndexed { at, _ -> at != index })
+        }
     }
 }
 

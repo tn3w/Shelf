@@ -476,6 +476,9 @@
     <string name="your_book">Your book</string>
     <string name="add_started">Add start date</string>
     <string name="add_finished">Add finish date</string>
+    <string name="earlier_read">Earlier read</string>
+    <string name="remove_read">Remove earlier read</string>
+    <string name="remove_read_confirm">Remove the read you finished on %s? It no longer counts in your stats.</string>
     <string name="format">Format</string>
     <string name="add_format">Add format</string>
     <string name="format_paper">Paper</string>

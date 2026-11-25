@@ -457,6 +457,9 @@
     <string name="your_book">あなたの本</string>
     <string name="add_started">開始日を追加</string>
     <string name="add_finished">読了日を追加</string>
+    <string name="earlier_read">以前の読書</string>
+    <string name="remove_read">以前の読書を削除</string>
+    <string name="remove_read_confirm">%sに読み終えた記録を削除しますか？統計に含まれなくなります。</string>
     <string name="format">形式</string>
     <string name="add_format">形式を追加</string>
     <string name="format_paper">紙</string>

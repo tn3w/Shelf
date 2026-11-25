@@ -137,7 +137,7 @@ fun statsYears(
     today: LocalDate = LocalDate.now(),
     zone: ZoneId = ZoneId.systemDefault(),
 ): List<Int> {
-    val finished = entries.mapNotNull { it.finishedOn(zone)?.year }
+    val finished = entries.flatMap { it.reads() }.mapNotNull { it.finishedOn(zone)?.year }
     val read = readingDays(activity).keys.map { it.year }
     return (finished + read + today.year)
         .filter { it <= today.year }
@@ -171,6 +171,7 @@ fun recapOf(
     zone: ZoneId = ZoneId.systemDefault(),
 ): Recap {
     val finished = entries
+        .flatMap { it.reads() }
         .filter { it.finishedOn(zone)?.year == year }
         .sortedBy { it.finishedAt }
     val reading = entries

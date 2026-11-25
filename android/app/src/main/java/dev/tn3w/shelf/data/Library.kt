@@ -93,7 +93,11 @@ data class Saved(
     val lists: List<String> = emptyList(),
     val format: BookFormat? = null,
     val page: Int = 0,
+    val pastReads: List<PastRead> = emptyList(),
 )
+
+@Serializable
+data class PastRead(val started: Long = 0, val finished: Long)
 
 internal fun pagesTurned(before: Int, after: Int) = (after - before).coerceAtLeast(0)
 
@@ -151,8 +155,26 @@ val Saved.finishedAt
 
 fun Saved.dated() = if (shelf == Shelf.Read) copy(finished = finishedAt) else this
 
+fun Saved.reads() = pastReads.mapIndexed { index, read ->
+    copy(
+        shelf = Shelf.Read,
+        started = read.started,
+        finished = read.finished,
+        pastReads = pastReads.take(index),
+    )
+} + this
+
+private fun Saved.reread() = copy(
+    pastReads = pastReads + PastRead(started, finished),
+    started = 0,
+    finished = 0,
+    page = 0,
+)
+
 internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Saved {
-    val kept = previous?.dated()
+    val dated = previous?.dated()
+    val rereading = shelf == Shelf.Reading && previous?.shelf != Shelf.Reading
+    val kept = if (rereading && (dated?.finished ?: 0) > 0) dated?.reread() else dated
     val started = when {
         shelf == Shelf.Reading && kept?.shelf != Shelf.Reading -> now
         else -> kept?.started ?: 0
@@ -171,6 +193,7 @@ internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Save
         lists = kept?.lists.orEmpty(),
         format = kept?.format,
         page = kept?.page ?: 0,
+        pastReads = kept?.pastReads.orEmpty(),
         added = kept?.added?.takeIf { it > 0 } ?: now,
         started = started,
         finished = finished,

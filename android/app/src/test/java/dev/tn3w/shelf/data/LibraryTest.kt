@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -506,6 +507,22 @@ class LibraryTest {
         assertEquals(20L to 40L, read.started to read.finished)
         assertEquals(40L, placed(book, Shelf.Read, read, now = 50).finished)
         assertEquals(60L, placed(book, Shelf.Reading, read, now = 60).started)
+    }
+
+    @Test
+    fun rereadingKeepsEarlierReads() {
+        val book = Book(SYNTHETIC + 1, "T")
+        val read = Saved(book.work, Shelf.Read, 5, started = 2, page = 80)
+        val again = placed(book, Shelf.Reading, read, now = 10)
+        assertEquals(listOf(PastRead(2, 5)), again.pastReads)
+        assertEquals(Triple(10L, 0L, 0), again.run { Triple(started, finished, page) })
+        val done = placed(book, Shelf.Read, again, now = 20)
+        assertEquals(listOf(5L, 20L), done.reads().map { it.finished })
+        assertEquals(listOf(PastRead(2, 5)), placed(book, Shelf.Want, done, 30).pastReads)
+        val paused = placed(book, Shelf.Reading, placed(book, Shelf.Want, again, 30), 40)
+        assertEquals(1, paused.pastReads.size)
+        val stored = """{"work":1,"shelf":"Read","updated":0}"""
+        assertTrue(json.decodeFromString<Saved>(stored).pastReads.isEmpty())
     }
 
     @Test

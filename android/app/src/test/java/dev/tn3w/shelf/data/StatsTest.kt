@@ -183,6 +183,22 @@ class StatsTest {
     }
 
     @Test
+    fun rereadsCountEachRead() {
+        val earlier = PastRead(millis(LocalDate.of(YEAR - 1, 3, 1)), millis(day(1, 4)))
+        val again = PastRead(millis(day(2, 1)), millis(day(2, 9)))
+        val entry = finished(1, day(6, 1)).copy(pastReads = listOf(earlier, again))
+        val recap = recapOf(YEAR, listOf(entry), emptyMap(), zone = ZONE)
+        assertEquals(listOf(1, 1, 1), recap.books.map { it.work })
+        assertEquals(listOf(0, 1, 2), recap.books.map { it.pastReads.size })
+        assertEquals(listOf(day(2, 9)), recap.months[1].books.map { it.finishedOn(ZONE) })
+        assertEquals(9, recap.months[1].books.single().daysToFinish(ZONE))
+        val lastYear = PastRead(finished = millis(LocalDate.of(YEAR - 1, 12, 31)))
+        val reread = entry.copy(pastReads = listOf(lastYear))
+        val years = statsYears(listOf(reread), emptyMap(), day(6, 2), ZONE)
+        assertEquals(listOf(YEAR, YEAR - 1), years)
+    }
+
+    @Test
     fun finishDateOverridesLastUpdate() {
         val entry = finished(1, day(5, 1)).copy(
             started = millis(day(1, 10)),

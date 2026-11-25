@@ -503,6 +503,9 @@
     <string name="your_book">Vaše kniha</string>
     <string name="add_started">Přidat datum začátku</string>
     <string name="add_finished">Přidat datum dočtení</string>
+    <string name="earlier_read">Dřívější čtení</string>
+    <string name="remove_read">Odebrat dřívější čtení</string>
+    <string name="remove_read_confirm">Odebrat čtení dokončené %s? Přestane se počítat do vašich statistik.</string>
     <string name="format">Formát</string>
     <string name="add_format">Přidat formát</string>
     <string name="format_paper">Papír</string>

@@ -458,6 +458,9 @@
     <string name="your_book">내 책</string>
     <string name="add_started">시작 날짜 추가</string>
     <string name="add_finished">완독 날짜 추가</string>
+    <string name="earlier_read">이전 독서</string>
+    <string name="remove_read">이전 독서 삭제</string>
+    <string name="remove_read_confirm">%s에 완독한 기록을 삭제할까요? 더 이상 통계에 포함되지 않습니다.</string>
     <string name="format">형식</string>
     <string name="add_format">형식 추가</string>
     <string name="format_paper">종이책</string>

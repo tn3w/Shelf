@@ -473,6 +473,9 @@
     <string name="your_book">Sinu raamat</string>
     <string name="add_started">Lisa alguskuupäev</string>
     <string name="add_finished">Lisa lõpukuupäev</string>
+    <string name="earlier_read">Varasem lugemine</string>
+    <string name="remove_read">Eemalda varasem lugemine</string>
+    <string name="remove_read_confirm">Eemaldada %s lõpetatud lugemine? See ei lähe enam statistikasse arvesse.</string>
     <string name="format">Vorming</string>
     <string name="add_format">Lisa vorming</string>
     <string name="format_paper">Paber</string>
