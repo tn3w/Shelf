@@ -563,9 +563,10 @@ impl Library {
         let catalogue = &self.catalogues[member.language];
         let mut counts: HashMap<String, usize> = HashMap::new();
         for &volume in volumes {
-            let local = self.members(volume).into_iter().find(|other| {
-                other.language == member.language
-            });
+            let local = self
+                .members(volume)
+                .into_iter()
+                .find(|other| other.language == member.language);
             if let Some(series) = local.and_then(|local| catalogue.series(local.work)) {
                 *counts.entry(series.name).or_default() += 1;
             }

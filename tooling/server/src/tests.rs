@@ -504,7 +504,7 @@ async fn pages_render_the_catalogue() {
         home.contains("<a href=/l/en>English</a>")
             && home.contains("<a href=/l/de>German")
     );
-    assert!(home.contains("6 books") && home.contains("/b/10/en/160.avif"));
+    assert!(home.contains("7 books") && home.contains("/b/10/en/160.avif"));
     let results = page(&app, "/s?q=dune", &token).await;
     assert!(
         results.contains("<a href=/b/12/en>Dune</a>")
@@ -584,7 +584,7 @@ async fn pages_render_the_catalogue() {
     );
     let english = page(&app, "/l/en", &token).await;
     assert!(
-        english.contains("English books") && english.contains("4 books, most read first")
+        english.contains("English books") && english.contains("5 books, most read first")
     );
     let first = english.find("Philosopher").unwrap();
     assert!(first < english.find("Dune").unwrap() && english.contains("Foundation"));
@@ -657,12 +657,12 @@ async fn json_api_answers_every_route() {
     assert_eq!(similar["results"][0]["title"], "Foundation");
     let languages = json(&app, "/api/v1/languages", &token).await;
     assert_eq!(languages["languages"][0]["code"], "en");
-    assert_eq!(languages["languages"][0]["works"], 4);
+    assert_eq!(languages["languages"][0]["works"], 5);
     let catalogue = json(&app, "/api/v1/catalogue/en?limit=2", &token).await;
     assert_eq!(catalogue["results"][0]["id"], 10);
     assert_eq!(
         (catalogue["total"].clone(), catalogue["more"].clone()),
-        (4.into(), true.into())
+        (5.into(), true.into())
     );
     let unknown = json(&app, "/api/v1/catalogue/xx", &token).await;
     assert_eq!(unknown["error"]["code"], "invalid_parameter");
