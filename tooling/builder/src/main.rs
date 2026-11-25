@@ -759,21 +759,37 @@ fn extras_of(job: &Job, placed: &Placed) -> Extras {
     editions
         .iter_mut()
         .for_each(|edition| imprinted(job.isbns, edition));
+    let contributors = contributors(job, work.id, details);
     Extras {
         work: work.id,
         descriptions: descriptions(job, placed, details),
         identifiers,
         titles: linked.map_or_else(Vec::new, |linked| linked.labels.clone()),
-        translators: details
-            .into_iter()
-            .flat_map(|details| &details.translators)
-            .filter(|(language, _)| *language == job.language)
-            .map(|(_, name)| name.clone())
-            .collect(),
+        translators: translators(job, details, &contributors),
         original_title: original_title(job, work.id, details),
         editions,
-        contributors: contributors(job, work.id, details),
+        contributors,
     }
+}
+
+fn translators(
+    job: &Job,
+    details: Option<&Details>,
+    contributors: &[(String, String)],
+) -> Vec<String> {
+    let library = details.into_iter().flat_map(|details| &details.translators);
+    let library = library.filter(|(language, _)| *language == job.language);
+    let credited = contributors.iter().filter(|(role, _)| role == "translator");
+    let names = library
+        .map(|(_, name)| name)
+        .chain(credited.map(|(_, name)| name));
+    let mut found: Vec<String> = Vec::new();
+    for name in names {
+        if !found.iter().any(|known| people::same_name(known, name)) {
+            found.push(name.clone());
+        }
+    }
+    found
 }
 
 fn contributors(job: &Job, work: u32, details: Option<&Details>) -> Vec<(String, String)> {

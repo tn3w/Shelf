@@ -205,7 +205,8 @@ pub fn statement_credits(statement: &str) -> Vec<Credit> {
 static TRAILING_ROLE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(.+?)\s*\(([^()]+)\)\s*$").expect("role pattern"));
 
-/// `contributors` (`{role, name}`) and `contributions` (`Name (Role)`) of an edition.
+/// `contributors` (`{role, name}`), `contributions` (`Name (Role)`), `translated_by` and
+/// the credits of `by_statement` of an edition.
 pub fn edition_contributors(edition: &Value) -> Vec<(&'static str, String)> {
     let mut found = Vec::new();
     let listed = edition.get("contributors").and_then(Value::as_array);
@@ -223,6 +224,14 @@ pub fn edition_contributors(edition: &Value) -> Vec<(&'static str, String)> {
         if let Some(role) = role_of(&parts[2]) {
             push_unique(&mut found, role, &parts[1]);
         }
+    }
+    let translating = edition.get("translated_by").and_then(Value::as_array);
+    for name in translating.into_iter().flatten().filter_map(Value::as_str) {
+        push_unique(&mut found, "translator", name);
+    }
+    let statement = edition.get("by_statement").and_then(Value::as_str);
+    for (role, name) in statement.map(statement_credits).unwrap_or_default() {
+        push_unique(&mut found, role, &name);
     }
     found
 }
@@ -373,13 +382,17 @@ mod tests {
             r#"{"contributors": [{"role": "Illustrator", "name": "Mary GrandPré"},
                 {"role": "Cover art", "name": "Someone"}],
                 "contributions": ["GrandPré, Mary (Illustrator)", "Fry, Stephen (Narrator)",
-                "Library of Congress (U.S.)", "Plain Name"]}"#,
+                "Library of Congress (U.S.)", "Plain Name"],
+                "translated_by": ["Ralph Manheim"],
+                "by_statement": "Günter Grass ; translated by Ralph Manheim ; edited by Ann Lee"}"#,
         )
         .unwrap();
         let found = edition_contributors(&edition);
         assert_eq!(found[0], ("illustrator", "Mary GrandPré".to_string()));
-        assert_eq!(found.last(), Some(&("narrator", "Stephen Fry".to_string())));
-        assert_eq!(found.len(), 2);
+        assert_eq!(found[1], ("narrator", "Stephen Fry".to_string()));
+        assert_eq!(found[2], ("translator", "Ralph Manheim".to_string()));
+        assert_eq!(found.last(), Some(&("editor", "Ann Lee".to_string())));
+        assert_eq!(found.len(), 4);
         assert!(same_name("Mary Grandpré", "Mary GrandPré"));
     }
 
