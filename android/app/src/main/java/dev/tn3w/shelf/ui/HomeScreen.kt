@@ -27,6 +27,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.ShelfApp
+import dev.tn3w.shelf.SimilarKind
+import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.data.*
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -124,6 +126,7 @@ fun HomeScreen(navigator: Navigator) {
                     row.books,
                     row.key,
                     navigator::book,
+                    onMore = rowMore(row, navigator),
                     onDismiss = ::dismiss,
                 )
             }
@@ -247,6 +250,17 @@ private fun rowTitle(row: HomeRow) = when (row.kind) {
         row.sources.firstOrNull()?.let {
             stringResource(R.string.because_you_read, mainTitle(it.title))
         } ?: stringResource(R.string.for_you)
+}
+
+private fun rowMore(row: HomeRow, navigator: Navigator): (() -> Unit)? = when {
+    row.kind == RowKind.Because && row.sources.isNotEmpty() -> {
+        val route = SimilarRoute(SimilarKind.Books, row.sources.map { it.work })
+        ({ navigator.similar(route) })
+    }
+
+    row.kind == RowKind.Author && row.author != null -> ({ navigator.author(row.author) })
+
+    else -> null
 }
 
 @Composable

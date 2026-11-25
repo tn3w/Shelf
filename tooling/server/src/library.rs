@@ -526,8 +526,9 @@ impl Library {
         let (positions, members): (Vec<u32>, Vec<Member>) = shown.unzip();
         let position =
             volumes.iter().find(|(_, work)| **work == id).map_or(0, |(at, _)| *at);
+        let name = self.local_series_name(member, *first, listed, volumes.values());
         Some(Series {
-            name: listed.name.clone(),
+            name,
             first: *volumes.values().next()?,
             position,
             members,
@@ -539,10 +540,40 @@ impl Library {
     pub fn series_label(&self, member: Member) -> Option<String> {
         let (source, listed) = self.series_sources(member).into_iter().next()?;
         let position = self.catalogues[source.language].facts(source.work)?.position;
+        let volumes = self.volumes(source, &listed);
+        let name = self.local_series_name(member, source, &listed, volumes.values());
         Some(match position {
-            0 => listed.name,
-            position => format!("{} #{position}", listed.name),
+            0 => name,
+            position => format!("{name} #{position}"),
         })
+    }
+
+    /// The series name in `member`'s language: its own catalogue's when it lists the
+    /// series, else the one most volumes carry there, else the `source` catalogue's.
+    fn local_series_name<'a>(
+        &self,
+        member: Member,
+        source: Member,
+        listed: &ListedSeries,
+        volumes: impl Iterator<Item = &'a u32>,
+    ) -> String {
+        if source.language == member.language {
+            return listed.name.clone();
+        }
+        let catalogue = &self.catalogues[member.language];
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        for &volume in volumes {
+            let local = self.members(volume).into_iter().find(|other| {
+                other.language == member.language
+            });
+            if let Some(series) = local.and_then(|local| catalogue.series(local.work)) {
+                *counts.entry(series.name).or_default() += 1;
+            }
+        }
+        let most = counts.into_iter().max_by(|(one, many), (other, more)| {
+            many.cmp(more).then_with(|| other.cmp(one))
+        });
+        most.map_or_else(|| listed.name.clone(), |(name, _)| name)
     }
 
     /// The number an author's pages use: aliases (twin records, library ids) lead to it.

@@ -136,7 +136,7 @@ fn write_release(directory: &Path) {
     authors.add(ROWLING_TWIN, "J. K. Rowling");
     let potter = Series { name: "Harry Potter".to_string(), members: vec![10, 11] };
     let german_potter = Series {
-        name: "Harry Potter".to_string(),
+        name: "Harry-Potter-Reihe".to_string(),
         members: vec![11, GERMAN_STONE, GERMAN_PRISONER],
     };
     let swedish_potter =
@@ -154,6 +154,9 @@ fn write_release(directory: &Path) {
     let mut chamber =
         work(11, "Harry Potter and the Chamber of Secrets", &[100], &fantasy);
     chamber.series = Some((&potter, 2));
+    let english_prisoner_title = "Harry Potter and the Prisoner of Azkaban";
+    let english_prisoner =
+        work(GERMAN_PRISONER, english_prisoner_title, &[100], &fantasy);
     let mut dune = work(12, "Dune", &[101], &space);
     dune.year = 1965;
     dune.cover = 301;
@@ -181,7 +184,7 @@ fn write_release(directory: &Path) {
             popularity(12, 800.0),
             popularity(13, 300.0),
         ],
-        works: vec![stone, chamber, dune, foundation],
+        works: vec![stone, chamber, dune, foundation, english_prisoner],
         aliases: vec![(9, 12)],
         extras: vec![extras(10, "Bloomsbury")],
     };
@@ -525,7 +528,10 @@ async fn pages_render_the_catalogue() {
     assert!(stone.contains("https://openlibrary.org/works/OL82563W"));
     assert!(stone.contains("https://www.wikidata.org/wiki/Q43361"));
     assert!(stone.contains("<a href=/series/10/en>Harry Potter</a> <small>3 books"));
-    assert!(stone.contains("Gefangene von Askaban") && stone.contains("Harry Potter #1"));
+    assert!(stone.contains("Prisoner of Azkaban") && stone.contains("Harry Potter #1"));
+    let english_prisoner = page(&app, &format!("/b/{GERMAN_PRISONER}/en"), &token).await;
+    assert!(english_prisoner.contains("<a href=/series/10/en>Harry Potter</a>"));
+    assert!(!english_prisoner.contains("Harry-Potter-Reihe"));
     let series_shelf = stone.split("More by").next().unwrap();
     assert!(!series_shelf.contains("Nästa serie"));
     assert!(stone.contains("<dt>Illustrated by<dd>Mary GrandPré"));
@@ -538,6 +544,7 @@ async fn pages_render_the_catalogue() {
     assert!(german.contains(&german_cover));
     assert!(german.contains("<a href=/a/100/de>J. K. Rowling</a>"));
     assert!(german.contains("Kammer des Schreckens") && !german.contains("Bloomsbury"));
+    assert!(german.contains("<a href=/series/10/de>Harry-Potter-Reihe</a>"));
     assert!(german.contains("Romane") && !german.contains(">Fiction<"));
     let german_rowling = page(&app, "/a/100/de", &token).await;
     assert!(german_rowling.contains("Harry Potter und der Stein der Weisen"));
