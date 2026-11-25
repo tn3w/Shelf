@@ -488,6 +488,15 @@
     <string name="your_book">Jūsu grāmata</string>
     <string name="add_started">Pievienot sākuma datumu</string>
     <string name="add_finished">Pievienot beigu datumu</string>
+    <string name="format">Formāts</string>
+    <string name="add_format">Pievienot formātu</string>
+    <string name="format_paper">Papīrs</string>
+    <string name="format_ebook">E-grāmata</string>
+    <string name="format_audiobook">Audiogrāmata</string>
+    <string name="log_page">Atzīmēt lappusi</string>
+    <string name="current_page">Pašreizējā lappuse</string>
+    <string name="page_number">%d. lappuse</string>
+    <string name="log_page_hint">Jaunās lappuses tiek ieskaitītas dienas mērķī, sērijā un statistikā.</string>
     <string name="listen">Klausīties</string>
     <string name="play">Atskaņot</string>
     <string name="pause">Pauze</string>

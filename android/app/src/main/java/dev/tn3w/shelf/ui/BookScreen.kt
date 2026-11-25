@@ -76,6 +76,10 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         detached { library.edit(work, change) }
     }
 
+    fun logPage(work: Int, page: Int) {
+        detached { library.logPage(work, page) }
+    }
+
     fun delete(book: Book) {
         detached { library.deleteBook(book.work, keepShelves = !book.isLocal) }
     }
@@ -159,9 +163,12 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
             if (entry != null) {
                 item { SectionHeader(stringResource(R.string.your_book)) }
                 item {
-                    YourBookCard(entry, saved.listNames(), navigator::list) {
-                        viewModel.edit(work, it)
-                    }
+                    YourBookCard(
+                        entry,
+                        saved.listNames(),
+                        navigator::list,
+                        onLogPage = { viewModel.logPage(work, it) },
+                    ) { viewModel.edit(work, it) }
                 }
             }
             val series = related?.series?.takeIf { it.second.size > 1 }

@@ -68,6 +68,12 @@ enum class Shelf(@StringRes val label: Int) {
     Abandoned(R.string.did_not_finish),
 }
 
+enum class BookFormat(@StringRes val label: Int) {
+    Paper(R.string.format_paper),
+    Ebook(R.string.format_ebook),
+    Audiobook(R.string.format_audiobook),
+}
+
 @Serializable
 data class Saved(
     val work: Int,
@@ -85,7 +91,11 @@ data class Saved(
     val review: String = "",
     val notes: String = "",
     val lists: List<String> = emptyList(),
+    val format: BookFormat? = null,
+    val page: Int = 0,
 )
+
+internal fun pagesTurned(before: Int, after: Int) = (after - before).coerceAtLeast(0)
 
 fun listName(name: String) = name.replace(',', ' ').trim().replace(Regex("""\s+"""), " ")
 
@@ -159,6 +169,8 @@ internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Save
         review = kept?.review.orEmpty(),
         notes = kept?.notes.orEmpty(),
         lists = kept?.lists.orEmpty(),
+        format = kept?.format,
+        page = kept?.page ?: 0,
         added = kept?.added?.takeIf { it > 0 } ?: now,
         started = started,
         finished = finished,
@@ -850,6 +862,13 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun edit(work: Int, change: (Saved) -> Saved) = libraryStore.change {
         it.copy(entries = it.entries.edited(work, System.currentTimeMillis(), change))
+    }
+
+    suspend fun logPage(work: Int, page: Int) {
+        val before = saved.first().firstOrNull { it.work == work }?.page ?: return
+        edit(work) { it.copy(page = page) }
+        val turned = pagesTurned(before, page)
+        if (turned > 0) addPagesRead(turned)
     }
 
     suspend fun toggleList(works: Collection<Int>, name: String) = libraryStore.change {

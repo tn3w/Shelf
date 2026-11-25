@@ -488,6 +488,15 @@
     <string name="your_book">Seu livro</string>
     <string name="add_started">Adicionar data de início</string>
     <string name="add_finished">Adicionar data de término</string>
+    <string name="format">Formato</string>
+    <string name="add_format">Adicionar formato</string>
+    <string name="format_paper">Papel</string>
+    <string name="format_ebook">E-book</string>
+    <string name="format_audiobook">Audiolivro</string>
+    <string name="log_page">Registrar página</string>
+    <string name="current_page">Página atual</string>
+    <string name="page_number">Página %d</string>
+    <string name="log_page_hint">Novas páginas contam para sua meta diária, sequência e estatísticas.</string>
     <string name="listen">Ouvir</string>
     <string name="play">Reproduzir</string>
     <string name="pause">Pausa</string>

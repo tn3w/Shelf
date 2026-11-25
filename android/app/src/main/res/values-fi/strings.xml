@@ -473,6 +473,15 @@
     <string name="your_book">Sinun kirjasi</string>
     <string name="add_started">Lisää aloituspäivä</string>
     <string name="add_finished">Lisää lopetuspäivä</string>
+    <string name="format">Muoto</string>
+    <string name="add_format">Lisää muoto</string>
+    <string name="format_paper">Paperi</string>
+    <string name="format_ebook">E-kirja</string>
+    <string name="format_audiobook">Äänikirja</string>
+    <string name="log_page">Kirjaa sivu</string>
+    <string name="current_page">Nykyinen sivu</string>
+    <string name="page_number">Sivu %d</string>
+    <string name="log_page_hint">Uudet sivut lasketaan päivätavoitteeseen, putkeen ja tilastoihin.</string>
     <string name="listen">Kuuntele</string>
     <string name="play">Toista</string>
     <string name="pause">Tauko</string>

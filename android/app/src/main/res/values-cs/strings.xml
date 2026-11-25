@@ -503,6 +503,15 @@
     <string name="your_book">Vaše kniha</string>
     <string name="add_started">Přidat datum začátku</string>
     <string name="add_finished">Přidat datum dočtení</string>
+    <string name="format">Formát</string>
+    <string name="add_format">Přidat formát</string>
+    <string name="format_paper">Papír</string>
+    <string name="format_ebook">E-kniha</string>
+    <string name="format_audiobook">Audiokniha</string>
+    <string name="log_page">Zapsat stránku</string>
+    <string name="current_page">Aktuální stránka</string>
+    <string name="page_number">Strana %d</string>
+    <string name="log_page_hint">Nové stránky se počítají do denního cíle, série a statistik.</string>
     <string name="listen">Poslouchat</string>
     <string name="play">Přehrát</string>
     <string name="pause">Pozastavit</string>

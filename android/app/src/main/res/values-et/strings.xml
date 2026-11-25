@@ -473,6 +473,15 @@
     <string name="your_book">Sinu raamat</string>
     <string name="add_started">Lisa alguskuupäev</string>
     <string name="add_finished">Lisa lõpukuupäev</string>
+    <string name="format">Vorming</string>
+    <string name="add_format">Lisa vorming</string>
+    <string name="format_paper">Paber</string>
+    <string name="format_ebook">E-raamat</string>
+    <string name="format_audiobook">Audioraamat</string>
+    <string name="log_page">Märgi lehekülg</string>
+    <string name="current_page">Praegune lehekülg</string>
+    <string name="page_number">Lehekülg %d</string>
+    <string name="log_page_hint">Uued leheküljed lähevad arvesse päevaeesmärgi, järjestikuste päevade ja statistika juures.</string>
     <string name="listen">Kuula</string>
     <string name="play">Esita</string>
     <string name="pause">Paus</string>

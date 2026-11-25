@@ -458,6 +458,15 @@
     <string name="your_book">내 책</string>
     <string name="add_started">시작 날짜 추가</string>
     <string name="add_finished">완독 날짜 추가</string>
+    <string name="format">형식</string>
+    <string name="add_format">형식 추가</string>
+    <string name="format_paper">종이책</string>
+    <string name="format_ebook">전자책</string>
+    <string name="format_audiobook">오디오북</string>
+    <string name="log_page">페이지 기록</string>
+    <string name="current_page">현재 페이지</string>
+    <string name="page_number">%d페이지</string>
+    <string name="log_page_hint">새로 읽은 페이지는 일일 목표, 연속 기록, 통계에 반영됩니다.</string>
     <string name="listen">듣기</string>
     <string name="play">재생</string>
     <string name="pause">일시정지</string>

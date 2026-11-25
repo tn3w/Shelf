@@ -473,6 +473,15 @@
     <string name="your_book">Jouw boek</string>
     <string name="add_started">Begindatum toevoegen</string>
     <string name="add_finished">Einddatum toevoegen</string>
+    <string name="format">Formaat</string>
+    <string name="add_format">Formaat toevoegen</string>
+    <string name="format_paper">Papier</string>
+    <string name="format_ebook">E-book</string>
+    <string name="format_audiobook">Luisterboek</string>
+    <string name="log_page">Pagina noteren</string>
+    <string name="current_page">Huidige pagina</string>
+    <string name="page_number">Pagina %d</string>
+    <string name="log_page_hint">Nieuwe pagina’s tellen mee voor je dagdoel, reeks en statistieken.</string>
     <string name="listen">Luisteren</string>
     <string name="play">Afspelen</string>
     <string name="pause">Pauzeren</string>

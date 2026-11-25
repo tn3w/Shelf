@@ -473,6 +473,15 @@
     <string name="your_book">Din bok</string>
     <string name="add_started">Lägg till startdatum</string>
     <string name="add_finished">Lägg till slutdatum</string>
+    <string name="format">Format</string>
+    <string name="add_format">Lägg till format</string>
+    <string name="format_paper">Papper</string>
+    <string name="format_ebook">E-bok</string>
+    <string name="format_audiobook">Ljudbok</string>
+    <string name="log_page">Logga sida</string>
+    <string name="current_page">Aktuell sida</string>
+    <string name="page_number">Sida %d</string>
+    <string name="log_page_hint">Nya sidor räknas mot ditt dagliga mål, din svit och din statistik.</string>
     <string name="listen">Lyssna</string>
     <string name="play">Spela upp</string>
     <string name="pause">Paus</string>

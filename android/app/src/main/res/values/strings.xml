@@ -476,6 +476,15 @@
     <string name="your_book">Your book</string>
     <string name="add_started">Add start date</string>
     <string name="add_finished">Add finish date</string>
+    <string name="format">Format</string>
+    <string name="add_format">Add format</string>
+    <string name="format_paper">Paper</string>
+    <string name="format_ebook">Ebook</string>
+    <string name="format_audiobook">Audiobook</string>
+    <string name="log_page">Log page</string>
+    <string name="current_page">Current page</string>
+    <string name="page_number">Page %d</string>
+    <string name="log_page_hint">New pages count towards your daily goal, streak and stats.</string>
     <string name="listen">Listen</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>

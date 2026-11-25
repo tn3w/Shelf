@@ -509,6 +509,24 @@ class LibraryTest {
     }
 
     @Test
+    fun placingKeepsFormatAndPage() {
+        val book = Book(SYNTHETIC + 1, "T")
+        val paper = placed(book, Shelf.Want, null, now = 1)
+            .copy(format = BookFormat.Paper, page = 42)
+        val read = placed(book, Shelf.Read, paper, now = 2)
+        assertEquals(BookFormat.Paper to 42, read.format to read.page)
+        val stored = """{"work":1,"shelf":"Read","updated":0}"""
+        assertEquals(null, json.decodeFromString<Saved>(stored).format)
+    }
+
+    @Test
+    fun onlyPagesAheadCountAsRead() {
+        assertEquals(12, pagesTurned(30, 42))
+        assertEquals(0, pagesTurned(42, 30))
+        assertEquals(42, pagesTurned(0, 42))
+    }
+
+    @Test
     fun editingKeepsLegacyFinishDate() {
         val entries = listOf(Saved(1, Shelf.Read, 5), Saved(2, Shelf.Reading, 6))
         val edited = entries.edited(1, now = 9) { it.copy(rating = 5) }

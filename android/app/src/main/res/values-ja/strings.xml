@@ -457,6 +457,15 @@
     <string name="your_book">あなたの本</string>
     <string name="add_started">開始日を追加</string>
     <string name="add_finished">読了日を追加</string>
+    <string name="format">形式</string>
+    <string name="add_format">形式を追加</string>
+    <string name="format_paper">紙</string>
+    <string name="format_ebook">電子書籍</string>
+    <string name="format_audiobook">オーディオブック</string>
+    <string name="log_page">ページを記録</string>
+    <string name="current_page">現在のページ</string>
+    <string name="page_number">%dページ</string>
+    <string name="log_page_hint">新しく読んだページは毎日の目標、連続記録、統計に加算されます。</string>
     <string name="listen">聴く</string>
     <string name="play">再生</string>
     <string name="pause">一時停止</string>

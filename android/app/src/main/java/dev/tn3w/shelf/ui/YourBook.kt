@@ -16,6 +16,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.tn3w.shelf.R
@@ -49,8 +50,11 @@ fun YourBookCard(
     entry: Saved,
     allLists: List<String>,
     onOpenList: (String) -> Unit,
+    onLogPage: (Int) -> Unit,
     onEdit: ((Saved) -> Saved) -> Unit,
 ) {
+    var choosingFormat by rememberSaveable { mutableStateOf(false) }
+    var loggingPage by rememberSaveable { mutableStateOf(false) }
     var writing by rememberSaveable { mutableStateOf<Writing?>(null) }
     var picking by rememberSaveable { mutableStateOf<ReadingDate?>(null) }
     var addingList by rememberSaveable { mutableStateOf(false) }
@@ -67,10 +71,24 @@ fun YourBookCard(
         Writing.entries.filter { it.of(entry).isNotBlank() }.forEach {
             WrittenText(it, entry) { writing = it }
         }
-        YourChips(entry, onOpenList, { writing = it }, { picking = it }) {
-            addingList = true
-        }
+        YourChips(
+            entry,
+            onOpenList,
+            onWrite = { writing = it },
+            onPick = { picking = it },
+            onFormat = { choosingFormat = true },
+            onLogPage = { loggingPage = true },
+        ) { addingList = true }
     }
+    if (choosingFormat) {
+        OptionSheet(
+            stringResource(R.string.format),
+            BookFormat.entries.map { stringResource(it.label) to it },
+            entry.format,
+            onDismiss = { choosingFormat = false },
+        ) { format -> onEdit { it.copy(format = format) } }
+    }
+    if (loggingPage) PageSheet(entry.page, onLogPage) { loggingPage = false }
     writing?.let { open ->
         WritingSheet(
             open,
@@ -102,6 +120,31 @@ private fun RatingRow(entry: Saved, onEdit: ((Saved) -> Saved) -> Unit) {
     }
 }
 
+@Composable
+private fun FormatChips(entry: Saved, onFormat: () -> Unit, onLogPage: () -> Unit) {
+    val format = entry.format?.label ?: R.string.add_format
+    Tag(stringResource(format), icon = Icons.Rounded.Book, onClick = onFormat)
+    if (entry.format != BookFormat.Paper || entry.shelf != Shelf.Reading) return
+    val page = entry.page.takeIf {
+        it > 0
+    }?.let { stringResource(R.string.page_number, it) }
+    Tag(page ?: stringResource(R.string.log_page), icon = Icons.Rounded.Bookmark) {
+        onLogPage()
+    }
+}
+
+@Composable
+private fun PageSheet(page: Int, onLog: (Int) -> Unit, onDismiss: () -> Unit) =
+    PromptSheet(
+        stringResource(R.string.current_page),
+        page.takeIf { it > 0 }?.toString().orEmpty(),
+        onDismiss,
+        text = stringResource(R.string.log_page_hint),
+        keyboard = KeyboardOptions(keyboardType = KeyboardType.Number),
+        clean = { it.filter(Char::isDigit).take(5) },
+        valid = { it.isNotEmpty() },
+    ) { onLog(it.toInt()) }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun YourChips(
@@ -109,6 +152,8 @@ private fun YourChips(
     onOpenList: (String) -> Unit,
     onWrite: (Writing) -> Unit,
     onPick: (ReadingDate) -> Unit,
+    onFormat: () -> Unit,
+    onLogPage: () -> Unit,
     onAddList: () -> Unit,
 ) {
     val dates = when (entry.shelf) {
@@ -130,6 +175,7 @@ private fun YourChips(
                 ?: stringResource(date.empty)
             Tag(label, icon = Icons.Rounded.Event) { onPick(date) }
         }
+        FormatChips(entry, onFormat, onLogPage)
         entry.lists.forEach { name ->
             Tag(name, icon = Icons.AutoMirrored.Rounded.Label) { onOpenList(name) }
         }
