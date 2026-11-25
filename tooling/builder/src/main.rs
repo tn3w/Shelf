@@ -507,13 +507,18 @@ fn ranks(job: &Job, placed: &[Placed]) -> Vec<u8> {
     )
 }
 
-fn localize_titles(job: &Job, entries: &mut [Entry]) {
+fn localize(job: &Job, entries: &mut [Entry]) {
     let code = LANGUAGES[job.language];
     for entry in entries {
         let book = &job.books[entry.book];
         let Some(linked) = job.enrichment.wikidata.works.get(&book.work) else {
             continue;
         };
+        let series = linked.series.iter().find(|series| series.language == code);
+        if let Some(series) = series.filter(|_| entry.series.is_empty()) {
+            entry.series = series.name.clone();
+            entry.series_position = series.position;
+        }
         let label = linked.labels.iter().find(|(language, _)| language == code);
         let Some((_, label)) = label else {
             continue;
@@ -528,7 +533,7 @@ fn build_language(job: &Job, titles: &Titles) -> Option<Vec<Published>> {
     let language = job.language;
     let previous = job.previous;
     let mut entries = catalog::candidates(job.books, titles, job.authors, language, previous);
-    localize_titles(job, &mut entries);
+    localize(job, &mut entries);
     eprintln!("{}: {} candidates", LANGUAGES[language], entries.len());
     let (limit, core_limit, merged) = fit(job, &entries);
     if job

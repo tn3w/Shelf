@@ -20,9 +20,9 @@ mkdir -p "$out"
 for query in "$queries"/*.rq; do
   name=$(basename "$query" .rq)
   : > "$out/$name.tsv"
-  if [ "$name" = label ]; then
+  if grep -q LANGUAGE "$query"; then
     for language in $languages; do
-      fetch label "$(sed "s/LANGUAGE/$language/" "$query")"
+      fetch "$name" "$(sed "s/LANGUAGE/$language/" "$query")"
     done
   else
     fetch "$name" "$(cat "$query")"

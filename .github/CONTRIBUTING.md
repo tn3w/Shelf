@@ -197,7 +197,7 @@ Packs include ISBNs of editions in their language; older apps ignore them.
 <tr><td><a href="https://dati.lnb.lv/en/dataset/retrospective_bibliography">LNB</a> retrospective bibliography (1525–, yearly)</td><td>Latvian and Russian editions, ISBNs, genres, original language</td><td>CC0</td></tr>
 <tr><td><a href="https://opendata.bnportugal.gov.pt/eng_index.htm">BNP</a> catalogue (UNIMARC MarcXchange)</td><td>Portuguese editions, series, ISBNs, UDC forms, audience</td><td>CC0</td></tr>
 <tr><td><a href="https://www.loc.gov/cds/products/MDSConnect-books_all.html">Library of Congress</a> Books All 2016</td><td>Portuguese, Russian and Italian editions, ISBNs, series, genres</td><td>public domain</td></tr>
-<tr><td><a href="https://www.wikidata.org">Wikidata</a> via <a href="https://qlever.dev">QLever</a></td><td>work Q ids, labels, original language, main subjects and genres (themes), OL ids, author GND/VIAF/ISNI (sidecars, author guard)</td><td>CC0</td></tr>
+<tr><td><a href="https://www.wikidata.org">Wikidata</a> via <a href="https://qlever.dev">QLever</a></td><td>work Q ids, labels, original language, main subjects and genres (themes), series names per language and volume numbers, OL ids, author GND/VIAF/ISNI (sidecars, author guard)</td><td>CC0</td></tr>
 <tr><td><a href="https://www.gutenberg.org/ebooks/offline_catalogs.html">Project Gutenberg</a> RDF</td><td><code>pg:</code> ids, summaries (sidecars)</td><td>public domain</td></tr>
 </table>
 

@@ -1,0 +1,12 @@
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX p: <http://www.wikidata.org/prop/>
+PREFIX ps: <http://www.wikidata.org/prop/statement/>
+PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?item ?value ?position WHERE {
+  ?item wdt:P648 ?openlibrary ; p:P179 ?statement .
+  ?statement ps:P179 ?series .
+  OPTIONAL { ?statement pq:P1545 ?position }
+  ?series rdfs:label ?value .
+  FILTER(LANG(?value) = "LANGUAGE")
+}

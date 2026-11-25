@@ -195,10 +195,20 @@ fn write_release(directory: &Path) {
         aliases: Vec::new(),
         extras: vec![extras(GERMAN_STONE, "Carlsen")],
     };
+    let sand = Series { name: "Sandvärlden".to_string(), members: vec![12, 13] };
+    let mut swedish_dune = work(12, "Dune", &[101], &space);
+    swedish_dune.series = Some((&sand, 1));
+    let mut swedish_foundation = work(13, "Stiftelsen", &[102], &space);
+    swedish_foundation.series = Some((&sand, 2));
     let swedish = Language {
         code: "sv",
-        ranks: vec![popularity(10, 100.0), popularity(SWEDISH_LATER, 50.0)],
-        works: vec![swedish_stone, swedish_later],
+        ranks: vec![
+            popularity(10, 100.0),
+            popularity(12, 20.0),
+            popularity(13, 10.0),
+            popularity(SWEDISH_LATER, 50.0),
+        ],
+        works: vec![swedish_stone, swedish_dune, swedish_foundation, swedish_later],
         aliases: Vec::new(),
         extras: Vec::new(),
     };
@@ -504,7 +514,7 @@ async fn pages_render_the_catalogue() {
         home.contains("<a href=/l/en>English</a>")
             && home.contains("<a href=/l/de>German")
     );
-    assert!(home.contains("7 books") && home.contains("/b/10/en/160.avif"));
+    assert!(home.contains("9 books") && home.contains("/b/10/en/160.avif"));
     let results = page(&app, "/s?q=dune", &token).await;
     assert!(
         results.contains("<a href=/b/12/en>Dune</a>")
@@ -557,6 +567,8 @@ async fn pages_render_the_catalogue() {
     let missing = send(&app, get("/a/100/xx", Some(&token))).await;
     assert_eq!(missing.status(), StatusCode::NOT_FOUND);
     let dune = page(&app, "/b/12", &token).await;
+    assert!(!dune.contains("Sandvärlden"));
+    assert!(page(&app, "/b/12/sv", &token).await.contains("Sandvärlden</a>"));
     assert!(dune.contains("Similar books") && dune.contains("<a href=/b/13/en"));
     for missing in
         ["/b/10/fr", "/b/10/xx", "/a/999", "/series/12", "/l/fr", "/isbn/9780000000002"]
@@ -635,8 +647,9 @@ async fn json_api_answers_every_route() {
     let series = json(&app, "/api/v1/series/10", &token).await;
     assert_eq!(series["works"][1]["work"], 11);
     assert_eq!(series["works"][2]["position"], 3);
+    assert_eq!(json(&app, "/api/v1/series/12", &token).await["name"], "Sandvärlden");
     assert_eq!(
-        json(&app, "/api/v1/series/12", &token).await["error"]["code"],
+        json(&app, "/api/v1/series/999", &token).await["error"]["code"],
         "not_found"
     );
     let isbn = json(&app, "/api/v1/isbn/978-0-7475-3269-9", &token).await;

@@ -18,6 +18,14 @@ pub struct WikidataWork {
     pub gutenberg: Vec<u32>,
     pub labels: Vec<(String, String)>,
     pub subjects: Vec<String>,
+    pub series: Vec<WikidataSeries>,
+}
+
+#[derive(Clone, Default)]
+pub struct WikidataSeries {
+    pub language: String,
+    pub name: String,
+    pub position: u16,
 }
 
 #[derive(Default)]
@@ -73,6 +81,30 @@ fn rows(path: &Path, mut each: impl FnMut(u32, &str, &str)) {
     }
 }
 
+/// Rows of item, labelled series name and volume number; numbered volumes first.
+fn series_rows(path: &Path, items: &mut HashMap<u32, WikidataWork>) {
+    let Ok(file) = std::fs::File::open(path) else {
+        eprintln!("{}: missing, skipped", path.display());
+        return;
+    };
+    for line in BufReader::new(file).lines().map_while(Result::ok) {
+        let mut fields = line.split('\t');
+        let item = fields.next().and_then(item_number);
+        let Some(linked) = item.and_then(|item| items.get_mut(&item)) else {
+            continue;
+        };
+        let (name, language) = literal(fields.next().unwrap_or_default());
+        let (number, _) = literal(fields.next().unwrap_or_default());
+        let position = number.parse().unwrap_or(0);
+        linked.series.push(WikidataSeries {
+            language: language.to_string(),
+            name: clean(&name.replace("\\\"", "\"")),
+            position,
+        });
+        linked.series.sort_by_key(|series| series.position == 0);
+    }
+}
+
 fn open_library_id(text: &str, kind: char) -> Option<u32> {
     text.strip_prefix("OL")?.strip_suffix(kind)?.parse().ok()
 }
@@ -123,6 +155,7 @@ impl Wikidata {
                 linked.subjects.push(text.to_string());
             }
         });
+        series_rows(&directory.join("series.tsv"), &mut items);
         let rank = |linked: &WikidataWork| (linked.labels.len(), Reverse(linked.item));
         for (item, ids) in works {
             let Some(linked) = items.remove(&item) else {
@@ -342,6 +375,11 @@ mod tests {
                 "subject",
                 entity(170583, "\"vampire\"@en") + &entity(170583, "\"novel\"@en"),
             ),
+            (
+                "series",
+                entity(170583, "\"Bennet novels\"@en\t")
+                    + &entity(170583, "\"Bennet-Reihe\"@de\t\"2\""),
+            ),
         ];
         for (name, content) in files {
             std::fs::write(directory.join(format!("{name}.tsv")), content).unwrap();
@@ -351,6 +389,12 @@ mod tests {
         assert_eq!((work.item, work.language.as_str()), (170583, "en"));
         assert_eq!(work.gutenberg, [1342]);
         assert_eq!(work.labels[0], ("ja".to_string(), "高慢と偏見".to_string()));
+        let series = &work.series[0];
+        assert_eq!(
+            (series.language.as_str(), series.name.as_str()),
+            ("de", "Bennet-Reihe")
+        );
+        assert_eq!((series.position, work.series[1].position), (2, 0));
         assert_eq!(
             wikidata.authors[&21594],
             ["wikidata:Q36322", "viaf:102333412"]
