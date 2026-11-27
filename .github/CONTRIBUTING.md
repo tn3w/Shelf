@@ -525,7 +525,7 @@ Wikidata, votes or shared authority (refused, not merged) and per-language join 
 
 ## Website
 
-`.github/site/` holds the sources of https://shelf.tn3w.dev.
+`.github/site/` holds the sources of https://shlf.bin.
 
 ## Project
 
@@ -533,7 +533,7 @@ Wikidata, votes or shared authority (refused, not merged) and per-language join 
 <tr><th width="1%">Path</th><th width="1%">Role</th></tr>
 <tr><td><code>android/</code></td><td>App</td></tr>
 <tr><td><code>tooling/builder/</code></td><td>Catalogue builder (Rust)</td></tr>
-<tr><td><code>tooling/server/</code></td><td>Book pages, API, AVIF covers, proof of work at <code>shelf-books.tn3w.dev</code> (<a href="../tooling/server/README.md">README</a>)</td></tr>
+<tr><td><code>tooling/server/</code></td><td>Book pages, API, AVIF covers, proof of work at <code>shlf.bin</code> (<a href="../tooling/server/README.md">README</a>)</td></tr>
 <tr><td><code>tooling/qa/</code></td><td>Matching and search eval sets</td></tr>
 <tr><td><code>tooling/</code></td><td>Screenshots, thumbnail, translation, promo, scanner model</td></tr>
 <tr><td><code>.github/site/</code></td><td>Static website</td></tr>

@@ -7,7 +7,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.Locale
 
 /** AVIF cover proxy, see `tooling/server/` in the repository. */
-const val COVER_PROXY = "https://shelf-books.tn3w.dev"
+const val COVER_PROXY = "https://shlf.bin"
 private val BOOK_WIDTHS = intArrayOf(160, 320, 640)
 private val AUTHOR_WIDTHS = intArrayOf(96, 192)
 private const val VARIANT_ISBNS = 24
