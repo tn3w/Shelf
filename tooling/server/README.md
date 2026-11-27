@@ -1,6 +1,6 @@
 # Shelf server
 
-Book pages, JSON API and AVIF covers at `shlf.bin`, behind Cloudflare. The app
+Book pages, JSON API and AVIF covers at `shlf.bid`, behind Cloudflare. The app
 loads covers from it when "Fast covers" is on (Android 12+), solving the proof of work
 itself (`ProofOfWork` in `Pow.kt`).
 

@@ -2,7 +2,7 @@
 name = "server"
 version = "0.1.0"
 edition = "2024"
-description = "Shelf book pages, API and AVIF covers, served at shlf.bin"
+description = "Shelf book pages, API and AVIF covers, served at shlf.bid"
 repository = "https://github.com/tn3w/Shelf"
 license = "MIT"
 publish = false
