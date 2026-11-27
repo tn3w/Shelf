@@ -488,6 +488,8 @@
     <string name="list_hint">ex.: Favoritos, Emprestado à Ana</string>
     <string name="rename_list">Mudar o nome da lista</string>
     <string name="lists">Listas</string>
+    <string name="all_lists">Todas as listas</string>
+    <string name="no_lists">Ainda não há listas. Adicione livros a uma lista na página do livro ou selecione-os na sua biblioteca.</string>
     <string name="edit_lists">Editar listas</string>
     <string name="read_of_list">%d lidos</string>
     <string name="your_book">O seu livro</string>

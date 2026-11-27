@@ -488,6 +488,8 @@
     <string name="delete_list">Supprimer la liste</string>
     <string name="delete_list_confirm">Supprimer la liste %s ? Ses livres restent dans votre bibliothèque.</string>
     <string name="lists">Listes</string>
+    <string name="all_lists">Toutes les listes</string>
+    <string name="no_lists">Aucune liste pour l’instant. Ajoutez des livres à une liste depuis la page d’un livre ou sélectionnez-les dans votre bibliothèque.</string>
     <string name="edit_lists">Modifier les listes</string>
     <string name="share_list">Partager la liste</string>
     <string name="read_of_list">%d lus</string>

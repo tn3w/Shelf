@@ -473,6 +473,8 @@
     <string name="delete_list">Radera listan</string>
     <string name="delete_list_confirm">Radera listan %s? Böckerna finns kvar i ditt bibliotek.</string>
     <string name="lists">Listor</string>
+    <string name="all_lists">Alla listor</string>
+    <string name="no_lists">Inga listor än. Lägg till böcker i en lista från bokens sida eller markera dem i ditt bibliotek.</string>
     <string name="edit_lists">Redigera listor</string>
     <string name="share_list">Dela listan</string>
     <string name="read_of_list">%d lästa</string>

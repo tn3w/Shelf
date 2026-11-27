@@ -503,6 +503,8 @@
     <string name="delete_list">Usuń listę</string>
     <string name="delete_list_confirm">Usunąć listę %s? Jej książki zostaną w bibliotece.</string>
     <string name="lists">Listy</string>
+    <string name="all_lists">Wszystkie listy</string>
+    <string name="no_lists">Nie masz jeszcze list. Dodaj książki do listy na stronie książki lub zaznacz je w bibliotece.</string>
     <string name="edit_lists">Edytuj listy</string>
     <string name="share_list">Udostępnij listę</string>
     <string name="read_of_list">Przeczytane: %d</string>

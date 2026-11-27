@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
@@ -111,6 +112,11 @@ fun LibraryScreen(navigator: Navigator) {
         ) {
             val soft = Look.colors.soft
             val online = stringResource(R.string.online_libraries)
+            IconAction(
+                Icons.AutoMirrored.Rounded.List,
+                stringResource(R.string.all_lists),
+                tint = soft,
+            ) { navigator.lists() }
             IconAction(Icons.Rounded.Public, online, tint = soft) {
                 navigator.onlineLibraries()
             }
@@ -139,7 +145,11 @@ fun LibraryScreen(navigator: Navigator) {
         }
         if (listView) {
             LibraryList(shown.orEmpty(), navigator, selection) {
-                if (showLists) fullWidth { ListsRow(lists, navigator::list) }
+                if (showLists) {
+                    fullWidth {
+                        ListsRow(lists, navigator::lists, navigator::list)
+                    }
+                }
             }
         } else {
             BookGrid(
@@ -148,7 +158,11 @@ fun LibraryScreen(navigator: Navigator) {
                 navigator::book,
                 selection,
                 header = {
-                    if (showLists) fullBleed { ListsRow(lists, navigator::list) }
+                    if (showLists) {
+                        fullBleed {
+                            ListsRow(lists, navigator::lists, navigator::list)
+                        }
+                    }
                 },
             )
         }

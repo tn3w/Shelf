@@ -84,6 +84,8 @@ import androidx.compose.ui.graphics.Color as Tint
 
 @Serializable data class ListRoute(val name: String)
 
+@Serializable object ListsRoute
+
 @Keep
 enum class SimilarKind { Books, Writer, Saga }
 
@@ -143,6 +145,8 @@ class Navigator(
     fun series(work: Int) = controller.navigate(SeriesRoute(work))
 
     fun list(name: String) = controller.navigate(ListRoute(name))
+
+    fun lists() = controller.navigate(ListsRoute)
 
     fun similar(route: SimilarRoute) = controller.navigate(route)
 
@@ -618,6 +622,7 @@ private fun Routes(controller: NavHostController, navigator: Navigator) {
         screen<WishRoute> { WishScreen(it.toRoute<WishRoute>().query, navigator) }
         screen<SeriesRoute> { SeriesScreen(it.toRoute<SeriesRoute>().work, navigator) }
         screen<ListRoute> { ListScreen(it.toRoute<ListRoute>().name, navigator) }
+        screen<ListsRoute> { ListsScreen(navigator) }
         screen<SimilarRoute> { SimilarScreen(it.toRoute<SimilarRoute>(), navigator) }
         screen<ReaderRoute> {
             val route = it.toRoute<ReaderRoute>()

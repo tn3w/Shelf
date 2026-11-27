@@ -3,9 +3,12 @@ package dev.tn3w.shelf.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
@@ -25,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
+import androidx.compose.foundation.lazy.grid.items as gridItems
 
 private val ListCardWidth = 148.dp
 private const val FAN_SIZE = 3
@@ -147,18 +151,53 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
 }
 
 @Composable
-fun ListsRow(lists: List<BookList>, onOpen: (String) -> Unit) {
+fun ListsRow(lists: List<BookList>, onAll: () -> Unit, onOpen: (String) -> Unit) {
     Column(Modifier.padding(bottom = 10.dp)) {
-        Eyebrow(
-            stringResource(R.string.lists),
-            Modifier.padding(horizontal = ScreenPadding).padding(bottom = 10.dp),
-        )
+        Row(
+            Modifier.fillMaxWidth()
+                .clickable(onClick = onAll)
+                .padding(horizontal = ScreenPadding)
+                .padding(bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Eyebrow(stringResource(R.string.lists), Modifier.weight(1f))
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                stringResource(R.string.all_lists),
+                Modifier.size(20.dp),
+                Look.colors.soft,
+            )
+        }
         LazyRow(
             contentPadding = PaddingValues(horizontal = ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(lists, key = { it.name }) { list ->
                 ListCard(list, Modifier.animateItem()) { onOpen(list.name) }
+            }
+        }
+    }
+}
+
+@Composable
+fun ListsScreen(navigator: Navigator) {
+    val saved by libraryViewModel().saved.collectAsStateWithLifecycle()
+    val lists = saved.orEmpty().bookLists()
+    Column(Modifier.padding(top = statusBarHeight())) {
+        BackBar(navigator::back)
+        LargeTitle(stringResource(R.string.lists))
+        if (saved != null && lists.isEmpty()) {
+            val empty = stringResource(R.string.no_lists)
+            EmptyState(Icons.AutoMirrored.Rounded.Label, empty)
+        }
+        LazyVerticalGrid(
+            GridCells.Adaptive(ListCardWidth),
+            contentPadding = PaddingValues(ScreenPadding, 8.dp, ScreenPadding, 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            gridItems(lists, key = { it.name }) { list ->
+                ListCard(list, Modifier.animateItem()) { navigator.list(list.name) }
             }
         }
     }

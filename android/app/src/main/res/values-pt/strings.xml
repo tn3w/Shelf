@@ -488,6 +488,8 @@
     <string name="delete_list">Excluir lista</string>
     <string name="delete_list_confirm">Excluir a lista %s? Os livros continuam na sua biblioteca.</string>
     <string name="lists">Listas</string>
+    <string name="all_lists">Todas as listas</string>
+    <string name="no_lists">Ainda não há listas. Adicione livros a uma lista pela página do livro ou selecione-os na sua biblioteca.</string>
     <string name="edit_lists">Editar listas</string>
     <string name="share_list">Compartilhar lista</string>
     <string name="read_of_list">%d lidos</string>

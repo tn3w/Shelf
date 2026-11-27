@@ -457,6 +457,8 @@
     <string name="delete_list">リストを削除</string>
     <string name="delete_list_confirm">リスト「%s」を削除しますか？本はライブラリに残ります。</string>
     <string name="lists">リスト</string>
+    <string name="all_lists">すべてのリスト</string>
+    <string name="no_lists">リストはまだありません。本のページからリストに追加するか、ライブラリで本を選択してください。</string>
     <string name="edit_lists">リストを編集</string>
     <string name="share_list">リストを共有</string>
     <string name="read_of_list">%d 冊読了</string>
