@@ -280,6 +280,8 @@
     <string name="author">Autor</string>
     <string name="add">Dodaj</string>
     <string name="choose_cover">Wybierz okładkę</string>
+    <string name="cover_from_files">Z twoich plików</string>
+    <string name="cover_searching">Wyszukiwanie okładek…</string>
     <string name="delete_book">Usuń z Shelf</string>
     <string name="delete_book_confirm">Usunąć %s, postęp i zaimportowaną kopię? Oryginalny plik pozostanie na miejscu.</string>
     <string name="remove">Usuń</string>

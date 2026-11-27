@@ -271,6 +271,8 @@
     <string name="author">Autor</string>
     <string name="add">Añadir</string>
     <string name="choose_cover">Elegir portada</string>
+    <string name="cover_from_files">De tus archivos</string>
+    <string name="cover_searching">Buscando portadas…</string>
     <string name="delete_book">Quitar de Shelf</string>
     <string name="delete_book_confirm">¿Quitar %s, su progreso y su copia importada? El archivo original no se toca.</string>
     <string name="remove">Quitar</string>

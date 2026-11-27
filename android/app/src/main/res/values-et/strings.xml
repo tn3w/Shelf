@@ -262,6 +262,8 @@
     <string name="author">Autor</string>
     <string name="add">Lisa</string>
     <string name="choose_cover">Vali kaas</string>
+    <string name="cover_from_files">Sinu failidest</string>
+    <string name="cover_searching">Kaante otsimine…</string>
     <string name="delete_book">Eemalda Shelfist</string>
     <string name="delete_book_confirm">Kas eemaldada %s, selle edenemine ja imporditud koopia? Algne fail jääb oma kohale.</string>
     <string name="remove">Eemalda</string>

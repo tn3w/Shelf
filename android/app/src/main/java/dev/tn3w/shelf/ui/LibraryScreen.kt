@@ -325,7 +325,7 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
             if (found != null) {
                 BookCover(found, 112.dp, lift = 10.dp)
             } else {
-                OwnCover(preview, image) { image = it }
+                OwnCover(preview, title, author, image) { image = it }
             }
         }
         Field(
@@ -347,16 +347,21 @@ fun OwnBookSheet(query: String, navigator: Navigator, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun OwnCover(preview: Book, image: Uri?, onImage: (Uri) -> Unit) =
-    EditableCover(onImage) {
-        if (image == null) return@EditableCover BookCover(preview, 112.dp, lift = 10.dp)
-        AsyncImage(
-            model = image,
-            contentDescription = stringResource(R.string.cover_of, preview.title),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.width(112.dp).aspectRatio(2f / 3f),
-        )
-    }
+private fun OwnCover(
+    preview: Book,
+    title: String,
+    author: String,
+    image: Uri?,
+    onImage: (Uri) -> Unit,
+) = EditableCover(title, author, onImage) {
+    if (image == null) return@EditableCover BookCover(preview, 112.dp, lift = 10.dp)
+    AsyncImage(
+        model = image,
+        contentDescription = stringResource(R.string.cover_of, preview.title),
+        contentScale = ContentScale.Crop,
+        modifier = Modifier.width(112.dp).aspectRatio(2f / 3f),
+    )
+}
 
 @Composable
 private fun CatalogueMatch(book: Book, selected: Boolean, onSelect: (Boolean) -> Unit) {

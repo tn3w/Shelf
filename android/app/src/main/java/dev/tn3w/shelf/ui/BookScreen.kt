@@ -264,7 +264,7 @@ private fun BookHeader(
         val sharedKey = "$origin-${book.work}"
         val space = Modifier.padding(top = 4.dp, bottom = 26.dp)
         if (book.isLocal) {
-            EditableCover(::changeCover, space) {
+            EditableCover(book.title, book.author, ::changeCover, space) {
                 BookCover(book, 190.dp, sharedKey = sharedKey, lift = 22.dp)
             }
         } else {

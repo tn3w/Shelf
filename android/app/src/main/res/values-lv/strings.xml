@@ -285,6 +285,8 @@
     <string name="author">Autors</string>
     <string name="add">Pievienot</string>
     <string name="choose_cover">Izvēlēties vāku</string>
+    <string name="cover_from_files">No saviem failiem</string>
+    <string name="cover_searching">Meklē vākus…</string>
     <string name="delete_book">Noņemt no Shelf</string>
     <string name="delete_book_confirm">Noņemt %s, tās progresu un importēto kopiju? Sākotnējais fails paliek savā vietā.</string>
     <string name="remove">Noņemt</string>

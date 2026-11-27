@@ -253,6 +253,8 @@
     <string name="author">작가</string>
     <string name="add">추가</string>
     <string name="choose_cover">표지 선택</string>
+    <string name="cover_from_files">내 파일에서</string>
+    <string name="cover_searching">표지 검색 중…</string>
     <string name="delete_book">Shelf에서 삭제</string>
     <string name="delete_book_confirm">%s, 진행 상황, 가져온 사본을 삭제할까요? 원본 파일은 그대로 남습니다.</string>
     <string name="remove">삭제</string>

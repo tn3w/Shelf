@@ -275,6 +275,8 @@
     <string name="author">Auteur</string>
     <string name="add">Toevoegen</string>
     <string name="choose_cover">Omslag kiezen</string>
+    <string name="cover_from_files">Uit je bestanden</string>
+    <string name="cover_searching">Omslagen zoeken…</string>
     <string name="delete_book">Uit Shelf verwijderen</string>
     <string name="delete_book_confirm">%s met voortgang en geïmporteerde kopie verwijderen? Het originele bestand blijft waar het is.</string>
     <string name="remove">Verwijderen</string>

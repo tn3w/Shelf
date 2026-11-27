@@ -33,4 +33,22 @@ class CoverProxyTest {
         assertFalse(isValidProxy("https://images.example.org/?key=1"))
         assertFalse(isValidProxy("images.example.org"))
     }
+
+    @Test
+    fun coverSearchKeepsEachFoundCoverOnce() {
+        val text = """{"docs": [{"cover_i": 7}, {}, {"cover_i": 7}, {"cover_i": -1},
+            {"cover_i": 9, "key": "/works/OL1W"}]}"""
+        assertEquals(
+            listOf("$COVERS/b/id/7-L.jpg", "$COVERS/b/id/9-L.jpg"),
+            parseCoverHits(text),
+        )
+    }
+
+    @Test
+    fun coverSearchOmitsABlankAuthor() {
+        val url = coverSearchUrl(" Dune ", " ")
+        assertTrue("title=Dune" in url)
+        assertFalse("author=" in url)
+        assertTrue("author=Frank%20Herbert" in coverSearchUrl("Dune", "Frank Herbert"))
+    }
 }

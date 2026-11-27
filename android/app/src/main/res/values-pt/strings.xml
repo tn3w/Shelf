@@ -285,6 +285,8 @@
     <string name="author">Autor</string>
     <string name="add">Adicionar</string>
     <string name="choose_cover">Escolher capa</string>
+    <string name="cover_from_files">Dos seus arquivos</string>
+    <string name="cover_searching">Buscando capas…</string>
     <string name="delete_book">Remover do Shelf</string>
     <string name="delete_book_confirm">Remover %s, o progresso e a cópia importada? O arquivo original continua onde está.</string>
     <string name="remove">Remover</string>

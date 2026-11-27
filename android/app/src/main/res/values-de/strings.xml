@@ -262,6 +262,8 @@
     <string name="author">Autor</string>
     <string name="add">Hinzufügen</string>
     <string name="choose_cover">Cover wählen</string>
+    <string name="cover_from_files">Aus deinen Dateien</string>
+    <string name="cover_searching">Suche nach Covern…</string>
     <string name="delete_book">Aus Shelf entfernen</string>
     <string name="delete_book_confirm">%s mit Fortschritt und importierter Kopie entfernen? Die Originaldatei bleibt erhalten.</string>
     <string name="remove">Entfernen</string>

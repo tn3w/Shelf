@@ -264,6 +264,8 @@
     <string name="author">著者</string>
     <string name="add">追加</string>
     <string name="choose_cover">表紙を選ぶ</string>
+    <string name="cover_from_files">ファイルから選択</string>
+    <string name="cover_searching">表紙を検索中…</string>
     <string name="delete_book">Shelf から削除</string>
     <string name="delete_book_confirm">%s とその進捗、インポートしたコピーを削除しますか？元のファイルはそのまま残ります。</string>
     <string name="remove">削除</string>

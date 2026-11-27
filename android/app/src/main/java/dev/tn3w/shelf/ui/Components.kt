@@ -666,16 +666,17 @@ fun NoCatalogue(onSettings: () -> Unit) = EmptyAction(
 
 @Composable
 fun EditableCover(
+    title: String,
+    author: String,
     onPicked: (Uri) -> Unit,
     modifier: Modifier = Modifier,
     cover: @Composable () -> Unit,
 ) {
-    val picker = rememberLauncherForActivityResult(PickVisualMedia()) { picked ->
-        picked?.let(onPicked)
-    }
+    var choosing by rememberSaveable { mutableStateOf(false) }
     Box(
         modifier.clickable(onClickLabel = stringResource(R.string.choose_cover)) {
-            picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+            choosing =
+                true
         },
     ) {
         cover()
@@ -687,7 +688,61 @@ fun EditableCover(
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Rounded.AddPhotoAlternate, null, Modifier.size(16.dp)) }
     }
+    if (choosing) CoverSheet(title, author, { choosing = false }, onPicked)
 }
+
+@Composable
+private fun CoverSheet(
+    title: String,
+    author: String,
+    onDismiss: () -> Unit,
+    onPicked: (Uri) -> Unit,
+) {
+    fun pick(uri: Uri) {
+        onDismiss()
+        onPicked(uri)
+    }
+    val picker = rememberLauncherForActivityResult(PickVisualMedia()) { picked ->
+        picked?.let(::pick)
+    }
+    var covers by remember { mutableStateOf<List<String>?>(null) }
+    LaunchedEffect(title, author) {
+        covers = if (title.isBlank()) emptyList() else searchCovers(title, author)
+    }
+    Sheet(onDismiss, stringResource(R.string.choose_cover)) {
+        Pill(
+            stringResource(R.string.cover_from_files),
+            Modifier.fillMaxWidth(),
+            kind = PillKind.Line,
+        ) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
+        val found = covers
+        when {
+            found == null -> Hint(stringResource(R.string.cover_searching))
+            found.isEmpty() -> Hint(stringResource(R.string.no_results))
+            else -> FoundCovers(found, title) { pick(Uri.parse(it)) }
+        }
+    }
+}
+
+@Composable
+private fun FoundCovers(covers: List<String>, title: String, onPick: (String) -> Unit) =
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        covers.forEach { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = stringResource(R.string.cover_of, title),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.width(96.dp)
+                    .aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Look.colors.line)
+                    .clickable { onPick(url) },
+            )
+        }
+    }
 
 @Composable
 fun FilterRow(
