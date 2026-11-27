@@ -153,7 +153,11 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
 @Composable
 fun ListsRow(lists: List<BookList>, onOpen: (String) -> Unit) {
     Column(Modifier.padding(bottom = 10.dp)) {
-        SectionHeader(stringResource(R.string.lists))
+        Text(
+            stringResource(R.string.lists),
+            Modifier.padding(start = ScreenPadding, top = 6.dp, bottom = 12.dp),
+            style = Look.type.heading,
+        )
         LazyRow(
             contentPadding = PaddingValues(horizontal = ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
