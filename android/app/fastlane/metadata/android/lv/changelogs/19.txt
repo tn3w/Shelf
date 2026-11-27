@@ -1,0 +1,6 @@
+• Maini jebkuras grāmatas vāku: izdevumu vāki, attēlu meklēšana tīmeklī vai savs attēls
+• Saraksti kā kartītes bibliotēkā, filtrs Gatavs lasīšanai un jebkuras grāmatas noņemšana
+• Audiobookshelf serveri, Android Auto un klusuma izlaišana audiogrāmatās
+• Sinhronizācija starp ierīcēm un imports no uzraudzītas mapes
+• Logrīki, plaukts Nepabeigts, atkārtota lasīšana un papīra grāmatas statistikā
+• Vārdnīca, PDF un mangas tālummaiņa, OpenDyslexic, zemsvītras piezīmes un atlikušais laiks

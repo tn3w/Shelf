@@ -1,0 +1,6 @@
+• Změna obálky u každé knihy: obálky vydání, hledání obrázků na webu nebo vlastní obrázek
+• Seznamy jako karty v knihovně, filtr Připraveno ke čtení a odebrání jakékoli knihy
+• Servery Audiobookshelf, Android Auto a přeskakování ticha v audioknihách
+• Synchronizace mezi zařízeními a import ze sledované složky
+• Widgety, police Nedočteno, opakované čtení a papírové knihy ve statistikách
+• Slovník, zoom pro PDF a mangu, OpenDyslexic, poznámky pod čarou a zbývající čas

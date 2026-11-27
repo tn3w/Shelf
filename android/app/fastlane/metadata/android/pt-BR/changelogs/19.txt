@@ -1,0 +1,6 @@
+• Troque a capa de qualquer livro: capas de edições, busca de imagens na web ou sua própria imagem
+• Listas como cartões na biblioteca, filtro Pronto para ler e remoção de qualquer livro
+• Servidores Audiobookshelf, Android Auto e silêncios pulados em audiolivros
+• Sincronização entre dispositivos e importação de uma pasta monitorada
+• Widgets, estante Abandonados, releituras e livros em papel nas estatísticas
+• Dicionário, zoom em PDF e mangá, OpenDyslexic, notas de rodapé e tempo restante

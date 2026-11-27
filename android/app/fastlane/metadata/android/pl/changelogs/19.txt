@@ -1,0 +1,6 @@
+• Zmiana okładki każdej książki: okładki wydań, wyszukiwanie obrazów w sieci lub własny obraz
+• Listy jako karty w bibliotece, filtr Gotowe do czytania i usuwanie dowolnej książki
+• Serwery Audiobookshelf, Android Auto i pomijanie ciszy w audiobookach
+• Synchronizacja między urządzeniami i import z obserwowanego folderu
+• Widżety, półka Porzucone, ponowne lektury i książki papierowe w statystykach
+• Słownik, powiększanie PDF i mangi, OpenDyslexic, przypisy i pozostały czas

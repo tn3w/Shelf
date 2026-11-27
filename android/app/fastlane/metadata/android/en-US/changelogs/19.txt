@@ -1,0 +1,6 @@
+• Change any book's cover: edition covers, a web image search or your own image
+• Lists as cards in your library, a Ready to read filter and removing any book
+• Audiobookshelf servers, Android Auto and skipping silence in audiobooks
+• Sync between devices and import from a watched folder
+• Home screen widgets, a Did not finish shelf, rereads and paper books in stats
+• Dictionary, PDF and manga zoom, OpenDyslexic, footnotes and time left

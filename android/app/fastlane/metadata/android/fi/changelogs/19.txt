@@ -1,0 +1,6 @@
+• Vaihda minkä tahansa kirjan kansi: painosten kannet, kuvahaku verkosta tai oma kuva
+• Listat kortteina kirjastossa, Valmiina luettavaksi -suodatin ja minkä tahansa kirjan poisto
+• Audiobookshelf-palvelimet, Android Auto ja hiljaisuuden ohitus äänikirjoissa
+• Synkronointi laitteiden välillä ja tuonti seuratusta kansiosta
+• Aloitusnäytön widgetit, Kesken jääneet -hylly, uudelleenluvut ja paperikirjat tilastoissa
+• Sanakirja, PDF- ja mangazoomaus, OpenDyslexic, alaviitteet ja jäljellä oleva aika

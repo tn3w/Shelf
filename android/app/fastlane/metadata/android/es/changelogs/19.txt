@@ -1,0 +1,6 @@
+• Cambia la portada de cualquier libro: ediciones, búsqueda en la web o tu imagen
+• Listas como tarjetas en tu biblioteca, filtro Listo para leer y quitar cualquier libro
+• Servidores Audiobookshelf, Android Auto y saltar silencios en audiolibros
+• Sincronización entre dispositivos e importación desde una carpeta vigilada
+• Widgets, estante Abandonados, relecturas y libros en papel en las estadísticas
+• Diccionario, zoom en PDF y manga, OpenDyslexic, notas al pie y tiempo restante

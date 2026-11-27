@@ -52,8 +52,8 @@ android {
         applicationId = "dev.tn3w.shelf"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
-        versionName = "1.6.1"
+        versionCode = 19
+        versionName = "1.7.0"
         buildConfigField("int", "CATALOGUE_FORMAT", "$catalogueFormat")
         externalNativeBuild {
             cmake {

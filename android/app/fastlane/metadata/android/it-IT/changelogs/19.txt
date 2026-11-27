@@ -1,0 +1,6 @@
+• Cambia la copertina di ogni libro: edizioni, ricerca sul web o la tua immagine
+• Elenchi come schede nella libreria, filtro Pronto da leggere e rimozione di qualsiasi libro
+• Server Audiobookshelf, Android Auto e salto dei silenzi negli audiolibri
+• Sincronizzazione tra dispositivi e importazione da una cartella monitorata
+• Widget, scaffale Abbandonati, riletture e libri cartacei nelle statistiche
+• Dizionario, zoom per PDF e manga, OpenDyslexic, note a piè di pagina e tempo rimanente

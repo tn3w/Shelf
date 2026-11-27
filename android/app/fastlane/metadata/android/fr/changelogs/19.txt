@@ -1,0 +1,6 @@
+• Changez la couverture de tout livre : éditions, recherche web ou votre image
+• Listes en cartes dans la bibliothèque, filtre Prêt à lire et suppression de tout livre
+• Serveurs Audiobookshelf, Android Auto et silences ignorés dans les livres audio
+• Synchronisation entre appareils et import depuis un dossier surveillé
+• Widgets, étagère Abandonnés, relectures et livres papier dans les statistiques
+• Dictionnaire, zoom PDF et manga, OpenDyslexic, notes de bas de page et temps restant

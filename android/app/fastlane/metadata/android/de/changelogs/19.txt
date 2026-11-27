@@ -1,0 +1,6 @@
+• Cover jedes Buchs ändern: Ausgaben-Cover, Bildsuche im Web oder eigenes Bild
+• Listen als Karten in der Bibliothek, Filter „Sofort lesbar“ und jedes Buch entfernen
+• Audiobookshelf-Server, Android Auto und Stille in Hörbüchern überspringen
+• Sync zwischen Geräten und Import aus einem überwachten Ordner
+• Startbildschirm-Widgets, Regal „Abgebrochen“, erneutes Lesen und Papierbücher in der Statistik
+• Wörterbuch, Zoom für PDFs und Manga, OpenDyslexic, Fußnoten und Restzeit

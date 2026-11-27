@@ -1,0 +1,6 @@
+• Muuda iga raamatu kaant: väljaannete kaaned, pildiotsing veebis või oma pilt
+• Nimekirjad kaartidena raamatukogus, filter Kohe loetav ja iga raamatu eemaldamine
+• Audiobookshelfi serverid, Android Auto ja vaikuse vahelejätmine audioraamatutes
+• Sünkroonimine seadmete vahel ja import jälgitavast kaustast
+• Avaekraani vidinad, riiul Pooleli jäetud, uuesti lugemine ja paberraamatud statistikas
+• Sõnaraamat, PDF-i ja manga suum, OpenDyslexic, joonealused märkused ja järelejäänud aeg

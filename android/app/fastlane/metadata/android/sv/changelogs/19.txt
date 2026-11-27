@@ -1,0 +1,6 @@
+• Byt omslag på vilken bok som helst: utgåvornas omslag, bildsökning på webben eller egen bild
+• Listor som kort i biblioteket, filtret Redo att läsa och ta bort vilken bok som helst
+• Audiobookshelf-servrar, Android Auto och hoppa över tystnad i ljudböcker
+• Synk mellan enheter och import från en bevakad mapp
+• Widgetar, hyllan Avbrutna, omläsningar och pappersböcker i statistiken
+• Ordbok, zoom för PDF och manga, OpenDyslexic, fotnoter och tid kvar
