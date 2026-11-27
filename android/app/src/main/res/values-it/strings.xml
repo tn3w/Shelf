@@ -293,6 +293,7 @@
     <string name="use_as_cover">Usa come copertina</string>
     <string name="delete_book">Rimuovi da Shelf</string>
     <string name="delete_book_confirm">Rimuovere %s, i progressi e la copia importata? Il file originale resta dov’è.</string>
+    <string name="remove_file_only">Rimuovi solo il file</string>
     <string name="remove">Rimuovi</string>
     <string name="cancel">Annulla</string>
     <string name="save">Salva</string>

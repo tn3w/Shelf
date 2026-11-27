@@ -288,6 +288,7 @@
     <string name="use_as_cover">Сделать обложкой книги</string>
     <string name="delete_book">Удалить из Shelf</string>
     <string name="delete_book_confirm">Удалить «%s», прогресс чтения и импортированную копию? Исходный файл останется на месте.</string>
+    <string name="remove_file_only">Удалить только файл</string>
     <string name="remove">Удалить</string>
     <string name="cancel">Отмена</string>
     <string name="save">Сохранить</string>

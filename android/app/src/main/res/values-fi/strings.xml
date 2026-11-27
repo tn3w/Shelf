@@ -270,6 +270,7 @@
     <string name="use_as_cover">Käytä kansikuvana</string>
     <string name="delete_book">Poista Shelfistä</string>
     <string name="delete_book_confirm">Poistetaanko %s, sen edistyminen ja tuotu kopio? Alkuperäinen tiedosto pysyy paikallaan.</string>
+    <string name="remove_file_only">Poista vain tiedosto</string>
     <string name="remove">Poista</string>
     <string name="cancel">Peruuta</string>
     <string name="save">Tallenna</string>

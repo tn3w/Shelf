@@ -293,6 +293,7 @@
     <string name="use_as_cover">Izmantot kā grāmatas vāku</string>
     <string name="delete_book">Noņemt no Shelf</string>
     <string name="delete_book_confirm">Noņemt %s, tās progresu un importēto kopiju? Sākotnējais fails paliek savā vietā.</string>
+    <string name="remove_file_only">Noņemt tikai failu</string>
     <string name="remove">Noņemt</string>
     <string name="cancel">Atcelt</string>
     <string name="save">Saglabāt</string>

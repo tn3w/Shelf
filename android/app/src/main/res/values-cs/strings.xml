@@ -288,6 +288,7 @@
     <string name="use_as_cover">Použít jako obálku knihy</string>
     <string name="delete_book">Odebrat ze Shelf</string>
     <string name="delete_book_confirm">Odebrat %s, jeho postup a importovanou kopii? Původní soubor zůstane na svém místě.</string>
+    <string name="remove_file_only">Odstranit jen soubor</string>
     <string name="remove">Odebrat</string>
     <string name="cancel">Zrušit</string>
     <string name="save">Uložit</string>

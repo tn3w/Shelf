@@ -93,8 +93,8 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         detached { library.logPage(work, page) }
     }
 
-    fun delete(book: Book) {
-        detached { library.deleteBook(book.work, keepShelves = !book.isLocal) }
+    fun delete(book: Book, keepShelves: Boolean) {
+        detached { library.deleteBook(book.work, keepShelves) }
     }
 
     val narrator = app.narrator
@@ -153,7 +153,8 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
         LazyColumn(Modifier.fillMaxSize().glow(), contentPadding = screenInsets()) {
             item {
                 BackBar(navigator::back) {
-                    if (book?.isLocal != true && position == null) return@BackBar
+                    val removable = book?.isLocal == true || entry != null
+                    if (!removable && position == null) return@BackBar
                     val label = stringResource(R.string.delete_book)
                     IconAction(
                         Icons.Rounded.DeleteOutline,
@@ -225,16 +226,49 @@ fun BookScreen(work: Int, origin: String, navigator: Navigator) {
             }
         }
         if (!confirmDelete || book == null) return@CoverTheme
-        ConfirmSheet(
-            stringResource(R.string.delete_book),
-            stringResource(R.string.delete_book_confirm, book.title),
-            stringResource(R.string.remove),
+        DeleteSheet(
+            book.title,
+            fileOnly = !book.isLocal && position != null,
             onDismiss = { confirmDelete = false },
-        ) {
-            viewModel.delete(book)
-            navigator.back()
+        ) { keepShelves ->
+            viewModel.delete(book, keepShelves)
+            if (!keepShelves) navigator.back()
         }
     }
+}
+
+@Composable
+private fun DeleteSheet(
+    title: String,
+    fileOnly: Boolean,
+    onDismiss: () -> Unit,
+    onDelete: (keepShelves: Boolean) -> Unit,
+) = Sheet(onDismiss, stringResource(R.string.delete_book)) {
+    fun delete(keepShelves: Boolean) {
+        onDismiss()
+        onDelete(keepShelves)
+    }
+    Text(
+        stringResource(R.string.delete_book_confirm, title),
+        color = Look.colors.soft,
+        style = Look.type.body,
+    )
+    Pill(stringResource(R.string.remove), Modifier.fillMaxWidth(), danger = true) {
+        delete(keepShelves = false)
+    }
+    if (fileOnly) {
+        Pill(
+            stringResource(R.string.remove_file_only),
+            Modifier.fillMaxWidth(),
+            kind = PillKind.Line,
+        ) { delete(keepShelves = true) }
+    }
+    Pill(
+        stringResource(R.string.cancel),
+        Modifier.fillMaxWidth(),
+        kind = PillKind.Line,
+        onClick = onDismiss,
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

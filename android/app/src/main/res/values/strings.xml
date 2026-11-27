@@ -283,6 +283,7 @@
     <string name="use_as_cover">Use as book cover</string>
     <string name="delete_book">Remove from Shelf</string>
     <string name="delete_book_confirm">Remove %s, its progress and its imported copy? The original file stays where it is.</string>
+    <string name="remove_file_only">Remove only the file</string>
     <string name="remove">Remove</string>
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>

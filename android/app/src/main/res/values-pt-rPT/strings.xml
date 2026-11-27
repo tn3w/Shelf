@@ -46,6 +46,7 @@
     <string name="csv_progress">A procurar livros… %d%%</string>
     <string name="delete_all">Eliminar tudo</string>
     <string name="delete_book_confirm">Remover %s, o progresso e a cópia importada? O ficheiro original continua onde está.</string>
+    <string name="remove_file_only">Remover só o ficheiro</string>
     <string name="save">Guardar</string>
     <string name="reset">Repor</string>
     <string name="catalogue_source_hint">Um repositório do GitHub (owner/name), uma API de releases (GitHub, Gitea, Forgejo) ou um link para um manifest.json, apenas https. Vazio significa a predefinição. O manifesto é carregado ao guardar.</string>

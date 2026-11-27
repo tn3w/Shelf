@@ -288,6 +288,7 @@
     <string name="use_as_cover">Użyj jako okładki</string>
     <string name="delete_book">Usuń z Shelf</string>
     <string name="delete_book_confirm">Usunąć %s, postęp i zaimportowaną kopię? Oryginalny plik pozostanie na miejscu.</string>
+    <string name="remove_file_only">Usuń tylko plik</string>
     <string name="remove">Usuń</string>
     <string name="cancel">Anuluj</string>
     <string name="save">Zapisz</string>

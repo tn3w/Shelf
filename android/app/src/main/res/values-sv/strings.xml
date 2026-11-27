@@ -270,6 +270,7 @@
     <string name="use_as_cover">Använd som bokomslag</string>
     <string name="delete_book">Ta bort från Shelf</string>
     <string name="delete_book_confirm">Ta bort %s, dess framsteg och den importerade kopian? Originalfilen ligger kvar där den är.</string>
+    <string name="remove_file_only">Ta bara bort filen</string>
     <string name="remove">Ta bort</string>
     <string name="cancel">Avbryt</string>
     <string name="save">Spara</string>

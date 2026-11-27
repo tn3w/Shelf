@@ -171,6 +171,14 @@ private fun Saved.reread() = copy(
     page = 0,
 )
 
+internal fun LibraryState.withPlaced(book: Book, shelf: Shelf?, now: Long): LibraryState {
+    val previous = entries.firstOrNull { it.work == book.work }
+    val others = entries.filter { it.work != book.work }
+    if (shelf != null) return copy(entries = others + placed(book, shelf, previous, now))
+    if (previous == null) return this
+    return copy(entries = others, removed = removed + (book.work to now))
+}
+
 internal fun placed(book: Book, shelf: Shelf, previous: Saved?, now: Long): Saved {
     val dated = previous?.dated()
     val rereading = shelf == Shelf.Reading && previous?.shelf != Shelf.Reading
@@ -910,13 +918,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
             }
         }
 
-    suspend fun place(book: Book, shelf: Shelf?) = libraryStore.change { library ->
-        val entries = library.entries
-        val previous = entries.firstOrNull { it.work == book.work }
-        val others = entries.filter { it.work != book.work }
-        val now = System.currentTimeMillis()
-        val entry = shelf?.let { placed(book, it, previous, now) }
-        library.copy(entries = entry?.let { others + it } ?: others)
+    suspend fun place(book: Book, shelf: Shelf?) = libraryStore.change {
+        it.withPlaced(book, shelf, System.currentTimeMillis())
     }
 
     suspend fun edit(work: Int, change: (Saved) -> Saved) = libraryStore.change {

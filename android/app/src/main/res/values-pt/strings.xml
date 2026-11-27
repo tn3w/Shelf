@@ -293,6 +293,7 @@
     <string name="use_as_cover">Usar como capa do livro</string>
     <string name="delete_book">Remover do Shelf</string>
     <string name="delete_book_confirm">Remover %s, o progresso e a cópia importada? O arquivo original continua onde está.</string>
+    <string name="remove_file_only">Remover só o arquivo</string>
     <string name="remove">Remover</string>
     <string name="cancel">Cancelar</string>
     <string name="save">Salvar</string>

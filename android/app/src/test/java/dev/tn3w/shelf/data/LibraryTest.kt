@@ -666,4 +666,16 @@ class LibraryTest {
         assertEquals(Metadata("Harbour", "Bo"), tagged)
         assertEquals(Metadata("harbour lights", "Cy"), untagged)
     }
+
+    @Test
+    fun takingABookOffItsShelfKeepsItRemovedAfterSync() {
+        val book = Book(42, "Imported")
+        val saved = LibraryState().withPlaced(book, Shelf.Read, now = 10)
+        val removed = saved.withPlaced(book, null, now = 20)
+        assertEquals(emptyList<Saved>(), removed.entries)
+        assertEquals(mapOf(42 to 20L), removed.removed)
+        val peer = Backup(entries = saved.entries)
+        assertEquals(emptyList<Saved>(), removed.synced(peer).entries)
+        assertEquals(removed, removed.withPlaced(Book(7, "Never saved"), null, now = 30))
+    }
 }

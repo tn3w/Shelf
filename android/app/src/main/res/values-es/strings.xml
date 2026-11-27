@@ -279,6 +279,7 @@
     <string name="use_as_cover">Usar como portada</string>
     <string name="delete_book">Quitar de Shelf</string>
     <string name="delete_book_confirm">¿Quitar %s, su progreso y su copia importada? El archivo original no se toca.</string>
+    <string name="remove_file_only">Quitar solo el archivo</string>
     <string name="remove">Quitar</string>
     <string name="cancel">Cancelar</string>
     <string name="save">Guardar</string>

@@ -283,6 +283,7 @@
     <string name="use_as_cover">Gebruiken als boekomslag</string>
     <string name="delete_book">Uit Shelf verwijderen</string>
     <string name="delete_book_confirm">%s met voortgang en geïmporteerde kopie verwijderen? Het originele bestand blijft waar het is.</string>
+    <string name="remove_file_only">Alleen het bestand verwijderen</string>
     <string name="remove">Verwijderen</string>
     <string name="cancel">Annuleren</string>
     <string name="save">Opslaan</string>
