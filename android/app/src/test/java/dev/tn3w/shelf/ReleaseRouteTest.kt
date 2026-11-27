@@ -87,4 +87,14 @@ class ReleaseRouteTest {
             }
         }
     }
+
+    @Test
+    fun roomDatabasesKeepTheConstructorRoomCreatesThemWith() {
+        val files = releaseDexFiles()
+        assumeTrue("run minifyGithubReleaseWithR8 first", files.isNotEmpty())
+        val methods = files.flatMap(::dexMethods)
+        val constructor = "Landroidx/work/impl/WorkDatabase_Impl;-><init>"
+        val message = "$constructor stripped by R8, keep it in rules.keep"
+        assertTrue(message, constructor in methods)
+    }
 }
