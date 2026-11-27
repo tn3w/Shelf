@@ -276,6 +276,8 @@
     <string name="add">Toevoegen</string>
     <string name="choose_cover">Omslag kiezen</string>
     <string name="cover_from_files">Uit je bestanden</string>
+    <string name="cover_variants_loading">Andere omslagen zoeken…</string>
+    <string name="original_cover">Oorspronkelijke omslag</string>
     <string name="search_web_cover">Zoeken op het web</string>
     <string name="cover_search_hint">Zoek een omslag in je browser en deel de afbeelding met Shelf.</string>
     <string name="use_as_cover">Gebruiken als boekomslag</string>

@@ -33,4 +33,30 @@ class CoverProxyTest {
         assertFalse(isValidProxy("https://images.example.org/?key=1"))
         assertFalse(isValidProxy("images.example.org"))
     }
+
+    @Test
+    fun editionCoversKeepEachRealCoverOnce() {
+        val text = """{"size": 3, "entries": [{"covers": [12, -1]}, {"title": "x"},
+            {"covers": [12, 34]}]}"""
+        assertEquals(listOf(12, 34), parseEditionCovers(text))
+    }
+
+    @Test
+    fun coverVariantsStartWithTheCatalogueCoverAndSkipRepeats() {
+        val book = Book(7, "Title", cover = 12, libraryCover = LibraryCover(DNB, "isbn"))
+        val isbns = List(40) { "97800000000$it" }
+        val variants = coverVariants(book, isbns, listOf(12, 34))
+        assertEquals("$COVERS/b/id/12-L.jpg", variants.first())
+        assertEquals(1, variants.count { it == "$COVERS/b/id/12-L.jpg" })
+        assertTrue("$COVERS/b/id/34-L.jpg" in variants)
+        assertTrue(book.libraryCover!!.url in variants)
+        assertTrue(variants.size < isbns.size)
+    }
+
+    @Test
+    fun chosenCoverFollowsAMergedWork() {
+        val state = LibraryState(covers = mapOf(5 to "https://images.example/c.jpg"))
+        val moved = state.redirect { if (it == 5) 9 else null }
+        assertEquals(mapOf(9 to "https://images.example/c.jpg"), moved.covers)
+    }
 }

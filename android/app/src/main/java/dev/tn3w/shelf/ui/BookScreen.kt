@@ -67,10 +67,18 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
 
     fun changeCover(book: Book, shelf: Shelf?, image: Uri) {
         detached {
+            if (!book.isLocal) return@detached library.uploadCover(book.work, image)
             val cover = library.saveCover(book.work, image) ?: return@detached
             library.place(book.copy(cover = cover), shelf ?: Shelf.Reading)
         }
     }
+
+    fun chooseCover(work: Int, choice: String?) {
+        detached { library.chooseCover(work, choice) }
+    }
+
+    suspend fun coverVariants(book: Book) =
+        coverVariants(book, isbnsOf(book, catalogue = true), editionCovers(book.work))
 
     fun edit(work: Int, change: (Saved) -> Saved) {
         detached { library.edit(work, change) }
@@ -256,6 +264,11 @@ private fun BookHeader(
     fun place(target: Shelf) =
         viewModel.place(book, if (shelf == target) unplaced else target)
     fun changeCover(image: Uri) = viewModel.changeCover(book, shelf, image)
+    val covers by viewModel.library.covers.collectAsStateWithLifecycle(emptyMap())
+    val coverChoices = CoverChoices(
+        { viewModel.coverVariants(book) },
+        covers[book.work],
+    ) { viewModel.chooseCover(book.work, it) }.takeUnless { book.isLocal }
 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = ScreenPadding),
@@ -263,12 +276,8 @@ private fun BookHeader(
     ) {
         val sharedKey = "$origin-${book.work}"
         val space = Modifier.padding(top = 4.dp, bottom = 26.dp)
-        if (book.isLocal) {
-            EditableCover(book.title, book.author, ::changeCover, space) {
-                BookCover(book, 190.dp, sharedKey = sharedKey, lift = 22.dp)
-            }
-        } else {
-            BookCover(book, 190.dp, space, sharedKey, lift = 22.dp)
+        EditableCover(book.title, book.author, ::changeCover, space, coverChoices) {
+            BookCover(book, 190.dp, sharedKey = sharedKey, lift = 22.dp)
         }
         Text(book.title, style = Look.type.title, textAlign = TextAlign.Center)
         if (book.subtitle.isNotBlank()) {

@@ -272,6 +272,8 @@
     <string name="add">Añadir</string>
     <string name="choose_cover">Elegir portada</string>
     <string name="cover_from_files">De tus archivos</string>
+    <string name="cover_variants_loading">Buscando otras portadas…</string>
+    <string name="original_cover">Portada original</string>
     <string name="search_web_cover">Buscar en la web</string>
     <string name="cover_search_hint">Busca una portada en el navegador y comparte la imagen con Shelf.</string>
     <string name="use_as_cover">Usar como portada</string>

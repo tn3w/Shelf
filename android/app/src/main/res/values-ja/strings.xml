@@ -265,6 +265,8 @@
     <string name="add">追加</string>
     <string name="choose_cover">表紙を選ぶ</string>
     <string name="cover_from_files">ファイルから選択</string>
+    <string name="cover_variants_loading">ほかの表紙を探しています…</string>
+    <string name="original_cover">元の表紙</string>
     <string name="search_web_cover">ウェブで検索</string>
     <string name="cover_search_hint">ブラウザで表紙を見つけて、画像を Shelf に共有してください。</string>
     <string name="use_as_cover">本の表紙に使用</string>

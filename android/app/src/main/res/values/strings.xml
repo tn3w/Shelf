@@ -276,6 +276,8 @@
     <string name="add">Add</string>
     <string name="choose_cover">Choose cover</string>
     <string name="cover_from_files">From your files</string>
+    <string name="cover_variants_loading">Looking for other covers…</string>
+    <string name="original_cover">Original cover</string>
     <string name="search_web_cover">Search the web</string>
     <string name="cover_search_hint">Find a cover in your browser, then share the image to Shelf.</string>
     <string name="use_as_cover">Use as book cover</string>

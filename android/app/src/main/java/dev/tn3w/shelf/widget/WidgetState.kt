@@ -98,16 +98,23 @@ suspend fun coverOf(app: ShelfApp, book: Book, settings: Settings, width: Int): 
     } ?: renderCover(drawn, width)
 }
 
-private fun coverSources(app: ShelfApp, book: Book, settings: Settings): List<Any> {
-    if (book.isLocal && book.cover != 0) return listOf(app.library.coverFile(book))
+private suspend fun coverSources(
+    app: ShelfApp,
+    book: Book,
+    settings: Settings,
+): List<Any> {
+    val chosen = app.library.covers.first()[book.work]?.let(app.library::coverModel)
+    if (book.isLocal && book.cover != 0) {
+        return listOfNotNull(chosen, app.library.coverFile(book))
+    }
     val source = book.coverUrl("L")
     val online = !settings.isOffline(app) && settings.onlineCovers
-    if (!online || source == null) return emptyList()
+    if (!online || source == null) return listOfNotNull(chosen)
     val language = coverLanguage(book, app.loaded.value?.catalogue)
     val proxied = settings.coverProxyBase()
         ?.takeIf { language.isNotEmpty() }
         ?.let { proxyCoverUrl(it, language, book.work, 320) }
-    return listOfNotNull(proxied, source)
+    return listOfNotNull(chosen, proxied, source)
 }
 
 private fun frontOf(cover: Bitmap, target: Int): Bitmap {

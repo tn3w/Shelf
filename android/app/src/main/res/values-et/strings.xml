@@ -263,6 +263,8 @@
     <string name="add">Lisa</string>
     <string name="choose_cover">Vali kaas</string>
     <string name="cover_from_files">Sinu failidest</string>
+    <string name="cover_variants_loading">Teiste kaante otsimine…</string>
+    <string name="original_cover">Algne kaas</string>
     <string name="search_web_cover">Otsi veebist</string>
     <string name="cover_search_hint">Leia kaas brauserist ja jaga pilt siis Shelfi.</string>
     <string name="use_as_cover">Kasuta raamatu kaanena</string>

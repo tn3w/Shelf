@@ -185,8 +185,11 @@ fun BookCover(
     val colors = Look.colors
     val offline = settings?.isOffline(LocalContext.current) ?: true
     val scope = rememberCoroutineScope()
+    val library = shelfViewModel().library
+    val covers by library.covers.collectAsStateWithLifecycle(emptyMap())
+    val chosen = covers[book.work]
     var loaded by remember(book.work, book.cover) { mutableStateOf(false) }
-    var failed by remember(book.work, book.cover) { mutableStateOf(false) }
+    var failed by remember(book.work, book.cover, chosen) { mutableStateOf(false) }
     var direct by remember(book.work, book.cover) { mutableStateOf(false) }
     var alignment by remember(book.work, book.cover) { mutableStateOf(Alignment.Center) }
     val edge = if (colors.plain) colors.line else Color.Transparent
@@ -206,9 +209,11 @@ fun BookCover(
             .bound(),
     ) {
         if (settings == null) return@BoxWithConstraints
-        if (book.isLocal && book.cover != 0 && !failed) {
+        val own = chosen?.let(library::coverModel)
+            ?: library.coverFile(book).takeIf { book.isLocal && book.cover != 0 }
+        if (own != null && !failed) {
             AsyncImage(
-                model = shelfViewModel().library.coverFile(book),
+                model = own,
                 contentDescription = description,
                 contentScale = ContentScale.Crop,
                 onSuccess = { learn(it.result.image) },
@@ -666,12 +671,19 @@ fun NoCatalogue(onSettings: () -> Unit) = EmptyAction(
     onSettings,
 )
 
+class CoverChoices(
+    val variants: suspend () -> List<String>,
+    val chosen: String?,
+    val onVariant: (String?) -> Unit,
+)
+
 @Composable
 fun EditableCover(
     title: String,
     author: String,
     onPicked: (Uri) -> Unit,
     modifier: Modifier = Modifier,
+    choices: CoverChoices? = null,
     cover: @Composable () -> Unit,
 ) {
     var choosing by rememberSaveable { mutableStateOf(false) }
@@ -690,13 +702,14 @@ fun EditableCover(
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Rounded.AddPhotoAlternate, null, Modifier.size(16.dp)) }
     }
-    if (choosing) CoverSheet(title, author, { choosing = false }, onPicked)
+    if (choosing) CoverSheet(title, author, choices, { choosing = false }, onPicked)
 }
 
 @Composable
 private fun CoverSheet(
     title: String,
     author: String,
+    choices: CoverChoices?,
     onDismiss: () -> Unit,
     onPicked: (Uri) -> Unit,
 ) {
@@ -716,6 +729,7 @@ private fun CoverSheet(
         pick(image)
     }
     Sheet(onDismiss, stringResource(R.string.choose_cover)) {
+        choices?.let { CoverVariants(it, title, onDismiss) }
         Hint(stringResource(R.string.cover_search_hint))
         Pill(stringResource(R.string.search_web_cover), Modifier.fillMaxWidth()) {
             val search = coverSearchUri(title, author)
@@ -727,6 +741,64 @@ private fun CoverSheet(
             kind = PillKind.Line,
         ) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
     }
+}
+
+@Composable
+private fun CoverVariants(choices: CoverChoices, title: String, onDismiss: () -> Unit) {
+    fun choose(variant: String?) {
+        onDismiss()
+        choices.onVariant(variant)
+    }
+    val variants by produceState<List<String>?>(null) { value = choices.variants() }
+    var broken by remember { mutableStateOf(emptySet<String>()) }
+    val shown = variants.orEmpty() - broken
+    if (variants == null) Hint(stringResource(R.string.cover_variants_loading))
+    if (shown.isNotEmpty()) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            shown.forEach { variant ->
+                CoverVariant(variant, title, variant == choices.chosen, {
+                    broken +=
+                        variant
+                }) {
+                    choose(variant)
+                }
+            }
+        }
+    }
+    if (choices.chosen != null) {
+        Pill(
+            stringResource(R.string.original_cover),
+            Modifier.fillMaxWidth(),
+            kind = PillKind.Line,
+        ) { choose(null) }
+    }
+}
+
+@Composable
+private fun CoverVariant(
+    url: String,
+    title: String,
+    selected: Boolean,
+    onBroken: () -> Unit,
+    onClick: () -> Unit,
+) {
+    val edge = if (selected) Look.colors.accent else Color.Transparent
+    AsyncImage(
+        model = url,
+        contentDescription = stringResource(R.string.cover_of, title),
+        contentScale = ContentScale.Crop,
+        onError = { onBroken() },
+        onSuccess = { if (it.painter.intrinsicSize.width < 2f) onBroken() },
+        modifier = Modifier.width(96.dp)
+            .aspectRatio(2f / 3f)
+            .clip(Corners.cover)
+            .background(Look.colors.line)
+            .border(2.dp, edge, Corners.cover)
+            .clickable(onClick = onClick),
+    )
 }
 
 private fun coverSearchUri(title: String, author: String): Uri {

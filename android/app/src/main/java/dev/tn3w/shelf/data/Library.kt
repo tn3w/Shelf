@@ -410,6 +410,7 @@ data class LibraryState(
     val settings: Settings = Settings(),
     val watched: Set<String> = emptySet(),
     val removed: Map<Int, Long> = emptyMap(),
+    val covers: Map<Int, String> = emptyMap(),
 )
 
 @Serializable
@@ -567,6 +568,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
     val recentSearches = state.map { it.recent }.shared()
 
     val dismissed = state.map { it.dismissed }.shared()
+
+    val covers = state.map { it.covers }.shared()
 
     val progress = reading.map { it.progress }.shared()
 
@@ -841,6 +844,28 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         cover
     }
 
+    fun coverModel(choice: String): Any =
+        if (choice.startsWith("https://")) choice else bookFile(choice)
+
+    suspend fun chooseCover(work: Int, choice: String?) {
+        withContext(Dispatchers.IO) { deleteCovers(work, keep = choice.orEmpty()) }
+        libraryStore.change {
+            val covers = if (choice ==
+                null
+            ) {
+                it.covers - work
+            } else {
+                it.covers + (work to choice)
+            }
+            it.copy(covers = covers)
+        }
+    }
+
+    suspend fun uploadCover(work: Int, uri: Uri) {
+        val cover = saveCover(work, uri) ?: return
+        chooseCover(work, "$work-cover-$cover")
+    }
+
     private fun deleteCovers(work: Int, keep: String = "") = booksDir
         .listFiles { file -> file.name.startsWith("$work-cover-") && file.name != keep }
         .orEmpty()
@@ -865,7 +890,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
                 )
             }
             if (keepShelves) return@withContext
-            deleteCovers(work)
+            chooseCover(work, null)
             libraryStore.change { library ->
                 library.copy(
                     entries = library.entries.filter { it.work != work },
@@ -1283,6 +1308,7 @@ internal fun LibraryState.redirect(alias: (Int) -> Int?) = copy(
     entries = newestPerWork(entries.map { it.copy(work = it.work.moved(alias)) }),
     dismissed = dismissed.mapTo(HashSet()) { it.moved(alias) },
     removed = removed.mapKeys { it.key.moved(alias) },
+    covers = covers.mapKeys { it.key.moved(alias) },
 )
 
 internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(

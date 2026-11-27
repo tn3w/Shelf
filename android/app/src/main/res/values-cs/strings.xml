@@ -281,6 +281,8 @@
     <string name="add">Přidat</string>
     <string name="choose_cover">Vybrat obálku</string>
     <string name="cover_from_files">Z vašich souborů</string>
+    <string name="cover_variants_loading">Hledání dalších obálek…</string>
+    <string name="original_cover">Původní obálka</string>
     <string name="search_web_cover">Hledat na webu</string>
     <string name="cover_search_hint">Najděte obálku v prohlížeči a pak obrázek sdílejte do Shelf.</string>
     <string name="use_as_cover">Použít jako obálku knihy</string>

@@ -263,6 +263,8 @@
     <string name="add">Lisää</string>
     <string name="choose_cover">Valitse kansi</string>
     <string name="cover_from_files">Omista tiedostoista</string>
+    <string name="cover_variants_loading">Haetaan muita kansikuvia…</string>
+    <string name="original_cover">Alkuperäinen kansikuva</string>
     <string name="search_web_cover">Hae verkosta</string>
     <string name="cover_search_hint">Etsi kansikuva selaimessa ja jaa kuva sitten Shelfiin.</string>
     <string name="use_as_cover">Käytä kansikuvana</string>

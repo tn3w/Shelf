@@ -286,6 +286,8 @@
     <string name="add">Aggiungi</string>
     <string name="choose_cover">Scegli copertina</string>
     <string name="cover_from_files">Dai tuoi file</string>
+    <string name="cover_variants_loading">Ricerca di altre copertine…</string>
+    <string name="original_cover">Copertina originale</string>
     <string name="search_web_cover">Cerca sul web</string>
     <string name="cover_search_hint">Trova una copertina nel browser, poi condividi l’immagine con Shelf.</string>
     <string name="use_as_cover">Usa come copertina</string>

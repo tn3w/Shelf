@@ -263,6 +263,8 @@
     <string name="add">Hinzufügen</string>
     <string name="choose_cover">Cover wählen</string>
     <string name="cover_from_files">Aus deinen Dateien</string>
+    <string name="cover_variants_loading">Suche nach weiteren Covern…</string>
+    <string name="original_cover">Originalcover</string>
     <string name="search_web_cover">Im Web suchen</string>
     <string name="cover_search_hint">Finde ein Cover im Browser und teile das Bild dann mit Shelf.</string>
     <string name="use_as_cover">Als Buchcover verwenden</string>

@@ -281,6 +281,8 @@
     <string name="add">Dodaj</string>
     <string name="choose_cover">Wybierz okładkę</string>
     <string name="cover_from_files">Z twoich plików</string>
+    <string name="cover_variants_loading">Szukanie innych okładek…</string>
+    <string name="original_cover">Oryginalna okładka</string>
     <string name="search_web_cover">Szukaj w sieci</string>
     <string name="cover_search_hint">Znajdź okładkę w przeglądarce, a potem udostępnij obraz do Shelf.</string>
     <string name="use_as_cover">Użyj jako okładki</string>

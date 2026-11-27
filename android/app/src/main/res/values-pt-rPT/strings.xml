@@ -346,6 +346,8 @@
     <string name="add">Adicionar</string>
     <string name="choose_cover">Escolher capa</string>
     <string name="cover_from_files">Dos seus ficheiros</string>
+    <string name="cover_variants_loading">A procurar outras capas…</string>
+    <string name="original_cover">Capa original</string>
     <string name="search_web_cover">Pesquisar na web</string>
     <string name="cover_search_hint">Encontre uma capa no navegador e partilhe a imagem com o Shelf.</string>
     <string name="use_as_cover">Usar como capa do livro</string>

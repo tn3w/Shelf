@@ -281,6 +281,8 @@
     <string name="add">Добавить</string>
     <string name="choose_cover">Выбрать обложку</string>
     <string name="cover_from_files">Из ваших файлов</string>
+    <string name="cover_variants_loading">Поиск других обложек…</string>
+    <string name="original_cover">Исходная обложка</string>
     <string name="search_web_cover">Искать в интернете</string>
     <string name="cover_search_hint">Найдите обложку в браузере и поделитесь изображением с Shelf.</string>
     <string name="use_as_cover">Сделать обложкой книги</string>
