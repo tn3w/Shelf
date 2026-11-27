@@ -46,7 +46,7 @@ private const val HERO_FAN = 5
 private const val CARD_FAN = 3
 private val DISLIKED = 1..2
 private val HeroCover = 84.dp
-private val CardCover = 56.dp
+val CardCover = 56.dp
 private val StartCover = 64.dp
 
 private val SECTIONS = listOf(
@@ -246,7 +246,7 @@ fun ExploreScreen(navigator: Navigator) {
 
 /** Covers spread like a hand of cards, the first one on top in the middle. */
 @Composable
-private fun CoverFan(books: List<Book>, width: Dp, modifier: Modifier = Modifier) {
+fun CoverFan(books: List<Book>, width: Dp, modifier: Modifier = Modifier) {
     val placed = books.mapIndexed { rank, book ->
         val spread = if (rank % 2 == 1) -(rank + 1) / 2 else rank / 2
         spread to book
@@ -270,7 +270,7 @@ private fun CoverFan(books: List<Book>, width: Dp, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun Modifier.tintedCard(onClick: () -> Unit): Modifier {
+fun Modifier.tintedCard(onClick: () -> Unit): Modifier {
     val colors = Look.colors
     val backdrop = Brush.verticalGradient(listOf(colors.glow, colors.raised))
     return surface().background(backdrop).clickable(onClick = onClick)
@@ -297,16 +297,20 @@ private fun HeroCard(genre: Genre, onClick: () -> Unit) {
 }
 
 @Composable
-private fun GenreTitle(genre: Genre, style: TextStyle) {
+private fun GenreTitle(genre: Genre, style: TextStyle) =
+    CardTitle(genre.tag.label, genre.count, style)
+
+@Composable
+fun CardTitle(label: String, count: Int, style: TextStyle) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(top = 4.dp)) {
             Text(
-                genre.tag.label,
+                label,
                 style = style,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Hint(pluralStringResource(R.plurals.books, genre.count, genre.count))
+            Hint(pluralStringResource(R.plurals.books, count, count))
         }
         Icon(
             Icons.AutoMirrored.Rounded.KeyboardArrowRight,

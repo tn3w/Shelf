@@ -475,8 +475,6 @@
     <string name="delete_list_confirm">Kas kustutada loend %s? Raamatud jäävad sinu raamatukokku.</string>
     <string name="lists">Loendid</string>
     <string name="ready_to_read">Kohe loetav</string>
-    <string name="all_lists">Kõik nimekirjad</string>
-    <string name="no_lists">Nimekirju veel pole. Lisa raamatuid nimekirja raamatu lehelt või vali need oma raamatukogus.</string>
     <string name="edit_lists">Muuda loendeid</string>
     <string name="share_list">Jaga loendit</string>
     <string name="read_of_list">%d loetud</string>

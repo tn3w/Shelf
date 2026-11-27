@@ -475,8 +475,6 @@
     <string name="delete_list_confirm">De lijst %s verwijderen? De boeken blijven in je bibliotheek.</string>
     <string name="lists">Lijsten</string>
     <string name="ready_to_read">Klaar om te lezen</string>
-    <string name="all_lists">Alle lijsten</string>
-    <string name="no_lists">Nog geen lijsten. Voeg boeken toe aan een lijst via de boekpagina of selecteer ze in je bibliotheek.</string>
     <string name="edit_lists">Lijsten bewerken</string>
     <string name="share_list">Lijst delen</string>
     <string name="read_of_list">%d gelezen</string>

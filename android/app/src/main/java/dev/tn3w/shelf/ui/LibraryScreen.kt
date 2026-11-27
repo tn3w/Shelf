@@ -119,11 +119,6 @@ fun LibraryScreen(navigator: Navigator) {
         ) {
             val soft = Look.colors.soft
             val online = stringResource(R.string.online_libraries)
-            IconAction(
-                Icons.AutoMirrored.Rounded.List,
-                stringResource(R.string.all_lists),
-                tint = soft,
-            ) { navigator.lists() }
             IconAction(Icons.Rounded.Public, online, tint = soft) {
                 navigator.onlineLibraries()
             }
@@ -136,8 +131,11 @@ fun LibraryScreen(navigator: Navigator) {
         }
         if (!empty) {
             SearchField(query, { query = it }, stringResource(R.string.search_library))
-            FilterRow(actions = { OptionsButton(tag != null) { options = true } }) {
-                ReadableTag(onlyReadable) { onlyReadable = it }
+            val filterActions = @Composable {
+                ReadyButton(onlyReadable) { onlyReadable = it }
+                OptionsButton(tag != null) { options = true }
+            }
+            FilterRow(actions = { filterActions() }) {
                 Shelf.entries.forEach { value ->
                     Tag(stringResource(value.label), selected = value == shelf) {
                         shelf = value.takeIf { it != shelf }
@@ -145,20 +143,15 @@ fun LibraryScreen(navigator: Navigator) {
                 }
             }
         }
-        val showLists =
-            lists.isNotEmpty() && query.isBlank() && shelf == null && tag == null &&
-                !onlyReadable
+        val filtering = query.isNotBlank() || shelf != null || tag != null || onlyReadable
+        val showLists = lists.isNotEmpty() && !filtering
         if (shown?.isEmpty() == true) {
             val text = if (empty) R.string.library_empty else R.string.no_results
             EmptyState(Icons.Rounded.CollectionsBookmark, stringResource(text))
         }
         if (listView) {
             LibraryList(shown.orEmpty(), navigator, selection) {
-                if (showLists) {
-                    fullWidth {
-                        ListsRow(lists, navigator::lists, navigator::list)
-                    }
-                }
+                if (showLists) fullWidth { ListsRow(lists, navigator::list) }
             }
         } else {
             BookGrid(
@@ -167,11 +160,7 @@ fun LibraryScreen(navigator: Navigator) {
                 navigator::book,
                 selection,
                 header = {
-                    if (showLists) {
-                        fullBleed {
-                            ListsRow(lists, navigator::lists, navigator::list)
-                        }
-                    }
+                    if (showLists) fullBleed { ListsRow(lists, navigator::list) }
                 },
             )
         }
@@ -200,10 +189,14 @@ fun LibraryScreen(navigator: Navigator) {
 }
 
 @Composable
-fun ReadableTag(selected: Boolean, onSelect: (Boolean) -> Unit) =
-    Tag(stringResource(R.string.ready_to_read), selected = selected) {
-        onSelect(!selected)
-    }
+fun ReadyButton(selected: Boolean, onSelect: (Boolean) -> Unit) {
+    val colors = Look.colors
+    IconAction(
+        Icons.Rounded.DownloadDone,
+        stringResource(R.string.ready_to_read),
+        tint = if (selected) colors.accent else colors.soft,
+    ) { onSelect(!selected) }
+}
 
 @Composable
 private fun OptionsButton(active: Boolean, onClick: () -> Unit) {
@@ -280,7 +273,7 @@ private fun LibraryList(
     entries: List<Saved>,
     navigator: Navigator,
     selection: Selection,
-    header: LazyGridScope.() -> Unit,
+    header: LazyGridScope.() -> Unit = {},
 ) {
     LazyVerticalGrid(
         GridCells.Adaptive(ListColumnWidth),

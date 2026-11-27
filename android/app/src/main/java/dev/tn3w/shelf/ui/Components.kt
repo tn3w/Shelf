@@ -671,6 +671,8 @@ fun NoCatalogue(onSettings: () -> Unit) = EmptyAction(
     onSettings,
 )
 
+private const val VARIANT_COLUMNS = 3
+
 class CoverChoices(
     val variants: suspend () -> List<String>,
     val chosen: String?,
@@ -729,17 +731,19 @@ private fun CoverSheet(
         pick(image)
     }
     Sheet(onDismiss, stringResource(R.string.choose_cover)) {
-        choices?.let { CoverVariants(it, title, onDismiss) }
         Hint(stringResource(R.string.cover_search_hint))
-        Pill(stringResource(R.string.search_web_cover), Modifier.fillMaxWidth()) {
-            val search = coverSearchUri(title, author)
-            context.startActivity(Intent(Intent.ACTION_VIEW, search))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Pill(stringResource(R.string.search_web_cover), Modifier.weight(1f)) {
+                val search = coverSearchUri(title, author)
+                context.startActivity(Intent(Intent.ACTION_VIEW, search))
+            }
+            Pill(
+                stringResource(R.string.cover_from_files),
+                Modifier.weight(1f),
+                kind = PillKind.Line,
+            ) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
         }
-        Pill(
-            stringResource(R.string.cover_from_files),
-            Modifier.fillMaxWidth(),
-            kind = PillKind.Line,
-        ) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
+        choices?.let { CoverVariants(it, title, onDismiss) }
     }
 }
 
@@ -752,22 +756,6 @@ private fun CoverVariants(choices: CoverChoices, title: String, onDismiss: () ->
     val variants by produceState<List<String>?>(null) { value = choices.variants() }
     var broken by remember { mutableStateOf(emptySet<String>()) }
     val shown = variants.orEmpty() - broken
-    if (variants == null) Hint(stringResource(R.string.cover_variants_loading))
-    if (shown.isNotEmpty()) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            shown.forEach { variant ->
-                CoverVariant(variant, title, variant == choices.chosen, {
-                    broken +=
-                        variant
-                }) {
-                    choose(variant)
-                }
-            }
-        }
-    }
     if (choices.chosen != null) {
         Pill(
             stringResource(R.string.original_cover),
@@ -775,10 +763,24 @@ private fun CoverVariants(choices: CoverChoices, title: String, onDismiss: () ->
             kind = PillKind.Line,
         ) { choose(null) }
     }
+    if (variants == null) Hint(stringResource(R.string.cover_variants_loading))
+    if (shown.isNotEmpty()) {
+        shown.chunked(VARIANT_COLUMNS).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { variant ->
+                    val selected = variant == choices.chosen
+                    CoverVariant(variant, title, selected, { broken += variant }) {
+                        choose(variant)
+                    }
+                }
+                repeat(VARIANT_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+    }
 }
 
 @Composable
-private fun CoverVariant(
+private fun RowScope.CoverVariant(
     url: String,
     title: String,
     selected: Boolean,
@@ -792,7 +794,7 @@ private fun CoverVariant(
         contentScale = ContentScale.Crop,
         onError = { onBroken() },
         onSuccess = { if (it.painter.intrinsicSize.width < 2f) onBroken() },
-        modifier = Modifier.width(96.dp)
+        modifier = Modifier.weight(1f)
             .aspectRatio(2f / 3f)
             .clip(Corners.cover)
             .background(Look.colors.line)

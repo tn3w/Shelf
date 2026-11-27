@@ -475,8 +475,6 @@
     <string name="delete_list_confirm">Liste %s löschen? Die Bücher bleiben in deiner Bibliothek.</string>
     <string name="lists">Listen</string>
     <string name="ready_to_read">Sofort lesbar</string>
-    <string name="all_lists">Alle Listen</string>
-    <string name="no_lists">Noch keine Listen. Füge Bücher auf der Buchseite zu einer Liste hinzu oder wähle sie in deiner Bibliothek aus.</string>
     <string name="edit_lists">Listen bearbeiten</string>
     <string name="share_list">Liste teilen</string>
     <string name="read_of_list">%d gelesen</string>

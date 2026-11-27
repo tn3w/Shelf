@@ -3,12 +3,9 @@ package dev.tn3w.shelf.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Label
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.Icon
@@ -28,10 +25,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.tn3w.shelf.Navigator
 import dev.tn3w.shelf.R
 import dev.tn3w.shelf.data.*
-import androidx.compose.foundation.lazy.grid.items as gridItems
 
-private val ListCardWidth = 148.dp
 private const val FAN_SIZE = 3
+private val ListCardWidth = 168.dp
 
 private data class FanCover(val shift: Float, val angle: Float, val scale: Float)
 
@@ -59,6 +55,7 @@ fun ListScreen(initialName: String, navigator: Navigator) {
     CoverTheme(coverTone(entries?.firstOrNull()?.toBook())) {
         Column(Modifier.glow().padding(top = statusBarHeight())) {
             BackBar(navigator::back) {
+                ReadyButton(onlyReadable) { onlyReadable = it }
                 IconAction(
                     Icons.Rounded.Edit, stringResource(R.string.rename_list), tint = soft,
                 ) { renaming = true }
@@ -78,14 +75,7 @@ fun ListScreen(initialName: String, navigator: Navigator) {
                 entries?.map(Saved::toBook),
                 "list",
                 navigator::book,
-                header = {
-                    fullWidth {
-                        Column {
-                            ListHeader(name, listed.orEmpty())
-                            FilterRow { ReadableTag(onlyReadable) { onlyReadable = it } }
-                        }
-                    }
-                },
+                header = { fullWidth { ListHeader(name, listed.orEmpty()) } },
             )
         }
     }
@@ -161,23 +151,9 @@ fun ListCollage(entries: List<Saved>, width: Dp, modifier: Modifier = Modifier) 
 }
 
 @Composable
-fun ListsRow(lists: List<BookList>, onAll: () -> Unit, onOpen: (String) -> Unit) {
+fun ListsRow(lists: List<BookList>, onOpen: (String) -> Unit) {
     Column(Modifier.padding(bottom = 10.dp)) {
-        Row(
-            Modifier.fillMaxWidth()
-                .clickable(onClick = onAll)
-                .padding(horizontal = ScreenPadding)
-                .padding(bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Eyebrow(stringResource(R.string.lists), Modifier.weight(1f))
-            Icon(
-                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                stringResource(R.string.all_lists),
-                Modifier.size(20.dp),
-                Look.colors.soft,
-            )
-        }
+        SectionHeader(stringResource(R.string.lists))
         LazyRow(
             contentPadding = PaddingValues(horizontal = ScreenPadding),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -190,49 +166,18 @@ fun ListsRow(lists: List<BookList>, onAll: () -> Unit, onOpen: (String) -> Unit)
 }
 
 @Composable
-fun ListsScreen(navigator: Navigator) {
-    val saved by libraryViewModel().saved.collectAsStateWithLifecycle()
-    val lists = saved.orEmpty().bookLists()
-    Column(Modifier.padding(top = statusBarHeight())) {
-        BackBar(navigator::back)
-        LargeTitle(stringResource(R.string.lists))
-        if (saved != null && lists.isEmpty()) {
-            val empty = stringResource(R.string.no_lists)
-            EmptyState(Icons.AutoMirrored.Rounded.Label, empty)
-        }
-        LazyVerticalGrid(
-            GridCells.Adaptive(ListCardWidth),
-            contentPadding = PaddingValues(ScreenPadding, 8.dp, ScreenPadding, 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            gridItems(lists, key = { it.name }) { list ->
-                ListCard(list, Modifier.animateItem()) { navigator.list(list.name) }
-            }
-        }
-    }
-}
-
-@Composable
 private fun ListCard(list: BookList, modifier: Modifier, onClick: () -> Unit) {
-    val count = list.books.size
-    Column(
-        modifier.width(ListCardWidth).clip(Corners.card).clickable(onClick = onClick),
-    ) {
-        Box(Modifier.surface()) {
-            ListCollage(list.books, ListCardWidth, Modifier.padding(vertical = 12.dp))
+    val books = list.books.map(Saved::toBook)
+    CoverTheme(coverTone(books.firstOrNull())) {
+        Column(
+            modifier.width(ListCardWidth)
+                .tintedCard(onClick)
+                .padding(top = 20.dp, bottom = 14.dp, start = 14.dp, end = 8.dp),
+        ) {
+            CoverFan(books.take(FAN_SIZE), CardCover)
+            Spacer(Modifier.height(14.dp))
+            CardTitle(list.name, list.books.size, Look.type.subhead)
         }
-        Text(
-            list.name,
-            Modifier.padding(start = 6.dp, top = 10.dp),
-            style = Look.type.label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Hint(
-            pluralStringResource(R.plurals.books, count, count),
-            Modifier.padding(start = 6.dp, bottom = 6.dp),
-        )
     }
 }
 
