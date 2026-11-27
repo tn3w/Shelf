@@ -477,6 +477,7 @@
     <string name="delete_list">Delete list</string>
     <string name="delete_list_confirm">Delete the list %s? Its books stay in your library.</string>
     <string name="lists">Lists</string>
+    <string name="ready_to_read">Ready to read</string>
     <string name="all_lists">All lists</string>
     <string name="no_lists">No lists yet. Add books to a list from a book page, or select books in your library.</string>
     <string name="edit_lists">Edit lists</string>

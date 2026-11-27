@@ -103,4 +103,17 @@ class FilterTest {
         assertEquals(listOf(1), noted.filtered("anna").works())
         assertEquals(listOf(1), noted.filtered("gift").works())
     }
+
+    @Test
+    fun readyToReadKeepsBooksWithAFileOrAudiobook() {
+        val readable = readableWorks(
+            mapOf(1 to Progress("1.epub"), 2 to Progress("")),
+            mapOf(3 to Audiobook(emptyList())),
+        )
+        assertEquals(setOf(1, 3), readable)
+        val saved = (1..4).map { Saved(it, Shelf.Want, 0, "Book $it") }
+        val shown = saved.filtered("", Shelf.Want, readable = readable).map { it.work }
+        assertEquals(listOf(1, 3), shown)
+        assertEquals(4, saved.filtered("").size)
+    }
 }

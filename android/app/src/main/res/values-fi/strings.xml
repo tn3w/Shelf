@@ -474,6 +474,7 @@
     <string name="delete_list">Poista lista</string>
     <string name="delete_list_confirm">Poistetaanko lista %s? Sen kirjat jäävät kirjastoosi.</string>
     <string name="lists">Listat</string>
+    <string name="ready_to_read">Valmiina luettavaksi</string>
     <string name="all_lists">Kaikki listat</string>
     <string name="no_lists">Ei vielä listoja. Lisää kirjoja listaan kirjan sivulta tai valitse ne kirjastostasi.</string>
     <string name="edit_lists">Muokkaa listoja</string>

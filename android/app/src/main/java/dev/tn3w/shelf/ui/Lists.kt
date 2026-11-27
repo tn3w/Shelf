@@ -47,7 +47,10 @@ fun ListScreen(initialName: String, navigator: Navigator) {
     val saved by viewModel.saved.collectAsStateWithLifecycle()
     var name by rememberSaveable { mutableStateOf(initialName) }
     val sort = loadedSettings()?.librarySort ?: LibrarySort.Added
-    val entries = saved?.filter { it.lists.hasList(name) }?.sorted(sort)
+    val readable by viewModel.readable.collectAsStateWithLifecycle()
+    var onlyReadable by rememberSaveable { mutableStateOf(false) }
+    val listed = saved?.filter { it.lists.hasList(name) }?.sorted(sort)
+    val entries = listed?.filter { !onlyReadable || it.work in readable.orEmpty() }
     var renaming by rememberSaveable { mutableStateOf(false) }
     var deleting by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
@@ -75,7 +78,14 @@ fun ListScreen(initialName: String, navigator: Navigator) {
                 entries?.map(Saved::toBook),
                 "list",
                 navigator::book,
-                header = { fullWidth { ListHeader(name, entries.orEmpty()) } },
+                header = {
+                    fullWidth {
+                        Column {
+                            ListHeader(name, listed.orEmpty())
+                            FilterRow { ReadableTag(onlyReadable) { onlyReadable = it } }
+                        }
+                    }
+                },
             )
         }
     }

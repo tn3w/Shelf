@@ -49,9 +49,11 @@ fun List<Saved>.filtered(
     query: String,
     shelf: Shelf? = null,
     tag: Int? = null,
+    readable: Set<Int>? = null,
     tagsOf: (Int) -> List<Int> = { emptyList() },
 ) = filter { saved ->
     (shelf == null || saved.shelf == shelf) &&
+        (readable == null || saved.work in readable) &&
         (tag == null || tag in tagsOf(saved.work)) &&
         matchesWords(saved.searchText, query)
 }
@@ -95,3 +97,6 @@ fun facets(tagLists: List<List<Int>>) = tagLists
     .sortedByDescending { it.value }
     .take(FACET_LIMIT)
     .map { it.key }
+
+fun readableWorks(progress: Map<Int, Progress>, audiobooks: Map<Int, Audiobook>) =
+    progress.filterValues { it.file.isNotEmpty() }.keys + audiobooks.keys

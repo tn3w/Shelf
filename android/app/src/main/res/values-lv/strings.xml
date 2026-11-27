@@ -489,6 +489,7 @@
     <string name="delete_list">Dzēst sarakstu</string>
     <string name="delete_list_confirm">Dzēst sarakstu %s? Grāmatas paliks jūsu bibliotēkā.</string>
     <string name="lists">Saraksti</string>
+    <string name="ready_to_read">Gatavs lasīšanai</string>
     <string name="all_lists">Visi saraksti</string>
     <string name="no_lists">Sarakstu vēl nav. Pievieno grāmatas sarakstam grāmatas lapā vai atlasi tās savā bibliotēkā.</string>
     <string name="edit_lists">Rediģēt sarakstus</string>

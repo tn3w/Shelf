@@ -40,6 +40,8 @@ class LibraryViewModel(app: ShelfApp) : ShelfViewModel(app) {
         saved.associate { it.work to current.catalogue.facts(it.work)?.tags?.toList() }
     }.asState()
     val catalogueTags = catalogueState { catalogue.tags }
+    val readable =
+        combine(library.progress, library.audiobooks, ::readableWorks).asState()
 
     fun importFile(uri: Uri) {
         detached { app.open(library.importFile(uri, app::findInCatalogue)) }
@@ -75,6 +77,9 @@ fun LibraryScreen(navigator: Navigator) {
     var query by rememberSaveable { mutableStateOf("") }
     var shelf by rememberSaveable { mutableStateOf<Shelf?>(null) }
     var tag by rememberSaveable { mutableStateOf<Int?>(null) }
+    var onlyReadable by rememberSaveable { mutableStateOf(false) }
+    val readable by viewModel.readable.collectAsStateWithLifecycle()
+    val readableOnly = readable.orEmpty().takeIf { onlyReadable }
     val lists = saved.orEmpty().bookLists()
     val tagsByWork by viewModel.tagsByWork.collectAsStateWithLifecycle()
     val catalogueTags by viewModel.catalogueTags.collectAsStateWithLifecycle()
@@ -85,7 +90,9 @@ fun LibraryScreen(navigator: Navigator) {
     val sort = settings?.librarySort ?: LibrarySort.Added
     val listView = settings?.libraryList == true
     val shown = saved
-        ?.filtered(query, shelf, tag) { tagsByWork?.get(it).orEmpty() }
+        ?.filtered(query, shelf, tag, readable = readableOnly) {
+            tagsByWork?.get(it).orEmpty()
+        }
         ?.sorted(sort)
     val picker = rememberLauncherForActivityResult(OpenDocument()) { uri ->
         uri?.let(viewModel::importFile)
@@ -130,6 +137,7 @@ fun LibraryScreen(navigator: Navigator) {
         if (!empty) {
             SearchField(query, { query = it }, stringResource(R.string.search_library))
             FilterRow(actions = { OptionsButton(tag != null) { options = true } }) {
+                ReadableTag(onlyReadable) { onlyReadable = it }
                 Shelf.entries.forEach { value ->
                     Tag(stringResource(value.label), selected = value == shelf) {
                         shelf = value.takeIf { it != shelf }
@@ -138,7 +146,8 @@ fun LibraryScreen(navigator: Navigator) {
             }
         }
         val showLists =
-            lists.isNotEmpty() && query.isBlank() && shelf == null && tag == null
+            lists.isNotEmpty() && query.isBlank() && shelf == null && tag == null &&
+                !onlyReadable
         if (shown?.isEmpty() == true) {
             val text = if (empty) R.string.library_empty else R.string.no_results
             EmptyState(Icons.Rounded.CollectionsBookmark, stringResource(text))
@@ -189,6 +198,12 @@ fun LibraryScreen(navigator: Navigator) {
         onDismiss = { options = false },
     )
 }
+
+@Composable
+fun ReadableTag(selected: Boolean, onSelect: (Boolean) -> Unit) =
+    Tag(stringResource(R.string.ready_to_read), selected = selected) {
+        onSelect(!selected)
+    }
 
 @Composable
 private fun OptionsButton(active: Boolean, onClick: () -> Unit) {

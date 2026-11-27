@@ -504,6 +504,7 @@
     <string name="delete_list">Удалить список</string>
     <string name="delete_list_confirm">Удалить список %s? Книги останутся в библиотеке.</string>
     <string name="lists">Списки</string>
+    <string name="ready_to_read">Можно читать</string>
     <string name="all_lists">Все списки</string>
     <string name="no_lists">Списков пока нет. Добавьте книги в список на странице книги или выберите их в библиотеке.</string>
     <string name="edit_lists">Изменить списки</string>
