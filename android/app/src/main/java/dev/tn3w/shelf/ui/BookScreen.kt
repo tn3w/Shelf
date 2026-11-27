@@ -77,8 +77,13 @@ class BookViewModel(app: ShelfApp, work: Int) : ShelfViewModel(app) {
         detached { library.chooseCover(work, choice) }
     }
 
-    suspend fun coverVariants(book: Book) =
-        coverVariants(book, isbnsOf(book, catalogue = true), editionCovers(book.work))
+    suspend fun coverVariants(book: Book): List<String> {
+        val language = book.language.ifEmpty {
+            loaded.value?.catalogueOf(book.work)?.language.orEmpty()
+        }
+        val editions = editionCovers(book.work, language)
+        return coverVariants(book, isbnsOf(book, catalogue = true), editions)
+    }
 
     fun edit(work: Int, change: (Saved) -> Saved) {
         detached { library.edit(work, change) }

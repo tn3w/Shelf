@@ -302,6 +302,7 @@ data class Backup(
     val highlights: Map<Int, List<Highlight>> = emptyMap(),
     val edited: Map<Int, Long> = emptyMap(),
     val removed: Map<Int, Long> = emptyMap(),
+    val covers: Map<Int, ChosenCover> = emptyMap(),
 )
 
 data class Habit(
@@ -410,8 +411,24 @@ data class LibraryState(
     val settings: Settings = Settings(),
     val watched: Set<String> = emptySet(),
     val removed: Map<Int, Long> = emptyMap(),
-    val covers: Map<Int, String> = emptyMap(),
+    val covers: Map<Int, ChosenCover> = emptyMap(),
 )
+
+/** Cover picked for a work: an image address or a books file, empty for the original. */
+@Serializable
+data class ChosenCover(val image: String = "", val time: Long = 0)
+
+private const val SHARED_COVER_PREFIX = "shelf-cover-"
+
+internal fun newestCovers(first: Map<Int, ChosenCover>, second: Map<Int, ChosenCover>) =
+    (first.keys + second.keys).associateWith { work ->
+        listOfNotNull(first[work], second[work]).maxBy { it.time }
+    }
+
+internal fun uploadedCovers(covers: Map<Int, ChosenCover>) = covers.values
+    .map { it.image }
+    .filter { BOOK_FILE.matches(it) }
+    .toSet()
 
 @Serializable
 data class ReadingState(
@@ -569,7 +586,9 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     val dismissed = state.map { it.dismissed }.shared()
 
-    val covers = state.map { it.covers }.shared()
+    val covers = state.map { state ->
+        state.covers.filterValues { it.image.isNotEmpty() }.mapValues { it.value.image }
+    }.shared()
 
     val progress = reading.map { it.progress }.shared()
 
@@ -849,16 +868,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
 
     suspend fun chooseCover(work: Int, choice: String?) {
         withContext(Dispatchers.IO) { deleteCovers(work, keep = choice.orEmpty()) }
-        libraryStore.change {
-            val covers = if (choice ==
-                null
-            ) {
-                it.covers - work
-            } else {
-                it.covers + (work to choice)
-            }
-            it.copy(covers = covers)
-        }
+        val chosen = ChosenCover(choice.orEmpty(), System.currentTimeMillis())
+        libraryStore.change { it.copy(covers = it.covers + (work to chosen)) }
     }
 
     suspend fun uploadCover(work: Int, uri: Uri) {
@@ -1063,6 +1074,42 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         if (peers.isEmpty()) return@withContext
         libraryStore.change { peers.fold(it, LibraryState::synced) }
         readingStore.change { peers.fold(it, ReadingState::synced) }
+        fetchSharedCovers(folder.toUri())
+    }
+
+    private suspend fun fetchSharedCovers(tree: Uri) {
+        val documents = context.documentsIn(tree)
+        val missing = uploadedCovers(state.first().covers).filterNot {
+            bookFile(it).exists()
+        }
+        missing.forEach { name ->
+            val source = documents["$SHARED_COVER_PREFIX$name"] ?: return@forEach
+            val target = bookFile(name).apply { parentFile?.mkdirs() }
+            context.readFrom(source) { input -> target.outputStream().use(input::copyTo) }
+        }
+    }
+
+    private suspend fun shareCovers(tree: Uri, parent: Uri) {
+        val resolver = context.contentResolver
+        val documents = context.documentsIn(tree)
+        val wanted = uploadedCovers(state.first().covers)
+        val stale = documents.filterKeys {
+            it.startsWith(SHARED_COVER_PREFIX) &&
+                it.removePrefix(SHARED_COVER_PREFIX) !in wanted
+        }
+        stale.values.forEach { runCatching { deleteDocument(resolver, it) } }
+        val unshared = wanted.filter {
+            "$SHARED_COVER_PREFIX$it" !in documents && bookFile(it).exists()
+        }
+        unshared.forEach { name ->
+            val type = "application/octet-stream"
+            val created =
+                createDocument(resolver, parent, type, "$SHARED_COVER_PREFIX$name")
+                    ?: return@forEach
+            context.writeTo(created) { output ->
+                bookFile(name).inputStream().use { it.copyTo(output) }
+            }
+        }
     }
 
     suspend fun syncToFolder() = withContext(Dispatchers.IO) {
@@ -1078,6 +1125,7 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         runCatching {
             resolver.openOutputStream(file, "wt")?.use { it.write(text.toByteArray()) }
         }
+        shareCovers(tree, parent)
     }
 
     private fun writeArchive(output: OutputStream, backup: Backup) =
@@ -1220,11 +1268,13 @@ internal fun backupOf(library: LibraryState, reading: ReadingState) = Backup(
     reading.highlights,
     reading.edited,
     library.removed,
+    library.covers,
 )
 
 internal fun LibraryState.merge(imported: Backup) = copy(
     entries = newestPerWork(entries + imported.entries),
     dismissed = dismissed + imported.dismissed,
+    covers = newestCovers(covers, imported.covers),
     settings = restoredSettings(imported.settings, settings),
 )
 
@@ -1282,7 +1332,12 @@ internal fun LibraryState.synced(peer: Backup): LibraryState {
     val removed = latest(removed, peer.removed)
     val kept = newestPerWork(entries + peer.entries)
         .filter { it.updated > (removed[it.work] ?: 0) }
-    return copy(entries = kept, dismissed = dismissed + peer.dismissed, removed = removed)
+    return copy(
+        entries = kept,
+        dismissed = dismissed + peer.dismissed,
+        removed = removed,
+        covers = newestCovers(covers, peer.covers),
+    )
 }
 
 internal fun ReadingState.synced(peer: Backup): ReadingState {
@@ -1308,7 +1363,9 @@ internal fun LibraryState.redirect(alias: (Int) -> Int?) = copy(
     entries = newestPerWork(entries.map { it.copy(work = it.work.moved(alias)) }),
     dismissed = dismissed.mapTo(HashSet()) { it.moved(alias) },
     removed = removed.mapKeys { it.key.moved(alias) },
-    covers = covers.mapKeys { it.key.moved(alias) },
+    covers = covers.entries.associate { (work, chosen) ->
+        work.moved(alias) to chosen.copy(image = movedFile(chosen.image, alias))
+    },
 )
 
 internal fun ReadingState.redirect(alias: (Int) -> Int?) = copy(

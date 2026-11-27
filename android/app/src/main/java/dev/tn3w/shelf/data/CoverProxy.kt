@@ -4,6 +4,7 @@ import android.os.Build
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import java.util.Locale
 
 /** AVIF cover proxy, see `tooling/server/` in the repository. */
 const val COVER_PROXY = "https://shelf-books.tn3w.dev"
@@ -40,24 +41,40 @@ fun proxyPhotoUrl(base: String, author: Author, pixels: Int) =
         author.number in 1 until SYNTHETIC
     }
 
+private val MARC_CODES = mapOf("de" to "ger", "fr" to "fre", "cs" to "cze", "nl" to "dut")
+
 @Serializable
 private class Editions(val entries: List<Edition> = emptyList())
 
 @Serializable
-private class Edition(val covers: List<Int> = emptyList())
+private class Edition(
+    val covers: List<Int> = emptyList(),
+    val languages: List<LanguageKey> = emptyList(),
+)
+
+@Serializable
+private class LanguageKey(val key: String = "")
+
+private fun marcCode(language: String) =
+    MARC_CODES[language] ?: Locale.forLanguageTag(language).isO3Language
 
 private val editionJson = Json { ignoreUnknownKeys = true }
 
-fun parseEditionCovers(text: String) =
-    editionJson.decodeFromString<Editions>(text).entries
+fun parseEditionCovers(text: String, language: String = ""): List<Int> {
+    val key = "/languages/${marcCode(language)}".takeIf { language.isNotEmpty() }
+    return editionJson.decodeFromString<Editions>(text).entries
+        .sortedByDescending { edition -> edition.languages.any { it.key == key } }
         .flatMap { it.covers }
         .filter { it > 0 }
         .distinct()
+}
 
-suspend fun editionCovers(work: Int): List<Int> {
+suspend fun editionCovers(work: Int, language: String): List<Int> {
     if (work !in 1 until SYNTHETIC) return emptyList()
     val url = "https://openlibrary.org/works/OL${work}W/editions.json?limit=200"
-    return runSuspendCatching { parseEditionCovers(fetchText(url, "application/json")) }
+    return runSuspendCatching {
+        parseEditionCovers(fetchText(url, "application/json"), language)
+    }
         .getOrDefault(emptyList())
 }
 

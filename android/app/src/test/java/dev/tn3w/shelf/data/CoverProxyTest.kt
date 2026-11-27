@@ -54,9 +54,47 @@ class CoverProxyTest {
     }
 
     @Test
+    fun editionCoversInTheBookLanguageComeFirst() {
+        val text = """{"entries": [
+            {"covers": [1], "languages": [{"key": "/languages/eng"}]},
+            {"covers": [2], "languages": [{"key": "/languages/ger"}]},
+            {"covers": [3]}]}"""
+        assertEquals(listOf(2, 1, 3), parseEditionCovers(text, "de"))
+        assertEquals(listOf(1, 2, 3), parseEditionCovers(text, "en"))
+        assertEquals(listOf(1, 2, 3), parseEditionCovers(text))
+    }
+
+    @Test
     fun chosenCoverFollowsAMergedWork() {
-        val state = LibraryState(covers = mapOf(5 to "https://images.example/c.jpg"))
+        val state = LibraryState(
+            covers = mapOf(
+                5 to ChosenCover("5-cover-77", 1),
+                6 to ChosenCover("https://images.example/c.jpg", 1),
+            ),
+        )
         val moved = state.redirect { if (it == 5) 9 else null }
-        assertEquals(mapOf(9 to "https://images.example/c.jpg"), moved.covers)
+        assertEquals(ChosenCover("9-cover-77", 1), moved.covers[9])
+        assertEquals("https://images.example/c.jpg", moved.covers[6]?.image)
+    }
+
+    @Test
+    fun newestCoverChoiceWinsInSyncAndRestore() {
+        val older = ChosenCover("https://images.example/old.jpg", 1)
+        val newer = ChosenCover("", 2)
+        val state = LibraryState(covers = mapOf(4 to older, 8 to older))
+        val peer = Backup(covers = mapOf(4 to newer))
+        assertEquals(mapOf(4 to newer, 8 to older), state.synced(peer).covers)
+        assertEquals(mapOf(4 to newer, 8 to older), state.merge(peer).covers)
+        assertEquals(state.covers, backupOf(state, ReadingState()).covers)
+    }
+
+    @Test
+    fun onlyUploadedCoversTravelAsFiles() {
+        val covers = mapOf(
+            1 to ChosenCover("1-cover-5", 1),
+            2 to ChosenCover("https://images.example/c.jpg", 1),
+            3 to ChosenCover("", 1),
+        )
+        assertEquals(setOf("1-cover-5"), uploadedCovers(covers))
     }
 }
