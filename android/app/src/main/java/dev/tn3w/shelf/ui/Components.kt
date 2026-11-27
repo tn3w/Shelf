@@ -1,5 +1,6 @@
 package dev.tn3w.shelf.ui
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -49,6 +50,7 @@ import dev.tn3w.shelf.SimilarKind
 import dev.tn3w.shelf.SimilarRoute
 import dev.tn3w.shelf.cover.*
 import dev.tn3w.shelf.data.*
+import dev.tn3w.shelf.sharedCover
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -702,47 +704,39 @@ private fun CoverSheet(
         onDismiss()
         onPicked(uri)
     }
+    val context = LocalContext.current
     val picker = rememberLauncherForActivityResult(PickVisualMedia()) { picked ->
         picked?.let(::pick)
     }
-    var covers by remember { mutableStateOf<List<String>?>(null) }
-    LaunchedEffect(title, author) {
-        covers = if (title.isBlank()) emptyList() else searchCovers(title, author)
+    val shared by sharedCover.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { sharedCover.value = null }
+    LaunchedEffect(shared) {
+        val image = shared ?: return@LaunchedEffect
+        sharedCover.value = null
+        pick(image)
     }
     Sheet(onDismiss, stringResource(R.string.choose_cover)) {
+        Hint(stringResource(R.string.cover_search_hint))
+        Pill(stringResource(R.string.search_web_cover), Modifier.fillMaxWidth()) {
+            val search = coverSearchUri(title, author)
+            context.startActivity(Intent(Intent.ACTION_VIEW, search))
+        }
         Pill(
             stringResource(R.string.cover_from_files),
             Modifier.fillMaxWidth(),
             kind = PillKind.Line,
         ) { picker.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
-        val found = covers
-        when {
-            found == null -> Hint(stringResource(R.string.cover_searching))
-            found.isEmpty() -> Hint(stringResource(R.string.no_results))
-            else -> FoundCovers(found, title) { pick(Uri.parse(it)) }
-        }
     }
 }
 
-@Composable
-private fun FoundCovers(covers: List<String>, title: String, onPick: (String) -> Unit) =
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        covers.forEach { url ->
-            AsyncImage(
-                model = url,
-                contentDescription = stringResource(R.string.cover_of, title),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.width(96.dp)
-                    .aspectRatio(2f / 3f)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Look.colors.line)
-                    .clickable { onPick(url) },
-            )
-        }
-    }
+private fun coverSearchUri(title: String, author: String): Uri {
+    val query = listOf(title, author, "book cover").filter(String::isNotBlank)
+    return Uri.parse("https://duckduckgo.com/").buildUpon()
+        .appendQueryParameter("q", query.joinToString(" "))
+        .appendQueryParameter("iax", "images")
+        .appendQueryParameter("ia", "images")
+        .build()
+}
 
 @Composable
 fun FilterRow(

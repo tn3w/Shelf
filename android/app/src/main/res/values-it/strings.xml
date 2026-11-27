@@ -286,7 +286,9 @@
     <string name="add">Aggiungi</string>
     <string name="choose_cover">Scegli copertina</string>
     <string name="cover_from_files">Dai tuoi file</string>
-    <string name="cover_searching">Ricerca copertine…</string>
+    <string name="search_web_cover">Cerca sul web</string>
+    <string name="cover_search_hint">Trova una copertina nel browser, poi condividi l’immagine con Shelf.</string>
+    <string name="use_as_cover">Usa come copertina</string>
     <string name="delete_book">Rimuovi da Shelf</string>
     <string name="delete_book_confirm">Rimuovere %s, i progressi e la copia importata? Il file originale resta dov’è.</string>
     <string name="remove">Rimuovi</string>

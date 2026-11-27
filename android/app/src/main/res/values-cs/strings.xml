@@ -281,7 +281,9 @@
     <string name="add">Přidat</string>
     <string name="choose_cover">Vybrat obálku</string>
     <string name="cover_from_files">Z vašich souborů</string>
-    <string name="cover_searching">Hledání obálek…</string>
+    <string name="search_web_cover">Hledat na webu</string>
+    <string name="cover_search_hint">Najděte obálku v prohlížeči a pak obrázek sdílejte do Shelf.</string>
+    <string name="use_as_cover">Použít jako obálku knihy</string>
     <string name="delete_book">Odebrat ze Shelf</string>
     <string name="delete_book_confirm">Odebrat %s, jeho postup a importovanou kopii? Původní soubor zůstane na svém místě.</string>
     <string name="remove">Odebrat</string>

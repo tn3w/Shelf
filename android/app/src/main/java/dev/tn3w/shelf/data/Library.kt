@@ -846,18 +846,8 @@ class Library(private val context: Context, private val scope: CoroutineScope) {
         .orEmpty()
         .forEach { it.delete() }
 
-    private suspend fun copy(uri: Uri, target: File): Long? {
-        if (uri.scheme != "https") {
-            return context.readFrom(uri) { input ->
-                target.outputStream().use(input::copyTo)
-            }
-        }
-        return runSuspendCatching {
-            http.fetch(uri.toString()).use { response ->
-                target.outputStream().use(response.stream::copyTo)
-            }
-        }.getOrNull()
-    }
+    private suspend fun copy(uri: Uri, target: File) =
+        context.readFrom(uri) { input -> target.outputStream().use(input::copyTo) }
 
     fun voiceCache(work: Int) = context.filesDir.resolve("voices/$work.json")
 

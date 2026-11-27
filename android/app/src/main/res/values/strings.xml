@@ -276,7 +276,9 @@
     <string name="add">Add</string>
     <string name="choose_cover">Choose cover</string>
     <string name="cover_from_files">From your files</string>
-    <string name="cover_searching">Searching for covers…</string>
+    <string name="search_web_cover">Search the web</string>
+    <string name="cover_search_hint">Find a cover in your browser, then share the image to Shelf.</string>
+    <string name="use_as_cover">Use as book cover</string>
     <string name="delete_book">Remove from Shelf</string>
     <string name="delete_book_confirm">Remove %s, its progress and its imported copy? The original file stays where it is.</string>
     <string name="remove">Remove</string>

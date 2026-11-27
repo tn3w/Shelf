@@ -281,7 +281,9 @@
     <string name="add">Добавить</string>
     <string name="choose_cover">Выбрать обложку</string>
     <string name="cover_from_files">Из ваших файлов</string>
-    <string name="cover_searching">Поиск обложек…</string>
+    <string name="search_web_cover">Искать в интернете</string>
+    <string name="cover_search_hint">Найдите обложку в браузере и поделитесь изображением с Shelf.</string>
+    <string name="use_as_cover">Сделать обложкой книги</string>
     <string name="delete_book">Удалить из Shelf</string>
     <string name="delete_book_confirm">Удалить «%s», прогресс чтения и импортированную копию? Исходный файл останется на месте.</string>
     <string name="remove">Удалить</string>

@@ -79,6 +79,20 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ShareCoverActivity"
+            android:exported="true"
+            android:label="@string/use_as_cover"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

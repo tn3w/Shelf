@@ -263,7 +263,9 @@
     <string name="add">Hinzufügen</string>
     <string name="choose_cover">Cover wählen</string>
     <string name="cover_from_files">Aus deinen Dateien</string>
-    <string name="cover_searching">Suche nach Covern…</string>
+    <string name="search_web_cover">Im Web suchen</string>
+    <string name="cover_search_hint">Finde ein Cover im Browser und teile das Bild dann mit Shelf.</string>
+    <string name="use_as_cover">Als Buchcover verwenden</string>
     <string name="delete_book">Aus Shelf entfernen</string>
     <string name="delete_book_confirm">%s mit Fortschritt und importierter Kopie entfernen? Die Originaldatei bleibt erhalten.</string>
     <string name="remove">Entfernen</string>

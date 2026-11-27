@@ -276,7 +276,9 @@
     <string name="add">Toevoegen</string>
     <string name="choose_cover">Omslag kiezen</string>
     <string name="cover_from_files">Uit je bestanden</string>
-    <string name="cover_searching">Omslagen zoeken…</string>
+    <string name="search_web_cover">Zoeken op het web</string>
+    <string name="cover_search_hint">Zoek een omslag in je browser en deel de afbeelding met Shelf.</string>
+    <string name="use_as_cover">Gebruiken als boekomslag</string>
     <string name="delete_book">Uit Shelf verwijderen</string>
     <string name="delete_book_confirm">%s met voortgang en geïmporteerde kopie verwijderen? Het originele bestand blijft waar het is.</string>
     <string name="remove">Verwijderen</string>

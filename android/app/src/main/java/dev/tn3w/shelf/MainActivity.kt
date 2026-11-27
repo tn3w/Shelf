@@ -640,3 +640,30 @@ private inline fun <reified T : Any> NavGraphBuilder.screen(
         Box(Modifier.fillMaxSize().background(Look.colors.paper)) { content(entry) }
     }
 }
+
+val sharedCover = MutableStateFlow<Uri?>(null)
+
+class ShareCoverActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val image = IntentCompat
+            .getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
+        lifecycleScope.launch {
+            image?.let { sharedCover.value = keep(it) }
+            startActivity(
+                Intent(this@ShareCoverActivity, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            finish()
+        }
+    }
+
+    private suspend fun keep(image: Uri): Uri? {
+        val target = cacheDir.resolve("shared-cover-${System.currentTimeMillis()}")
+        cacheDir.listFiles { file -> file.name.startsWith("shared-cover-") }
+            .orEmpty()
+            .forEach { it.delete() }
+        val copied = readFrom(image) { input -> target.outputStream().use(input::copyTo) }
+        return Uri.fromFile(target).takeIf { copied != null }
+    }
+}

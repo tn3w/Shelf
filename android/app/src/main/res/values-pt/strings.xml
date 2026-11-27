@@ -286,7 +286,9 @@
     <string name="add">Adicionar</string>
     <string name="choose_cover">Escolher capa</string>
     <string name="cover_from_files">Dos seus arquivos</string>
-    <string name="cover_searching">Buscando capas…</string>
+    <string name="search_web_cover">Pesquisar na web</string>
+    <string name="cover_search_hint">Encontre uma capa no navegador e compartilhe a imagem com o Shelf.</string>
+    <string name="use_as_cover">Usar como capa do livro</string>
     <string name="delete_book">Remover do Shelf</string>
     <string name="delete_book_confirm">Remover %s, o progresso e a cópia importada? O arquivo original continua onde está.</string>
     <string name="remove">Remover</string>

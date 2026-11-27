@@ -263,7 +263,9 @@
     <string name="add">Lägg till</string>
     <string name="choose_cover">Välj omslag</string>
     <string name="cover_from_files">Från dina filer</string>
-    <string name="cover_searching">Söker omslag…</string>
+    <string name="search_web_cover">Sök på webben</string>
+    <string name="cover_search_hint">Hitta ett omslag i webbläsaren och dela sedan bilden till Shelf.</string>
+    <string name="use_as_cover">Använd som bokomslag</string>
     <string name="delete_book">Ta bort från Shelf</string>
     <string name="delete_book_confirm">Ta bort %s, dess framsteg och den importerade kopian? Originalfilen ligger kvar där den är.</string>
     <string name="remove">Ta bort</string>
