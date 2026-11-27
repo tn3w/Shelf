@@ -518,7 +518,7 @@
     <string name="add_format">Dodaj format</string>
     <string name="format_paper">Papier</string>
     <string name="format_ebook">E-book</string>
-    <string name="format_audiobook">Audiobook</string>
+    <string name="format_audiobook">Książka audio</string>
     <string name="log_page">Zapisz stronę</string>
     <string name="current_page">Bieżąca strona</string>
     <string name="page_number">Strona %d</string>
