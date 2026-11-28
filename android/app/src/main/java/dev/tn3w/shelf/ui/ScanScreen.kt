@@ -113,6 +113,7 @@ class ScanViewModel(app: ShelfApp) : ShelfViewModel(app) {
 
     fun leave() {
         found = null
+        frozen = null
         paused = true
     }
 
@@ -134,15 +135,13 @@ fun ScanScreen(navigator: Navigator) {
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if (found == null && current != null && !viewModel.paused) {
-            key(current) {
-                CameraPreview(
-                    analyze = current::next,
-                    onFailed = viewModel::fail,
-                    onShown = viewModel::unfreeze,
-                ) { work, frame, marks ->
-                    if (!viewModel.show(work, frame, marks)) return@CameraPreview
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                }
+            CameraPreview(
+                analyze = current::next,
+                onFailed = viewModel::fail,
+                onShown = viewModel::unfreeze,
+            ) { work, frame, marks ->
+                if (!viewModel.show(work, frame, marks)) return@CameraPreview
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             }
         }
         viewModel.frozen?.let { Frozen(it) }
@@ -206,9 +205,11 @@ private fun CameraPreview(
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val haptics = LocalHapticFeedback.current
     val latest by rememberUpdatedState(onFound)
+    val scanner by rememberUpdatedState(analyze)
     val view = remember { TextureView(context) }
     val camera = remember {
-        Camera(context, view, analyze, onFailed, onShown) { work, frame, marks ->
+        val analyzeLatest = { frame: Gray, tapped: Boolean -> scanner(frame, tapped) }
+        Camera(context, view, analyzeLatest, onFailed, onShown) { work, frame, marks ->
             latest(work, frame, marks)
         }
     }
