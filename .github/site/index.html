@@ -3,67 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shelf · Offline book catalogue for Android</title>
-  <meta name="description" content="Search books, track reading streaks and read your own
-    files. Offline, no account, no ads. Free and open source.">
-  <meta name="theme-color" content="#16120F">
+  <title>Shelf · The private book app for Android</title>
+  <meta name="description" content="Find, track, read and listen to books on Android, fully
+    offline. No account, no ads, no tracking. Free and open source.">
+  <meta name="theme-color" content="#f5ede1">
   <meta property="og:title" content="Shelf · Your books, offline">
-  <meta property="og:description" content="Offline book catalogue for Android.">
+  <meta property="og:description" content="The private book app for Android.">
   <link rel="canonical" href="https://shlf.bid/">
   <meta property="og:url" content="https://shlf.bid/">
   <meta property="og:image" content="https://shlf.bid/thumbnail.jpg">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Shelf">
-  <meta property="og:image:alt" content="Shelf, an offline book catalogue for Android">
+  <meta property="og:image:alt" content="Shelf, the private book app for Android">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/thumbnail.jpg">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@type": "MobileApplication",
       "name": "Shelf",
       "url": "https://shlf.bid/",
-      "description": "Offline book catalogue for Android. No account, no ads, open source.",
+      "description": "Find, track, read and listen to books on Android, fully offline.",
       "applicationCategory": "BookApplication",
-      "operatingSystem": "Android",
+      "operatingSystem": "Android 8.0 or newer",
+      "softwareVersion": "1.7.0",
       "image": "https://shlf.bid/thumbnail.jpg",
       "license": "https://opensource.org/licenses/MIT",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-      "downloadUrl": "https://f-droid.org/packages/dev.tn3w.shelf/",
-      "sameAs": ["https://github.com/tn3w/Shelf"]
+      "downloadUrl": "https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk",
+      "sameAs": [
+        "https://github.com/tn3w/Shelf",
+        "https://f-droid.org/packages/dev.tn3w.shelf/"
+      ]
     }
   </script>
-  <link rel="stylesheet" href="style.css">
-  <script>
-    try {
-      const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-      document.documentElement.dataset.theme = localStorage.getItem("theme") ?? system
-    } catch {}
-  </script>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <svg hidden>
-    <symbol id="download" viewBox="0 0 24 24">
-      <path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16" fill="none" stroke="currentColor"
-        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
-    </symbol>
-    <symbol id="github" viewBox="0 0 24 24">
-      <path fill="currentColor"
-        d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2
-        c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7
-        1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25
-        3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.25-1.28 -5.25-5.7 0-1.26.45-2.29
-        1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77
-        0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1
-        0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0
-        0 0 12 .5Z" />
-    </symbol>
-    <symbol id="theme" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
-      <path fill="currentColor"
-        d="M12 3a9 9 0 0 1 0 18Z" />
-    </symbol>
     <symbol id="logo" viewBox="0 0 108 108">
       <rect class="logo-ground" width="108" height="108" rx="24" />
       <g transform="translate(54 54) scale(1.3) translate(-54 -54)">
@@ -74,227 +52,334 @@
         <rect class="logo-ink" x="29" y="74" width="50" height="5" rx="2" />
       </g>
     </symbol>
+    <symbol id="arrow" viewBox="0 0 24 24">
+      <path d="M12 4v13m0 0-5-5m5 5 5-5M5 20h14" fill="none" stroke="currentColor"
+        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
   </svg>
 
-  <header class="bar">
+  <header class="masthead">
     <nav class="wrap nav">
-      <a class="brand" href="#top"><svg><use href="#logo" /></svg>Shelf</a>
+      <a class="brand" href="/"><svg><use href="#logo" /></svg>Shelf</a>
       <div class="links">
-        <a href="#features">Features</a>
-        <a href="#privacy">Privacy</a>
+        <a href="#contents">Features</a>
+        <a href="/books">Catalogue</a>
         <a href="https://github.com/tn3w/Shelf">Source</a>
       </div>
-      <button class="icon-button" id="theme-toggle" aria-label="Toggle dark mode">
-        <svg><use href="#theme" /></svg>
-      </button>
-      <a class="button outline small" href="#get">Download</a>
+      <a class="button small" href="#get">Get Shelf</a>
     </nav>
   </header>
 
-  <main id="top">
-    <section class="hero">
-      <div class="wrap hero-text">
-        <p class="pill">Free · Open source · Android 8+</p>
-        <h1><span class="gradient">Your books,</span> offline.</h1>
+  <main>
+    <section class="hero wrap">
+      <div class="hero-text">
+        <p class="kicker">Free and open source · Android 8+ · Version 1.7</p>
+        <h1>Your books,<br><em>offline.</em></h1>
         <p class="lead">
-          Shelf is a <strong>book catalogue that lives on your phone</strong>.
-          Search, scan, track reading streaks and read your own files.
-          No account, no ads, no tracking.
+          Find, track, read and listen to books, all on your phone.
+          No account, no ads, no tracking. Nothing is sent on first launch.
         </p>
+        <div class="actions">
+          <a class="button large"
+            href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
+            <svg><use href="#arrow" /></svg>Download APK
+          </a>
+          <a class="text-link" href="https://f-droid.org/packages/dev.tn3w.shelf/">
+            or get it on F-Droid</a>
+        </div>
+      </div>
+      <figure class="phone hero-phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/home.webp">
+          <img src="/shots/light/home.webp" width="640" height="1127"
+            alt="Shelf home screen with the book being read and a 14 day streak">
+        </picture>
+      </figure>
+    </section>
 
-        <a class="button primary large"
-          href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
-          <svg><use href="#download" /></svg>Download for Android
-        </a>
-        <p class="sources">
-          or get it on
-          <a href="https://f-droid.org/packages/dev.tn3w.shelf/">F-Droid</a> ·
-          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D">Obtainium</a> ·
-          <a href="https://github.com/tn3w/Shelf/releases/latest">GitHub</a>
+    <div class="bookshelf" aria-hidden="true">
+      <img src="/covers.webp" width="2004" height="360" alt="">
+      <div class="plank"></div>
+    </div>
+
+    <section class="ledger wrap" aria-label="At a glance">
+      <p><strong>0</strong>accounts, ads or trackers</p>
+      <p><strong>17</strong>open library data sources</p>
+      <p><strong>21</strong>book and audio formats</p>
+      <p><strong>16</strong>app languages</p>
+    </section>
+
+    <section id="contents" class="contents wrap">
+      <h2 class="section-title">Contents</h2>
+      <ol class="toc">
+        <li><a href="#find"><span>Find any book</span><i></i>I</a></li>
+        <li><a href="#read"><span>Read your files</span><i></i>II</a></li>
+        <li><a href="#listen"><span>Listen anywhere</span><i></i>III</a></li>
+        <li><a href="#year"><span>Your reading year</span><i></i>IV</a></li>
+        <li><a href="#discover"><span>Discover</span><i></i>V</a></li>
+        <li><a href="#scan"><span>Scan a cover</span><i></i>VI</a></li>
+      </ol>
+    </section>
+
+    <article id="find" class="chapter wrap">
+      <div class="chapter-text">
+        <p class="numeral">Chapter I</p>
+        <h2>Find any book. Even in airplane mode.</h2>
+        <p>
+          The whole catalogue lives on your phone, built from Open Library, Wikidata
+          and national libraries from Finland to Korea. Search forgives typos and finds
+          titles, authors, series and ISBNs as you type.
         </p>
-        <a class="desktop-hint" href="#get">On a computer? Scan a QR code to install →</a>
+        <p class="aside">English comes built in. Other languages download once.</p>
       </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/book.webp">
+          <img src="/shots/light/book.webp" width="640" height="1127" loading="lazy"
+            alt="A book page with cover, rating, genres and editions">
+        </picture>
+      </figure>
+    </article>
 
-      <div class="stage" aria-hidden="true">
-        <div class="phone library side left"></div>
-        <div class="phone home center"></div>
-        <div class="phone explore side right"></div>
+    <article id="read" class="chapter wrap flip">
+      <div class="chapter-text">
+        <p class="numeral">Chapter II</p>
+        <h2>Read your own files.</h2>
+        <p>
+          Open books from any app or import whole folders. Highlight, take notes,
+          tune type, spacing and margins, turn pages with volume keys, switch to paper
+          or night pages.
+        </p>
+        <ul class="spines" aria-label="Supported formats">
+          <li>EPUB</li><li>MOBI</li><li>AZW3</li><li>PDF</li><li>FB2</li><li>CBZ</li>
+          <li>CBR</li><li>CB7</li><li>DOCX</li><li>ODT</li><li>RTF</li><li>HTML</li>
+          <li>TXT</li><li>MD</li>
+        </ul>
+      </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/reader.webp">
+          <img src="/shots/light/reader.webp" width="640" height="1127" loading="lazy"
+            alt="The reader showing a page of a novel">
+        </picture>
+      </figure>
+    </article>
+
+    <article id="listen" class="chapter wrap">
+      <div class="chapter-text">
+        <p class="numeral">Chapter III</p>
+        <h2>Listen in the car, on a walk, in bed.</h2>
+        <p>
+          Play your own audiobooks with chapters, or let your phone read any ebook
+          aloud with voices that run on the device. Android Auto shows your covers,
+          chapters and voice search.
+        </p>
+        <ul class="spines" aria-label="Supported audio formats">
+          <li>MP3</li><li>M4B</li><li>M4A</li><li>OGG</li><li>Opus</li><li>FLAC</li>
+          <li>WAV</li>
+        </ul>
+      </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/listen.webp">
+          <img src="/shots/light/listen.webp" width="640" height="1127" loading="lazy"
+            alt="An audiobook playing with chapter and progress">
+        </picture>
+      </figure>
+    </article>
+    <figure class="plate wrap">
+      <img src="/auto.webp" width="1600" height="586" loading="lazy"
+        alt="Android Auto: library with covers and an audiobook playing">
+    </figure>
+
+    <article id="year" class="chapter wrap flip">
+      <div class="chapter-text">
+        <p class="numeral">Chapter IV</p>
+        <h2>Keep the streak. Replay the year.</h2>
+        <p>
+          Set a daily goal and watch the week fill up. Monthly stats show how you read,
+          and at the end of the year Shelf tells it back as stories, with a card to share.
+        </p>
+      </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/wrapped.webp">
+          <img src="/shots/light/wrapped.webp" width="640" height="1127" loading="lazy"
+            alt="Year in books story with the most read genre">
+        </picture>
+      </figure>
+    </article>
+    <figure class="plate wrap">
+      <img src="/widgets.webp" width="1600" height="260" loading="lazy"
+        alt="Home screen widgets: continue reading, reading streak and reading shelf">
+      <figcaption>Widgets: continue your book in the colours of its cover.</figcaption>
+    </figure>
+
+    <article id="discover" class="chapter wrap">
+      <div class="chapter-text">
+        <p class="numeral">Chapter V</p>
+        <h2>Your next read, picked on your phone.</h2>
+        <p>
+          Browse genres, follow series and authors, and get recommendations worked out
+          from what you read, on the device. Sort everything into lists and filter
+          for what's ready to read.
+        </p>
+      </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/explore.webp">
+          <img src="/shots/light/explore.webp" width="640" height="1127" loading="lazy"
+            alt="Explore screen with genres and recommendations">
+        </picture>
+      </figure>
+    </article>
+
+    <article id="scan" class="chapter wrap flip">
+      <div class="chapter-text">
+        <p class="numeral">Chapter VI</p>
+        <h2>Point at a cover. Done.</h2>
+        <p>
+          Hold a book up to the camera and Shelf recognizes it on your phone.
+          Barcodes and QR codes work too. No frame ever leaves the device.
+        </p>
+      </div>
+      <figure class="phone">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset="/shots/dark/scan.webp">
+          <img src="/shots/light/scan.webp" width="640" height="1127" loading="lazy"
+            alt="Scanner recognizing a book cover">
+        </picture>
+      </figure>
+    </article>
+
+    <section class="margin-notes wrap" aria-label="More features">
+      <article>
+        <h3>Switch from Goodreads</h3>
+        <p>Import shelves, ratings and read dates from Goodreads or StoryGraph CSV.</p>
+      </article>
+      <article>
+        <h3>A cover for every book</h3>
+        <p>Missing covers are drawn on your phone in the style of the genre.</p>
+      </article>
+      <article>
+        <h3>Backups you own</h3>
+        <p>Daily backups to any folder, CSV export, highlights as Markdown.</p>
+      </article>
+      <article>
+        <h3>Tablets too</h3>
+        <p>Wide screens show the book beside the list.</p>
+      </article>
+    </section>
+
+    <section class="catalogue">
+      <div class="wrap catalogue-inner">
+        <div>
+          <p class="numeral">On the web</p>
+          <h2>Browse the catalogue right here.</h2>
+          <p>
+            The same catalogue the app carries, as plain pages: books, authors,
+            series, in every catalogue language. No app needed.
+          </p>
+        </div>
+        <form class="search" action="/s" role="search">
+          <input name="q" type="search" placeholder="Title, author or ISBN"
+            aria-label="Search the catalogue" autocomplete="off">
+          <button>Search</button>
+          <a href="/books">Open the catalogue →</a>
+        </form>
       </div>
     </section>
 
-    <section class="facts wrap" aria-label="Highlights">
-      <p><strong>0</strong> accounts</p>
-      <p><strong>0</strong> ads or trackers</p>
-      <p><strong>10</strong> catalogue languages</p>
-      <p><strong>6</strong> file formats</p>
-    </section>
-
-    <section id="features" class="features wrap">
-      <article class="feature">
-        <div class="phone book"></div>
-        <div>
-          <p class="eyebrow">Search</p>
-          <h2>Find any book. Even in airplane mode.</h2>
-          <p>
-            The whole catalogue sits on your phone, built from Open Library
-            and national libraries.
-            Search forgives typos, completes as you type and shows editions,
-            ratings and genres in a tap.
-          </p>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="phone scan"></div>
-        <div>
-          <p class="eyebrow">Scan</p>
-          <h2>Point at a cover. Done.</h2>
-          <p>
-            Hold a book in front of the camera and Shelf reads its title on device.
-            ISBN barcodes and QR codes work too. No frame ever leaves your phone.
-          </p>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="phone home"></div>
-        <div>
-          <p class="eyebrow">Track</p>
-          <h2>Keep the streak alive.</h2>
-          <p>
-            Set a daily page goal and watch the week fill up. Sort books into
-            Want to read, Reading and Finished, and pick up right where you left off.
-          </p>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="phone reader"></div>
-        <div>
-          <p class="eyebrow">Read</p>
-          <h2>Read your own files.</h2>
-          <p>
-            Open books from any app or import them. Tune text size, spacing,
-            margins and typeface, switch to paper or night pages, turn with volume keys.
-          </p>
-          <ul class="chips">
-            <li>EPUB</li><li>MOBI</li><li>AZW3</li><li>PDF</li><li>FB2</li><li>CBZ</li>
-            <li>CB7</li><li>DOCX</li><li>RTF</li><li>TXT</li><li>HTML</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="feature">
-        <div class="phone explore"></div>
-        <div>
-          <p class="eyebrow">Discover</p>
-          <h2>Your next read, picked on your phone.</h2>
-          <p>
-            Browse genres, follow series and authors, and get recommendations
-            computed locally from what you read. Nobody else sees your taste.
-          </p>
-        </div>
-      </article>
-    </section>
-
-    <section class="more wrap">
-      <h2>And everything else you'd expect.</h2>
-      <div class="grid">
-        <article>
-          <h3>Switch in a minute</h3>
-          <p>
-            Import Goodreads or StoryGraph CSV. Shelves, ratings and dates carry over.
-          </p>
-        </article>
-        <article>
-          <h3>Your own books</h3>
-          <p>Missing from the catalogue? Add it with your own cover.</p>
-        </article>
-        <article>
-          <h3>Ten languages</h3>
-          <p>English, Deutsch, Français, Español, Eesti, Svenska, Polski, Čeština, 한국어, Suomi, plus optional genre packs.</p>
-        </article>
-        <article>
-          <h3>Self-hostable</h3>
-          <p>Point Shelf at your own catalogue source, or import catalogue files.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="covers">
-      <div class="wrap">
-        <p class="eyebrow">Generated covers</p>
-        <h2>No cover? Shelf draws one.</h2>
-        <p>Same book, same cover. The style follows the genre.</p>
-      </div>
-      <div class="cover-strip" role="img"
-        aria-label="Eight covers drawn on device in different genre styles"></div>
-    </section>
-
-    <section id="privacy" class="privacy wrap">
-      <div>
-        <p class="eyebrow">Privacy</p>
-        <h2>Private by design. Not by promise.</h2>
-        <p>Shelf has nothing to sell, so it has no reason to know you.</p>
-      </div>
-      <ul class="checks">
-        <li><span><strong>No accounts, ads or trackers</strong></span></li>
-        <li><span><strong>No request on first launch</strong></span></li>
-        <li><span><strong>One switch</strong> cuts all network</span></li>
-        <li><span><strong>Scanner runs on device</strong>, frames never stored</span></li>
-        <li><span><strong>HTTPS only</strong>, no identifiers, no cookies</span></li>
-        <li><span><strong>Open source</strong> under MIT</span></li>
+    <section class="privacy wrap">
+      <h2 class="section-title">Private by design</h2>
+      <ul>
+        <li><strong>No accounts, ads or trackers.</strong> Nothing to sell, no reason to
+          know you.</li>
+        <li><strong>Silent first launch.</strong> No request until you ask for one.</li>
+        <li><strong>One switch</strong> cuts every network request.</li>
+        <li><strong>On-device scanning</strong> and recommendations.</li>
+        <li><strong>MIT licensed.</strong> Every line is on GitHub.</li>
       </ul>
     </section>
 
-    <section id="get" class="get">
-      <div class="wrap get-card">
-        <div class="get-text">
-          <svg class="get-logo"><use href="#logo" /></svg>
-          <h2>Get Shelf</h2>
-          <p>Free forever. Android 8 or newer.</p>
-          <a class="button primary large"
-          href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
-            <svg><use href="#download" /></svg>Download APK
-          </a>
-          <div class="stores">
-            <a class="button outline"
-              href="https://f-droid.org/packages/dev.tn3w.shelf/">F-Droid</a>
-            <a class="button outline" href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D">Obtainium</a>
-            <a class="button outline" href="https://github.com/tn3w/Shelf/releases/latest">
-              <svg><use href="#github" /></svg>GitHub
-            </a>
+    <section id="get" class="get wrap">
+      <div class="card">
+        <div class="card-head">
+          <svg><use href="#logo" /></svg>
+          <div>
+            <h2>Shelf</h2>
+            <p>Version 1.7 · Android 8 or newer · Free</p>
           </div>
+          <span class="stamp">Due back<br>never</span>
         </div>
-        <figure class="qr">
-          <img src="qr.svg" width="168" height="168" alt="QR code linking to the APK">
-          <figcaption>Scan with your phone</figcaption>
-        </figure>
+        <ol class="borrow">
+          <li>
+            <a href="https://github.com/tn3w/Shelf/releases/latest/download/shelf.apk">
+              <b>APK</b><span>Direct download. Shelf tells you about updates.</span></a>
+          </li>
+          <li>
+            <a href="https://f-droid.org/packages/dev.tn3w.shelf/">
+              <b>F-Droid</b><span>If you already use the F-Droid store.</span></a>
+          </li>
+          <li>
+            <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://app/%257B%2522id%2522%253A%2522dev.tn3w.shelf%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Ftn3w%252FShelf%2522%252C%2522author%2522%253A%2522tn3w%2522%252C%2522name%2522%253A%2522Shelf%2522%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522%255Eshelf%255C%255C%255C%255C.apk%2524%255C%2522%257D%2522%257D">
+              <b>Obtainium</b><span>Automatic updates from GitHub releases.</span></a>
+          </li>
+        </ol>
+        <div class="card-foot">
+          <img src="/qr.svg" width="112" height="112" alt="QR code linking to the APK">
+          <p>
+            <span>Scan on your phone</span>
+            Signing certificate SHA-256<br>
+            <code>3E:2D:6F:28:66:C8:FA:3E:A8:92:7E:C5:97:47:AA:DA:5D:FD:52:16:2F:DF:08:75:68:00:20:95:AB:65:4A:7D</code>
+          </p>
+        </div>
       </div>
+    </section>
+
+    <section class="faq wrap">
+      <h2 class="section-title">Questions</h2>
+      <details>
+        <summary>Is Shelf really free?</summary>
+        <p>Yes. No ads, no in-app purchases, no subscription. Open source under MIT.</p>
+      </details>
+      <details>
+        <summary>Do I need internet?</summary>
+        <p>No. English comes built in, other languages download once. Covers load
+          online only if you allow it.</p>
+      </details>
+      <details>
+        <summary>Which languages?</summary>
+        <p>The app speaks English, Deutsch, Français, Español, Eesti, Svenska, Polski,
+          Čeština, 한국어, Suomi, 日本語, Latviešu, Português, Русский, Italiano and
+          Nederlands. <a href="https://hosted.weblate.org/engage/shelf/">Help
+          translate</a>.</p>
+      </details>
+      <details>
+        <summary>Can I move my library to a new phone?</summary>
+        <p>Yes. Back up to a folder (a Syncthing folder works well) or export
+          everything, then restore on the new phone.</p>
+      </details>
     </section>
   </main>
 
-  <footer class="wrap footer">
-    <a class="brand" href="#top"><svg><use href="#logo" /></svg>Shelf</a>
+  <footer class="footer wrap">
+    <a class="brand" href="/"><svg><use href="#logo" /></svg>Shelf</a>
     <nav>
       <a href="https://github.com/tn3w/Shelf">GitHub</a>
-      <a href="https://github.com/tn3w/Shelf/blob/master/.github/CONTRIBUTING.md">Contribute</a>
+      <a href="/books">Catalogue</a>
+      <a href="https://hosted.weblate.org/engage/shelf/">Translate</a>
+      <a href="https://github.com/tn3w/Shelf/issues/new/choose">Report a bug</a>
       <a href="https://buymeacoffee.com/tn3w">Donate</a>
       <a href="https://github.com/tn3w/Shelf/blob/master/LICENSE">MIT License</a>
     </nav>
     <p>
-      Book data from <a href="https://openlibrary.org">Open Library</a>,
-      the <a href="https://www.dnb.de">Deutsche Nationalbibliothek</a> and the
-      <a href="https://www.rara.ee">National Library of Estonia</a>
+      Book data from Open Library, Wikidata, Project Gutenberg, the Library of Congress
+      and the national libraries of Germany, Estonia, France, Sweden, Poland, Czechia,
+      Korea, Finland, the UK, Spain, Japan, Latvia and Portugal.
+      <a href="https://github.com/tn3w/Shelf#readme">Licences</a>.
     </p>
   </footer>
 
-  <script>
-    document.querySelector("#theme-toggle").addEventListener("click", () => {
-      const root = document.documentElement
-      root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark"
-      try { localStorage.setItem("theme", root.dataset.theme) } catch {}
-    })
-  </script>
 </body>
 </html>

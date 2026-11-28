@@ -54,6 +54,19 @@ class FeedbackTest {
     }
 
     @Test
+    fun tidyDropsPlatformNoiseAndKeepsTrail() {
+        val log = listOf(
+            "--------- beginning of main",
+            "W/app(1): AIBinder_linkToDeath is being called with a non-null cookie",
+            "E/app(1): Failed to query component interface for required system resources: 6",
+            "I/Shelf(1): screen HomeRoute",
+            "E/Tag(1): real failure",
+        ).joinToString("\n")
+
+        assertEquals("I/Shelf(1): screen HomeRoute\nE/Tag(1): real failure", tidy(log))
+    }
+
+    @Test
     fun redactHidesStoredDataInParserErrors() {
         val error = "Unexpected token\nJSON input: {\"title\":\"My Diary\"}"
 

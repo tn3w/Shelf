@@ -27,7 +27,18 @@ private const val LOG_LINES = 300
 private const val MAX_CRASH = 20_000
 private const val CRASH_MAX_AGE = 7L * 24 * 60 * 60 * 1000
 
-private val NOISY_TAGS = listOf("WindowOnBackDispatcher")
+private val NOISY_TAGS = listOf(
+    "WindowOnBackDispatcher",
+    "BufferQueueProducer",
+    "ConsumerBase",
+    "ColorUtils",
+    "CCodec",
+    "InteractionJankMonitor",
+)
+private val NOISY_MESSAGES = listOf(
+    "AIBinder_linkToDeath",
+    "system resources: ",
+)
 private val REPORTED_SETTINGS = setOf(
     "theme",
     "eInk",
@@ -120,7 +131,7 @@ object Feedback {
             ProcessBuilder(command).redirectErrorStream(true).start()
                 .inputStream.bufferedReader().use { it.readText() }
         }.getOrDefault("")
-        return crash + log
+        return crash + tidy(log)
     }
 
     private fun recentCrash(file: File): String? {
@@ -138,6 +149,11 @@ fun report(message: String, details: List<String>, log: String): String {
     val logPart = if (redacted.isEmpty()) emptyList() else listOf(LOG_MARKER, redacted)
     return (lines + logPart).joinToString("\n")
 }
+
+fun tidy(log: String) = log.lines()
+    .filterNot { it.startsWith("---------") }
+    .filterNot { line -> NOISY_MESSAGES.any(line::contains) }
+    .joinToString("\n")
 
 fun redact(text: String) = PRIVATE_PATTERNS.fold(text) { result, (pattern, replacement) ->
     pattern.replace(result, replacement)
